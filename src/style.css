@@ -119,6 +119,30 @@ p {
   padding: var(--space-sm) var(--space-md);
 }
 
+.mouse-over-target {
+  position: relative;
+  display: inline-block;
+}
+
+.mouse-over-overlay {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translate(16px, -50%);
+  max-width: 260px;
+  pointer-events: none;
+
+  opacity: 0;
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.mouse-over-target:hover .mouse-over-overlay {
+  opacity: 1;
+  transform: translate(10px, -50%);
+}
+
 /* ==========================================================================
    Visual styling utilities (borders, colors, shadows, decoration)
    Names here are purely visual, not logical.
@@ -152,4 +176,21 @@ p {
   background: var(--bg-panel-soft);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
+}
+
+.hover-panel {
+  background: radial-gradient(circle at 0 0, rgba(255, 214, 170, 0.25), transparent 70%),
+    var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-strong);
+  padding: var(--space-sm);
+}
+
+.chip-basic {
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 0.9rem;
 }
