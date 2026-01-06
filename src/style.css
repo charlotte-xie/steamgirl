@@ -1,0 +1,146 @@
+:root {
+  /* Design tokens / color system */
+  --bg-main: #0f172a;
+  --bg-panel: rgba(15, 23, 42, 0.75);
+  --bg-panel-soft: rgba(255, 255, 255, 0.03);
+  --bg-placeholder: linear-gradient(135deg, rgba(148, 163, 184, 0.06), rgba(148, 163, 184, 0.02));
+
+  --border-subtle: rgba(226, 232, 240, 0.08);
+  --border-dashed: rgba(226, 232, 240, 0.2);
+
+  --text-main: #e2e8f0;
+  --text-muted: #cbd5e1;
+
+  --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 20px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ==========================================================================
+   Base HTML elements (common, reusable defaults)
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color: var(--text-main);
+
+  background:
+    radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.2), transparent 25%),
+    radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.2), transparent 30%),
+    var(--bg-main);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-xs);
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 var(--space-xs);
+}
+
+/* ==========================================================================
+   Layout & structure (semantic / logical layout)
+   ========================================================================== */
+
+.game-screen {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.game-ui {
+  width: min(1200px, 100%);
+  min-height: 80vh;
+  padding: var(--space-xl);
+
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-lg);
+}
+
+.game-header {
+  display: flex;
+  flex-direction: column;
+}
+
+.subtitle {
+  margin: var(--space-xs) 0 0;
+}
+
+.game-canvas {
+  position: relative;
+  min-height: 400px;
+
+  display: grid;
+  place-items: center;
+}
+
+.placeholder {
+  padding: var(--space-sm) var(--space-md);
+}
+
+/* ==========================================================================
+   Visual styling utilities (borders, colors, shadows, decoration)
+   Names here are purely visual, not logical.
+   ========================================================================== */
+
+.panel-elevated {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-strong), var(--shadow-inner);
+  backdrop-filter: blur(10px);
+}
+
+.heading-main {
+  font-size: 2rem;
+  letter-spacing: 0.01em;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.canvas-framed {
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-dashed);
+  background: var(--bg-placeholder);
+}
+
+.placeholder-card {
+  color: var(--text-muted);
+  background: var(--bg-panel-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
