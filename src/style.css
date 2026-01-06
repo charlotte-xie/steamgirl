@@ -1,18 +1,20 @@
 :root {
   /* Design tokens / color system */
-  --bg-main: #0f172a;
-  --bg-panel: rgba(15, 23, 42, 0.75);
-  --bg-panel-soft: rgba(255, 255, 255, 0.03);
-  --bg-placeholder: linear-gradient(135deg, rgba(148, 163, 184, 0.06), rgba(148, 163, 184, 0.02));
+  --bg-main: #0e0b09; /* deep soot / iron */
+  --bg-panel: rgba(34, 24, 16, 0.9); /* dark brass panel */
+  --bg-panel-soft: rgba(88, 57, 33, 0.25); /* soft copper wash */
+  --bg-placeholder: radial-gradient(circle at 0 0, rgba(255, 176, 59, 0.16), transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(146, 79, 46, 0.2), transparent 55%),
+    linear-gradient(135deg, #291812, #14100f);
 
-  --border-subtle: rgba(226, 232, 240, 0.08);
-  --border-dashed: rgba(226, 232, 240, 0.2);
+  --border-subtle: rgba(220, 170, 90, 0.4); /* brass edge */
+  --border-dashed: rgba(255, 200, 120, 0.6); /* riveted accent */
 
-  --text-main: #e2e8f0;
-  --text-muted: #cbd5e1;
+  --text-main: #f4e4c4; /* parchment */
+  --text-muted: #d0b691; /* aged parchment */
 
-  --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.45);
-  --shadow-inner: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-strong: 0 26px 60px rgba(0, 0, 0, 0.7);
+  --shadow-inner: inset 0 1px 0 rgba(255, 214, 170, 0.12);
 
   --radius-lg: 16px;
   --radius-md: 12px;
@@ -51,8 +53,15 @@ body {
   color: var(--text-main);
 
   background:
-    radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.2), transparent 25%),
-    radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.2), transparent 30%),
+    radial-gradient(circle at 10% 0%, rgba(224, 120, 255, 0.18), transparent 55%),
+    radial-gradient(circle at 90% 100%, rgba(91, 33, 124, 0.32), transparent 60%),
+    repeating-linear-gradient(
+      135deg,
+      #111010,
+      #111010 4px,
+      #15120f 4px,
+      #15120f 8px
+    ),
     var(--bg-main);
 }
 
