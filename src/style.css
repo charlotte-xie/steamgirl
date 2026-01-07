@@ -94,7 +94,7 @@ p {
   padding: var(--space-xl);
 
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   gap: var(--space-lg);
 }
 
@@ -113,6 +113,12 @@ p {
 
   display: grid;
   place-items: center;
+}
+
+.dev-controls {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-lg);
 }
 
 .placeholder {

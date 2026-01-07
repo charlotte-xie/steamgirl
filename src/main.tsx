@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { GameScreen } from './GameScreen'
+import { App } from './App'
 import './style.css'
 
 const rootElement = document.getElementById('root')
@@ -11,7 +11,7 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <GameScreen />
+    <App />
   </React.StrictMode>,
 )
 
