@@ -21,6 +21,7 @@ export interface LocationDefinition {
   name?: string
   description?: string
   image?: string
+  nightImage?: string
   links?: LocationLink[]
   activities?: LocationActivity[]
   onFirstArrive?: Script
