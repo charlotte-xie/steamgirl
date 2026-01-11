@@ -1,6 +1,7 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { runScript as runScriptImpl } from './Scripts'
+import { Card } from './Card'
 
 export type ParagraphContent = 
   | { type: 'text'; text: string }
@@ -120,6 +121,39 @@ export class Game {
   /** Run a script on this game instance. Returns this for fluent chaining. */
   run(scriptName: string, params: {} = {}): this {
     runScriptImpl(scriptName, this, params)
+    return this
+  }
+
+  /** Add a quest card to the player. Returns this for fluent chaining. */
+  addQuest(questId: string, args: Record<string, unknown> = {}): this {
+    // Check if player already has this quest
+    const hasQuest = this.player.cards.some(card => card.id === questId)
+    if (!hasQuest) {
+      // Get card definition (will throw if not found)
+      const quest = new Card(questId, 'Quest')
+      const cardDef = quest.template
+      
+      // Apply any additional args to the card instance
+      Object.keys(args).forEach(key => {
+        quest[key] = args[key]
+      })
+      
+      this.player.cards.push(quest)
+      this.add({ type: 'text', text: `Quest received: ${cardDef.name}`, color: '#3b82f6' })
+    }
+    
+    return this
+  }
+
+  /** Complete a quest card. Returns this for fluent chaining. */
+  completeQuest(questId: string): this {
+    const quest = this.player.cards.find(card => card.id === questId)
+    if (quest && !quest.completed) {
+      quest.completed = true
+      const cardDef = quest.template
+      this.add({ type: 'text', text: `Quest completed: ${cardDef.name}`, color: '#10b981' })
+    }
+    
     return this
   }
 

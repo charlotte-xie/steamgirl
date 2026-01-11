@@ -5,6 +5,7 @@ import { useGame } from '../context/GameContext'
 import { Clock } from './Clock'
 import { InventoryView } from './InventoryView'
 import { Game } from '../model/Game'
+import { Card } from './Card'
 
 type TabId = 'Status' | 'Inventory' | 'Quests' | 'Attributes' | 'Settings'
 
@@ -28,7 +29,17 @@ export function PlayerPanel() {
       case 'Inventory':
         return <InventoryView />
       case 'Quests':
-        return <p>Quests content will be added later.</p>
+        const questCards = game?.player.cards.filter(card => card.type === 'Quest') || []
+        if (questCards.length === 0) {
+          return <p>No quests available.</p>
+        }
+        return (
+          <div className="cards-container">
+            {questCards.map((card, index) => (
+              <Card key={`${card.id}-${index}`} card={card} />
+            ))}
+          </div>
+        )
       case 'Attributes':
         return <p>Attributes content will be added later.</p>
       case 'Settings':

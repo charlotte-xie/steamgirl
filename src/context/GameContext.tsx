@@ -98,6 +98,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // Run the script (may modify game state)
     const result = runScriptImpl(name, game, params)
     
+    // Run afterUpdate scripts for all cards
+    game.player.cards.forEach(card => {
+      const cardDef = card.template
+      if (cardDef.afterUpdate) {
+        cardDef.afterUpdate(game, {})
+      }
+    })
+    
     // Trigger a React update by incrementing a counter
     // This forces re-render without serialization/deserialization
     setUpdateCounter(prev => prev + 1)

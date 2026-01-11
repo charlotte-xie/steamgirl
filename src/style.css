@@ -655,3 +655,75 @@ p {
   margin-bottom: 0;
 }
 
+/* Card component (playing card style) */
+.card-component {
+  width: 9rem;
+  height: 12rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-strong), var(--shadow-inner);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.card-image {
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  background: var(--bg-panel-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-content {
+  flex: 1;
+  padding: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-main);
+  font-weight: 600;
+  text-align: center;
+}
+
+.card-status {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+  margin-top: auto;
+  padding-top: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.card-description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: left;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-content: flex-start;
+}
+

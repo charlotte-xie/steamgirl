@@ -1,6 +1,8 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
 import { option, p, highlight } from '../model/Format'
+import type { CardDefinition } from '../model/Card'
+import { registerCardDefinition } from '../model/Card'
 
 export const startScripts = {
   start: (g: Game) => {
@@ -21,6 +23,7 @@ export const startScripts = {
   whatNow: (g: Game) => {
     g.add(p('You have a room booked in the ', highlight('backstreets', '#fbbf24', 'Not the most prestigious part of the city, but its the best we could afford.')," area. Might be a good idea to check it out first."))
     .add("It's tempting to explore the city and get to know your new home. You could explore yourself and find your way to your room. Or there is a guided tour of the city that you could take for about an hour, which ends in the backstreets.")
+    .addQuest('find-lodgings', {})
     .add(option('startExploring', {}, 'Explore'))
     .add(option('tourCity', {}, 'Tour the City'))
   },
@@ -62,6 +65,22 @@ export const startScripts = {
     .add('Your room waits on the third floor')    // Tour complete - they can now explore from backstreets
   },
 }
+
+// Register the find-lodgings tutorial quest
+export const findLodgingsQuest: CardDefinition = {
+  name: 'Find Lodgings',
+  description: 'Check into your lodgings in the backstreets.',
+  type: 'Quest',
+  afterUpdate: (game: Game, _params: {}) => {
+    // Check if player is in bedroom (lodgings)
+    if (game.currentLocation === 'bedroom') {
+      game.completeQuest('find-lodgings')
+    }
+  },
+}
+
+// Register the quest definition
+registerCardDefinition('find-lodgings', findLodgingsQuest)
 
 // Register all start scripts when module loads
 makeScripts(startScripts)

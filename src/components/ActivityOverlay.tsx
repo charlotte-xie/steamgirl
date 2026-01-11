@@ -39,6 +39,14 @@ export function ActivityOverlay() {
     // Run the script (may modify game state)
     activity.script(game, {})
     
+    // Run afterUpdate scripts for all cards
+    game.player.cards.forEach(card => {
+      const cardDef = card.template
+      if (cardDef.afterUpdate) {
+        cardDef.afterUpdate(game, {})
+      }
+    })
+    
     // Trigger a React update by deserializing/reserializing to create a new reference
     // This forces re-render so the UI reflects the script changes
     const gameJson = JSON.stringify(game.toJSON())

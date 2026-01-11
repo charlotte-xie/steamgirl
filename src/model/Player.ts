@@ -1,4 +1,5 @@
 import { Item, type ItemData, ensureItem } from './Item'
+import { Card, type CardData } from './Card'
 
 export type ItemSpec = string | Item
 
@@ -13,6 +14,7 @@ export interface PlayerData {
   name: string
   stats: Stats
   inventory?: ItemData[]
+  cards?: CardData[]
 }
 
 /** Represents the player character with name and JSON serialization capabilities. */
@@ -20,6 +22,7 @@ export class Player {
   name: string
   stats: Stats
   inventory: Item[]
+  cards: Card[]
 
   constructor() {
     this.name = "Unnamed Player"
@@ -30,6 +33,7 @@ export class Player {
       charm: 0,
     }
     this.inventory = []
+    this.cards = []
     // Initialize with 20 crowns and a pocket watch
     this.inventory.push(new Item('crown', 20))
     this.inventory.push(new Item('pocket-watch', 1))
@@ -40,6 +44,7 @@ export class Player {
       name: this.name,
       stats: this.stats,
       inventory: this.inventory.map(item => item.toJSON()),
+      cards: this.cards.map(card => card.toJSON()),
     }
   }
 
@@ -55,6 +60,12 @@ export class Player {
     } else {
       // If inventory is missing, clear the default inventory from constructor
       player.inventory = []
+    }
+    if (data.cards) {
+      player.cards = data.cards.map((cardData: CardData) => Card.fromJSON(cardData))
+    } else {
+      // If cards is missing, start with empty array
+      player.cards = []
     }
     return player
   }
