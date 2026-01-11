@@ -3,12 +3,14 @@ import { Tooltip } from './Tooltip'
 
 type ItemViewProps = {
   item: Item
+  selected?: boolean
+  onClick?: () => void
 }
 
-export function ItemView({ item }: ItemViewProps) {
+export function ItemView({ item, selected = false, onClick }: ItemViewProps) {
   const itemDef = item.template
   const showNumber = itemDef.stackable && item.number > 1
-  const iconSize = 48
+  const iconSize = 32
 
   const iconContent = (
     <div className="item-icon-container">
@@ -34,13 +36,16 @@ export function ItemView({ item }: ItemViewProps) {
   )
 
   const content = (
-    <div className="item-view">
+    <div className={`item-view ${selected ? 'selected' : ''}`} onClick={onClick}>
       {iconContent}
-      <span className="item-name">{itemDef.name}</span>
+      <div className="item-info">
+        <span className="item-name">{itemDef.name}</span>
+      </div>
     </div>
   )
 
-  if (itemDef.description) {
+  // Only show tooltip if item is not selected (to avoid tooltip conflicts with details area)
+  if (itemDef.description && !selected) {
     return (
       <Tooltip content={<div style={{ margin: 0 }}>{itemDef.description}</div>}>
         {content}
