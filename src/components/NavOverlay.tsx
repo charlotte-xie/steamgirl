@@ -1,6 +1,6 @@
 import { useGame } from '../context/GameContext'
 import { getLocation } from '../model/Location'
-import { getScript } from '../model/Scripts'
+import { Thumbnail } from './Thumbnail'
 import type { LocationLink } from '../model/Location'
 
 export function NavOverlay() {
@@ -17,12 +17,8 @@ export function NavOverlay() {
   }
 
   const handleLocationClick = (link: LocationLink) => {
-    const targetLocation = getLocation(link.dest)
-    if (targetLocation && game) {
-      const goScript = getScript('go')
-      if (goScript) {
-        runScript('go', { location: link.dest, time: link.time })
-      }
+    if (game) {
+      runScript('go', { location: link.dest, time: link.time })
     }
   }
 
@@ -33,24 +29,14 @@ export function NavOverlay() {
         if (!targetLocation) return null
 
         return (
-          <button
+          <Thumbnail
             key={index}
-            className="nav-link-thumbnail"
+            image={targetLocation.image}
+            name={targetLocation.name || link.dest}
+            subtitle={`${link.time} min`}
             onClick={() => handleLocationClick(link)}
-            title={`${targetLocation?.name || link.dest} (${link.time} min)`}
-          >
-            {targetLocation?.image && (
-              <img
-                src={targetLocation.image}
-                alt={targetLocation?.name || link.dest}
-                className="nav-link-image"
-              />
-            )}
-            <div>
-              <p>{targetLocation?.name || link.dest}</p>
-              <p>({link.time} min)</p>
-            </div>
-          </button>
+            title={`${targetLocation.name || link.dest} (${link.time} min)`}
+          />
         )
       })}
     </div>

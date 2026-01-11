@@ -1,5 +1,6 @@
 import { SceneOverlay } from './SceneOverlay'
 import { NavOverlay } from './NavOverlay'
+import { ActivityOverlay } from './ActivityOverlay'
 import { Location } from '../model/Location'
 import { useGame } from '../context/GameContext'
 
@@ -14,6 +15,7 @@ export function LocationView({ location }: LocationViewProps) {
   const sceneHasOptions = scene && scene.options.length > 0
   const sceneHasContent = scene && scene.content.length > 0
   const showLocationLinks = !(sceneHasOptions)
+  const showActivities = location.template.activities && location.template.activities.length > 0 && !sceneHasOptions
 
   return (
     <div 
@@ -36,6 +38,9 @@ export function LocationView({ location }: LocationViewProps) {
       </div>
       <div className="overlays-container">
         {(sceneHasContent||sceneHasContent) && <SceneOverlay scene={scene} />}
+      </div>
+      <div className="bottom-overlays">
+        {showActivities && <ActivityOverlay />}
         {showLocationLinks && <NavOverlay />}
       </div>
     </div>

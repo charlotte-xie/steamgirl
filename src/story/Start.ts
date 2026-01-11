@@ -8,48 +8,44 @@ export const startScripts = {
     g.add('Steam hisses as the train grinds to a halt. You step onto the platform of Ironspark Terminus. You are finally here, in the city of Aetheria.')
       .add('The air is thick with the smell of coal and oil. Through the steam, you can see the grand station—a marvel of engineering with gears visible through glass panels in the walls.')
       .add('Your adventure begins here. Where will you go?')
-      .add(option('goToCity', {}, 'Go to the City'))
+      .add(option('startExploring', {}, 'Start Exploring'))
+      .add(option('tourCity', {}, 'Tour the City'))
   },
-  goToCity: (g: Game) => {
-    g.run('go', { location: 'default', time: 5 })
-      .add('You leave the station and make your way into the city. The walk takes about 15 minutes through the industrial district.')
-      .add('The air is thick with the smell of oil and coal. Clockwork automatons patrol the streets, their gears visible through glass panels in their chests.')
-      .add(option('start-3'))
+  
+  startExploring: (g: Game) => {
+    g.add('You decide to start your exploration at the station. The world is at your feet!')
+    // Player can now navigate and explore from the station
   },
-  'start-3': (g: Game) => {
-    g.add('A figure approaches from the shadows—a woman with mechanical enhancements, her left arm replaced with intricate brass gears and copper wiring.')
-      .add('Before you can speak, she disappears back into the steam-filled alleys. You stand alone on the cobblestones, wondering what to do next.')
-      .add(option('startExplore', {}, 'Explore the Streets'))
-      .add(option('start-4', {}, 'Wait for Her Return'))
+  
+  tourCity: (g: Game) => {
+    g.add('You decide to take a guided tour of the city, starting from the station where you arrived. Your guide approaches and offers to show you the key locations of Aetheria.')
+      .run('go', { location: 'default', time: 5 })
+      .add('The City Centre spreads before you in all its steampunk glory. Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city, and everywhere you look, there are wonders of engineering and artistry. This is Aetheria—awe-inspiring and magnificent.')
+      .add(option('tourUniversity', {}, 'Continue the Tour'))
   },
-  startExplore: (g: Game) => {
-    // Advance time by 12 minutes (720 seconds)
-    g.run('timeLapse', { seconds: 12 * 60 })
-    
-    // Random street encounters for flavor
-    const encounters = [
-      'A brass-plated messenger automaton whirs past, its mechanical legs clicking rhythmically against the stones. It pays you no mind, focused solely on its delivery route.',
-      'You spot a street vendor polishing a collection of glowing brass trinkets. The warm amber light from the devices casts dancing shadows across her weathered face.',
-      'A steam-powered carriage rumbles by, its copper pipes releasing plumes of vapour. Through the mist, you catch a glimpse of elegantly dressed passengers in Victorian finery.',
-      'An old clockmaker sits on a stoop, adjusting the gears of a pocket watch with delicate precision. He looks up and tips his brass bowler hat in your direction.',
-      'A group of children with mechanical toys chase each other down the street. One child\'s tin soldier marches in perfect formation, its tiny gears whirring.',
-      'You notice a stray gear on the ground, still warm to the touch. It seems to be from a larger mechanism, perhaps fallen from one of the overhead steam pipes.',
-      'A mechanical bird with copper wings perches on a lamppost, its mechanical chirping blending with the ambient sounds of the city. It tilts its head to observe you curiously.',
-    ]
-    
-    const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
-    
-    g.add([
-      'You decide to explore the streets, taking in the sights and sounds of New Victoria.',
-      randomEncounter,
-      'After this brief moment, you consider your options.',
-      option('startExplore', {}, 'Explore More'),
-      option('start-4', {}, 'Continue with the Story'),
-    ])
+  
+  tourUniversity: (g: Game) => {
+    g.run('go', { location: 'school', time: 5 })
+      .add('The University stands as a testament to knowledge and innovation. Its grand brass doors open to reveal halls where you will study the mechanical arts, steam engineering, and the mysteries of clockwork. This is where your education begins, where you\'ll learn the skills that will shape your future in Aetheria.')
+      .add(option('tourLake', {}, 'Continue the Tour'))
   },
-  'start-4': (g: Game) => {
-    g.add('"Welcome to Aetheria," she says, her voice a mix of human warmth and mechanical precision. "Your adventure begins now."')
-    // No options - this is the end of the introduction
+  
+  tourLake: (g: Game) => {
+    g.run('go', { location: 'lake', time: 8 })
+      .add('The Lake offers a peaceful respite from the mechanical bustle of the city. Steam gently rises from the surface, creating a serene mist. Here you can find moments of calm, a place to relax and reflect amidst the constant motion of Aetheria. It\'s a sanctuary where the mechanical and natural worlds blend beautifully.')
+      .add(option('tourMarket', {}, 'Continue the Tour'))
+  },
+  
+  tourMarket: (g: Game) => {
+    g.run('go', { location: 'market', time: 5 })
+      .add('The Market pulses with energy and excitement. Vendors display exotic mechanical trinkets, glowing brass devices, and intricate clockwork wonders. The air is filled with the sounds of haggling, the clinking of gears, and the hiss of steam. Every stall promises something fascinating—from precision tools to mysterious contraptions. This is where adventure and opportunity meet.')
+      .add(option('tourBackstreets', {}, 'Continue the Tour'))
+  },
+  
+  tourBackstreets: (g: Game) => {
+    g.run('go', { location: 'backstreets', time: 5 })
+      .add('The tour ends in the Backstreets, where your room awaits. These winding alleys hold secrets and shadows, but also a sense of home. This is where you\'ll return after your adventures, your base in this vast city. The air is thick with the smell of coal and oil, and the sound of steam engines echoes in the distance. Your adventure in Aetheria begins now.')
+    // Tour complete - they can now explore from backstreets
   },
 }
 

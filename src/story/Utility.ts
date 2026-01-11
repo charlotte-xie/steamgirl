@@ -16,6 +16,33 @@ export const utilityScripts = {
     game.time += seconds
   },
   
+  // Explore the current location - shows a random encounter
+  explore: (game: Game) => {
+    // Advance time by 10 minutes (600 seconds)
+    game.run('timeLapse', { seconds: 10 * 60 })
+    
+    // Random encounters for flavor
+    const encounters = [
+      'A brass-plated messenger automaton whirs past, its mechanical legs clicking rhythmically against the stones. It pays you no mind, focused solely on its delivery route.',
+      'You spot a street vendor polishing a collection of glowing brass trinkets. The warm amber light from the devices casts dancing shadows across her weathered face.',
+      'A steam-powered carriage rumbles by, its copper pipes releasing plumes of vapour. Through the mist, you catch a glimpse of elegantly dressed passengers in Victorian finery.',
+      'An old clockmaker sits on a stoop, adjusting the gears of a pocket watch with delicate precision. He looks up and tips his brass bowler hat in your direction.',
+      'A group of children with mechanical toys chase each other down the street. One child\'s tin soldier marches in perfect formation, its tiny gears whirring.',
+      'You notice a stray gear on the ground, still warm to the touch. It seems to be from a larger mechanism, perhaps fallen from one of the overhead steam pipes.',
+      'A mechanical bird with copper wings perches on a lamppost, its mechanical chirping blending with the ambient sounds of the city. It tilts its head to observe you curiously.',
+      'A steam whistle echoes through the air as a train arrives at the platform. Passengers disembark, their luggage clinking with brass fittings and gears.',
+      'A maintenance worker with mechanical tools adjusts a valve on a nearby steam pipe. Wisps of steam escape before he tightens it shut.',
+      'Through the steam, you notice a group of clockwork automatons performing maintenance work, their synchronized movements precise and mechanical.',
+    ]
+    
+    const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
+    
+    game.add([
+      'You take a moment to explore and observe your surroundings.',
+      randomEncounter
+    ])
+  },
+  
   // Navigate to a given location
   go: (game: Game, params: { location?: string; time?: number } = {}) => {
     const locationId = params.location

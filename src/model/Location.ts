@@ -15,6 +15,7 @@ export interface LocationDefinition {
   description?: string
   image?: string
   links?: LocationLink[]
+  activities?: LocationActivity[]
   onFirstArrive?: Script
   onArrive?: Script
 }
@@ -25,6 +26,13 @@ export interface LocationLink {
   onFollow?: Script
 }
 
+export interface LocationActivity {
+  name: string
+  image?: string
+  script: [string, {}]
+  label?: string
+}
+
 // Location definitions as a plain object for better ergonomics and editing
 // These are the standard locations. Others might be added elsewhere
 const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -32,19 +40,31 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Main Station',
     description: 'The bustling main railway station, filled with travelers.',
     image: '/images/station.jpg',
-    links: [{ dest: 'default', time: 10 }], // 10 minutes to city
+    links: [{ dest: 'default', time: 10 }, { dest: 'backstreets', time: 10 }], // 10 minutes to city, 10 minutes to backstreets
+    activities: [
+      {
+        name: 'Explore',
+        script: ['explore', {}],
+      },
+    ],
   },
   default: {
     name: 'City Centre',
     description: 'The heart of the city, where commerce and culture meet.',
     image: '/images/city.jpg',
-    links: [{ dest: 'station', time: 10 }, { dest: 'backstreets', time: 5 }, { dest: 'school', time: 5 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school
+    links: [{ dest: 'station', time: 10 }, { dest: 'backstreets', time: 5 }, { dest: 'school', time: 5 }, { dest: 'market', time: 3 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school, 3 minutes to market
   },
   backstreets: {
     name: 'Backstreets',
     description: 'The winding alleys and hidden passages of the city, where secrets lurk in the shadows.',
     image: '/images/backstreet.jpg',
-    links: [{ dest: 'default', time: 5 }], // 5 minutes to city centre
+    links: [{ dest: 'default', time: 5 }, { dest: 'market', time: 5 }], // 5 minutes to city centre, 5 minutes to market
+    activities: [
+      {
+        name: 'Explore',
+        script: ['explore', {}],
+      },
+    ],
     onFirstArrive: (g: Game) => {
       g.add('You arrive in the backstreets. The air is thick with the smell of coal and oil. You can hear the sound of steam engines in the distance.')
     },
@@ -59,7 +79,12 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'The Lake',
     description: 'A serene city lake, where steam gently rises from the surface.',
     image: '/images/lake.jpg',
-    links: [{ dest: 'school', time: 8 }], // 8 minutes back to school
+    links: [{ dest: 'school', time: 8 }, { dest: 'market', time: 5 }], // 8 minutes back to school, 5 minutes to market
+  },
+  market: {
+    name: 'Market',
+    description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
+    links: [{ dest: 'lake', time: 5 }, { dest: 'backstreets', time: 5 }, { dest: 'default', time: 3 }], // 5 minutes to lake, 5 minutes to backstreets, 3 minutes to city centre
   },
 }
 
