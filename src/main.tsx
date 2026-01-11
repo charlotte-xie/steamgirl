@@ -4,6 +4,7 @@ import { App } from './App'
 import './style.css'
 import './story/Utility'
 import './story/Start'
+import './story/Effects'
 
 const rootElement = document.getElementById('root')
 

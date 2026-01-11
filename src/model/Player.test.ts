@@ -10,11 +10,13 @@ describe('Player', () => {
     expect(player).toBeDefined()
     expect(player.name).toBe('Unnamed Player')
     expect(player.inventory).toBeDefined()
-    expect(player.inventory.length).toBe(2)
+    expect(player.inventory.length).toBe(3)
     expect(player.inventory[0].id).toBe('crown')
     expect(player.inventory[0].number).toBe(20)
     expect(player.inventory[1].id).toBe('pocket-watch')
     expect(player.inventory[1].number).toBe(1)
+    expect(player.inventory[2].id).toBe('sweet-wine')
+    expect(player.inventory[2].number).toBe(3)
   })
 
   it('should serialize and deserialize inventory correctly', () => {

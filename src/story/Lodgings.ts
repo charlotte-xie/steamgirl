@@ -28,12 +28,12 @@ export const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             nextDay.setHours(7, 0, 0, 0)
             
             const secondsUntil7am = Math.floor((nextDay.getTime() - currentDate.getTime()) / 1000)
-            g.run('timeLapse', { seconds: secondsUntil7am })
             g.add('You slip into bed and sleep soundly through the night. When you wake, the morning light filters through the window as steam pipes begin to hiss with the start of a new day.')
+            g.run('timeLapse', { seconds: secondsUntil7am })
           } else {
             // Take a 30 minute nap
-            g.run('timeLapse', { minutes: 30 })
             g.add('You lie down on your bed for a brief nap. The steady hum of the building\'s steam pipes lulls you into a light sleep.')
+            g.run('timeLapse', { minutes: 30 })
           }
         },
       },
@@ -56,15 +56,15 @@ export const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Take Shower',
         script: (g: Game, _params: {}) => {
-          g.run('timeLapse', { minutes: 10 })
           g.add('You step into the shower. The warm steam-powered water cascades over you, washing away the grime of the city. The brass fixtures gleam as steam rises around you.')
+          g.run('timeLapse', { minutes: 10 })
         },
       },
       {
         name: 'Relaxing Bath',
         script: (g: Game, _params: {}) => {
-          g.run('timeLapse', { minutes: 60 })
           g.add('You fill the tub with steaming hot water and sink into its warmth. The steam-powered heating coils keep the water at a perfect temperature. You close your eyes and let the stress of the day melt away.')
+          g.run('timeLapse', { minutes: 60 })
         },
       },
     ],

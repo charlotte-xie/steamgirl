@@ -34,9 +34,10 @@ export class Player {
     }
     this.inventory = []
     this.cards = []
-    // Initialize with 20 crowns and a pocket watch
+    // Initialize with 20 crowns, a pocket watch, and 3 sweet wine
     this.inventory.push(new Item('crown', 20))
     this.inventory.push(new Item('pocket-watch', 1))
+    this.inventory.push(new Item('sweet-wine', 3))
   }
 
   toJSON(): PlayerData {

@@ -3,6 +3,7 @@ import { makeScripts } from '../model/Scripts'
 import { option, p, highlight } from '../model/Format'
 import type { CardDefinition } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
+import '../story/Effects' // Register effect definitions
 
 export const startScripts = {
   start: (g: Game) => {

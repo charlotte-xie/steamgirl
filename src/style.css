@@ -23,11 +23,11 @@
   --radius-md: 12px;
   --radius-sm: 10px;
 
-  --space-xs: 8px;
-  --space-sm: 16px;
+  --space-xs: 6px;
+  --space-sm: 12px;
   --space-md: 20px;
-  --space-lg: 24px;
-  --space-xl: 32px;
+  --space-lg: 30px;
+  --space-xl: 50px;
 
   --font-sans: 'Open Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }

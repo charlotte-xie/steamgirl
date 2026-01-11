@@ -19,10 +19,27 @@ export function PlayerPanel() {
   const renderTabContent = () => {
     switch (selectedTab) {
       case 'Status':
+        const effectCards = game?.player.cards.filter(card => card.type === 'Effect') || []
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <p>Name: {game?.player.name || 'Unknown'}</p>
             <Clock />
+            {effectCards.length > 0 && (
+              <div>
+                <h4 style={{ marginBottom: 'var(--space-sm)' }}>Effects</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+                  {effectCards.map((card, index) => {
+                    const cardDef = card.template
+                    const color = (cardDef as any).color || '#ffffff'
+                    return (
+                      <div key={`${card.id}-${index}`} style={{ color }}>
+                        {cardDef.name}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             {/* Stats will be added here later */}
           </div>
         )

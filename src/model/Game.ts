@@ -157,6 +157,27 @@ export class Game {
     return this
   }
 
+  /** Add an effect card to the player. Returns this for fluent chaining. */
+  addEffect(effectId: string, args: Record<string, unknown> = {}): this {
+    // Check if player already has this effect
+    const hasEffect = this.player.cards.some(card => card.id === effectId && card.type === 'Effect')
+    if (!hasEffect) {
+      // Get card definition (will throw if not found)
+      const effect = new Card(effectId, 'Effect')
+      const cardDef = effect.template
+      
+      // Apply any additional args to the card instance
+      Object.keys(args).forEach(key => {
+        effect[key] = args[key]
+      })
+      
+      this.player.cards.push(effect)
+      this.add({ type: 'text', text: `Effect: ${cardDef.name}`, color: '#a855f7' })
+    }
+    
+    return this
+  }
+
   /** Clear the current scene (resets content and options). */
   clearScene(): void {
     this.scene = {

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useGame } from '../context/GameContext'
 import { ItemView } from './ItemView'
+import { Button } from './Button'
+import { Game } from '../model/Game'
 
 export function InventoryView() {
-  const { game } = useGame()
+  const { game, setGame } = useGame()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   if (!game) {
@@ -45,6 +47,31 @@ export function InventoryView() {
           {selectedItem.template.description && (
             <p>{selectedItem.template.description}</p>
           )}
+          <Button
+            disabled={!selectedItem.template.onConsume}
+            onClick={() => {
+              if (!game || !selectedItem) return
+              const itemDef = selectedItem.template
+              if (itemDef.onConsume) {
+                game.clearScene()
+                itemDef.onConsume(game, {})
+                // Run afterUpdate scripts for all cards
+                game.player.cards.forEach(card => {
+                  const cardDef = card.template
+                  if (cardDef.afterUpdate) {
+                    cardDef.afterUpdate(game, {})
+                  }
+                })
+                // Trigger React update
+                const gameJson = JSON.stringify(game.toJSON())
+                const updatedGame = Game.fromJSON(gameJson)
+                setGame(updatedGame)
+                localStorage.setItem('gameSave', gameJson)
+              }
+            }}
+          >
+            Use
+          </Button>
         </div>
       )}
     </div>

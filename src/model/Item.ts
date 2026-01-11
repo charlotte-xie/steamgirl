@@ -1,3 +1,6 @@
+import { Game } from './Game'
+import type { Script } from './Scripts'
+
 export type ItemId = string
 
 // Mutable data for an item, used for serialization
@@ -12,6 +15,7 @@ export interface ItemDefinition {
   description?: string
   image?: string
   stackable?: boolean
+  onConsume?: Script
 }
 
 // Item definitions as a plain object for better ergonomics and editing
@@ -33,6 +37,18 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
   'test-item': {
     name: 'Test Item',
     description: 'A test item for testing purposes.',
+  },
+  'sweet-wine': {
+    name: 'Sweet Wine',
+    description: 'A bottle of sweet wine with an intoxicating aroma.',
+    onConsume: (game: Game, _params: {}) => {
+      game.addEffect('intoxicated', { alcohol: 60 })
+      // Remove one from inventory
+      const wineItem = game.player.inventory.find(item => item.id === 'sweet-wine')
+      if (wineItem) {
+        game.player.removeItem('sweet-wine', 1)
+      }
+    },
   },
 }
 

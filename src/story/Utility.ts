@@ -18,6 +18,22 @@ export const utilityScripts = {
       throw new Error('timeLapse requires a non-negative number of minutes')
     }
     game.time += seconds + (minutes * 60)
+    
+    // Calculate total elapsed minutes for onTime callbacks
+    const totalMinutes = minutes + (seconds / 60)
+    
+    // Call onTime for all player cards that have it
+    if (totalMinutes > 0) {
+      // Create a copy of the cards array to avoid issues if onTime removes cards
+      const cards = [...game.player.cards]
+      for (const card of cards) {
+        const cardDef = card.template
+        // Check if the card definition has an onTime function
+        if (cardDef.onTime && typeof cardDef.onTime === 'function') {
+          cardDef.onTime(game, card, totalMinutes)
+        }
+      }
+    }
   },
   
   // Add an item to the player's inventory with optional text
