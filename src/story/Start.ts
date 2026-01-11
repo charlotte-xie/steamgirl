@@ -4,23 +4,17 @@ import { option } from '../model/Format'
 
 export const startScripts = {
   start: (g: Game) => {
-    g.player.name = 'NewPlayer'
-    g.add('Steam hisses as the train grinds to a halt. You step onto the platform of New Victoria Station, your boots clinking against the brass-plated floor.')
+    g.player.name = 'Elise'
+    g.add('Steam hisses as the train grinds to a halt. You step onto the platform of Ironspark Terminus. You are finally here, in the city of Aetheria.')
       .add('The air is thick with the smell of coal and oil. Through the steam, you can see the grand station—a marvel of engineering with gears visible through glass panels in the walls.')
       .add('Your adventure begins here. Where will you go?')
       .add(option('goToCity', {}, 'Go to the City'))
-      .add(option('stationStay', {}, 'Stay at the Station'))
   },
   goToCity: (g: Game) => {
     g.run('go', { location: 'default', time: 5 })
       .add('You leave the station and make your way into the city. The walk takes about 15 minutes through the industrial district.')
       .add('The air is thick with the smell of oil and coal. Clockwork automatons patrol the streets, their gears visible through glass panels in their chests.')
       .add(option('start-3'))
-  },
-  stationStay: (g: Game) => {
-    g.add('You decide to explore the station a bit more. The platform stretches out before you, with various vendors and travelers bustling about.')
-      .add('A mechanical ticket inspector with clockwork eyes approaches, checking the brass tickets of passengers.')
-      .add(option('goToCity', {}, 'Go to the City'))
   },
   'start-3': (g: Game) => {
     g.add('A figure approaches from the shadows—a woman with mechanical enhancements, her left arm replaced with intricate brass gears and copper wiring.')
@@ -54,7 +48,7 @@ export const startScripts = {
     ])
   },
   'start-4': (g: Game) => {
-    g.add('"Welcome to New Victoria," she says, her voice a mix of human warmth and mechanical precision. "Your adventure begins now."')
+    g.add('"Welcome to Aetheria," she says, her voice a mix of human warmth and mechanical precision. "Your adventure begins now."')
     // No options - this is the end of the introduction
   },
 }

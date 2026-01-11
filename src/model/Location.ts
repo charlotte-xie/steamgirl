@@ -1,11 +1,12 @@
 import { Game } from "./Game"
 import type { Script } from "./Scripts"
 
+export type LocationId = string
+
 // Mutable data for a location, used for serialization
 export interface LocationData {
-  id?: string
-  visited?: boolean
-
+  id?: LocationId
+  numVisits?: number
 }
 
 // Static / library information for a location
@@ -19,17 +20,17 @@ export interface LocationDefinition {
 }
 
 export interface LocationLink {
-  dest: string
+  dest: LocationId
   time: number
   onFollow?: Script
 }
 
 // Location definitions as a plain object for better ergonomics and editing
 // These are the standard locations. Others might be added elsewhere
-const LOCATION_DEFINITIONS: Record<string, LocationDefinition> = {
+const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   station: {
     name: 'Main Station',
-    description: 'The bustling main railway station, filled with steam and travelers.',
+    description: 'The bustling main railway station, filled with travelers.',
     image: '/images/station.jpg',
     links: [{ dest: 'default', time: 10 }], // 10 minutes to city
   },
@@ -64,12 +65,12 @@ const LOCATION_DEFINITIONS: Record<string, LocationDefinition> = {
 
 /** Represents a game location instance with mutable state. Definitional data is accessed via the template property. */
 export class Location {
-  id: string
-  visited?: boolean
+  id: LocationId
+  numVisits: number
 
-  constructor(id: string) {
+  constructor(id: LocationId) {
     this.id = id
-    this.visited = false
+    this.numVisits = 0
   }
 
   /** Gets the location definition template. */
@@ -82,10 +83,10 @@ export class Location {
   }
 
   toJSON(): LocationData {
-    // Only serialize mutable state (visited) and id
+    // Only serialize mutable state (numVisits) and id
     return {
       id: this.id,
-      visited: this.visited,
+      numVisits: this.numVisits,
     }
   }
 
@@ -106,13 +107,14 @@ export class Location {
     const location = new Location(locationId)
     
     // Apply serialized mutable state
-    location.visited = data.visited ?? false
+    location.numVisits = data.numVisits ?? 0
     
     return location
   }
 }
 
-export function getLocation(id: string): LocationDefinition | undefined {
+// Get a location definition by id
+export function getLocation(id: LocationId): LocationDefinition | undefined {
   return LOCATION_DEFINITIONS[id]
 }
 

@@ -47,15 +47,15 @@ export const utilityScripts = {
       throw new Error(`Location not found in game: ${locationId}`)
     }
     
-    // Check if this is the first time visiting this location (before marking as visited)
-    const isFirstVisit = !gameLocation.visited
+    // Check if this is the first time visiting this location (before incrementing visits)
+    const isFirstVisit = gameLocation.numVisits === 0
     
     // Change current location
     game.currentLocation = locationId
     
-    // Mark location as visited BEFORE running scripts to prevent infinite recursion
+    // Increment visit count BEFORE running scripts to prevent infinite recursion
     // if scripts call go to the same location
-    gameLocation.visited = true
+    gameLocation.numVisits++
     
     // Advance time if provided (time is in minutes)
     if (params.time !== undefined) {
