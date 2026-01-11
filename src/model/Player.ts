@@ -30,8 +30,9 @@ export class Player {
       charm: 0,
     }
     this.inventory = []
-    // Initialize with 20 crowns
+    // Initialize with 20 crowns and a pocket watch
     this.inventory.push(new Item('crown', 20))
+    this.inventory.push(new Item('pocket-watch', 1))
   }
 
   toJSON(): PlayerData {
@@ -80,7 +81,7 @@ export class Player {
       }
     }
     
-    // Add as new item in inventory
+    // Add as new Item in inventory
     this.inventory.push(new Item(item.id, quantity))
   }
 

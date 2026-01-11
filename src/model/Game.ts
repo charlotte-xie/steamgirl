@@ -48,7 +48,7 @@ export class Game {
     
     // Initialize time to noon on January 1, 1902 (unix timestamp in seconds)
     // JavaScript Date: year, month (0-indexed), day, hours, minutes, seconds
-    const startDate = new Date(1902, 0, 1, 12, 0, 0)
+    const startDate = new Date(1902, 0, 5, 12, 0, 0)
     this.time = Math.floor(startDate.getTime() / 1000)
     
     // Initialize with station location from registry

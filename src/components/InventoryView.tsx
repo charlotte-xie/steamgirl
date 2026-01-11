@@ -1,4 +1,5 @@
 import { useGame } from '../context/GameContext'
+import { ItemView } from './ItemView'
 
 export function InventoryView() {
   const { game } = useGame()
@@ -20,18 +21,11 @@ export function InventoryView() {
   return (
     <div className="inventory">
       <h3>Inventory</h3>
-      <ul>
-        {inventory.map((item, index) => {
-          const itemDef = item.template
-          const displayName = item.number > 1 ? `${itemDef.name} x${item.number}` : itemDef.name
-          return (
-            <li key={`${item.id}-${index}`}>
-              {displayName}
-              {itemDef.description && ` - ${itemDef.description}`}
-            </li>
-          )
-        })}
-      </ul>
+      <div className="inventory-items">
+        {inventory.map((item, index) => (
+          <ItemView key={`${item.id}-${index}`} item={item} />
+        ))}
+      </div>
     </div>
   )
 }

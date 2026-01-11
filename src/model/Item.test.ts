@@ -93,6 +93,7 @@ describe('Item', () => {
   it('should throw error when deserializing with invalid id', () => {
     const itemData: ItemData = {
       id: 'non-existent-item',
+      number:1
     }
     
     expect(() => {
