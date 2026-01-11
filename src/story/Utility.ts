@@ -3,6 +3,11 @@ import { makeScripts, runScript } from '../model/Scripts'
 import { getLocation } from '../model/Location'
 
 export const utilityScripts = {
+  /* Advance the game's time by a given number of seconds
+  * Should not tigger any events, i.e. safe to 
+  * call from any script.
+  */ 
+  
   timeLapse: (game: Game, params: { seconds?: number } = {}) => {
     const seconds = params.seconds ?? 0
     if (typeof seconds !== 'number' || seconds < 0) {
@@ -11,6 +16,7 @@ export const utilityScripts = {
     game.time += seconds
   },
   
+  // Navigate to a given location
   go: (game: Game, params: { location?: string; time?: number } = {}) => {
     const locationId = params.location
     if (!locationId || typeof locationId !== 'string') {
@@ -25,13 +31,11 @@ export const utilityScripts = {
     
     // Get current location to find the link being followed
     const currentLocation = game.location
-    if (currentLocation) {
-      // Find the link that matches the destination
-      const link = currentLocation.template.links?.find(l => l.dest === locationId)
-      if (link?.onFollow) {
-        // Run onFollow script when navigating down a link
-        link.onFollow(game, {})
-      }
+    // Find the link that matches the destination
+    const link = currentLocation.template.links?.find(l => l.dest === locationId)
+    if (link?.onFollow) {
+      // Run onFollow script when navigating down a link
+      link.onFollow(game, {})
     }
     
     // Ensure location exists in game's locations map

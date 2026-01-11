@@ -25,6 +25,7 @@ export interface LocationLink {
 }
 
 // Location definitions as a plain object for better ergonomics and editing
+// These are the standard locations. Others might be added elsewhere
 const LOCATION_DEFINITIONS: Record<string, LocationDefinition> = {
   station: {
     name: 'Main Station',
@@ -115,7 +116,4 @@ export function getLocation(id: string): LocationDefinition | undefined {
   return LOCATION_DEFINITIONS[id]
 }
 
-export function getAllLocations(): Record<string, LocationDefinition> {
-  return { ...LOCATION_DEFINITIONS }
-}
 

@@ -4,12 +4,12 @@ import { Location } from '../model/Location'
 import { useGame } from '../context/GameContext'
 
 interface LocationViewProps {
-  location: Location | null
+  location: Location
 }
 
 export function LocationView({ location }: LocationViewProps) {
   const { game } = useGame()
-  const locationImage = location?.template.image
+  const locationImage = location.template.image
   const scene = game?.scene
   const sceneHasOptions = scene && scene.options.length > 0
   const sceneHasContent = scene && scene.content.length > 0

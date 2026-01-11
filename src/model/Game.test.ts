@@ -9,7 +9,7 @@ describe('Game', () => {
     expect(game.version).toBe(1)
     expect(game.score).toBe(0)
     expect(game.player).toBeDefined()
-    expect(game.currentLocation).toBe('default')
+    expect(game.currentLocation).toBe('station')
     expect(game.location).not.toBeNull()
     expect(game.locations.size).toBeGreaterThan(0)
   })

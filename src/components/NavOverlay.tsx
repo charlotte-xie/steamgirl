@@ -6,7 +6,7 @@ import type { LocationLink } from '../model/Location'
 export function NavOverlay() {
   const { game, runScript } = useGame()
 
-  if (!game || !game.location) {
+  if (!game) {
     return null
   }
 

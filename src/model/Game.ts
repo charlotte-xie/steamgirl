@@ -1,5 +1,5 @@
 import { Player, type PlayerData } from './Player'
-import { Location, type LocationData } from './Location'
+import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { runScript as runScriptImpl } from './Scripts'
 
 export type SceneContentItem = 
@@ -55,13 +55,24 @@ export class Game {
     this.ensureLocation('station')
   }
 
-  get location(): Location | null {
-    return this.locations.get(this.currentLocation) ?? null
+  /** Gets the current location. Always returns a valid Location. */
+  get location(): Location {
+    const location = this.locations.get(this.currentLocation)
+    if (!location) {
+      // This should never happen in a valid game, but ensure it exists
+      this.ensureLocation(this.currentLocation)
+      return this.locations.get(this.currentLocation)!
+    }
+    return location
   }
 
-  /** Ensures a location exists in the game's locations map, creating a new instance if needed. */
+  /** Ensures a location exists in the game's locations map, creating a new instance if needed. Throws if location definition doesn't exist. */
   ensureLocation(locationId: string): void {
     if (!this.locations.has(locationId)) {
+      // Verify the location definition exists
+      if (!getLocationDefinition(locationId)) {
+        throw new Error(`Location definition not found: ${locationId}`)
+      }
       const location = new Location(locationId)
       this.locations.set(locationId, location)
     }
