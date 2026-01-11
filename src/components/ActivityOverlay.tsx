@@ -56,6 +56,7 @@ export function ActivityOverlay() {
           key={index}
           image={activity.image}
           name={activity.name}
+          symbol={activity.symbol}
           onClick={() => handleActivityClick(activity)}
           title={activity.name}
         />

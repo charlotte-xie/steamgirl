@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useGame } from '../context/GameContext'
 import { Clock } from './Clock'
 import { InventoryView } from './InventoryView'
+import { Game } from '../model/Game'
 
 export function PlayerPanel() {
   const navigate = useNavigate()
-  const { game, newGame, saveGame, loadGame } = useGame()
+  const { game, newGame, saveGame, loadGame, setGame } = useGame()
 
   return (
     <div className="player-panel panel-elevated" style={{ height: '100%' }}>
@@ -44,6 +45,15 @@ export function PlayerPanel() {
         </Button>
         <Button onClick={loadGame}>
           Load
+        </Button>
+        <Button onClick={() => {
+          if (game) {
+            const gameJson = JSON.stringify(game.toJSON())
+            const reloadedGame = Game.fromJSON(gameJson)
+            setGame(reloadedGame)
+          }
+        }}>
+          Reload
         </Button>
         <Button onClick={() => navigate('/start')}>
           Home

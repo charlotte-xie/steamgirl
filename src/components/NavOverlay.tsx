@@ -18,7 +18,7 @@ export function NavOverlay() {
 
   const handleLocationClick = (link: LocationLink) => {
     if (game) {
-      runScript('go', { location: link.dest, time: link.time })
+      runScript('go', { location: link.dest, minutes: link.time })
     }
   }
 

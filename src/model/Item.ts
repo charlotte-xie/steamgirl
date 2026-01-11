@@ -26,6 +26,10 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     name: 'Pocket Watch',
     description: 'A fine brass pocket watch with intricate gears.',
   },
+  'room-key': {
+    name: 'Room Key',
+    description: 'A brass key to your lodgings in the backstreets.',
+  },
   'test-item': {
     name: 'Test Item',
     description: 'A test item for testing purposes.',

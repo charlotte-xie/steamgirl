@@ -2,11 +2,12 @@ interface ThumbnailProps {
   image?: string
   name: string
   subtitle?: string
+  symbol?: string
   onClick?: () => void
   title?: string
 }
 
-export function Thumbnail({ image, name, subtitle, onClick, title }: ThumbnailProps) {
+export function Thumbnail({ image, name, subtitle, symbol, onClick, title }: ThumbnailProps) {
   return (
     <button
       className="thumbnail"
@@ -21,7 +22,7 @@ export function Thumbnail({ image, name, subtitle, onClick, title }: ThumbnailPr
         />
       ) : (
         <div className="thumbnail-placeholder">
-          ?
+          {symbol || '?'}
         </div>
       )}
       <div>

@@ -62,13 +62,7 @@ export class Game {
 
   /** Gets the current location. Always returns a valid Location. */
   get location(): Location {
-    const location = this.locations.get(this.currentLocation)
-    if (!location) {
-      // This should never happen in a valid game, but ensure it exists
-      this.ensureLocation(this.currentLocation)
-      return this.locations.get(this.currentLocation)!
-    }
-    return location
+    return this.getLocation(this.currentLocation)
   }
 
   /** Ensures a location exists in the game's locations map, creating a new instance if needed. Throws if location definition doesn't exist. */
@@ -83,9 +77,21 @@ export class Game {
     }
   }
 
+  /** Gets a location from the game's locations map, ensuring it exists first. Returns the Location instance. */
+  getLocation(locationId: string): Location {
+    this.ensureLocation(locationId)
+    const location = this.locations.get(locationId)
+    if (!location) {
+      // This should never happen after ensureLocation, but TypeScript needs this
+      throw new Error(`Location not found: ${locationId}`)
+    }
+    return location
+  }
+
   /** Add an option button to the current scene that runs a script. */
-  addOption(scriptName: string, params: {} = {}, label?: string): void {
+  addOption(scriptName: string, params: {} = {}, label?: string): Game {
     this.scene.options.push({ type: 'button', script: [scriptName, params], label })
+    return this;
   }
 
   /** 
@@ -182,7 +188,7 @@ export class Game {
     }
     
     // Ensure currentLocation exists in the map, fallback to registry if missing
-    game.ensureLocation(game.currentLocation)
+    game.getLocation(game.currentLocation)
     
     return game
   }

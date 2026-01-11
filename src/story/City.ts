@@ -81,6 +81,13 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [{ dest: 'default', time: 5 }, { dest: 'market', time: 5 }], // 5 minutes to city centre, 5 minutes to market
     activities: [
       {
+        name: 'Go to Lodgings',
+        symbol: 'H',
+        script: (g: Game, _params: {}) => {
+          g.run('enterLodgings')
+        },
+      },
+      {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)

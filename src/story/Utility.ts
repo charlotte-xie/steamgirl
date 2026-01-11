@@ -83,7 +83,7 @@ export const utilityScripts = {
   },
   
   // Navigate to a given location (checks links, triggers arrival scripts, time lapse, etc.)
-  go: (game: Game, params: { location?: string; time?: number } = {}) => {
+  go: (game: Game, params: { location?: string; minutes?: number } = {}) => {
     const locationId = params.location
     if (!locationId || typeof locationId !== 'string') {
       throw new Error('go script requires a location parameter')
@@ -112,14 +112,8 @@ export const utilityScripts = {
       link.onFollow(game, {})
     }
     
-    // Ensure location exists in game's locations map
-    game.ensureLocation(locationId)
-    
-    // Get the location from the game (which may have been modified)
-    const gameLocation = game.locations.get(locationId)
-    if (!gameLocation) {
-      throw new Error(`Location not found in game: ${locationId}`)
-    }
+    // Get the location from the game (ensuring it exists)
+    const gameLocation = game.getLocation(locationId)
     
     // Check if this is the first time visiting this location (before incrementing visits)
     const isFirstVisit = gameLocation.numVisits === 0
@@ -128,10 +122,10 @@ export const utilityScripts = {
     // if scripts call go to the same location
     gameLocation.numVisits++
     
-    // Calculate time to advance: use provided time, or link time, or 1 minute default (time is in minutes)
-    const minutes = params.time !== undefined ? params.time : (link.time ?? 1)
+    // Calculate time to advance: use provided minutes, or link time, or 1 minute default (time is in minutes)
+    const minutes = params.minutes !== undefined ? params.minutes : (link.time ?? 1)
     if (typeof minutes !== 'number' || minutes < 0) {
-      throw new Error('go script time must be a non-negative number of minutes')
+      throw new Error('go script minutes must be a non-negative number')
     }
     game.run('timeLapse', { seconds: minutes * 60 })
     

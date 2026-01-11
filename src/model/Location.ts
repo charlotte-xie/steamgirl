@@ -1,5 +1,12 @@
 import type { Script } from "./Scripts"
-import { LOCATION_DEFINITIONS } from "../story/City"
+import { LOCATION_DEFINITIONS as CITY_DEFINITIONS } from "../story/City"
+import { LODGINGS_DEFINITIONS } from "../story/Lodgings"
+
+// Combine all location definitions
+const LOCATION_DEFINITIONS: Record<string, LocationDefinition> = {
+  ...CITY_DEFINITIONS,
+  ...LODGINGS_DEFINITIONS,
+}
 
 export type LocationId = string
 
@@ -29,6 +36,7 @@ export interface LocationLink {
 export interface LocationActivity {
   name: string
   image?: string
+  symbol?: string
   script: Script
   condition?: Script
   label?: string
