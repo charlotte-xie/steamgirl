@@ -1,5 +1,5 @@
 import { Game } from '../model/Game'
-import { makeScripts, runScript } from '../model/Scripts'
+import { makeScripts } from '../model/Scripts'
 import { getLocation } from '../model/Location'
 
 export const utilityScripts = {
@@ -8,12 +8,37 @@ export const utilityScripts = {
   * call from any script.
   */ 
   
-  timeLapse: (game: Game, params: { seconds?: number } = {}) => {
+  timeLapse: (game: Game, params: { seconds?: number , minutes?: number } = {}) => {
     const seconds = params.seconds ?? 0
+    const minutes = params.minutes ?? 0
     if (typeof seconds !== 'number' || seconds < 0) {
       throw new Error('timeLapse requires a non-negative number of seconds')
     }
-    game.time += seconds
+    if (typeof minutes !== 'number' || minutes < 0) {
+      throw new Error('timeLapse requires a non-negative number of minutes')
+    }
+    game.time += seconds + (minutes * 60)
+  },
+  
+  // Add an item to the player's inventory with optional text
+  gainItem: (game: Game, params: { text?: string; item?: string; number?: number } = {}) => {
+    const itemId = params.item
+    if (!itemId || typeof itemId !== 'string') {
+      throw new Error('gainItem script requires an item parameter')
+    }
+    
+    const number = params.number ?? 1
+    if (typeof number !== 'number' || number < 0) {
+      throw new Error('gainItem script requires a non-negative number')
+    }
+    
+    // Add text if provided, in bright yellow color
+    if (params.text) {
+      game.add({ type: 'text', text: params.text, color: '#ffeb3b' })
+    }
+    
+    // Add item to inventory
+    game.player.addItem(itemId, number)
   },
   
   // Explore the current location - shows a random encounter

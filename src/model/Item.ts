@@ -18,7 +18,7 @@ export interface ItemDefinition {
 // These are the standard items. Others might be added elsewhere
 const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
   crown: {
-    name: 'Crown',
+    name: 'Krona',
     description: 'A currency used throughout the city.',
     stackable: true,
   },

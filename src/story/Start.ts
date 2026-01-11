@@ -5,13 +5,14 @@ import { option } from '../model/Format'
 export const startScripts = {
   start: (g: Game) => {
     g.player.name = 'Elise'
-    g.add('Steam hisses as the train grinds to a halt. You step onto the platform of Ironspark Terminus.')
+    g.add('Steam hisses as the train grinds to a halt.')
       .add('You have travelled across the whole continent, and are finally here, in the city of Aetheria.')
       .add(option('platform', {}, 'Step onto Platform'))
   },
 
   platform: (g: Game) => {
     g
+    .add('You step onto the platform of Ironspark Terminus.')
     .add('Coal smoke curls around your ankles like fingers. The station cathedral looms above: brass vertebrae, glass skin revealing grinding intestines of gear and piston. Somewhere a valve releases steam that tastes faintly of iron and skin.')
     .add('You are here. Alone. The acceptance letter pressed against your is your only connection to this place.')
     .add(option('startExploring', {}, 'Start Exploring'))
@@ -26,7 +27,7 @@ export const startScripts = {
   tourCity: (g: Game) => {
     g.add('You decide to take a guided tour of the city, starting from the station where you arrived. Your guide approaches and offers to show you the key locations of Aetheria.')
       .run('go', { location: 'default', time: 15 })
-      .add('The City Centre spreads before you in all its steampunk glory. Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city, and everywhere you look, there are wonders of engineering and artistry. This is Aetheria—awe-inspiring and magnificent.')
+      .add('The City Centre spreads before you in all its glory. Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city, and everywhere you look, there are wonders of engineering and artistry. This is Aetheria: awe-inspiring and magnificent.')
       .add(option('tourUniversity', {}, 'Continue the Tour'))
   },
   

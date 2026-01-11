@@ -18,24 +18,52 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           
           // Random encounters for the station
           const encounters = [
-            'A steam whistle echoes through the air as a train arrives at the platform. Passengers disembark, their luggage clinking with brass fittings and gears.',
-            'A ticket vendor with mechanical enhancements calls out destinations, her voice amplified by a small brass mechanism at her throat. Travelers queue patiently before her window.',
-            'Through the steam, you notice a group of porters loading luggage onto a train car. Clockwork assistants help with the heavier trunks, their gears whirring as they work.',
-            'An announcement automaton clicks to life, its brass voicebox broadcasting the next departure times. The mechanical voice echoes through the station halls.',
-            'You watch as a steam-powered baggage cart trundles past, its wheels clicking rhythmically on the platform stones. The driver tips his cap as he passes.',
-            'A family with elaborate mechanical travel cases waits on a bench. The children\'s toys—tiny steam-powered contraptions—whir and click as they play.',
-            'A station worker adjusts the valves on an overhead steam pipe, releasing a controlled burst of vapour. The warm, oily mist briefly obscures the platform.',
-            'The station clock, a massive brass mechanism with visible gears, chimes the hour. Travelers check their own pocket watches, synchronizing time before their journeys.',
-            'A conductor in a pressed uniform checks tickets with a mechanical scanner. The device clicks and whirs as it validates each passenger\'s passage.',
-            'You spot a news vendor selling papers from a brass-plated cart. Steam rises from a small boiler keeping the papers warm, and mechanical print headlines flash on a tiny display.',
+            {
+              text: 'A steam whistle echoes through the air as a train arrives at the platform. Passengers disembark, their luggage clinking with brass fittings and gears.',
+            },
+            {
+              text: 'A ticket vendor with mechanical enhancements calls out destinations, her voice amplified by a small brass mechanism at her throat. Travelers queue patiently before her window.',
+            },
+            {
+              text: 'Through the steam, you notice a group of porters loading luggage onto a train car. Clockwork assistants help with the heavier trunks, their gears whirring as they work.',
+            },
+            {
+              text: 'An announcement automaton clicks to life, its brass voicebox broadcasting the next departure times. The mechanical voice echoes through the station halls.',
+            },
+            {
+              text: 'You watch as a steam-powered baggage cart trundles past, its wheels clicking rhythmically on the platform stones. The driver tips his cap as he passes.',
+            },
+            {
+              text: 'A family with elaborate mechanical travel cases waits on a bench. The children\'s toys—tiny steam-powered contraptions—whir and click as they play.',
+            },
+            {
+              text: 'A station worker adjusts the valves on an overhead steam pipe, releasing a controlled burst of vapour. The warm, oily mist briefly obscures the platform.',
+            },
+            {
+              text: 'The station clock, a massive brass mechanism with visible gears, chimes the hour. Travelers check their own pocket watches, synchronizing time before their journeys.',
+            },
+            {
+              text: 'A conductor in a pressed uniform checks tickets with a mechanical scanner. The device clicks and whirs as it validates each passenger\'s passage.',
+            },
+            {
+              text: 'You spot a news vendor selling papers from a brass-plated cart. Steam rises from a small boiler keeping the papers warm, and mechanical print headlines flash on a tiny display.',
+            },
+            {
+              text: 'You explore the ticket area, looking at the mechanical displays and brass ticket machines. As you examine the area, something catches your eye.',
+              item: { item: 'crown', number: 1 },
+            },
           ]
           
           const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
           
-          g.add([
-            'You explore the station and observe your surroundings.',
-            randomEncounter
-          ])
+          if (randomEncounter.item) {
+            // Special encounter with item gain
+            g.add(randomEncounter.text)
+            g.run('gainItem', { text: 'You found a coin.', item: randomEncounter.item.item, number: randomEncounter.item.number })
+          } else {
+            // Regular encounter
+            g.add(randomEncounter.text)
+          }
         },
       },
     ],
@@ -75,7 +103,6 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
           
           g.add([
-            'You explore the backstreets.',
             randomEncounter
           ])
         },
