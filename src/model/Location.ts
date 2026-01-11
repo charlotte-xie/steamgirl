@@ -29,7 +29,8 @@ export interface LocationLink {
 export interface LocationActivity {
   name: string
   image?: string
-  script: [string, {}]
+  script: Script
+  condition?: Script
   label?: string
 }
 
@@ -44,7 +45,31 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     activities: [
       {
         name: 'Explore',
-        script: ['explore', {}],
+        script: (g: Game, _params: {}) => {
+          // Advance time by 10 minutes (600 seconds)
+          g.run('timeLapse', { seconds: 10 * 60 })
+          
+          // Random encounters for the station
+          const encounters = [
+            'A steam whistle echoes through the air as a train arrives at the platform. Passengers disembark, their luggage clinking with brass fittings and gears.',
+            'A ticket vendor with mechanical enhancements calls out destinations, her voice amplified by a small brass mechanism at her throat. Travelers queue patiently before her window.',
+            'Through the steam, you notice a group of porters loading luggage onto a train car. Clockwork assistants help with the heavier trunks, their gears whirring as they work.',
+            'An announcement automaton clicks to life, its brass voicebox broadcasting the next departure times. The mechanical voice echoes through the station halls.',
+            'You watch as a steam-powered baggage cart trundles past, its wheels clicking rhythmically on the platform stones. The driver tips his cap as he passes.',
+            'A family with elaborate mechanical travel cases waits on a bench. The children\'s toys—tiny steam-powered contraptions—whir and click as they play.',
+            'A station worker adjusts the valves on an overhead steam pipe, releasing a controlled burst of vapour. The warm, oily mist briefly obscures the platform.',
+            'The station clock, a massive brass mechanism with visible gears, chimes the hour. Travelers check their own pocket watches, synchronizing time before their journeys.',
+            'A conductor in a pressed uniform checks tickets with a mechanical scanner. The device clicks and whirs as it validates each passenger\'s passage.',
+            'You spot a news vendor selling papers from a brass-plated cart. Steam rises from a small boiler keeping the papers warm, and mechanical print headlines flash on a tiny display.',
+          ]
+          
+          const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
+          
+          g.add([
+            'You explore the station and observe your surroundings.',
+            randomEncounter
+          ])
+        },
       },
     ],
   },
@@ -62,7 +87,31 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     activities: [
       {
         name: 'Explore',
-        script: ['explore', {}],
+        script: (g: Game, _params: {}) => {
+          // Advance time by 10 minutes (600 seconds)
+          g.run('timeLapse', { seconds: 10 * 60 })
+          
+          // Random encounters for the backstreets
+          const encounters = [
+            'Shadows shift in the alleys ahead, and you catch a glimpse of someone—or something—ducking around a corner. The sound of mechanical whirring fades quickly into the darkness.',
+            'A figure with a mechanical arm emerges from a doorway, casting a wary glance in your direction before melting back into the shadows. The smell of oil and coal hangs heavy in the air.',
+            'You notice a stack of discarded gears and brass fittings in a corner, still warm to the touch. Someone has been tinkering here recently, leaving only traces of their work.',
+            'A steam pipe hisses from above, releasing a cloud of vapour that obscures the narrow passage ahead. Through the mist, you hear muffled voices and the click of mechanical parts.',
+            'An alley cat with a small brass enhancement on its collar watches you from a windowsill. Its mechanical eye gleams in the dim light, tracking your movements with unnerving precision.',
+            'You spot a small mechanical device half-hidden in the gutter—a spyglass or listening device, perhaps. It whirs faintly, its gears still turning despite the grime.',
+            'The sound of a deal being made echoes from a nearby doorway. The conversation is hushed, punctuated by the clink of brass coins and the whir of a mechanical lock.',
+            'A maintenance access panel stands ajar, steam escaping in thin wisps. Someone has clearly tampered with the city\'s infrastructure here, leaving their mark in the machinery.',
+            'Graffiti etched into the brickwork shows crude mechanical diagrams—plans or warnings, perhaps. The symbols are mysterious, a language known only to the backstreets\' residents.',
+            'You notice a hidden passage between buildings, marked only by a small brass marker. The entrance is obscured by steam and shadow, leading to unknown depths.',
+          ]
+          
+          const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
+          
+          g.add([
+            'You explore the backstreets.',
+            randomEncounter
+          ])
+        },
       },
     ],
     onFirstArrive: (g: Game) => {
@@ -83,6 +132,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   },
   market: {
     name: 'Market',
+    image: '/images/market.jpg',
     description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
     links: [{ dest: 'lake', time: 5 }, { dest: 'backstreets', time: 5 }, { dest: 'default', time: 3 }], // 5 minutes to lake, 5 minutes to backstreets, 3 minutes to city centre
   },

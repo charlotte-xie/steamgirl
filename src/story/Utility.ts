@@ -43,7 +43,21 @@ export const utilityScripts = {
     ])
   },
   
-  // Navigate to a given location
+  // Unconditionally move the player to a location (instant teleport with nothing else triggered)
+  move: (game: Game, params: { location?: string } = {}) => {
+    const locationId = params.location
+    if (!locationId || typeof locationId !== 'string') {
+      throw new Error('move script requires a location parameter')
+    }
+    
+    // Ensure location exists in game's locations map
+    game.ensureLocation(locationId)
+    
+    // Change current location
+    game.currentLocation = locationId
+  },
+  
+  // Navigate to a given location (checks links, triggers arrival scripts, time lapse, etc.)
   go: (game: Game, params: { location?: string; time?: number } = {}) => {
     const locationId = params.location
     if (!locationId || typeof locationId !== 'string') {
@@ -60,8 +74,16 @@ export const utilityScripts = {
     const currentLocation = game.location
     // Find the link that matches the destination
     const link = currentLocation.template.links?.find(l => l.dest === locationId)
-    if (link?.onFollow) {
-      // Run onFollow script when navigating down a link
+    
+    // Check if link exists - if not, show error message
+    if (!link) {
+      const locationName = locationFromRegistry.name || locationId
+      game.add(`You can't see a way to ${locationName}.`)
+      return
+    }
+    
+    // Run onFollow script when navigating down a link (if set)
+    if (link.onFollow) {
       link.onFollow(game, {})
     }
     
@@ -77,21 +99,19 @@ export const utilityScripts = {
     // Check if this is the first time visiting this location (before incrementing visits)
     const isFirstVisit = gameLocation.numVisits === 0
     
-    // Change current location
-    game.currentLocation = locationId
-    
     // Increment visit count BEFORE running scripts to prevent infinite recursion
     // if scripts call go to the same location
     gameLocation.numVisits++
     
-    // Advance time if provided (time is in minutes)
-    if (params.time !== undefined) {
-      const minutes = params.time
-      if (typeof minutes !== 'number' || minutes < 0) {
-        throw new Error('go script time parameter must be a non-negative number of minutes')
-      }
-      runScript('timeLapse', game, { seconds: minutes * 60 })
+    // Calculate time to advance: use provided time, or link time, or 1 minute default (time is in minutes)
+    const minutes = params.time !== undefined ? params.time : (link.time ?? 1)
+    if (typeof minutes !== 'number' || minutes < 0) {
+      throw new Error('go script time must be a non-negative number of minutes')
     }
+    game.run('timeLapse', { seconds: minutes * 60 })
+    
+    // Actually move the player
+    game.run('move', { location: locationId })
     
     // Run onFirstArrive script if this is the first visit and the location has one
     if (isFirstVisit && gameLocation.template.onFirstArrive) {
