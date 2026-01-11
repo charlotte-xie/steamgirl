@@ -13,8 +13,8 @@ export interface Stats {
 export interface PlayerData {
   name: string
   stats: Stats
-  inventory?: ItemData[]
-  cards?: CardData[]
+  inventory: ItemData[]
+  cards: CardData[]
 }
 
 /** Represents the player character with name and JSON serialization capabilities. */

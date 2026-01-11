@@ -40,6 +40,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
   },
   'sweet-wine': {
     name: 'Sweet Wine',
+    stackable: true,
     description: 'A bottle of sweet wine with an intoxicating aroma.',
     onConsume: (game: Game, _params: {}) => {
       game.addEffect('intoxicated', { alcohol: 60 })

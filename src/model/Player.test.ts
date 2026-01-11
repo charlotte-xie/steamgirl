@@ -64,7 +64,8 @@ describe('Player', () => {
         wits: 3,
         charm: 4,
       },
-      // inventory is missing
+      inventory: [],
+      cards: []
     }
     
     const player = Player.fromJSON(playerData)

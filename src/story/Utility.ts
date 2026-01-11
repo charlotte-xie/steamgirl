@@ -19,18 +19,18 @@ export const utilityScripts = {
     }
     game.time += seconds + (minutes * 60)
     
-    // Calculate total elapsed minutes for onTime callbacks
-    const totalMinutes = minutes + (seconds / 60)
+    // Calculate total elapsed seconds for onTime callbacks
+    const totalSeconds = seconds + (minutes * 60)
     
     // Call onTime for all player cards that have it
-    if (totalMinutes > 0) {
+    if (totalSeconds > 0) {
       // Create a copy of the cards array to avoid issues if onTime removes cards
       const cards = [...game.player.cards]
       for (const card of cards) {
         const cardDef = card.template
         // Check if the card definition has an onTime function
         if (cardDef.onTime && typeof cardDef.onTime === 'function') {
-          cardDef.onTime(game, card, totalMinutes)
+          cardDef.onTime(game, card, totalSeconds)
         }
       }
     }

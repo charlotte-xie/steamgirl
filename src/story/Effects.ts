@@ -8,9 +8,11 @@ export const intoxicatedEffect: CardDefinition = {
   description: 'You feel lightheaded and giddy from the wine.',
   type: 'Effect',
   color: '#9333ea', // Purple
-  onTime: (game: Game, card: Card, minutes: number) => {
-    // Reduce alcohol by 10 for every 15 minutes that pass
-    const reduction = Math.floor(minutes / 15) * 10
+  onTime: (game: Game, card: Card, seconds: number) => {
+    // Calculate the number of 15-minute (900 second) boundaries crossed
+    const ticks = game.calcTicks(seconds, 900)
+    // Reduce alcohol by 10 for each boundary crossed
+    const reduction = ticks * 10
     if (reduction > 0) {
       const currentAlcohol = (card.alcohol as number) || 0
       const newAlcohol = Math.max(0, currentAlcohol - reduction)

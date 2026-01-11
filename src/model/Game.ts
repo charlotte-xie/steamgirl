@@ -178,6 +178,13 @@ export class Game {
     return this
   }
 
+  /** Calculate the number of interval boundaries crossed based on game time. */
+  calcTicks(secondsElapsed: number, interval: number): number {
+    const currentPeriod = Math.floor(this.time / interval)
+    const previousPeriod = Math.floor((this.time - secondsElapsed) / interval)
+    return currentPeriod - previousPeriod
+  }
+
   /** Clear the current scene (resets content and options). */
   clearScene(): void {
     this.scene = {

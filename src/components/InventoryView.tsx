@@ -48,7 +48,7 @@ export function InventoryView() {
             <p>{selectedItem.template.description}</p>
           )}
           <Button
-            disabled={!selectedItem.template.onConsume}
+            disabled={!selectedItem.template.onConsume || game.scene.options.length > 0}
             onClick={() => {
               if (!game || !selectedItem) return
               const itemDef = selectedItem.template
