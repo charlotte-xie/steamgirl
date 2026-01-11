@@ -79,3 +79,9 @@ export class Item {
 export function getItem(id: ItemId): ItemDefinition | undefined {
   return ITEM_DEFINITIONS[id]
 }
+
+// Ensure an ItemSpec is converted to an Item instance.
+// ItemSpec is string | Item - if string, creates Item(id, 1); if Item, returns it
+export function ensureItem(itemSpec: string | Item): Item {
+  return typeof itemSpec === 'string' ? new Item(itemSpec, 1) : itemSpec
+}

@@ -6,4 +6,6 @@ Minimal Vite + TypeScript app using pnpm.
 - pnpm dev
 - pnpm build
 - pnpm preview
+- pnpm test
+- pnpm test:ui
 
