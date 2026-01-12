@@ -4,9 +4,16 @@ import { type StatName, STAT_NAMES } from './Stats'
 
 export type ItemSpec = string | Item
 
+export type TimerName = 
+  | 'lastSleep'
+  | 'lastNap'
+  | 'lastWash'
+  | 'lastExercise'
+
 export interface PlayerData {
   name: string
   basestats?: Record<string, number>
+  timers?: Record<string, number>
   inventory: ItemData[]
   cards: CardData[]
 }
@@ -16,6 +23,7 @@ export class Player {
   name: string
   stats: Map<StatName, number>
   basestats: Map<StatName, number>
+  timers: Map<TimerName, number>
   inventory: Item[]
   cards: Card[]
 
@@ -23,6 +31,7 @@ export class Player {
     this.name = "Unnamed Player"
     this.basestats = new Map<StatName, number>()
     this.stats = new Map<StatName, number>()
+    this.timers = new Map<TimerName, number>()
     // Initialize all stats to 0
     STAT_NAMES.forEach(statName => {
       this.basestats.set(statName, 0)
@@ -39,9 +48,16 @@ export class Player {
       basestatsRecord[statName] = value
     })
     
+    // Convert timers Map to Record for JSON serialization
+    const timersRecord: Record<string, number> = {}
+    this.timers.forEach((value, timerName) => {
+      timersRecord[timerName] = value
+    })
+    
     return {
       name: this.name,
       basestats: basestatsRecord,
+      timers: timersRecord,
       inventory: this.inventory.map(item => item.toJSON()),
       cards: this.cards.map(card => card.toJSON()),
     }
@@ -58,6 +74,16 @@ export class Player {
       Object.entries(data.basestats).forEach(([statName, value]) => {
         if (typeof value === 'number') {
           player.basestats.set(statName as StatName, value as number)
+        }
+      })
+    }
+    
+    // Deserialize timers
+    if (data.timers) {
+      player.timers.clear()
+      Object.entries(data.timers).forEach(([timerName, value]) => {
+        if (typeof value === 'number') {
+          player.timers.set(timerName as TimerName, value as number)
         }
       })
     }
