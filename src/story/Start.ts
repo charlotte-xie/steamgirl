@@ -11,7 +11,7 @@ export const startScripts = {
     g.player.name = 'Elise'
     
     // Add initial items
-    g.run('gainItem', { item: 'crown', number: 20 })
+    g.run('gainItem', { item: 'crown', number: 120 })
     g.run('gainItem', { item: 'pocket-watch', number: 1 })
     g.run('gainItem', { item: 'sweet-wine', number: 3 })
     g.run('gainItem', { item: 'acceptance-letter', number: 1 })
