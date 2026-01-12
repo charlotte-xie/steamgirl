@@ -7,7 +7,7 @@
     radial-gradient(circle at 100% 100%, rgba(146, 79, 46, 0.2), transparent 55%),
     linear-gradient(135deg, #291812, #14100f);
 
-    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --bg-overlay: rgba(20, 20, 20, 0.6);
 
   --border-subtle: rgba(220, 170, 90, 0.4); /* brass edge */
   --border-dashed: rgba(255, 200, 120, 0.6); /* riveted accent */
@@ -43,6 +43,7 @@
 }
 
 html {
+  box-sizing: border-box;
   font-size: 18px;
 }
 
@@ -63,6 +64,9 @@ body {
 body {
   font-family: var(--font-sans);
   font-size: 1rem;
+  font-weight: 100;
+  font-optical-sizing: auto;
+  line-height: 1.2;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   color: var(--text-main);
@@ -89,7 +93,18 @@ h3 {
 
 p {
   /* text-indent: 0.5em; */
-  margin: 0 0 var(--space-xs);
+  margin: 0 0 0.2rem;
+}
+
+p:last-of-type {
+  /* no bottom margin on last paragraph */
+  margin-bottom: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 /* ==========================================================================
