@@ -63,8 +63,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const newGame = () => {
     const newGameInstance = new Game()
-    // Run start script when game is created
-    runScriptImpl('start', newGameInstance, {})
+    // Run init script when game is created
+    runScriptImpl('init', newGameInstance, {})
     setGame(newGameInstance)
     localStorage.setItem('gameSave', JSON.stringify(newGameInstance.toJSON()))
   }

@@ -6,8 +6,21 @@ import { registerCardDefinition } from '../model/Card'
 import '../story/Effects' // Register effect definitions
 
 export const startScripts = {
-  start: (g: Game) => {
+  init: (g: Game) => {
+    // Set player name
     g.player.name = 'Elise'
+    
+    // Add initial items
+    g.run('gainItem', { item: 'crown', number: 20 })
+    g.run('gainItem', { item: 'pocket-watch', number: 1 })
+    g.run('gainItem', { item: 'sweet-wine', number: 3 })
+    g.run('gainItem', { item: 'acceptance-letter', number: 1 })
+    
+    // Move on to start script
+    g.run('start', {})
+  },
+
+  start: (g: Game) => {
     g.add('The train exhales a long, wet hiss as it comes to a halt at the platform.')
       .add(p('You have travelled across the whole continent, and are finally here, in the city of ', highlight('Aetheria', '#fbbf24', 'Aetheria: The great steam-powered city of brass and gears, where mechanical marvels and Victorian elegance meet in a symphony of innovation and tradition.'), '.'))
       .add(option('startPlatform', {}, 'Step onto Platform'))

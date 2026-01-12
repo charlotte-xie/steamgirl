@@ -94,7 +94,10 @@ describe('Game', () => {
   it('should give player Intoxicated effect when drinking sweet wine', () => {
     const game = new Game()
     
-    // Find sweet wine in inventory (player starts with 3)
+    // Add sweet wine to inventory for testing
+    game.player.addItem('sweet-wine', 3)
+    
+    // Find sweet wine in inventory
     const wineItem = game.player.inventory.find(item => item.id === 'sweet-wine')
     expect(wineItem).toBeDefined()
     expect(wineItem?.number).toBeGreaterThan(0)

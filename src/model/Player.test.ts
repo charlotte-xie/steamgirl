@@ -4,21 +4,13 @@ import type { PlayerData } from './Player'
 import { Item } from './Item'
 
 describe('Player', () => {
-  it('should create a new Player with 20 crowns and a pocket watch', () => {
+  it('should create a new Player with empty inventory', () => {
     const player = new Player()
 
     expect(player).toBeDefined()
     expect(player.name).toBe('Unnamed Player')
     expect(player.inventory).toBeDefined()
-    expect(player.inventory.length).toBe(4)
-    expect(player.inventory[0].id).toBe('crown')
-    expect(player.inventory[0].number).toBe(20)
-    expect(player.inventory[1].id).toBe('pocket-watch')
-    expect(player.inventory[1].number).toBe(1)
-    expect(player.inventory[2].id).toBe('sweet-wine')
-    expect(player.inventory[2].number).toBe(3)
-    expect(player.inventory[3].id).toBe('acceptance-letter')
-    expect(player.inventory[3].number).toBe(1)
+    expect(player.inventory.length).toBe(0)
   })
 
   it('should serialize and deserialize inventory correctly', () => {
