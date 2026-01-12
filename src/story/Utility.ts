@@ -158,6 +158,11 @@ export const utilityScripts = {
       gameLocation.template.onArrive(game, {})
     }
   },
+  
+  // Recalculate stats based on basestats and modifiers from active Items and Cards
+  calcStats: (game: Game, _params: {}) => {
+    game.calcStats()
+  },
 }
 
 // Register all utility scripts when module loads

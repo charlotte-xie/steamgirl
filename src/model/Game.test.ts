@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import { Item } from './Item'
 import '../story/Effects' // Register effect definitions
+import '../story/Start' // Register start scripts
+import '../story/Utility' // Register utility scripts
 
 describe('Game', () => {
   it('should create a new Game', () => {
@@ -119,5 +121,23 @@ describe('Game', () => {
     
     // Check that the alcohol value is 60
     expect(intoxicatedCard?.alcohol).toBe(60)
+  })
+
+  it('should initialize player correctly when running init script', () => {
+    const game = new Game()
+    
+    // Run the init script
+    game.run('init', {})
+    
+    // Check that player has an acceptance letter
+    const acceptanceLetter = game.player.inventory.find(item => item.id === 'acceptance-letter')
+    expect(acceptanceLetter).toBeDefined()
+    expect(acceptanceLetter?.number).toBe(1)
+    
+    // Check that Agility is >10 (should be 30 from init script)
+    const agility = game.player.stats.get('Agility')
+    expect(agility).toBeDefined()
+    expect(agility!).toBeGreaterThan(10)
+    expect(agility).toBe(30) // Should be exactly 30
   })
 })

@@ -1,18 +1,13 @@
 import { Item, type ItemData, ensureItem } from './Item'
 import { Card, type CardData } from './Card'
+import { type StatName, STAT_NAMES } from './Stats'
+import type { Game } from './Game'
 
 export type ItemSpec = string | Item
 
-export interface Stats {
-  agility: number
-  brawn: number
-  wits: number
-  charm: number
-}
-
 export interface PlayerData {
   name: string
-  stats: Stats
+  basestats?: Record<string, number>
   inventory: ItemData[]
   cards: CardData[]
 }
@@ -20,26 +15,34 @@ export interface PlayerData {
 /** Represents the player character with name and JSON serialization capabilities. */
 export class Player {
   name: string
-  stats: Stats
+  stats: Map<StatName, number>
+  basestats: Map<StatName, number>
   inventory: Item[]
   cards: Card[]
 
   constructor() {
     this.name = "Unnamed Player"
-    this.stats = {
-      agility: 0,
-      brawn: 0,
-      wits: 0,
-      charm: 0,
-    }
+    this.basestats = new Map<StatName, number>()
+    this.stats = new Map<StatName, number>()
+    // Initialize all stats to 0
+    STAT_NAMES.forEach(statName => {
+      this.basestats.set(statName, 0)
+      this.stats.set(statName, 0)
+    })
     this.inventory = []
     this.cards = []
   }
 
   toJSON(): PlayerData {
+    // Convert basestats Map to Record for JSON serialization
+    const basestatsRecord: Record<string, number> = {}
+    this.basestats.forEach((value, statName) => {
+      basestatsRecord[statName] = value
+    })
+    
     return {
       name: this.name,
-      stats: this.stats,
+      basestats: basestatsRecord,
       inventory: this.inventory.map(item => item.toJSON()),
       cards: this.cards.map(card => card.toJSON()),
     }
@@ -49,9 +52,18 @@ export class Player {
     const data = typeof json === 'string' ? JSON.parse(json) : json
     const player = new Player()
     player.name = data.name
-    if (data.stats) {
-      player.stats = data.stats
+    
+    // Deserialize basestats
+    if (data.basestats) {
+      player.basestats.clear()
+      Object.entries(data.basestats).forEach(([statName, value]) => {
+        if (typeof value === 'number') {
+          player.basestats.set(statName as StatName, value as number)
+        }
+      })
     }
+    // Note: calcStats will be called from Game.fromJSON after the game instance is available
+    
     if (data.inventory) {
       player.inventory = data.inventory.map((itemData: ItemData) => Item.fromJSON(itemData))
     } else {
@@ -114,6 +126,40 @@ export class Player {
       // Remove item entirely if quantity is 0 or less
       this.inventory.splice(itemIndex, 1)
     }
+  }
+
+  /**
+   * Calculate stats by copying basestats to stats, then applying modifiers from active Items and Cards.
+   * This should be called whenever stats need to be recalculated (e.g., when items/cards change).
+   * Note: This method needs access to Game for the calcStats callbacks, so it takes game as a parameter.
+   */
+  calcStats(game: Game): void {
+    // Copy basestats to stats
+    this.stats.clear()
+    this.basestats.forEach((value, statName) => {
+      this.stats.set(statName, value)
+    })
+
+    // Apply modifiers from active Items
+    this.inventory.forEach(item => {
+      const itemDef = item.template
+      if (itemDef.calcStats) {
+        itemDef.calcStats(game, item, this.stats)
+      }
+    })
+
+    // Apply modifiers from active Cards
+    this.cards.forEach(card => {
+      const cardDef = card.template
+      if (cardDef.calcStats) {
+        cardDef.calcStats(game, card, this.stats)
+      }
+    })
+
+    // Clamp all stats to 0-100 range
+    this.stats.forEach((value, statName) => {
+      this.stats.set(statName, Math.max(0, Math.min(100, value)))
+    })
   }
 }
 

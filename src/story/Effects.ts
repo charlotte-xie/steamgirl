@@ -2,6 +2,7 @@ import { Game } from '../model/Game'
 import type { CardDefinition } from '../model/Card'
 import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
+import type { StatName } from '../model/Stats'
 
 export const intoxicatedEffect: CardDefinition = {
   name: 'Intoxicated',
@@ -24,9 +25,19 @@ export const intoxicatedEffect: CardDefinition = {
         if (index !== -1) {
           game.player.cards.splice(index, 1)
           game.add({ type: 'text', text: 'You are no longer intoxicated' })
+          // Recalculate stats after removing the effect
+          game.run('calcStats', {})
         }
+      } else {
+        // Recalculate stats when alcohol changes (in case we want dynamic modifiers)
+        game.run('calcStats', {})
       }
     }
+  },
+  calcStats: (_game: Game, _card: Card, stats: Map<StatName, number>) => {
+    // Intoxicated reduces Agility by 20
+    const currentAgility = stats.get('Agility') || 0
+    stats.set('Agility', currentAgility - 20)
   },
 }
 

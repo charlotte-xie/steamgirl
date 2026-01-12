@@ -173,6 +173,8 @@ export class Game {
       
       this.player.cards.push(effect)
       this.add({ type: 'text', text: `Effect: ${cardDef.name}`, color: '#a855f7' })
+      // Recalculate stats after adding an effect
+      this.calcStats()
     }
     
     return this
@@ -183,6 +185,14 @@ export class Game {
     const currentPeriod = Math.floor(this.time / interval)
     const previousPeriod = Math.floor((this.time - secondsElapsed) / interval)
     return currentPeriod - previousPeriod
+  }
+
+  /**
+   * Calculate stats by copying basestats to stats, then applying modifiers from active Items and Cards.
+   * This should be called whenever stats need to be recalculated (e.g., when items/cards change).
+   */
+  calcStats(): void {
+    this.player.calcStats(this)
   }
 
   /** Clear the current scene (resets content and options). */
@@ -220,6 +230,9 @@ export class Game {
     game.player = Player.fromJSON(data.player)
     game.currentLocation = data.currentLocation ?? 'station'
     game.time = data.time ?? game.time // Use provided time or keep default from constructor
+    
+    // Recalculate stats after loading player
+    game.calcStats()
     
     // Handle scene deserialization - migrate old format or use new format
     if (data.scene) {

@@ -1,4 +1,6 @@
 import type { Script } from "./Scripts"
+import type { StatName } from "./Stats"
+import type { Game } from "./Game"
 
 export type CardId = string
 export type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task'
@@ -20,6 +22,7 @@ export interface CardDefinition {
   script?: Script
   condition?: Script
   afterUpdate?: Script
+  calcStats?: (game: Game, card: Card, stats: Map<StatName, number>) => void
   // Additional definition properties can be added here
   [key: string]: unknown
 }

@@ -2,6 +2,7 @@ import { Game } from './Game'
 import type { Script } from './Scripts'
 import { consumeAlcohol } from '../story/Effects'
 import { capitalise } from './Text'
+import type { StatName } from './Stats'
 
 export type ItemId = string
 
@@ -19,6 +20,7 @@ export interface ItemDefinition {
   stackable?: boolean
   onConsume?: Script
   onExamine?: Script
+  calcStats?: (game: Game, item: Item, stats: Map<StatName, number>) => void
 }
 
 // Item definitions as a plain object for better ergonomics and editing
