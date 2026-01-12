@@ -19,7 +19,15 @@ export type SkillName =
   | 'Flirting'
   | 'Haggling'
 
-export type StatName = MainStatName | SkillName
+export type MeterName =
+  | 'Energy'
+  | 'Arousal'
+  | 'Composure'
+  | 'Stress'
+  | 'Pain'
+  | 'Mood'
+
+export type StatName = MainStatName | SkillName | MeterName
 
 /**
  * Information about a stat, including description and other metadata.
@@ -28,6 +36,15 @@ export interface StatInfo {
   description: string
   basedOn?: MainStatName // For skills, indicates which main stat the skill is based on
   // Additional fields can be added here later
+}
+
+/**
+ * Information about a meter, including description and color information for display.
+ */
+export interface MeterInfo {
+  description: string
+  gainColor: string // Color to use when displaying meter increases
+  lossColor: string // Color to use when displaying meter decreases
 }
 
 /**
@@ -93,6 +110,42 @@ export const STAT_NAMES: MainStatName[] = Object.keys(MAIN_STAT_INFO) as MainSta
  * List of all skill names (for iteration).
  */
 export const SKILL_NAMES: SkillName[] = Object.keys(SKILL_INFO) as SkillName[]
+
+/**
+ * Map of all meter names to their information.
+ */
+export const METER_INFO: Record<MeterName, MeterInfo> = {
+  Energy: {
+    description: 'Your current energy level. Affects your ability to perform physical activities.',
+    gainColor: '#10b981', // Green for energy gain
+    lossColor: '#ef4444', // Red for energy loss
+  },
+  Arousal: {
+    description: 'Your level of physical arousal and excitement.',
+    gainColor: '#ec4899', // Pink for arousal gain
+    lossColor: '#6366f1', // Indigo for arousal loss
+  },
+  Composure: {
+    description: 'Your ability to remain calm and collected in stressful situations.',
+    gainColor: '#3b82f6', // Blue for composure gain
+    lossColor: '#f59e0b', // Amber for composure loss
+  },
+  Stress: {
+    description: 'Your current stress level. High stress can affect your performance.',
+    gainColor: '#ef4444', // Red for stress gain (negative)
+    lossColor: '#10b981', // Green for stress loss (positive)
+  },
+  Pain: {
+    description: 'Your current level of physical pain or discomfort.',
+    gainColor: '#dc2626', // Dark red for pain gain (negative)
+    lossColor: '#10b981', // Green for pain loss (positive)
+  },
+  Mood: {
+    description: 'Your overall emotional state and mood.',
+    gainColor: '#fbbf24', // Yellow/amber for mood gain
+    lossColor: '#6366f1', // Indigo for mood loss
+  },
+}
 
 /**
  * Type for stat modifiers - a function that modifies stats.

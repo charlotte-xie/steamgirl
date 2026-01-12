@@ -19,6 +19,12 @@ export const startScripts = {
     g.player.basestats.set('Willpower', 30)
     g.player.basestats.set('Strength', 30)
     
+    // Set initial meter values (meters are now part of basestats)
+    g.player.basestats.set('Energy', 80)
+    g.player.basestats.set('Mood', 70)
+    g.player.basestats.set('Composure', 50)
+    // Arousal, Stress, Pain remain at 0 (initialized in constructor)
+    
     // Recalculate stats after setting base stats
     g.run('calcStats', {})
     
@@ -27,6 +33,8 @@ export const startScripts = {
     g.run('gainItem', { item: 'pocket-watch', number: 1 })
     g.run('gainItem', { item: 'sweet-wine', number: 3 })
     g.run('gainItem', { item: 'acceptance-letter', number: 1 })
+    g.run('gainItem', { item: 'magic-potion', number: 1 })
+    g.run('gainItem', { item: 'fun-juice', number: 1 })
     
     // Move on to start script
     g.run('start', {})

@@ -1,6 +1,6 @@
 import { Item, type ItemData, ensureItem } from './Item'
 import { Card, type CardData } from './Card'
-import { type StatName, type SkillName, STAT_NAMES, SKILL_INFO } from './Stats'
+import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO } from './Stats'
 
 export type ItemSpec = string | Item
 
@@ -36,6 +36,12 @@ export class Player {
     STAT_NAMES.forEach(statName => {
       this.basestats.set(statName, 0)
       this.stats.set(statName, 0)
+    })
+    // Initialize all meters to 0 (meters are now part of StatName)
+    const METER_NAMES: MeterName[] = ['Energy', 'Arousal', 'Composure', 'Stress', 'Pain', 'Mood']
+    METER_NAMES.forEach(meterName => {
+      this.basestats.set(meterName, 0)
+      this.stats.set(meterName, 0)
     })
     this.inventory = []
     this.cards = []
@@ -88,6 +94,7 @@ export class Player {
       })
     }
     // Note: calcStats will be called from Game.fromJSON after the game instance is available
+    // Meters are now part of basestats, so they're deserialized with basestats above
     
     if (data.inventory) {
       player.inventory = data.inventory.map((itemData: ItemData) => Item.fromJSON(itemData))

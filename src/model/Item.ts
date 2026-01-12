@@ -100,6 +100,31 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     stackable: true,
     description: 'A crystal that glows with a soft inner light, wrapped in brass wire and gears.',
   },
+  'magic-potion': {
+    name: 'magic potion',
+    description: 'A mysterious potion that glimmers with an otherworldly light. Drinking it may enhance your abilities.',
+    onConsume: (game: Game, _params: {}) => {
+      // Add +5 to all main stats with 50% chance each
+      const mainStats = ['Agility', 'Perception', 'Wits', 'Charm', 'Willpower', 'Strength']
+      mainStats.forEach(statName => {
+        game.run('addStat', { 
+          stat: statName, 
+          change: 5, 
+          chance: 0.5,
+          hidden: false
+        })
+      })
+    },
+  },
+  'fun-juice': {
+    name: 'fun juice',
+    description: 'A vibrant, fizzy drink that promises to lift your spirits and add some excitement.',
+    onConsume: (game: Game, _params: {}) => {
+      // Add +10 Mood and +15 Arousal
+      game.run('addStat', { stat: 'Mood', change: 10 })
+      game.run('addStat', { stat: 'Arousal', change: 15 })
+    },
+  },
 }
 
 /** Represents a game item instance with mutable state. Definitional data is accessed via the template property. */

@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext'
 import { STAT_NAMES, MAIN_STAT_INFO } from '../model/Stats'
+import { MeterPanel } from './MeterPanel'
 
 export function StatsPanel() {
   const { game } = useGame()
@@ -74,7 +75,7 @@ export function StatsPanel() {
               {/* Progress bar with base stat and modifier segments */}
               <div style={{
                 width: '100%',
-                height: '8px',
+                height: '0.5em',
                 background: 'var(--bg-overlay)',
                 borderRadius: 'var(--radius-sm)',
                 overflow: 'hidden',
@@ -128,6 +129,7 @@ export function StatsPanel() {
           )
         })}
       </div>
+      <MeterPanel />
     </div>
   )
 }

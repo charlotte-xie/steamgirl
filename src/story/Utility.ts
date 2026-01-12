@@ -1,6 +1,9 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
 import { getLocation } from '../model/Location'
+import { type StatName, type MeterName, METER_INFO } from '../model/Stats'
+import { capitalise } from '../model/Text'
+import { colour } from '../model/Format'
 
 export const utilityScripts = {
   /* Advance the game's time by a given number of seconds
@@ -165,6 +168,87 @@ export const utilityScripts = {
   // Recalculate stats based on basestats and modifiers from active Items and Cards
   calcStats: (game: Game, _params: {}) => {
     game.calcStats()
+  },
+  
+  // Modify a base stat with optional display text and color
+  addStat: (game: Game, params: { 
+    stat?: string
+    change?: number
+    min?: number
+    max?: number
+    colour?: string
+    text?: string
+    chance?: number
+    hidden?: boolean
+  } = {}) => {
+    const statName = params.stat
+    if (!statName || typeof statName !== 'string') {
+      throw new Error('addStat script requires a stat parameter')
+    }
+    
+    const change = params.change
+    if (typeof change !== 'number') {
+      throw new Error('addStat script requires a change parameter')
+    }
+    
+    // Check chance (default 1.0 = 100%)
+    const chance = params.chance ?? 1.0
+    if (typeof chance !== 'number' || chance < 0 || chance > 1) {
+      throw new Error('addStat chance must be a number between 0 and 1')
+    }
+    
+    // Roll for chance
+    if (Math.random() > chance) {
+      return // Stat change doesn't apply
+    }
+    
+    // Get current base stat value
+    const currentValue = game.player.basestats.get(statName as StatName) || 0
+    
+    // Apply change
+    let newValue = currentValue + change
+    
+    // Clamp to min/max
+    const min = params.min ?? 0
+    const max = params.max ?? 100
+    newValue = Math.max(min, Math.min(max, newValue))
+    
+    // Update base stat
+    game.player.basestats.set(statName as StatName, newValue)
+    
+    // Recalculate stats after modifying base stat
+    game.calcStats()
+    
+    // Display text unless hidden
+    if (!params.hidden) {
+      // Determine color
+      let displayColor: string
+      if (params.colour) {
+        displayColor = params.colour
+      } else {
+        // Check if it's a meter and use appropriate color
+        const meterInfo = METER_INFO[statName as MeterName]
+        if (meterInfo) {
+          displayColor = change > 0 ? meterInfo.gainColor : meterInfo.lossColor
+        } else {
+          // Default colors for non-meters
+          displayColor = change > 0 ? '#10b981' : '#ef4444' // Green for gain, red for loss
+        }
+      }
+      
+      // Generate text
+      let displayText: string
+      if (params.text) {
+        displayText = params.text
+      } else {
+        // Default format: "Statname +2" or "Statname -5"
+        const sign = change > 0 ? '+' : ''
+        displayText = `${capitalise(statName)} ${sign}${change}`
+      }
+      
+      // Add colored text to scene
+      game.add(colour(displayText, displayColor))
+    }
   },
 }
 
