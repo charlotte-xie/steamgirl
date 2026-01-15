@@ -18,6 +18,14 @@ export function NavOverlay() {
 
   const handleLocationClick = (link: LocationLink) => {
     if (game) {
+      // Check access before allowing navigation
+      if (link.checkAccess) {
+        const accessReason = link.checkAccess(game)
+        if (accessReason) {
+          game.add(accessReason)
+          return
+        }
+      }
       runScript('go', { location: link.dest, minutes: link.time })
     }
   }
@@ -40,6 +48,10 @@ export function NavOverlay() {
         const targetLocation = getLocation(link.dest)
         if (!targetLocation) return null
 
+        // Check if access is denied
+        const accessReason = link.checkAccess ? link.checkAccess(game) : null
+        const isDisabled = !!accessReason
+
         return (
           <Thumbnail
             key={index}
@@ -48,6 +60,8 @@ export function NavOverlay() {
             subtitle={`${link.time} min`}
             onClick={() => handleLocationClick(link)}
             title={`${targetLocation.name || link.dest} (${link.time} min)`}
+            disabled={isDisabled}
+            disabledReason={accessReason || undefined}
           />
         )
       })}

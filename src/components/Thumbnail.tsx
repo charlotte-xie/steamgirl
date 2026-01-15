@@ -5,14 +5,19 @@ interface ThumbnailProps {
   symbol?: string
   onClick?: () => void
   title?: string
+  disabled?: boolean
+  disabledReason?: string
 }
 
-export function Thumbnail({ image, name, subtitle, symbol, onClick, title }: ThumbnailProps) {
+export function Thumbnail({ image, name, subtitle, symbol, onClick, title, disabled, disabledReason }: ThumbnailProps) {
+  const tooltip = disabled && disabledReason ? disabledReason : (title || name)
+  
   return (
     <button
-      className="thumbnail"
-      onClick={onClick}
-      title={title || name}
+      className={`thumbnail ${disabled ? 'thumbnail-disabled' : ''}`}
+      onClick={disabled ? undefined : onClick}
+      title={tooltip}
+      disabled={disabled}
     >
       {image ? (
         <img

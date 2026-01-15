@@ -509,9 +509,23 @@ img {
   color: inherit;
 }
 
-.thumbnail:hover {
+.thumbnail:hover:not(:disabled) {
   border-color: var(--border-main);
   box-shadow: var(--shadow-strong), var(--shadow-inner);
+}
+
+.thumbnail-disabled,
+.thumbnail:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.thumbnail-disabled:hover,
+.thumbnail:disabled:hover {
+  transform: none;
+  background: var(--bg-overlay);
+  border-color: var(--border-subtle);
 }
 
 .thumbnail-image {

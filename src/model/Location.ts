@@ -1,13 +1,16 @@
 import type { Script } from "./Scripts"
+import type { Game } from "./Game"
 import { LOCATION_DEFINITIONS as CITY_DEFINITIONS } from "../story/City"
 import { LODGINGS_DEFINITIONS } from "../story/Lodgings"
 import { LOWTOWN_DEFINITIONS } from "../story/Lowtown"
+import { SCHOOL_DEFINITIONS } from "../story/School"
 
 // Combine all location definitions
 const LOCATION_DEFINITIONS: Record<string, LocationDefinition> = {
   ...CITY_DEFINITIONS,
   ...LODGINGS_DEFINITIONS,
   ...LOWTOWN_DEFINITIONS,
+  ...SCHOOL_DEFINITIONS,
 }
 
 export type LocationId = string
@@ -36,6 +39,7 @@ export interface LocationLink {
   dest: LocationId
   time: number
   onFollow?: Script
+  checkAccess?: (game: Game) => string | null | undefined // Returns reason string if access denied, null/undefined if allowed
 }
 
 export interface LocationActivity {

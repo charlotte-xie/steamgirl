@@ -137,7 +137,36 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'University',
     description: 'A grand educational institution where knowledge flows like steam through pipes.',
     image: '/images/school.jpg',
-    links: [{ dest: 'default', time: 5 }, { dest: 'lake', time: 8 }], // 5 minutes to city centre, 8 minutes to lake
+    links: [
+      { dest: 'default', time: 5 }, 
+      { dest: 'lake', time: 8 }, 
+      { 
+        dest: 'hallway', 
+        time: 2,
+        checkAccess: (game: Game) => {
+          // Check if access is allowed: 7am-9pm (7-21) on weekdays (Mon-Fri, day 1-5)
+          const currentDate = new Date(game.time * 1000)
+          const currentHour = currentDate.getHours()
+          const currentDay = currentDate.getDay() // 0=Sunday, 1=Monday, ..., 6=Saturday
+          
+          // Check if it's a weekday (Monday=1 to Friday=5)
+          const isWeekday = currentDay >= 1 && currentDay <= 5
+          
+          // Check if it's within school hours (7am-9pm, i.e., 7-21 inclusive)
+          const isSchoolHours = currentHour >= 7 && currentHour <= 21
+          
+          if (!isWeekday) {
+            return 'The university is closed on weekends. Access is only available Monday through Friday, 7am to 9pm.'
+          }
+          
+          if (!isSchoolHours) {
+            return 'The university is closed. Access is only available Monday through Friday, 7am to 9pm.'
+          }
+          
+          return null // Access allowed
+        }
+      }
+    ], // 5 minutes to city centre, 8 minutes to lake, 2 minutes to enter the university
     activities: [
       {
         name: 'Explore',
@@ -155,18 +184,18 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             return // Stop exploration if location is discovered
           }
           
-          // Random encounters for the University grounds (outisde)
+          // Random encounters for the University grounds (outside)
           const encounters = [
-            'You wander through the grand halls, admiring the brass architectural details and mechanical displays. Students hurry past, carrying books and small mechanical devices.',
-            'A professor with mechanical spectacles adjusts the gears on a teaching automaton. The device clicks and whirs as it demonstrates a complex mechanical principle.',
-            'You notice a display case filled with historical clockwork artifacts. Each piece tells a story of innovation and engineering mastery.',
-            'The library wing beckons with its towering shelves. Mechanical book retrieval systems whir overhead, fetching tomes with precise mechanical movements.',
-            'A group of students gathers around a steam-powered experiment, their faces illuminated by the warm glow of the apparatus. The air fills with the scent of oil and knowledge.',
-            'You explore the courtyard, where mechanical fountains create intricate patterns with steam and water. The combination of nature and machinery is mesmerizing.',
-            'A lecture hall stands open, its brass lectern and mechanical projection devices ready for the next class. The room echoes with the promise of learning.',
-            'You notice a small garden area where mechanical flowers bloom, their petals opening and closing in a synchronized dance powered by hidden gears.',
-            'A maintenance corridor reveals the inner workings of the university—pipes, gears, and steam conduits that power the entire building.',
-            'You find a quiet study nook with a view of the campus. The peaceful atmosphere is perfect for contemplation.',
+            'You stroll through the university grounds, admiring the grand brass architecture and mechanical details of the exterior. Students pass by, their footsteps echoing on the stone pathways.',
+            'A maintenance worker tends to the steam pipes that run along the building\'s exterior. The warm vapour creates a gentle mist around the university grounds.',
+            'You notice the intricate clockwork mechanisms visible through the windows, their gears turning in perfect synchronization. The building itself seems alive with mechanical energy.',
+            'The university grounds feature carefully maintained gardens where mechanical flowers bloom alongside natural ones. The contrast between organic and mechanical beauty is striking.',
+            'A group of students gathers on the lawn, discussing their studies while a steam-powered device demonstrates a principle nearby. The warm glow of the apparatus illuminates their faces.',
+            'You explore the pathways around the university, noticing the brass plaques and mechanical markers that guide visitors. Each detail speaks to the institution\'s dedication to innovation.',
+            'The university\'s main entrance stands imposing, its brass doors reflecting the sunlight. Steam gently rises from vents, creating an atmosphere of both tradition and progress.',
+            'You notice a small courtyard visible through an archway, where mechanical fountains create intricate patterns with steam and water. The sound of gears and flowing water is soothing.',
+            'A professor walks the grounds, examining a small mechanical device. Students approach to ask questions, creating a scene of active learning even outside the classrooms.',
+            'The university grounds offer a peaceful respite from the city. You find a bench near a steam-powered clock, its gentle ticking marking the passage of time.',
           ]
           
           const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]

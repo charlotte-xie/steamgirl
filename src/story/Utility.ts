@@ -153,6 +153,15 @@ export const utilityScripts = {
       return
     }
     
+    // Check access before allowing navigation
+    if (link.checkAccess) {
+      const accessReason = link.checkAccess(game)
+      if (accessReason) {
+        game.add(accessReason)
+        return
+      }
+    }
+    
     // Run onFollow script when navigating down a link (if set)
     if (link.onFollow) {
       link.onFollow(game, {})
