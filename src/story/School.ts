@@ -6,6 +6,7 @@ export const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'University Hallways',
     description: 'The central corridors of the university, connecting all the main areas.',
     image: '/images/institute.jpg',
+    secret: true, // Starts as undiscovered - must be unlocked through induction
     links: [
       { dest: 'school', time: 2 }, // Exit to University grounds (1 minute)
       { dest: 'great-hall', time: 2 }, // 2 minutes to great hall

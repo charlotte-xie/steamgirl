@@ -169,6 +169,21 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ], // 5 minutes to city centre, 8 minutes to lake, 2 minutes to enter the university
     activities: [
       {
+        name: 'Enroll in University',
+        condition: (game: Game) => {
+          // Only available between 8-10am on Jan 6th, 1902
+          const currentDate = new Date(game.time * 1000)
+          const inductionStart = new Date(1902, 0, 6, 8, 0, 0) // Jan 6, 1902, 8:00am
+          const inductionEnd = new Date(1902, 0, 6, 10, 0, 0) // Jan 6, 1902, 10:00am
+          
+          // Check if current time is within induction window
+          return currentDate >= inductionStart && currentDate < inductionEnd
+        },
+        script: (game: Game) => {
+          game.run('universityInduction', {})
+        },
+      },
+      {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)

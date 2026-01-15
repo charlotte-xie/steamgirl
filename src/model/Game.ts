@@ -187,7 +187,9 @@ export class Game {
       })
       
       this.player.cards.push(quest)
-      this.add({ type: 'text', text: `Quest received: ${cardDef.name}`, color: '#3b82f6' })
+      if (!args.silent) {
+        this.add({ type: 'text', text: `Quest received: ${cardDef.name}`, color: '#3b82f6' })
+      }
     }
     
     return this

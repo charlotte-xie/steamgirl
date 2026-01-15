@@ -5,6 +5,30 @@ import { type StatName, type MeterName, METER_INFO } from '../model/Stats'
 import { capitalise } from '../model/Text'
 import { colour } from '../model/Format'
 
+export const universityScripts = {
+  universityInduction: (game: Game, _params: {}) => {
+    game.clearScene()
+    
+    game.add('You approach the university administration office, where a stern-looking administrator with mechanical spectacles reviews your acceptance letter.')
+    game.add('"Ah, you\'re the new student," she says, her voice carrying the precision of well-oiled gears. "Welcome to the University of Aetheria. Your induction begins now."')
+    game.add('She leads you through the grand entrance and into the university hallways. The corridors stretch before you, lined with brass fixtures and mechanical displays.')
+    game.add('"These are the main hallways," she explains. "They connect all the important areas of the university: the Great Hall for dining, the classrooms for lectures, and the courtyard for relaxation."')
+    game.add('As you walk, you notice the intricate clockwork mechanisms embedded in the walls, the gentle hum of steam pipes, and the scholarly atmosphere that permeates every corner.')
+    game.add('"You now have full access to the university facilities," the administrator continues. "Remember, the university is open Monday through Friday, from 7am to 9pm. Make the most of your time here."')
+    game.add('With that, she hands you a small brass key and departs, leaving you to explore the university on your own.')
+    
+    // Discover the hallway location (grants access)
+    const hallwayLocation = game.getLocation('hallway')
+    hallwayLocation.discovered = true
+    
+    // Complete the quest
+    game.completeQuest('attend-university')
+    
+    // Update navigation to show the new link
+    game.updateNPCsPresent()
+  },
+}
+
 export const utilityScripts = {
   /* Advance the game's time by a given number of seconds
   * Should not tigger any events, i.e. safe to 
@@ -345,6 +369,7 @@ export const utilityScripts = {
 
 // Register all utility scripts when module loads
 makeScripts(utilityScripts)
+makeScripts(universityScripts)
 
 // Helper function for location discovery checks (can be called directly, not as a script)
 export function maybeDiscoverLocation(
