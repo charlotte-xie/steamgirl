@@ -1,6 +1,6 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
-import { NPC, type NPCData, getNPCDefinition, getAllNPCIds } from './NPC'
+import { NPC, type NPCData, getNPCDefinition } from './NPC'
 import { runScript as runScriptImpl } from './Scripts'
 import { Card } from './Card'
 
@@ -63,8 +63,8 @@ export class Game {
     const startDate = new Date(1902, 0, 5, 12, 0, 0)
     this.time = Math.floor(startDate.getTime() / 1000)
     
-    // Initialize with station location from registry
-    this.ensureLocation('station')
+    // Note: Location will be created lazily when first accessed via getLocation()
+    // This allows Game constructor to work without requiring story content to be loaded
   }
 
   /** Gets the current location. Always returns a valid Location. */
@@ -83,24 +83,27 @@ export class Game {
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600
   }
 
-  /** Ensures a location exists in the game's locations map, creating a new instance if needed. Throws if location definition doesn't exist. */
-  private ensureLocation(locationId: string): void {
+  /** Ensures a location exists in the game's locations map, creating a new instance if needed. Returns false if location definition doesn't exist. */
+  private ensureLocation(locationId: string): boolean {
     if (!this.locations.has(locationId)) {
       // Verify the location definition exists
       if (!getLocationDefinition(locationId)) {
-        throw new Error(`Location definition not found: ${locationId}`)
+        return false
       }
       const location = new Location(locationId)
       this.locations.set(locationId, location)
     }
+    return true
   }
 
-  /** Gets a location from the game's locations map, ensuring it exists first. Returns the Location instance. */
+  /** Gets a location from the game's locations map, ensuring it exists first. Returns the Location instance. Throws if location definition doesn't exist. */
   getLocation(locationId: string): Location {
-    this.ensureLocation(locationId)
+    if (!this.ensureLocation(locationId)) {
+      throw new Error(`Location definition not found: ${locationId}`)
+    }
     const location = this.locations.get(locationId)
     if (!location) {
-      // This should never happen after ensureLocation, but TypeScript needs this
+      // This should never happen after ensureLocation returns true, but TypeScript needs this
       throw new Error(`Location not found: ${locationId}`)
     }
     return location
@@ -235,7 +238,7 @@ export class Game {
       this.player.cards.push(effect)
       this.add({ type: 'text', text: `Effect: ${cardDef.name}`, color: '#a855f7' })
       // Recalculate stats after adding an effect
-      this.calcStats()
+      this.player.calcStats()
     }
     
     return this
@@ -249,33 +252,20 @@ export class Game {
   }
 
   /**
-   * Calculate stats by copying basestats to stats, then applying modifiers from active Items and Cards.
-   * This should be called whenever stats need to be recalculated (e.g., when items/cards change).
-   */
-  calcStats(): void {
-    this.player.calcStats()
-  }
-
-  /**
    * Update npcsPresent list based on NPC locations matching current location.
    * Should be called after NPC movement or location changes.
-   * Generates NPCs that haven't been created yet to check if they should be present.
+   * Only checks NPCs that already exist in the map - does not generate new ones.
    */
   updateNPCsPresent(): void {
     this.npcsPresent = []
     
-    // TODO: consider refactoring this, so we can avoid generating NPCs that are not yet needed
-    // Check all registered NPCs - generate them if needed to check their location
-    const allNPCIds = getAllNPCIds()
-    for (const npcId of allNPCIds) {
-      // Get NPC (will generate if needed, which calls onMove to position it)
-      const npc = this.getNPC(npcId)
-      
-      // Check if NPC is at current location
+    // Only check NPCs that already exist in the map
+    // This prevents generating NPCs just for serialization checks
+    this.npcs.forEach((npc, npcId) => {
       if (npc.location === this.currentLocation) {
         this.npcsPresent.push(npcId)
       }
-    }
+    })
   }
 
   /** Clear the current scene (resets content and options). */
@@ -292,6 +282,18 @@ export class Game {
     this.locations.forEach((location, id) => {
       locationsRecord[id] = location.toJSON()
     })
+    
+    // Ensure currentLocation is included in serialization if it exists but isn't in the map yet
+    // This can happen if the location hasn't been accessed yet (lazy initialization)
+    if (this.currentLocation && !locationsRecord[this.currentLocation]) {
+      // Try to create the location if definition exists (but don't throw if it doesn't)
+      if (this.ensureLocation(this.currentLocation)) {
+        const location = this.locations.get(this.currentLocation)
+        if (location) {
+          locationsRecord[this.currentLocation] = location.toJSON()
+        }
+      }
+    }
     
     // Convert NPCs map to Record for JSON serialization
     const npcsRecord: Record<string, NPCData> = {}
@@ -322,7 +324,7 @@ export class Game {
     game.time = data.time ?? game.time // Use provided time or keep default from constructor
     
     // Recalculate stats after loading player
-    game.calcStats()
+    game.player.calcStats()
     
     // Handle scene deserialization - migrate old format or use new format
     if (data.scene) {
@@ -363,8 +365,14 @@ export class Game {
       })
     }
     
-    // Ensure currentLocation exists in the map, fallback to registry if missing
-    game.getLocation(game.currentLocation)
+    // Ensure currentLocation exists in the map if it was deserialized, otherwise don't create it
+    // This preserves the lazy initialization behavior - locations are only created when accessed
+    if (data.locations && game.currentLocation && data.locations[game.currentLocation]) {
+      // Location was in the save, so ensure it exists (it should already from deserialization above)
+      // This is just a safety check
+      game.getLocation(game.currentLocation)
+    }
+    // If currentLocation wasn't in the save, don't create it here - let it be created lazily when accessed
     
     // Update npcsPresent after loading NPCs
     game.updateNPCsPresent()

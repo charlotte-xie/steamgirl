@@ -108,7 +108,7 @@ export const utilityScripts = {
     game.player.addItem(itemId, number)
     
     // Recalculate stats after adding item (in case item has stat modifiers)
-    game.calcStats()
+    game.player.calcStats()
   },
   
   // Explore the current location - shows a random encounter
@@ -227,7 +227,7 @@ export const utilityScripts = {
   
   // Recalculate stats based on basestats and modifiers from active Items and Cards
   calcStats: (game: Game, _params: {}) => {
-    game.calcStats()
+    game.player.calcStats()
   },
   
   // Discover a location - sets discovered flag and optionally displays text
@@ -302,7 +302,7 @@ export const utilityScripts = {
     game.player.basestats.set(statName as StatName, newValue)
     
     // Recalculate stats after modifying base stat
-    game.calcStats()
+    game.player.calcStats()
     
     // Display text unless hidden
     if (!params.hidden) {

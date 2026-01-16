@@ -105,12 +105,10 @@ export class NPC {
     // Create the NPC instance
     const npc = new NPC(npcId)
     
-    // Call generate function if it exists
-    if (definition.generate) {
-      definition.generate(game, npc)
-    }
+    // Do NOT call generate() during deserialization - we're restoring from saved state
+    // generate() should only be called when creating NPCs on demand via getNPC()
     
-    // Apply serialized mutable state (overrides any values set by generate)
+    // Apply serialized mutable state directly
     npc.approachCount = data.approachCount ?? 0
     npc.location = data.location ?? null
     npc.nameKnown = data.nameKnown ?? false

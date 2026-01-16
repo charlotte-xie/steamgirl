@@ -1,12 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import { Item } from './Item'
-import { registerNPC, NPC } from './NPC'
-import '../story/Effects' // Register effect definitions
-import '../story/Start' // Register start scripts
-import '../story/Utility' // Register utility scripts
-import '../story/TestNPC' // Register test NPC
-import '../story/Lowtown' // Register lowtown location and NPCs
+import { registerNPC } from './NPC'
+import '../story/World' // Register all story content (locations, NPCs, cards, scripts)
 
 describe('Game', () => {
   it('should create a new Game', () => {

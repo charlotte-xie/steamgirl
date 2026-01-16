@@ -2,13 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { App } from './App'
 import './style.css'
-import './story/Utility'
-import './story/Start'
-import './story/Effects'
-import './story/City' // Register city locations
-import './story/Lodgings' // Register lodgings locations and scripts
-import './story/Lowtown' // Register lowtown location and NPCs
-import './story/School' // Register university interior locations
+import './story/World' // Register all story content (locations, NPCs, cards, scripts)
 
 const rootElement = document.getElementById('root')
 
