@@ -32,7 +32,12 @@ export interface GameData {
   time: number
 }
 
-/** Main game state container that manages version, score, and player data with JSON serialization support. */
+/** Main game state container that manages version, score, and player data with JSON serialization support. 
+ * 
+ * Standard game loop:
+ * 
+ * 
+*/
 export class Game {
   version: number
   score: number
@@ -83,29 +88,25 @@ export class Game {
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600
   }
 
-  /** Ensures a location exists in the game's locations map, creating a new instance if needed. Returns false if location definition doesn't exist. */
-  private ensureLocation(locationId: string): boolean {
-    if (!this.locations.has(locationId)) {
-      // Verify the location definition exists
-      if (!getLocationDefinition(locationId)) {
-        return false
-      }
-      const location = new Location(locationId)
-      this.locations.set(locationId, location)
-    }
-    return true
-  }
-
-  /** Gets a location from the game's locations map, ensuring it exists first. Returns the Location instance. Throws if location definition doesn't exist. */
+  /** Gets a location from the game's locations map, creating it if needed. Returns the Location instance. Throws if location definition doesn't exist. */
   getLocation(locationId: string): Location {
-    if (!this.ensureLocation(locationId)) {
+    // Check if location already exists in the map
+    const existingLocation = this.locations.get(locationId)
+    if (existingLocation) {
+      return existingLocation
+    }
+    
+    // Location doesn't exist, need to create it
+    // Verify the location definition exists
+    const definition = getLocationDefinition(locationId)
+    if (!definition) {
       throw new Error(`Location definition not found: ${locationId}`)
     }
-    const location = this.locations.get(locationId)
-    if (!location) {
-      // This should never happen after ensureLocation returns true, but TypeScript needs this
-      throw new Error(`Location not found: ${locationId}`)
-    }
+    
+    // Create the location instance and add it to the map
+    const location = new Location(locationId)
+    this.locations.set(locationId, location)
+    
     return location
   }
 
@@ -286,12 +287,14 @@ export class Game {
     // Ensure currentLocation is included in serialization if it exists but isn't in the map yet
     // This can happen if the location hasn't been accessed yet (lazy initialization)
     if (this.currentLocation && !locationsRecord[this.currentLocation]) {
-      // Try to create the location if definition exists (but don't throw if it doesn't)
-      if (this.ensureLocation(this.currentLocation)) {
-        const location = this.locations.get(this.currentLocation)
-        if (location) {
-          locationsRecord[this.currentLocation] = location.toJSON()
-        }
+      // Try to get the location (will create it if definition exists, throws if it doesn't)
+      // We catch the error to handle cases where story content isn't loaded yet
+      try {
+        const location = this.getLocation(this.currentLocation)
+        locationsRecord[this.currentLocation] = location.toJSON()
+      } catch (error) {
+        // Location definition doesn't exist - skip including it in serialization
+        // This can happen if story content isn't loaded yet
       }
     }
     
