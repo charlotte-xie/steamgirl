@@ -5,7 +5,8 @@ import './style.css'
 import './story/Utility'
 import './story/Start'
 import './story/Effects'
-import './story/Lodgings' // Register lodgings scripts
+import './story/City' // Register city locations
+import './story/Lodgings' // Register lodgings locations and scripts
 import './story/Lowtown' // Register lowtown location and NPCs
 import './story/School' // Register university interior locations
 

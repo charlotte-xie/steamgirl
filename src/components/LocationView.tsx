@@ -16,8 +16,7 @@ export function LocationView({ location }: LocationViewProps) {
   // Determine which image to use based on time
   let locationImage = template.image
   if (game && template.nightImage) {
-    const currentDate = new Date(game.time * 1000)
-    const currentHour = currentDate.getHours()
+    const currentHour = Math.floor(game.hourOfDay)
     // Between 8pm (20:00) and 6am (06:00)
     if (currentHour >= 20 || currentHour < 6) {
       locationImage = template.nightImage

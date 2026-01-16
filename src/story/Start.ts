@@ -175,7 +175,7 @@ export const attendUniversityQuest: CardDefinition = {
     }
     
     // Check if it's past 10am on Jan 6th, 1902
-    const currentDate = new Date(game.time * 1000)
+    const currentDate = game.date
     const inductionDate = new Date(1902, 0, 6, 10, 0, 0) // Jan 6, 1902, 10:00am
     
     if (currentDate >= inductionDate) {

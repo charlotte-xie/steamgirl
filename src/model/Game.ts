@@ -72,6 +72,17 @@ export class Game {
     return this.getLocation(this.currentLocation)
   }
 
+  /** Gets the current game time as a Date object. */
+  get date(): Date {
+    return new Date(this.time * 1000)
+  }
+
+  /** Gets the current hour of day as a fractional number (0-23.99). */
+  get hourOfDay(): number {
+    const date = this.date
+    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600
+  }
+
   /** Ensures a location exists in the game's locations map, creating a new instance if needed. Throws if location definition doesn't exist. */
   private ensureLocation(locationId: string): void {
     if (!this.locations.has(locationId)) {

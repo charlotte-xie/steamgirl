@@ -45,8 +45,7 @@ export class NPC {
    * If no schedule matches, NPC location is set to null.
    */
   followSchedule(game: Game, schedule: [number, number, string][]): void {
-    const currentDate = new Date(game.time * 1000)
-    const currentHour = currentDate.getHours()
+    const currentHour = Math.floor(game.hourOfDay)
     
     // Find matching schedule entry
     for (const [startHour, endHour, locationId] of schedule) {

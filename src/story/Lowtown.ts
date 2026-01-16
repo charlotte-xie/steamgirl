@@ -1,9 +1,10 @@
 import { Game } from '../model/Game'
 import { NPC, registerNPC } from '../model/NPC'
 import type { LocationId, LocationDefinition } from '../model/Location'
+import { registerLocation } from '../model/Location'
 
 // Location definitions for Lowtown
-export const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
+const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   lowtown: {
     name: 'Lowtown',
     description: 'The industrial underbelly of the city, where the gears of progress grind against the forgotten.',
@@ -37,4 +38,9 @@ registerNPC('spice-dealer', {
     // Update npcsPresent after NPC moves
     game.updateNPCsPresent()
   },
+})
+
+// Register all location definitions when module loads
+Object.entries(LOWTOWN_DEFINITIONS).forEach(([id, definition]) => {
+  registerLocation(id, definition)
 })

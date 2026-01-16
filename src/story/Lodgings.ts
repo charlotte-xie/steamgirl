@@ -1,10 +1,11 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
+import { registerLocation } from '../model/Location'
 import { makeScripts } from '../model/Scripts'
 import { option } from '../model/Format'
 
 // Location definitions for the player's lodgings
-export const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
+const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   bedroom: {
     name: 'Bedroom',
     description: 'Your small but comfortable room in the backstreets.',
@@ -16,9 +17,9 @@ export const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Sleep',
         symbol: 'zz',
         script: (g: Game, _params: {}) => {
-          // Check current time (game.time is unix timestamp in seconds)
-          const currentDate = new Date(g.time * 1000)
-          const currentHour = currentDate.getHours()
+          // Check current time
+          const currentDate = g.date
+          const currentHour = Math.floor(g.hourOfDay)
           const isAfter9pm = currentHour >= 21
           
           if (isAfter9pm) {
@@ -125,3 +126,8 @@ export const lodgingsScripts = {
 
 // Register all lodgings scripts when module loads
 makeScripts(lodgingsScripts)
+
+// Register all location definitions when module loads
+Object.entries(LODGINGS_DEFINITIONS).forEach(([id, definition]) => {
+  registerLocation(id, definition)
+})

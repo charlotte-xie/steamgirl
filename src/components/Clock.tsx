@@ -8,7 +8,7 @@ export function Clock() {
   }
 
   // Convert unix timestamp (seconds) to Date
-  const date = new Date(game.time * 1000)
+  const date = game.date
   
   // Format date and time
   const formatDate = (d: Date): string => {

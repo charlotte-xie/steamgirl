@@ -1,16 +1,13 @@
 import type { Script } from "./Scripts"
 import type { Game } from "./Game"
-import { LOCATION_DEFINITIONS as CITY_DEFINITIONS } from "../story/City"
-import { LODGINGS_DEFINITIONS } from "../story/Lodgings"
-import { LOWTOWN_DEFINITIONS } from "../story/Lowtown"
-import { SCHOOL_DEFINITIONS } from "../story/School"
 
-// Combine all location definitions
-const LOCATION_DEFINITIONS: Record<string, LocationDefinition> = {
-  ...CITY_DEFINITIONS,
-  ...LODGINGS_DEFINITIONS,
-  ...LOWTOWN_DEFINITIONS,
-  ...SCHOOL_DEFINITIONS,
+// Location definitions registry
+// Locations can be added from various story modules
+const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {}
+
+// Register location definitions (can be called from story modules)
+export function registerLocation(id: LocationId, definition: LocationDefinition): void {
+  LOCATION_DEFINITIONS[id] = definition
 }
 
 export type LocationId = string

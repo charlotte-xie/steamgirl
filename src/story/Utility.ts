@@ -22,28 +22,16 @@ export const utilityScripts = {
       }
       
       const targetHour = params.untilTime
-      const currentDate = new Date(game.time * 1000)
-      const currentHour = currentDate.getHours() + currentDate.getMinutes() / 60
-      
-      // Calculate target time on the current day
-      const targetDate = new Date(currentDate)
-      const targetHourInt = Math.floor(targetHour)
-      const targetMinutes = Math.floor((targetHour - targetHourInt) * 60)
-      const targetSeconds = Math.floor(((targetHour - targetHourInt) * 60 - targetMinutes) * 60)
-      
-      targetDate.setHours(targetHourInt, targetMinutes, targetSeconds, 0)
-      const targetTime = Math.floor(targetDate.getTime() / 1000)
-      
-      const currentTime = game.time
-      const timeDifference = targetTime - currentTime
+      const currentHour = game.hourOfDay
       
       // Only advance if target is in the future on the same day
       // Never cross a day boundary
-      if (timeDifference > 0 && targetDate.getDate() === currentDate.getDate()) {
-        seconds = timeDifference
+      if (currentHour < targetHour) {
+        const hoursDifference = targetHour - currentHour
+        seconds = Math.floor(hoursDifference * 3600) // Convert hours to seconds
         minutes = 0 // Reset minutes since we're using total seconds
       } else {
-        // Target has passed today or would cross day boundary, do nothing
+        // Target has passed today, do nothing
         seconds = 0
         minutes = 0
       }
@@ -60,8 +48,7 @@ export const utilityScripts = {
     const totalSeconds = seconds + (minutes * 60)
     
     // Get current hour before time change
-    const dateBefore = new Date(game.time * 1000)
-    const hourBefore = dateBefore.getHours()
+    const hourBefore = Math.floor(game.hourOfDay)
     
     // Advance time (if untilTime was in the past, we already set it above)
     if (totalSeconds > 0) {
@@ -69,8 +56,7 @@ export const utilityScripts = {
     }
     
     // Get current hour after time change
-    const dateAfter = new Date(game.time * 1000)
-    const hourAfter = dateAfter.getHours()
+    const hourAfter = Math.floor(game.hourOfDay)
     
     // Check if hour changed (e.g., 11:59 -> 12:01)
     const hourChanged = hourBefore !== hourAfter

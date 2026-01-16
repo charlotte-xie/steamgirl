@@ -1,5 +1,6 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
+import { registerLocation } from '../model/Location'
 import { option } from '../model/Format'
 import { makeScripts } from '../model/Scripts'
 import { Item } from '../model/Item'
@@ -7,7 +8,7 @@ import { maybeDiscoverLocation } from './Utility'
 
 // Location definitions for the city of Aetheria
 // These are the standard locations. Others might be added elsewhere
-export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
+const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   station: {
     name: 'Ironspark Terminus',
     description: 'The bustling main railway station, filled with travelers.',
@@ -145,8 +146,8 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         time: 2,
         checkAccess: (game: Game) => {
           // Check if access is allowed: 7am-9pm (7-21) on weekdays (Mon-Fri, day 1-5)
-          const currentDate = new Date(game.time * 1000)
-          const currentHour = currentDate.getHours()
+          const currentDate = game.date
+          const currentHour = Math.floor(game.hourOfDay)
           const currentDay = currentDate.getDay() // 0=Sunday, 1=Monday, ..., 6=Saturday
           
           // Check if it's a weekday (Monday=1 to Friday=5)
@@ -172,7 +173,7 @@ export const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Enroll in University',
         condition: (game: Game) => {
           // Only available between 8-10am on Jan 6th, 1902
-          const currentDate = new Date(game.time * 1000)
+          const currentDate = game.date
           const inductionStart = new Date(1902, 0, 6, 8, 0, 0) // Jan 6, 1902, 8:00am
           const inductionEnd = new Date(1902, 0, 6, 10, 0, 0) // Jan 6, 1902, 10:00am
           
@@ -337,3 +338,8 @@ export const marketScripts = {
 
 // Register market scripts when module loads
 makeScripts(marketScripts)
+
+// Register all location definitions when module loads
+Object.entries(LOCATION_DEFINITIONS).forEach(([id, definition]) => {
+  registerLocation(id, definition)
+})

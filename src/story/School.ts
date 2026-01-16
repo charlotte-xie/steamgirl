@@ -2,9 +2,10 @@ import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
 import { option } from '../model/Format'
 import type { LocationId, LocationDefinition } from '../model/Location'
+import { registerLocation } from '../model/Location'
 
 // Location definitions for University interior locations
-export const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
+const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   hallway: {
     name: 'University Hallways',
     description: 'The central corridors of the university, connecting all the main areas.',
@@ -125,3 +126,8 @@ export const universityScripts = {
 
 // Register university scripts when module loads
 makeScripts(universityScripts)
+
+// Register all location definitions when module loads
+Object.entries(SCHOOL_DEFINITIONS).forEach(([id, definition]) => {
+  registerLocation(id, definition)
+})
