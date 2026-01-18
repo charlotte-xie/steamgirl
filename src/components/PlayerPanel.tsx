@@ -9,6 +9,7 @@ import { Card } from './Card'
 import { StatsPanel } from './StatsPanel'
 import { EffectTag } from './EffectTag'
 import { assetUrl } from '../utils/assetUrl'
+import { SKILL_NAMES, SKILL_INFO } from '../model/Stats'
 
 type TabId = 'Status' | 'Inventory' | 'Quests' | 'Skills' | 'Settings'
 
@@ -55,7 +56,38 @@ export function PlayerPanel() {
           </div>
         )
       case 'Skills':
-        return <p>Skills content will be added later.</p>
+        const skillsWithBase = game
+          ? SKILL_NAMES.filter((name) => (game.player.basestats.get(name) || 0) > 0)
+          : []
+        if (skillsWithBase.length === 0) {
+          return <p>No skills learned yet.</p>
+        }
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+            {skillsWithBase.map((name) => {
+              const base = game!.player.basestats.get(name) || 0
+              const info = SKILL_INFO[name]
+              return (
+                <div
+                  key={name}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    padding: 'var(--space-xs) var(--space-sm)',
+                    background: 'var(--bg-panel-soft)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                  title={info?.description}
+                >
+                  <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{name}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{base}</span>
+                </div>
+              )
+            })}
+          </div>
+        )
       case 'Settings':
         return <p>Settings content will be added later.</p>
       default:

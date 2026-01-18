@@ -16,7 +16,7 @@ export type SkillName =
   | 'Fitness'
   | 'Etiquette'
   | 'Mechanics'
-  | 'Flirting'
+  | 'Flirtation'
   | 'Haggling'
 
 export type MeterName =
@@ -92,7 +92,7 @@ export const SKILL_INFO: Record<SkillName, StatInfo> = {
     description: 'Your understanding of mechanical devices and steam-powered technology.',
     basedOn: 'Wits',
   },
-  Flirting: {
+  Flirtation: {
     description: 'Your ability to charm and attract romantic interest.',
     basedOn: 'Charm',
   },

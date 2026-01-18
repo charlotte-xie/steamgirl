@@ -254,6 +254,19 @@ describe('Game', () => {
     expect(npc.approachCount).toBe(3)
   })
 
+  it('should update base stat when addStat script runs with 100% chance', () => {
+    const game = new Game()
+    game.run('init', {}) // ensure scripts/player are set up
+
+    const statName = 'Flirtation'
+    const before = game.player.basestats.get(statName) ?? 0
+
+    game.run('addStat', { stat: statName, change: 1, chance: 1 })
+
+    const after = game.player.basestats.get(statName) ?? 0
+    expect(after).toBe(before + 1)
+  })
+
   it('should have spice dealer present in lowtown at 1am', () => {
     const game = new Game()
     

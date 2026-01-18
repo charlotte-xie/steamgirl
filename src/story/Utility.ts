@@ -1,7 +1,7 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
 import { getLocation } from '../model/Location'
-import { type StatName, type MeterName, METER_INFO } from '../model/Stats'
+import { type StatName, type MeterName, MAIN_STAT_INFO, SKILL_INFO, METER_INFO } from '../model/Stats'
 import { capitalise } from '../model/Text'
 import { colour } from '../model/Format'
 
@@ -257,7 +257,7 @@ export const utilityScripts = {
   
   // Modify a base stat with optional display text and color
   addStat: (game: Game, params: { 
-    stat?: string
+    stat?: StatName
     change?: number
     min?: number
     max?: number
@@ -265,12 +265,15 @@ export const utilityScripts = {
     text?: string
     chance?: number
     hidden?: boolean
-  } = {}) => {
+  }) => {
     const statName = params.stat
     if (!statName || typeof statName !== 'string') {
       throw new Error('addStat script requires a stat parameter')
     }
-    
+    if (!(statName in MAIN_STAT_INFO || statName in SKILL_INFO || statName in METER_INFO)) {
+      throw new Error(`addStat: unknown stat '${statName}'`)
+    }
+
     const change = params.change
     if (typeof change !== 'number') {
       throw new Error('addStat script requires a change parameter')
@@ -297,6 +300,7 @@ export const utilityScripts = {
     const min = params.min ?? 0
     const max = params.max ?? 100
     newValue = Math.max(min, Math.min(max, newValue))
+    const actualChange = newValue - currentValue
     
     // Update base stat
     game.player.basestats.set(statName as StatName, newValue)
@@ -331,8 +335,10 @@ export const utilityScripts = {
         displayText = `${capitalise(statName)} ${sign}${change}`
       }
       
-      // Add colored text to scene
-      game.add(colour(displayText, displayColor))
+      // Add colored text to scene if something changed
+      if (actualChange !== 0) {
+        game.add(colour(displayText, displayColor))
+      }
     }
   },
 

@@ -64,6 +64,9 @@ export const startScripts = {
     g.player.basestats.set('Composure', 50)
     // Arousal, Stress, Pain remain at 0 (initialized in constructor)
     
+    // Set initial skill values
+    g.player.basestats.set('Mechanics', 20)
+
     // Recalculate stats after setting base stats
     g.run('calcStats', {})
     
@@ -102,8 +105,7 @@ export const startScripts = {
     .add('Coal smoke curls around your ankles like fingers. The station cathedral looms above: brass vertebrae, glass skin revealing grinding intestines of gear and piston. Somewhere a valve releases steam that tastes faintly of iron and skin.')
     .add(p('You are here. Alone. The ', highlight('acceptance letter', '#fbbf24', 'You managed to get accepted by the most prestigious University in Aetheria! A remarkable achievement for a country girl like you.'), ' pressed against your is your only connection to this place.'))
     .add(option('whatNow', {}, 'What Now?'))
-    // add find-lodgings tutorial quest
-    .addQuest('find-lodgings', {})
+
   },
 
   greeterSayGoodbye: (g: Game) => {
@@ -112,8 +114,15 @@ export const startScripts = {
   },
 
   greeterFlirt: (g: Game) => {
-    g.add('The automaton\'s gears stutter. Its optics flicker.')
-    g.add(speech('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?'))
+    const success = g.player.skillTest('Flirtation', 0)
+    if (success) {
+      g.add('The automaton\'s gears stutter. Its optics flicker.')
+      g.add(speech('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?'))
+      g.run('addStat', { stat: 'Flirtation', change: 1, chance: 1, max: 5 })
+    } else {
+      g.add('The automaton inclines its head with mechanical precision.')
+      g.add(speech('I am a hospitality unit. Is there something specific you require?'))
+    }
   },
 
   greeterGetDirections: (g: Game) => {
@@ -130,7 +139,9 @@ export const startScripts = {
 
   whatNow: (g: Game) => {
     g.add(p('You have a room booked in the ', highlight('backstreets', '#fbbf24', 'Not the most prestigious part of the city, but its the best we could afford.')," area. Might be a good idea to check it out first."))
-    .add("It's tempting to explore the city and get to know your new home. You could explore yourself and find your way to your room. Or there is a guided tour of the city that you could take for about an hour, which ends in the backstreets.")
+    // add find-lodgings tutorial quest
+    g.addQuest('find-lodgings', {})
+    g.add("You could explore yourself and find your way to your room. Or there is a guided tour of the city that you could take for about an hour, which ends in the backstreets.")
     .add(option('startExploring', {}, 'Explore'))
     .add(option('tourCity', {}, 'Tour the City'))
   },
