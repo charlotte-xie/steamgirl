@@ -355,6 +355,10 @@ export const utilityScripts = {
     // Get the NPC definition
     const npcDef = npc.template
 
+    // Mark scene as NPC interaction before onApproach (cleared scene already has npc/hideNpcImage preserved or undefined)
+    game.scene.npc = npcId
+    game.scene.hideNpcImage = false
+
     // Check if the NPC has an onApproach script
     if (npcDef.onApproach) {
       // Run the onApproach script

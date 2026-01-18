@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { SceneContentItem, ParagraphContent, SceneData } from '../model/Game'
+import { getNPCDefinition } from '../model/NPC'
 import { Tooltip } from './Tooltip'
 
 /**
@@ -13,7 +14,7 @@ export function renderScene(scene: SceneData): ReactNode {
   return (
     <div className="scene-dialog">
       {scene.content.map((item, index) => (
-        <ContentItem key={index} item={item} />
+        <ContentItem key={index} item={item} npcId={scene.npc} />
       ))}
     </div>
   )
@@ -22,7 +23,7 @@ export function renderScene(scene: SceneData): ReactNode {
 /**
  * Renders a SceneContentItem into a React component
  */
-function ContentItem({ item }: { item: SceneContentItem }): ReactNode {
+function ContentItem({ item, npcId }: { item: SceneContentItem; npcId?: string }): ReactNode {
   if (item.type === 'text') {
     return (
       <p style={item.color ? { color: item.color } : undefined}>
@@ -37,6 +38,15 @@ function ContentItem({ item }: { item: SceneContentItem }): ReactNode {
         {item.content.map((part, partIndex) => (
           <ParagraphPart key={partIndex} part={part} />
         ))}
+      </p>
+    )
+  }
+
+  if (item.type === 'speech') {
+    const color = item.color ?? (npcId ? getNPCDefinition(npcId)?.speechColor : undefined)
+    return (
+      <p className="speech" style={color ? { color } : undefined}>
+        {item.text}
       </p>
     )
   }

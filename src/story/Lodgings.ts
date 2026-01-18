@@ -1,8 +1,15 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
+import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { option } from '../model/Format'
+import { option, speech } from '../model/Format'
+
+registerNPC('landlord', {
+  name: 'Landlord',
+  image: '/images/npcs/Landlord.jpg',
+  speechColor: '#b8956e',
+})
 
 // Location definitions for the player's lodgings
 const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -98,25 +105,31 @@ export const lodgingsScripts = {
 
   enterLodgingsPhase1: (g: Game, _params: {}) => {
     // Phase 1: Landlord greets on backstreet
-    g.add(`A weathered figure steps out from a doorway. "${g.player.name}, I presume? I'm your landlord. You're all paid up for two weeks. Let me show you around."`)
+    g.scene.npc = 'landlord'
+    g.add('A weathered figure steps out from a doorway.')
+    g.add(speech(`${g.player.name}, I presume? I'm your landlord. You're all paid up for two weeks. Let me show you around.`))
     g.run('timeLapse', { minutes: 5 }) // Walking to the building
     g.add(option('enterLodgingsPhase2', {}, 'Next'))
   },
 
   enterLodgingsPhase2: (g: Game, _params: {}) => {
-    // Phase 2: Landlord shows bathroom
+    // Phase 2: Landlord shows bathroom — hide NPC image while showing rooms
+    g.scene.hideNpcImage = true
     g.run('timeLapse', { minutes: 2 })
-    g.add('He leads you down the hallway. "This is the bathroom - it\'s shared with the other tenants. Keep it clean, won\'t you?"')
+    g.add('He leads you down the hallway.')
+    g.add(speech("This is the bathroom - it's shared with the other tenants. Keep it clean, won't you?"))
     g.run('move', { location: 'bathroom'})
     g.add(option('finishIntroduction', {}, 'Next'))
   },
 
   finishIntroduction: (g: Game, _params: {}) => {
-    // Phase 3: Landlord hands over key
+    // Phase 3: Landlord hands over key — hide NPC image while showing rooms
     const bedroomLocation = g.getLocation('bedroom')
     g.run('timeLapse', { minutes: 3 })
     g.run('move', { location: 'bedroom' })
-    g.add('You follow your landlord to your room. He produces a brass key from his pocket and hands it to you. "Here\'s your key. Welcome home."')
+    g.scene.hideNpcImage = true
+    g.add('You follow your landlord to your room. He produces a brass key from his pocket and hands it to you.')
+    g.add(speech("Here's your key. Welcome home."))
     g.run('gainItem', { item: 'room-key', number: 1 , text: 'You now have a key to your room.'})
     
     // Mark bedroom as visited to prevent this sequence from running again

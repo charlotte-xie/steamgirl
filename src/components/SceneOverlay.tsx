@@ -3,6 +3,8 @@ import { useGame } from '../context/GameContext'
 import type { SceneData, SceneOptionItem } from '../model/Game'
 import { getScript } from '../model/Scripts'
 import { renderScene } from './Content'
+import { getNPCDefinition } from '../model/NPC'
+import { assetUrl } from '../utils/assetUrl'
 
 interface SceneOverlayProps {
   scene: SceneData
@@ -22,9 +24,17 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
   }
 
   const hasOptions = scene.options.length > 0
+  const npcId = scene.npc
+  const npcDef = npcId ? getNPCDefinition(npcId) : undefined
+  const npcImage = npcDef?.image && !scene.hideNpcImage ? npcDef.image : undefined
 
   return (
     <div className="scene-overlay">
+      {npcImage && (
+        <div className="scene-npc-image-wrap">
+          <img src={assetUrl(npcImage)} alt={npcDef?.name || npcId || 'NPC'} className="scene-npc-image" />
+        </div>
+      )}
       {renderScene(scene)}
       {(hasOptions) && (
         <div className="scene-actions">

@@ -11,6 +11,7 @@ export type ParagraphContent =
 export type SceneContentItem = 
   | { type: 'text'; text: string; color?: string }
   | { type: 'paragraph'; content: ParagraphContent[] }
+  | { type: 'speech'; text: string; color?: string }
 
 export type SceneOptionItem = 
   | { type: 'button'; script: [string, {}]; label?: string }
@@ -19,6 +20,10 @@ export type SceneData = {
   type: 'story'
   content: SceneContentItem[]
   options: SceneOptionItem[]
+  /** Set when the scene is an NPC interaction (from the approach script). */
+  npc?: string
+  /** When true, do not show the NPC image in the scene overlay. Set by approach to false; e.g. landlord sets true when showing rooms. */
+  hideNpcImage?: boolean
 }
 
 export interface GameData {
@@ -233,6 +238,12 @@ export class Game {
         cardDef.afterUpdate(this, {})
       }
     })
+
+    // Unset npc when there are no scene options (conversation has ended)
+    if (this.scene.options.length === 0) {
+      this.scene.npc = undefined
+      this.scene.hideNpcImage = undefined
+    }
     
     // Note: NPC movement is handled by timeLapse script when hour changes
     // If we need to check NPC positions after actions, it would go here
@@ -330,12 +341,14 @@ export class Game {
     })
   }
 
-  /** Clear the current scene (resets content and options). */
+  /** Clear the current scene (resets content and options). Preserves npc and hideNpcImage so follow-up scripts in the same flow keep speech colour and image behaviour. */
   clearScene(): void {
     this.scene = {
       type: 'story',
       content: [],
       options: [],
+      npc: this.scene.npc,
+      hideNpcImage: this.scene.hideNpcImage,
     }
   }
 

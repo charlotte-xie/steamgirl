@@ -1,6 +1,6 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
-import { option, p, highlight } from '../model/Format'
+import { option, p, highlight, speech } from '../model/Format'
 import type { CardDefinition } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
@@ -11,12 +11,18 @@ import '../story/Lodgings' // Register lodgings scripts
 registerNPC('automaton-greeter', {
   name: 'Automaton Greeter',
   description: 'A brass-plated automaton that greets visitors to the station.',
+  image: '/images/npcs/Greeter.jpg',
+  speechColor: '#a8d4f0',
   generate: (_game: Game, npc: NPC) => {
     // Set initial location to station
     npc.location = 'station'
   },
   onApproach: (game: Game) => {
-    game.add('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting: "Welcome to Ironspark Terminus. How may I assist you today?"')
+    game.add('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting:')
+      .add(speech('Welcome to Ironspark Terminus. How may I assist you today?'))
+    game.addOption('greeterSayGoodbye', {}, 'Say goodbye')
+    game.addOption('greeterGetDirections', {}, 'Get directions')
+    game.addOption('greeterFlirt', {}, 'Flirt')
   },
 })
 
@@ -98,6 +104,28 @@ export const startScripts = {
     .add(option('whatNow', {}, 'What Now?'))
     // add find-lodgings tutorial quest
     .addQuest('find-lodgings', {})
+  },
+
+  greeterSayGoodbye: (g: Game) => {
+    g.add('The automaton whirs softly.')
+    g.add(speech('Safe travels. May your gears never seize.'))
+  },
+
+  greeterFlirt: (g: Game) => {
+    g.add('The automaton\'s gears stutter. Its optics flicker.')
+    g.add(speech('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?'))
+  },
+
+  greeterGetDirections: (g: Game) => {
+    g.add('The automaton gestures with a brass limb.')
+    g.add(speech('The city centre lies straight ahead—follow the main concourse. It is a short walk.'))
+    g.add('It ticks thoughtfully.')
+    g.add(speech('I am also told there is a serene lake to the east. The university overlooks it, and one can reach it from the market district. Steam rises from the surface—rather picturesque.'))
+    g.run('discoverLocation', { location: 'lake' })
+  },
+
+  greeterEndScene: (_g: Game, _params: {}) => {
+    // No-op: takeAction has already cleared the scene; this just closes the overlay
   },
 
   whatNow: (g: Game) => {

@@ -319,10 +319,31 @@ img {
   backdrop-filter: blur(10px);
 }
 
+.scene-npc-image-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scene-npc-image {
+  max-height: 32em;
+  max-width: 32em;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
 .scene-overlay p {
   margin: 0;
   color: var(--text-main);
   margin-bottom: var(--space-sm);
+}
+
+.speech {
+  padding-left: 1em;
+  margin-left: 0.5em;
+  border-left: 3px solid var(--border-subtle);
 }
 
 .scene-actions {

@@ -16,6 +16,8 @@ export interface NPCDefinition {
   name?: string
   description?: string
   image?: string
+  /** Default colour for this NPC's speech/dialogue. Can be overridden per speech() call. */
+  speechColor?: string
   // Optional generate function that initializes the NPC instance (NPC is already constructed)
   generate?: (game: Game, npc: NPC) => void
   // Script to run when player approaches this NPC
