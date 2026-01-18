@@ -5,10 +5,6 @@ type CardProps = {
 }
 
 export function Card({ card }: CardProps) {
-  if (!card) {
-    return null
-  }
-  
   const cardDef = card.template
 
   // Determine quest status

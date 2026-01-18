@@ -1,6 +1,5 @@
 import { Tooltip } from '../components/Tooltip'
 import { Button } from '../components/Button'
-import { Card } from '../components/Card'
 import { useNavigate } from 'react-router-dom'
 
 export function DemoControls() {
@@ -21,7 +20,12 @@ export function DemoControls() {
         >
           <Button color="#f97316">Hover over this control</Button>
         </Tooltip>
-        <Card info={{ title: 'Card', description: 'Card description here' }} />
+        <div className="card-component">
+          <div className="card-content">
+            <h4 className="card-title">Card</h4>
+            <p className="card-description">Card description here</p>
+          </div>
+        </div>
         <Button disabled>Disabled button</Button>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center' }}>

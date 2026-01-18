@@ -88,7 +88,7 @@ export class NPC {
     }
   }
 
-  static fromJSON(json: string | NPCData, game: Game): NPC {
+  static fromJSON(json: string | NPCData, _game: Game): NPC {
     const data = typeof json === 'string' ? JSON.parse(json) : json
     const npcId = data.id
     
