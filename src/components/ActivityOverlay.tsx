@@ -1,10 +1,9 @@
 import { useGame } from '../context/GameContext'
 import { Thumbnail } from './Thumbnail'
 import type { LocationActivity } from '../model/Location'
-import { Game } from '../model/Game'
 
 export function ActivityOverlay() {
-  const { game, setGame } = useGame()
+  const { game, runScript } = useGame()
 
   if (!game) {
     return null
@@ -31,22 +30,7 @@ export function ActivityOverlay() {
   }
 
   const handleActivityClick = (activity: LocationActivity) => {
-    if (!game) return
-    
-    // Follow the game loop pattern: clear scene, run script, then afterAction
-    // Activities use script functions directly, not script names, so we can't use takeAction
-    // But we follow the same pattern
-    game.clearScene()
-    activity.script(game, {})
-    game.afterAction()
-    
-    // Trigger a React update by deserializing/reserializing to create a new reference
-    // This forces re-render so the UI reflects the script changes
-    const gameJson = JSON.stringify(game.toJSON())
-    const updatedGame = Game.fromJSON(gameJson)
-    setGame(updatedGame)
-    
-    localStorage.setItem('gameSaveAuto', gameJson)
+    runScript('runActivity', { activity: activity.name })
   }
 
   return (

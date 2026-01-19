@@ -359,6 +359,20 @@ export const utilityScripts = {
     }
   },
 
+  runActivity: (game: Game, params: { activity?: string } = {}) => {
+    const name = params.activity
+    if (!name || typeof name !== 'string') {
+      throw new Error('runActivity script requires an activity parameter (string name)')
+    }
+    const activities = game.location.template.activities || []
+    const act = activities.find((a) => a.name === name)
+    if (!act) {
+      game.add('Activity not found.')
+      return
+    }
+    act.script(game, {})
+  },
+
   examineItem: (game: Game, params: { item?: string } = {}) => {
     const itemId = params.item
     if (!itemId || typeof itemId !== 'string') {
