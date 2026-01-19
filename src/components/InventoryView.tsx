@@ -7,11 +7,6 @@ import { capitalise } from '../model/Text'
 export function InventoryView() {
   const { game, runScript } = useGame()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
-  if (!game) {
-    return null
-  }
-
   const inventory = game.player.inventory
 
   if (inventory.length === 0) {

@@ -5,29 +5,21 @@ import type { LocationLink } from '../model/Location'
 
 export function NavOverlay() {
   const { game, runScript } = useGame()
-
-  if (!game) {
-    return null
-  }
-
   const links = game.location.template.links || []
-  
+
   if (links.length === 0) {
     return null
   }
 
   const handleLocationClick = (link: LocationLink) => {
-    if (game) {
-      // Check access before allowing navigation
-      if (link.checkAccess) {
-        const accessReason = link.checkAccess(game)
-        if (accessReason) {
-          game.add(accessReason)
-          return
-        }
+    if (link.checkAccess) {
+      const accessReason = link.checkAccess(game)
+      if (accessReason) {
+        game.add(accessReason)
+        return
       }
-      runScript('go', { location: link.dest, minutes: link.time })
     }
+    runScript('go', { location: link.dest, minutes: link.time })
   }
 
   // Filter links to only show discovered locations

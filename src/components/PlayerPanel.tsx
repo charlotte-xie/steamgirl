@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from './Button'
-import { useNavigate } from 'react-router-dom'
 import { useGame } from '../context/GameContext'
+import { useGameLoader } from '../context/GameLoaderContext'
 import { Clock } from './Clock'
 import { InventoryView } from './InventoryView'
 import { Game } from '../model/Game'
@@ -14,8 +14,8 @@ import { SKILL_NAMES, SKILL_INFO } from '../model/Stats'
 type TabId = 'Status' | 'Inventory' | 'Quests' | 'Skills' | 'Settings'
 
 export function PlayerPanel() {
-  const navigate = useNavigate()
-  const { game, newGame, saveGame, loadGame, setGame } = useGame()
+  const { game, setGame } = useGame()
+  const { newGame, saveGame, loadGameSave, hasManualSave, returnToStart } = useGameLoader()
   const [selectedTab, setSelectedTab] = useState<TabId>('Status')
 
   const tabs: TabId[] = ['Status', 'Inventory', 'Quests', 'Skills', 'Settings']
@@ -23,7 +23,7 @@ export function PlayerPanel() {
   const renderTabContent = () => {
     switch (selectedTab) {
       case 'Status':
-        const effectCards = game?.player.cards.filter(card => card && card.type === 'Effect') || []
+        const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <Clock />
@@ -44,7 +44,7 @@ export function PlayerPanel() {
       case 'Inventory':
         return <InventoryView />
       case 'Quests':
-        const questCards = game?.player.cards.filter(card => card && card.type === 'Quest') || []
+        const questCards = game.player.cards.filter(card => card && card.type === 'Quest') || []
         if (questCards.length === 0) {
           return <p>No quests available.</p>
         }
@@ -56,16 +56,14 @@ export function PlayerPanel() {
           </div>
         )
       case 'Skills':
-        const skillsWithBase = game
-          ? SKILL_NAMES.filter((name) => (game.player.basestats.get(name) || 0) > 0)
-          : []
+        const skillsWithBase = SKILL_NAMES.filter((name) => (game.player.basestats.get(name) || 0) > 0)
         if (skillsWithBase.length === 0) {
           return <p>No skills learned yet.</p>
         }
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
             {skillsWithBase.map((name) => {
-              const base = game!.player.basestats.get(name) || 0
+              const base = game.player.basestats.get(name) || 0
               const info = SKILL_INFO[name]
               return (
                 <div
@@ -114,7 +112,7 @@ export function PlayerPanel() {
         </div>
         {/* Status effect tags overlay - top left */}
         {(() => {
-          const effectCards = game?.player.cards.filter(card => card && card.type === 'Effect') || []
+          const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
           if (effectCards.length === 0) return null
           return (
             <div className="avatar-effects-overlay">
@@ -133,7 +131,7 @@ export function PlayerPanel() {
           fontWeight: 500,
           pointerEvents: 'none'
         }}>
-          <h3>{game?.player.name || 'Unknown'}</h3>
+          <h3>{game.player.name || 'Unknown'}</h3>
         </div>
       </div>
 
@@ -157,26 +155,26 @@ export function PlayerPanel() {
       </div>
 
       <div className="dev-controls">
-        <Button onClick={() => { newGame() }}>
+        <Button onClick={() => newGame({ replace: true })}>
           Restart
         </Button>
-        <Button onClick={saveGame}>
+        <Button onClick={() => saveGame(game)}>
           Save
         </Button>
-        <Button onClick={loadGame}>
+        <Button
+          disabled={!hasManualSave}
+          onClick={() => {
+            const g = loadGameSave()
+            if (g) setGame(g)
+          }}
+        >
           Load
         </Button>
-        <Button onClick={() => {
-          if (game) {
-            const gameJson = JSON.stringify(game.toJSON())
-            const reloadedGame = Game.fromJSON(gameJson)
-            setGame(reloadedGame)
-          }
-        }}>
+        <Button onClick={() => setGame(Game.fromJSON(JSON.stringify(game.toJSON())))}>
           Reload
         </Button>
-        <Button onClick={() => navigate('/start')}>
-          Home
+        <Button onClick={() => returnToStart(game)}>
+          Exit Game
         </Button>
       </div>
     </div> 

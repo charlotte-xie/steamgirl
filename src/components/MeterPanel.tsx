@@ -6,10 +6,6 @@ const METER_NAMES: MeterName[] = ['Energy', 'Arousal', 'Composure', 'Stress', 'P
 export function MeterPanel() {
   const { game } = useGame()
 
-  if (!game) {
-    return null
-  }
-
   // Filter to show meters with value > 0 or meters with alwaysDisplay flag
   const visibleMeters = METER_NAMES.filter(meterName => {
     const value = game.player.stats.get(meterName) || 0

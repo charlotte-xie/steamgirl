@@ -5,10 +5,6 @@ import type { LocationActivity } from '../model/Location'
 export function ActivityOverlay() {
   const { game, runScript } = useGame()
 
-  if (!game) {
-    return null
-  }
-
   const activities = game.location.template.activities || []
   
   if (activities.length === 0) {

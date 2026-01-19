@@ -3,22 +3,13 @@ import { Thumbnail } from './Thumbnail'
 
 export function NPCOverlay() {
   const { game, runScript } = useGame()
+  const npcsPresent = game.npcsPresent
 
-  if (!game) {
-    return null
-  }
-
-  // Get NPCs present at current location
-  const npcsPresent = game.npcsPresent || []
-  
   if (npcsPresent.length === 0) {
     return null
   }
 
   const handleNPCClick = (npcId: string) => {
-    if (!game) return
-    
-    // Use the runScript function from context which handles scene clearing and updates
     runScript('approach', { npc: npcId })
   }
 

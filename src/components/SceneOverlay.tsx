@@ -14,7 +14,7 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
   const { game, runScript } = useGame()
 
   const handleOption = (option: SceneOptionItem) => {
-    if (option.type === 'button' && game) {
+    if (option.type === 'button') {
       const [scriptName, params] = option.script
       const script = getScript(scriptName)
       if (script) {
@@ -23,7 +23,7 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
     }
   }
 
-  const inScene = game?.inScene ?? false
+  const inScene = game.inScene
   const npcId = scene.npc
   const npcDef = npcId ? getNPCDefinition(npcId) : undefined
   const npcImage = npcDef?.image && !scene.hideNpcImage ? npcDef.image : undefined

@@ -12,30 +12,23 @@ interface LocationViewProps {
 
 export function LocationView({ location }: LocationViewProps) {
   const { game } = useGame()
-  
-  // Call beforeAction to set up transient fields (like npcsPresent) before rendering
-  if (game) {
-    game.beforeAction()
-  }
-  
+  game.beforeAction()
+
   const template = location.template
-  
-  // Determine which image to use based on time
   let locationImage = template.image
-  if (game && template.nightImage) {
+  if (template.nightImage) {
     const currentHour = Math.floor(game.hourOfDay)
-    // Between 8pm (20:00) and 6am (06:00)
     if (currentHour >= 20 || currentHour < 6) {
       locationImage = template.nightImage
     }
   }
-  
-  const scene = game?.scene
-  const sceneHasOptions = scene && scene.options.length > 0
-  const sceneHasContent = scene && scene.content.length > 0
-  const showLocationLinks = !(sceneHasOptions)
-  const showActivities = template.activities && template.activities.length > 0 && !sceneHasOptions
-  const showNPCs = game && game.npcsPresent && game.npcsPresent.length > 0 && !sceneHasOptions
+
+  const scene = game.scene
+  const sceneHasOptions = scene.options.length > 0
+  const sceneHasContent = scene.content.length > 0
+  const showLocationLinks = !sceneHasOptions
+  const showActivities = !!(template.activities && template.activities.length > 0 && !sceneHasOptions)
+  const showNPCs = game.npcsPresent.length > 0 && !sceneHasOptions
 
   return (
     <div 
@@ -57,7 +50,7 @@ export function LocationView({ location }: LocationViewProps) {
         {!locationImage && <p>No Location</p>}
       </div>
       <div className="overlays-container">
-        {(sceneHasContent||sceneHasContent) && <SceneOverlay scene={scene} />}
+        {(sceneHasContent || sceneHasOptions) && <SceneOverlay scene={scene} />}
       </div>
       <div className="bottom-overlays">
         {showActivities && <ActivityOverlay />}

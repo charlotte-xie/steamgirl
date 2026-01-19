@@ -1,14 +1,9 @@
 import { useGame } from '../context/GameContext'
 
 export function Clock() {
-  const { game } = useGame()
-  
-  if (!game) {
-    return null
-  }
-
-  // Convert unix timestamp (seconds) to Date
+  const { game, runScript } = useGame()
   const date = game.date
+  const inScene = game.inScene
   
   // Format date and time
   const formatDate = (d: Date): string => {
@@ -30,8 +25,9 @@ export function Clock() {
   const timeStr = formatTime(date)
 
   return (
-    <div className="clock-container">
-      <svg width="200" height="120" viewBox="0 0 200 120" className="clock-svg">
+    <div className="clock-container" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+        <svg width="200" height="120" viewBox="0 0 200 120" className="clock-svg">
         {/* Outer frame */}
         <defs>
           <linearGradient id="brassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -150,9 +146,42 @@ export function Clock() {
               fontFamily="var(--font-sans)" fontWeight="500">
           {dateStr}
         </text>
-        
-   
       </svg>
+        <div className="wait-panel" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          fontSize: '0.7rem',
+          color: 'var(--text-muted)',
+        }}>
+          <span>Wait…</span>
+          <div style={{ display: 'flex', gap: 2 }}>
+            {([1, 10, 60] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                disabled={inScene}
+                onClick={() => runScript('wait', { minutes: m, text: 'You wait for a while.' })}
+                title={`Wait ${m} minute${m === 1 ? '' : 's'}`}
+                style={{
+                  minWidth: 24,
+                  padding: '2px 4px',
+                  fontSize: '0.65rem',
+                  lineHeight: 1,
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-panel-soft)',
+                  color: 'var(--text-main)',
+                  cursor: inScene ? 'not-allowed' : 'pointer',
+                  opacity: inScene ? 0.5 : 1,
+                }}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

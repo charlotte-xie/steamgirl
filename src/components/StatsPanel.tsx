@@ -4,11 +4,6 @@ import { MeterPanel } from './MeterPanel'
 
 export function StatsPanel() {
   const { game } = useGame()
-
-  if (!game) {
-    return null
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
       <div style={{ 

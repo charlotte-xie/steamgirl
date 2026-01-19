@@ -1,32 +1,11 @@
 import { Button } from '../components/Button'
 import { CenteredContent } from '../components/CenteredContent'
-import { useGame } from '../context/GameContext'
+import { useGameLoader } from '../context/GameLoaderContext'
 import { useNavigate } from 'react-router-dom'
 
 export function StartScreen() {
-  const { game, newGame, loadGame, continueGame } = useGame()
+  const { newGame, loadGame, continueGame, hasGame } = useGameLoader()
   const navigate = useNavigate()
-  
-  // Check if a Game is present (either in context or saved in localStorage)
-  const hasGame = game !== null || localStorage.getItem('gameSave') !== null || localStorage.getItem('gameSaveAuto') !== null
-
-  const handleContinue = () => {
-    if (continueGame()) {
-      navigate('/game')
-    }
-  }
-
-  const handleNewGame = () => {
-    newGame()
-    navigate('/game')
-  }
-
-  const handleLoadGame = () => {
-    // TODO: Implement file picker or load dialog
-    if (loadGame()) {
-      navigate('/game')
-    }
-  }
 
   const handleSettings = () => {
     // TODO: Implement settings
@@ -39,13 +18,13 @@ export function StartScreen() {
   return (
     <CenteredContent>
       <div className="button-column">
-        <Button color="#f97316" disabled={!hasGame} onClick={handleContinue}>
+        <Button color="#f97316" disabled={!hasGame} onClick={() => continueGame()}>
           Continue
         </Button>
-        <Button color="#22c55e" onClick={handleNewGame}>
+        <Button color="#22c55e" onClick={newGame}>
           New Game
         </Button>
-        <Button color="#3b82f6" onClick={handleLoadGame}>
+        <Button color="#3b82f6" onClick={() => loadGame()}>
           Load Game
         </Button>
         <Button color="#a855f7" onClick={handleSettings}>
