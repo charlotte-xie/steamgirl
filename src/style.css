@@ -510,6 +510,22 @@ img {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
+/* Hypno overlay – transparent pink with rotating centre box */
+@keyframes hypno-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hypno-box {
+  width: 64px;
+  height: 64px;
+  border: 4px solid rgba(200, 100, 120, 0.9);
+  border-radius: var(--radius-sm);
+  animation: hypno-rotate 4s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 182, 193, 0.5);
+  flex-shrink: 0;
+}
+
 /* Bottom overlays for activities and navigation links */
 
 .bottom-overlays {
