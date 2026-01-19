@@ -147,11 +147,10 @@ export function Clock() {
           {dateStr}
         </text>
       </svg>
-        <div className="wait-panel" style={{
+        <div className="panel" style={{
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          fontSize: '0.7rem',
           color: 'var(--text-muted)',
         }}>
           <span>Wait…</span>
@@ -169,7 +168,7 @@ export function Clock() {
                   fontSize: '0.65rem',
                   lineHeight: 1,
                   border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-sm)',
+                  borderRadius: '3px',
                   background: 'var(--bg-panel-soft)',
                   color: 'var(--text-main)',
                   cursor: inScene ? 'not-allowed' : 'pointer',
