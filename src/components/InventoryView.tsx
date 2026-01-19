@@ -62,7 +62,7 @@ export function InventoryView() {
                     const gameJson = JSON.stringify(game.toJSON())
                     const updatedGame = Game.fromJSON(gameJson)
                     setGame(updatedGame)
-                    localStorage.setItem('gameSave', gameJson)
+                    localStorage.setItem('gameSaveAuto', gameJson)
                   }
                 }}
               >
@@ -94,7 +94,7 @@ export function InventoryView() {
                     const gameJson = JSON.stringify(game.toJSON())
                     const updatedGame = Game.fromJSON(gameJson)
                     setGame(updatedGame)
-                    localStorage.setItem('gameSave', gameJson)
+                    localStorage.setItem('gameSaveAuto', gameJson)
                   }
                 }}
               >

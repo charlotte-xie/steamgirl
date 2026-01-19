@@ -4,14 +4,14 @@ import { useGame } from '../context/GameContext'
 import { useNavigate } from 'react-router-dom'
 
 export function StartScreen() {
-  const { game, newGame, loadGame } = useGame()
+  const { game, newGame, loadGame, continueGame } = useGame()
   const navigate = useNavigate()
   
   // Check if a Game is present (either in context or saved in localStorage)
-  const hasGame = game !== null || localStorage.getItem('gameSave') !== null
+  const hasGame = game !== null || localStorage.getItem('gameSave') !== null || localStorage.getItem('gameSaveAuto') !== null
 
   const handleContinue = () => {
-    if (loadGame()) {
+    if (continueGame()) {
       navigate('/game')
     }
   }

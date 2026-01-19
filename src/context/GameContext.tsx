@@ -2,10 +2,14 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import { Game } from '../model/Game'
 import { getScript } from '../model/Scripts'
 
+const GAME_SAVE = 'gameSave'       // manual save/load
+const GAME_SAVE_AUTO = 'gameSaveAuto' // autosave during play
+
 type GameContextType = {
   game: Game | null
   setGame: (game: Game | null) => void
   loadGame: () => boolean
+  continueGame: () => boolean
   newGame: () => void
   saveGame: () => void
   clearGame: () => void
@@ -22,6 +26,7 @@ const GameContext = createContext<GameContextType>({
   game: null,
   setGame: throwMissingProvider,
   loadGame: throwMissingProvider,
+  continueGame: throwMissingProvider,
   newGame: throwMissingProvider,
   saveGame: throwMissingProvider,
   clearGame: throwMissingProvider,
@@ -30,10 +35,10 @@ const GameContext = createContext<GameContextType>({
 })
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  // Initialize game from localStorage on mount
+  // Initialize game from localStorage on mount: prefer manual save, then autosave
   const initializeGame = (): Game | null => {
     try {
-      const saved = localStorage.getItem('gameSave')
+      const saved = localStorage.getItem(GAME_SAVE) ?? localStorage.getItem(GAME_SAVE_AUTO)
       if (saved) {
         return Game.fromJSON(saved)
       }
@@ -46,21 +51,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [game, setGame] = useState<Game | null>(initializeGame)
   const [, setUpdateCounter] = useState(0)
 
+  /** Load from manual save (gameSave) only. */
   const loadGame = (): boolean => {
     try {
-      // Try to load from autosave first, then manual save
-      let saved = localStorage.getItem('gameSave')
-      if (!saved) {
-        saved = localStorage.getItem('gameSaveManual')
-      }
-      if (!saved) {
-        return false
-      }
-      const loadedGame = Game.fromJSON(saved)
-      setGame(loadedGame)
+      const saved = localStorage.getItem(GAME_SAVE)
+      if (!saved) return false
+      setGame(Game.fromJSON(saved))
       return true
     } catch (error) {
       console.error('Failed to load game:', error)
+      return false
+    }
+  }
+
+  /** Continue: load from autosave. */
+  const continueGame = (): boolean => {
+    try {
+      const saved = localStorage.getItem(GAME_SAVE_AUTO)
+      if (!saved) return false
+      setGame(Game.fromJSON(saved))
+      return true
+    } catch (error) {
+      console.error('Failed to continue game:', error)
       return false
     }
   }
@@ -73,12 +85,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       initScript(newGameInstance, {})
     }
     setGame(newGameInstance)
-    localStorage.setItem('gameSave', JSON.stringify(newGameInstance.toJSON()))
+    localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(newGameInstance.toJSON()))
   }
 
   const saveGame = () => {
     if (game) {
-      localStorage.setItem('gameSaveManual', JSON.stringify(game.toJSON()))
+      localStorage.setItem(GAME_SAVE, JSON.stringify(game.toJSON()))
     }
   }
 
@@ -88,8 +100,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const returnToStart = () => {
     if (game) {
-      // Save current game state to autosave slot before returning to start
-      localStorage.setItem('gameSave', JSON.stringify(game.toJSON()))
+      localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(game.toJSON()))
     }
     setGame(null)
   }
@@ -109,12 +120,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // This forces re-render without serialization/deserialization
     setUpdateCounter(prev => prev + 1)
     
-    // Auto-save after script execution (GUI/save logic stays in context)
-    localStorage.setItem('gameSave', JSON.stringify(game.toJSON()))
+    // autoSave
+    localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(game.toJSON()))
   }
 
   return (
-    <GameContext.Provider value={{ game, setGame, loadGame, newGame, saveGame, clearGame, returnToStart, runScript }}>
+    <GameContext.Provider value={{ game, setGame, loadGame, continueGame, newGame, saveGame, clearGame, returnToStart, runScript }}>
       {children}
     </GameContext.Provider>
   )

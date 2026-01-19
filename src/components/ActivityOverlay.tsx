@@ -46,8 +46,7 @@ export function ActivityOverlay() {
     const updatedGame = Game.fromJSON(gameJson)
     setGame(updatedGame)
     
-    // Auto-save after script execution
-    localStorage.setItem('gameSave', gameJson)
+    localStorage.setItem('gameSaveAuto', gameJson)
   }
 
   return (
