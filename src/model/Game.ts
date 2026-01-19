@@ -131,6 +131,10 @@ export class Game {
     this.updateNPCsPresent()
   }
 
+  /** Checks if we are currently in a scene. This usually disables other actions like waiting. */
+  get inScene(): boolean {
+    return this.scene.options.length > 0
+  }
 
   /** Gets the current NPC. */
   get npc(): NPC | null {

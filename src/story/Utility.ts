@@ -87,7 +87,29 @@ export const utilityScripts = {
       game.updateNPCsPresent()
     }
   },
-  
+
+  /** Conscious wait at current location: timeLapse, optional narrative, then optionally run another script if not in a scene. */
+  wait: (game: Game, params: { minutes?: number; text?: string; then?: { script: string; params?: object } } = {}) => {
+    const minutes = params.minutes ?? 15
+    if (typeof minutes !== 'number' || minutes < 0) {
+      throw new Error('wait script requires minutes (non-negative number)')
+    }
+    game.run('timeLapse', { minutes })
+    if (params.text) {
+      game.add(params.text)
+    }
+
+    if (game.inScene) {
+      return;
+    }
+
+
+    const t = params.then
+    if (t?.script) {
+      game.run(t.script, t.params ?? {})
+    }
+  },
+
   // Add an item to the player's inventory with optional text
   gainItem: (game: Game, params: { text?: string; item?: string; number?: number } = {}) => {
     const itemId = params.item

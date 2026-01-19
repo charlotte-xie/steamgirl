@@ -23,7 +23,7 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
     }
   }
 
-  const hasOptions = scene.options.length > 0
+  const inScene = game?.inScene ?? false
   const npcId = scene.npc
   const npcDef = npcId ? getNPCDefinition(npcId) : undefined
   const npcImage = npcDef?.image && !scene.hideNpcImage ? npcDef.image : undefined
@@ -36,7 +36,7 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
         </div>
       )}
       {renderScene(scene)}
-      {(hasOptions) && (
+      {(inScene) && (
         <div className="scene-actions">
             {scene.options.map((option, index) => {
               if (option.type === 'button') {
