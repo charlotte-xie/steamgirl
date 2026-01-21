@@ -34,11 +34,11 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/tavern.jpg',
     links: [
       { dest: 'lowtown', time: 2, travel: true, label: 'Exit to Street' }, // 2 minutes back to Lowtown
-      { dest: 'tavern-ladies-bathroom', time: 1, label: 'Ladies Bathroom' },
+      { dest: 'tavern-ladies-bathroom', time: 1, label: 'Ladies' },
       { 
         dest: 'tavern-gents-bathroom', 
         time: 1, 
-        label: 'Gents Bathroom',
+        label: 'Gents',
         onFollow: (g: Game, _p: {}) => {
           g.add("You shouldn't be going in there... are you sure?")
           g.addOption('enterGentsBathroom', {}, 'Enter Gents')
@@ -52,6 +52,31 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       g.getNPC('elvis-crowe')
       g.getNPC('jonny-elric')
     },
+    activities: [
+      {
+        name: 'Hang at Bar',
+        symbol: '🍺',
+        script: (g: Game) => {
+          g.run('wait', { minutes: 30 })
+          // If no scene was triggered, add random flavor text
+          if (!g.inScene) {
+            const flavorTexts = [
+              'You lean against the bar and watch the regulars come and go. The steam from the still fills the air with a warm, yeasty scent.',
+              'You find a quiet corner and observe the tavern\'s rhythm. Workers unwind after their shifts, sharing stories over pints.',
+              'You sit at the bar, listening to the clink of glasses and the low murmur of conversations. The brass fixtures gleam in the dim light.',
+              'You watch Ivan work behind the bar, his mechanical precision evident in every pour. The regulars nod in your direction.',
+              'You take in the atmosphere—the worn wooden tables, the steam-powered taps, the sense of community among the patrons.',
+            ]
+            const randomText = flavorTexts[Math.floor(Math.random() * flavorTexts.length)]
+            g.add(randomText)
+          }
+        },
+        condition: (g: Game) => {
+          const hour = g.hourOfDay
+          return hour >= 15 || hour < 1 // (wraps around)
+        },
+      },
+    ],
   },
   'tavern-ladies-bathroom': {
     name: 'Ladies Bathroom',

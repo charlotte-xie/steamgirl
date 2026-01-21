@@ -577,8 +577,8 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: var(--space-lg);
-  gap: var(--space-md);
+  padding: var(--space-md);
+  gap: var(--space-xs);
   width: 100%;
 }
 
@@ -600,8 +600,7 @@ img {
 .overlay-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-sm);
+  padding: var(--space-xs);
   background: var(--bg-overlay);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -612,6 +611,7 @@ img {
 
 .overlay-group-title {
   font-size: 0.7rem;
+  text-align: center;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -622,21 +622,21 @@ img {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: var(--space-xs);
 }
 
 .overlay-group-content--center {
   justify-content: center;
 }
 
-/* Thumbnails inside .nav-group: no per-link box, minimal styling */
+/* Thumbnails inside overlay groups: no per-item box, minimal styling (shared for nav, activities, characters) */
+.overlay-group .thumbnail,
 .nav-group .thumbnail {
   background: transparent;
-
   box-shadow: none;
   backdrop-filter: none;
 }
 
+.overlay-group .thumbnail:hover:not(:disabled),
 .nav-group .thumbnail:hover:not(:disabled) {
   border: 1px solid transparent;
   background: var(--bg-panel-soft);
@@ -656,7 +656,6 @@ img {
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-strong), var(--shadow-inner);
-  backdrop-filter: blur(10px);
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 100px;
