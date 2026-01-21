@@ -23,7 +23,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Random encounters for the station
           const encounters = [
@@ -108,7 +108,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Attempt to discover Lowtown - if discovered, stop exploration
           if (maybeDiscoverLocation(
@@ -205,7 +205,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Attempt to discover the Lake - if discovered, stop exploration
           if (maybeDiscoverLocation(
@@ -272,7 +272,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Attempt to discover the Lake - if discovered, stop exploration
           if (maybeDiscoverLocation(

@@ -126,7 +126,7 @@ export const startScripts = {
   /** Skip intro: discover all locations for debug access, then jump to bedroom with key and goals. */
   skipIntro: (g: Game) => {
     discoverAllLocations(g)
-    g.run('timeLapse', { minutes: 3 })
+    g.timeLapse(3)
     g.run('move', { location: 'bedroom' })
     g.scene.hideNpcImage = true
     g.add('You skip ahead to your room in the backstreets. Your key is in your hand; your goals, ahead.')

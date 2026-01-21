@@ -103,6 +103,7 @@ const slotMachineScripts = {
       return
     }
     g.player.removeItem('crown', SLOT_PLAY_COST)
+    g.timeLapse(2)
     const win = slotMachineRoll()
     g.add('The reels clatter to a stop.')
     if (win === 0) {
@@ -115,6 +116,7 @@ const slotMachineScripts = {
     addSlotMachineOptions(g)
   },
   slotMachineHack: (g: Game) => {
+    g.timeLapse(15)
     const ok = g.player.skillTest('Aetherics', 0)
     g.add('You focus on the machine’s aetheric signature and reach for the payout relay.')
     if (ok) {

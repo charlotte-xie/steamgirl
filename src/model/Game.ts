@@ -272,6 +272,12 @@ export class Game {
     return this
   }
 
+  /** Advance time by the given minutes (runs the timeLapse script). Returns this for chaining. */
+  timeLapse(minutes?: number): this {
+    this.run('timeLapse', { minutes })
+    return this
+  }
+
   /** Add a quest card to the player. Returns this for fluent chaining. */
   addQuest(questId: string, args: Record<string, unknown> = {}): this {
     // Check if player already has this quest

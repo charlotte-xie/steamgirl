@@ -243,7 +243,8 @@ img {
 .panel-tabs {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   width: 100%;
 }
 
@@ -464,15 +465,70 @@ img {
   font-size: 0.9rem;
 }
 
+/* Clock and wait: shared panel style, always above tabs */
 .clock-container {
   display: flex;
-  justify-content: center;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: var(--space-xs);
+}
+
+.clock-panel {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  margin: var(--space-sm) 0;
+  justify-content: center;
+  gap: var(--space-xs);
+  background: rgba(34, 24, 16, 0.9);
+  border: 1px solid rgba(220, 170, 90, 0.4);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.clock-panel--clock {
+  padding: 0;
+  width: 200px;
+}
+
+.clock-panel--wait {
+  padding: var(--space-xsS);
+  min-width: 100px;
+  color: var(--text-muted);
 }
 
 .clock-svg {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  display: block;
+}
+
+.clock-wait-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.clock-wait-btn {
+  min-width: 24px;
+  padding: 4px;
+  font-size: 0.75rem;
+  line-height: 1;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.clock-wait-btn:hover:not(:disabled) {
+  border-color: var(--border-main);
+  background: var(--bg-panel);
+}
+
+.clock-wait-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .button-primary {
@@ -497,17 +553,6 @@ img {
   padding: 6px 14px;
   background: rgba(0, 0, 0, 0.3);
   font-size: 0.9rem;
-}
-
-.clock-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: var(--space-sm) 0;
-}
-
-.clock-svg {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
 /* Hypno overlay – transparent pink with rotating centre box */

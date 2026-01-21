@@ -10,15 +10,16 @@ import { StatsPanel } from './StatsPanel'
 import { EffectTag } from './EffectTag'
 import { assetUrl } from '../utils/assetUrl'
 import { SKILL_NAMES, SKILL_INFO } from '../model/Stats'
+import { getLocation } from '../model/Location'
 
-type TabId = 'Status' | 'Inventory' | 'Quests' | 'Skills' | 'Settings'
+type TabId = 'Status' | 'Inventory' | 'Quests' | 'Skills' | 'Characters' | 'Settings'
 
 export function PlayerPanel() {
   const { game, setGame } = useGame()
   const { newGame, saveGame, loadGameSave, hasManualSave, returnToStart } = useGameLoader()
   const [selectedTab, setSelectedTab] = useState<TabId>('Status')
 
-  const tabs: TabId[] = ['Status', 'Inventory', 'Quests', 'Skills', 'Settings']
+  const tabs: TabId[] = ['Status', 'Inventory', 'Quests', 'Skills', 'Characters', 'Settings']
 
   const renderTabContent = () => {
     switch (selectedTab) {
@@ -26,7 +27,6 @@ export function PlayerPanel() {
         const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-            <Clock />
             <StatsPanel />
             
             {effectCards.length > 0 && (
@@ -86,6 +86,41 @@ export function PlayerPanel() {
             })}
           </div>
         )
+      case 'Characters': {
+        const npcList = Array.from(game.npcs.values())
+        if (npcList.length === 0) {
+          return <p>No characters yet.</p>
+        }
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+            {npcList
+              .map((npc) => {
+                const def = npc.template
+                const displayName = npc.nameKnown && def.name ? def.name : (def.description || def.name || npc.id)
+                const locName = npc.location
+                  ? (getLocation(npc.location)?.name ?? npc.location)
+                  : '—'
+                return { npc, displayName, locName }
+              })
+              .sort((a, b) => a.displayName.localeCompare(b.displayName))
+              .map(({ npc, displayName, locName }) => (
+                <div
+                  key={npc.id}
+                  style={{
+                    padding: 'var(--space-xs) var(--space-sm)',
+                    background: 'var(--bg-panel-soft)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--text-main)',
+                    fontSize: '0.9rem',
+                  }}
+                  title={npc.template.description || npc.id}
+                >
+                  {displayName} <span style={{ color: 'var(--text-muted)' }}>({locName})</span>
+                </div>
+              ))}
+          </div>
+        )
+      }
       case 'Settings':
         return <p>Settings content will be added later.</p>
       default:
@@ -135,7 +170,8 @@ export function PlayerPanel() {
         </div>
       </div>
 
-      <div className="game-canvas canvas-framed" >
+      <div className="game-canvas canvas-framed">
+        <Clock />
         <div className="panel-tabs">
           <div className="tabs-header">
             {tabs.map((tab) => (

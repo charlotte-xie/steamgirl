@@ -94,7 +94,7 @@ export const utilityScripts = {
     if (typeof minutes !== 'number' || minutes < 0) {
       throw new Error('wait script requires minutes (non-negative number)')
     }
-    game.run('timeLapse', { minutes })
+    game.timeLapse(minutes)
     if (params.text) {
       game.add(params.text)
     }
@@ -137,7 +137,7 @@ export const utilityScripts = {
   // Explore the current location - shows a random encounter
   explore: (game: Game) => {
     // Advance time by 10 minutes (600 seconds)
-    game.run('timeLapse', { seconds: 10 * 60 })
+    game.timeLapse(10)
     
     // Random encounters for flavor
     const encounters = [
@@ -229,7 +229,7 @@ export const utilityScripts = {
     if (typeof minutes !== 'number' || minutes < 0) {
       throw new Error('go script minutes must be a non-negative number')
     }
-    game.run('timeLapse', { seconds: minutes * 60 })
+    game.timeLapse(minutes)
     
     // Actually move the player
     game.run('move', { location: locationId })

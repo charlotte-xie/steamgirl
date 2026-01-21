@@ -25,8 +25,8 @@ export function Clock() {
   const timeStr = formatTime(date)
 
   return (
-    <div className="clock-container" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+    <div className="clock-container">
+      <div className="clock-panel--clock">
         <svg width="200" height="120" viewBox="0 0 200 120" className="clock-svg">
         {/* Outer frame */}
         <defs>
@@ -147,38 +147,22 @@ export function Clock() {
           {dateStr}
         </text>
       </svg>
-        <div className="panel" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          color: 'var(--text-muted)',
-        }}>
-          <span>Wait…</span>
-          <div style={{ display: 'flex', gap: 2 }}>
-            {([1, 10, 60] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                disabled={inScene}
-                onClick={() => runScript('wait', { minutes: m, text: 'You wait for a while.' })}
-                title={`Wait ${m} minute${m === 1 ? '' : 's'}`}
-                style={{
-                  minWidth: 24,
-                  padding: '2px 4px',
-                  fontSize: '0.65rem',
-                  lineHeight: 1,
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: '3px',
-                  background: 'var(--bg-panel-soft)',
-                  color: 'var(--text-main)',
-                  cursor: inScene ? 'not-allowed' : 'pointer',
-                  opacity: inScene ? 0.5 : 1,
-                }}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+      </div>
+      <div className="clock-panel clock-panel--wait">
+        <span>Wait…</span>
+        <div className="clock-wait-buttons">
+          {([1, 10, 60] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              className="clock-wait-btn"
+              disabled={inScene}
+              onClick={() => runScript('wait', { minutes: m, text: 'You wait for a while.' })}
+              title={`Wait ${m} minute${m === 1 ? '' : 's'}`}
+            >
+              {m}
+            </button>
+          ))}
         </div>
       </div>
     </div>
