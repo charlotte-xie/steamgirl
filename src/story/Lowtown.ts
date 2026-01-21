@@ -25,7 +25,6 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [{ dest: 'lowtown', time: 2 }], // 2 minutes back to Lowtown
     onArrive: (g: Game) => {
       g.getNPC('ivan-hess')
-      g.updateNPCsPresent()
     },
   },
 }
@@ -34,13 +33,6 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 registerNPC('spice-dealer', {
   name: 'Spice Dealer',
   description: 'A shady character lurking in the shadows.',
-  generate: (game: Game, npc: NPC) => {
-    // Set initial location based on schedule
-    const schedule: [number, number, string][] = [
-      [15, 2, 'lowtown'], // 3pm-2am in lowtown (wrap-around)
-    ]
-    npc.followSchedule(game, schedule)
-  },
   onApproach: (game: Game) => {
     game.add('The spice dealer eyes you warily, his mechanical hand twitching. "What do you want?" he asks in a low voice.')
   },
@@ -51,8 +43,6 @@ registerNPC('spice-dealer', {
       [15, 2, 'lowtown'], // 3pm-2am in lowtown (wrap-around)
     ]
     npc.followSchedule(game, schedule)
-    // Update npcsPresent after NPC moves
-    game.updateNPCsPresent()
   },
 })
 
@@ -61,16 +51,9 @@ registerNPC('ivan-hess', {
   description: 'The barkeeper of the Copper Pot Tavern.',
   image: '/images/npcs/barkeep.jpg',
   speechColor: '#c4a35a',
-  generate: (game: Game, npc: NPC) => {
-    const schedule: [number, number, string][] = [
-      [10, 2, 'copper-pot-tavern'], // 10am–2am at the tavern (wrap-around)
-    ]
-    npc.followSchedule(game, schedule)
-  },
   onMove: (game: Game) => {
     const npc = game.getNPC('ivan-hess')
     npc.followSchedule(game, [[10, 2, 'copper-pot-tavern']])
-    game.updateNPCsPresent()
   },
   onApproach: (game: Game) => {
     game.add('Ivan Hess wipes down the bar with a rag, then looks up. His expression is guarded but not unfriendly.')
