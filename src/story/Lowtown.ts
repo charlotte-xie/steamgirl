@@ -42,8 +42,45 @@ registerNPC('spice-dealer', {
   name: 'Johnny Bug',
   description: 'Shady spice dealer',
   image: '/images/npcs/dealer.jpg',
+  speechColor: '#7a8b6b',
   onApproach: (game: Game) => {
     game.add('The spice dealer eyes you warily, his mechanical hand twitching. "What do you want?" he asks in a low voice.')
+    game.run('interact', { script: 'onGeneralChat' })
+  },
+  scripts: {
+    onGeneralChat: (g: Game) => {
+      const npc = g.npc!
+      const price = npc.flirtSuccess ? 5 : 10
+      g.addOption('interact', { script: 'buySpice' }, `Buy Spice (${price} Kr)`)
+      if (!npc.flirtSuccess) g.addOption('interact', { script: 'flirt' }, 'Flirt')
+      g.addOption('endConversation', { text: 'You step away. He watches you go with a flicker of suspicion.', reply: "Watch yourself out there." }, 'Leave')
+    },
+    buySpice: (g: Game) => {
+      const npc = g.npc!
+      const price = npc.flirtSuccess ? 5 : 10
+      const crown = g.player.inventory.find((i) => i.id === 'crown')?.number ?? 0
+      if (crown < price) {
+        g.add(speech(`You need ${price} Krona. Come back when you've got it.`, g.npc?.template.speechColor))
+        g.run('interact', { script: 'onGeneralChat' })
+        return
+      }
+      g.player.removeItem('crown', price)
+      g.run('gainItem', { item: 'spice', number: 1, text: 'You receive a small packet of Spice.' })
+      g.add(speech('Pleasure doin\' business. Don\'t say where you got it.', g.npc?.template.speechColor))
+      g.run('interact', { script: 'onGeneralChat' })
+    },
+    flirt: (g: Game) => {
+      const npc = g.npc!
+      const ok = g.player.skillTest('Charm', 0)
+      if (ok) {
+        npc.flirtSuccess = true
+        g.add('He softens slightly, the corner of his mouth quirking. After a pause, he nods.')
+        g.add(speech('Alright. For you? Five. Don\'t spread it around.', g.npc?.template.speechColor))
+      } else {
+        g.add(speech('Save it. I\'m not buyin\'.', g.npc?.template.speechColor))
+      }
+      g.run('interact', { script: 'onGeneralChat' })
+    },
   },
   onMove: (game: Game) => {
     const npc = game.getNPC('spice-dealer')

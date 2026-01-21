@@ -9,6 +9,8 @@ export interface NPCData {
   approachCount?: number
   location?: string | null
   nameKnown?: boolean // Whether the player knows the NPC's name
+  /** Set when e.g. a successful flirt unlocks a permanent discount from this NPC. */
+  flirtSuccess?: boolean
 }
 
 // Static / library information for an NPC
@@ -36,6 +38,7 @@ export class NPC {
   approachCount: number
   location: string | null
   nameKnown: boolean // Whether the player knows the NPC's name
+  flirtSuccess: boolean
 
   constructor(id: NPCId, game: Game) {
     this.game = game
@@ -43,6 +46,7 @@ export class NPC {
     this.approachCount = 0
     this.location = null
     this.nameKnown = false // Names are unknown by default
+    this.flirtSuccess = false
   }
 
   /**
@@ -92,6 +96,7 @@ export class NPC {
       approachCount: this.approachCount,
       location: this.location,
       nameKnown: this.nameKnown,
+      flirtSuccess: this.flirtSuccess,
     }
   }
 
@@ -119,7 +124,8 @@ export class NPC {
     npc.approachCount = data.approachCount ?? 0
     npc.location = data.location ?? null
     npc.nameKnown = data.nameKnown ?? false
-    
+    npc.flirtSuccess = data.flirtSuccess ?? false
+
     return npc
   }
 }

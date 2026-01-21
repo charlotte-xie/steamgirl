@@ -124,6 +124,16 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
       game.run('addStat', { stat: 'Arousal', change: 15 })
     },
   },
+  spice: {
+    name: 'Spice',
+    stackable: true,
+    description: 'A strange compound that lifts the spirits. Unpredictable side effects.',
+    onConsume: (game: Game, _params: {}) => {
+      game.run('addStat', { stat: 'Mood', change: 5, max: 100 })
+      if (Math.random() < 0.5) consumeAlcohol(game, 60)
+      game.player.calcStats()
+    },
+  },
 }
 
 /** Represents a game item instance with mutable state. Definitional data is accessed via the template property. */
