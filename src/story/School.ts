@@ -12,7 +12,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/institute.jpg',
     secret: true, // Starts as undiscovered - must be unlocked through induction
     links: [
-      { dest: 'school', time: 2 }, // Exit to University grounds (1 minute)
+      { dest: 'school', time: 2, label: 'Exit University' }, // Exit to University grounds (1 minute)
       { dest: 'great-hall', time: 2 }, // 2 minutes to great hall
       { dest: 'classroom', time: 2 }, // 1 minute to classroom
       { dest: 'courtyard', time: 2 }, // 2 minutes to courtyard
@@ -25,6 +25,38 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hallway', time: 2 }, // 2 minutes back to hallway
     ],
+    activities: [
+      {
+        name: 'Socialise in Great Hall',
+        symbol: '♣',
+        script: (g: Game) => {
+          g.timeLapse(30)
+          g.add('You mingle with other students in the Great Hall.')
+          g.run('addStat', { stat: 'Mood', change: 1, max: 70, chance: 0.5 })
+        },
+        condition: (g: Game) => g.hourOfDay >= 7 && g.hourOfDay < 20,
+      },
+      {
+        name: 'Breakfast in Great Hall',
+        symbol: '☕',
+        script: (g: Game) => {
+          g.timeLapse(15)
+          g.add('You have breakfast in the Great Hall.')
+          g.player.timers.set('lastEat', g.time)
+        },
+        condition: (g: Game) => g.hourOfDay >= 7 && g.hourOfDay < 9,
+      },
+      {
+        name: 'Lunch in Great Hall',
+        symbol: '🍽',
+        script: (g: Game) => {
+          g.timeLapse(30)
+          g.add('You have lunch in the Great Hall.')
+          g.player.timers.set('lastEat', g.time)
+        },
+        condition: (g: Game) => g.hourOfDay >= 12 && g.hourOfDay < 14,
+      },
+    ],
   },
   classroom: {
     name: 'Classroom',
@@ -33,13 +65,36 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hallway', time: 2 }, // 1 minute back to hallway
     ],
+    activities: [
+      {
+        name: 'Study in classroom',
+        symbol: '📖',
+        script: (g: Game) => {
+          g.timeLapse(60)
+          g.add('You spend an hour studying in the classroom.')
+          const skill = Math.random() < 0.5 ? 'Aetherics' : 'Mechanics'
+          g.run('addStat', { stat: skill, change: 1 })
+        },
+      },
+    ],
   },
   courtyard: {
-    name: 'University Courtyard',
+    name: 'Courtyard',
     description: 'An open courtyard within the university, where professors take their tea breaks.',
     image: '/images/courtyard.jpg',
     links: [
       { dest: 'hallway', time: 2 }, // 2 minutes back to hallway
+    ],
+    activities: [
+      {
+        name: 'Socialise in Courtyard',
+        symbol: '♣',
+        script: (g: Game) => {
+          g.timeLapse(30)
+          g.add('You chat with others in the courtyard.')
+          g.run('addStat', { stat: 'Mood', change: 1, max: 70, chance: 0.5 })
+        },
+      },
     ],
   },
 }

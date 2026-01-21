@@ -128,11 +128,9 @@ const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   },
 }
 
-const hasAetherics = (g: Game) => (g.player.basestats.get('Aetherics') ?? 0) >= 1
-
 const addSlotMachineOptions = (g: Game) => {
   g.addOption('slotMachinePlay', {}, 'Play (2 Kr)')
-  if (hasAetherics(g)) g.addOption('slotMachineHack', {}, 'Hack')
+  if (g.player.hasSkill('Aetherics', 1)) g.addOption('slotMachineHack', {}, 'Hack')
   g.addOption('slotMachineLeave', {}, 'Leave')
 }
 

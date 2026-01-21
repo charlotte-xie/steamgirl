@@ -9,6 +9,7 @@ export type TimerName =
   | 'lastNap'
   | 'lastWash'
   | 'lastExercise'
+  | 'lastEat'
 
 export interface PlayerData {
   name: string
@@ -214,6 +215,11 @@ export class Player {
     this.stats.forEach((value, statName) => {
       this.stats.set(statName, Math.max(0, Math.min(100, value)))
     })
+  }
+
+  /** True if the player's base value for the given skill (or stat) is at least minLevel. */
+  hasSkill(statOrSkill: StatName, minLevel: number =1): boolean {
+    return (this.basestats.get(statOrSkill) ?? 0) >= minLevel
   }
 
   /**

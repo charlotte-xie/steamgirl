@@ -155,7 +155,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   },
   school: {
     name: 'University',
-    description: 'A grand educational institution where knowledge flows like steam through pipes.',
+    description: 'The precinct of the University of Aetheria, a grand educational institution where knowledge flows like steam through pipes.',
     image: '/images/school.jpg',
     mainLocation: true,
     links: [
@@ -164,6 +164,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'subway-university', time: 2, label: 'Subway' },
       { 
         dest: 'hallway', 
+        label: 'Enter University',
         time: 2,
         checkAccess: (game: Game) => {
           // Check if access is allowed: 7am-9pm (7-21) on weekdays (Mon-Fri, day 1-5)
@@ -271,7 +272,10 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/market.jpg',
     description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
     mainLocation: true,
-    links: [{ dest: 'lake', time: 5 }, { dest: 'backstreets', time: 5 }, { dest: 'default', time: 5 }], // 5 minutes to lake, 5 minutes to backstreets, 3 minutes to city centre
+    links: [
+      { dest: 'lake', time: 8 }, 
+      { dest: 'backstreets', time: 8 }, 
+      { dest: 'default', time: 5 }], 
     activities: [
       {
         name: 'Explore',
