@@ -56,14 +56,17 @@ export function NavOverlay() {
             const accessReason = link.checkAccess ? link.checkAccess(game) : null
             const isDisabled = !!accessReason
             const displayName = link.label ?? targetLocation.name ?? link.dest
+            const timeCost = link.cost != null && link.cost > 0
+              ? `${link.time} min, ${link.cost} kr`
+              : `${link.time} min`
             return (
               <Thumbnail
                 key={`${link.dest}-${index}`}
                 image={targetLocation.image}
                 name={displayName}
-                subtitle={`${link.time} min`}
+                subtitle={timeCost}
                 onClick={() => handleLocationClick(link)}
-                title={`${displayName} (${link.time} min)`}
+                title={`${displayName} (${timeCost})`}
                 disabled={isDisabled}
                 disabledReason={accessReason || undefined}
               />

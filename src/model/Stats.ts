@@ -12,6 +12,7 @@ export type MainStatName =
   | 'Strength'
 
 export type SkillName =
+  | 'Aetherics'
   | 'Dancing'
   | 'Fitness'
   | 'Etiquette'
@@ -76,6 +77,10 @@ export const MAIN_STAT_INFO: Record<MainStatName, StatInfo> = {
  * Map of all skill names to their information.
  */
 export const SKILL_INFO: Record<SkillName, StatInfo> = {
+  Aetherics: {
+    description: 'Your grasp of aetheric systems and subtle energies.',
+    basedOn: 'Wits',
+  },
   Dancing: {
     description: 'Your ability to move gracefully and perform dance moves.',
     basedOn: 'Agility',

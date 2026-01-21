@@ -44,6 +44,8 @@ export interface LocationLink {
   checkAccess?: (game: Game) => string | null | undefined // Returns reason string if access denied, null/undefined if allowed
   /** If true, show this link under Travel instead of Places (e.g. subway-to-subway). */
   travel?: boolean
+  /** Cost in Krona; shown in nav e.g. "5 min, 3 kr" when set. */
+  cost?: number
 }
 
 export interface LocationActivity {

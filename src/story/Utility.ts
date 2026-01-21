@@ -324,6 +324,11 @@ export const utilityScripts = {
     const max = params.max ?? 100
     newValue = Math.max(min, Math.min(max, newValue))
     const actualChange = newValue - currentValue
+
+    if ((actualChange == 0) ||(Math.sign(actualChange) != Math.sign(change))) {
+      // No state change, maybe already at max/min
+      return
+    }
     
     // Update base stat
     game.player.basestats.set(statName as StatName, newValue)
