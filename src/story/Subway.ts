@@ -31,7 +31,28 @@ const subwayOnFollow = (g: Game, destId: LocationId) => {
   }
 }
 
-const subwayLink = (dest: LocationId, label: string, time = 5) => ({
+/** Subway line order (Docks → Lowtown → Terminus → University → Airport). Nav travel links are shown in this order. */
+const SUBWAY_LINE_ORDER: [LocationId, string, LocationId][] = [
+  ['subway-docks', 'To Docks', 'docks'],
+  ['subway-lowtown', 'To Lowtown', 'lowtown'],
+  ['subway-terminus', 'To Terminus', 'station'],
+  ['subway-university', 'To University', 'school'],
+  ['subway-airport', 'To Airport', 'airport'],
+]
+
+const SUBWAY_INDEX = new Map(SUBWAY_LINE_ORDER.map(([id], i) => [id, i]))
+const SUBWAY_MIN_PER_STOP = 4
+
+/** Stops between two subway stations along the line (absolute positions). */
+const stopsBetween = (from: LocationId, to: LocationId): number => {
+  const i = SUBWAY_INDEX.get(from)
+  const j = SUBWAY_INDEX.get(to)
+  if (i == null || j == null) return 1
+  return Math.abs(j - i)
+}
+
+/** Builds a subway travel link (fare, onFollow, etc.). imageLocation = main area for nav thumbnail. */
+export const subwayLink = (dest: LocationId, label: string, time: number, imageLocation?: LocationId) => ({
   dest,
   time,
   label,
@@ -39,29 +60,37 @@ const subwayLink = (dest: LocationId, label: string, time = 5) => ({
   travel: true as const,
   checkAccess: checkSubwayFare,
   onFollow: (g: Game, _p: {}) => subwayOnFollow(g, dest),
+  ...(imageLocation != null && { imageLocation }),
 })
+
+/** Subway travel links in line order, excluding the given station. Time = 4 min × stops between. */
+const subwayLinksFrom = (fromId: LocationId) =>
+  SUBWAY_LINE_ORDER.filter(([id]) => id !== fromId).map(([dest, label, imageLoc]) =>
+    subwayLink(dest, label, SUBWAY_MIN_PER_STOP * stopsBetween(fromId, dest), imageLoc)
+  )
 
 // Subway platforms: not mainLocation; appear as Places from main areas; travel between them as Travel
 const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   'subway-university': {
-    name: 'University Subway',
+    name: 'University Underground',
     description: 'Steam and brass; the underground platform under the university grounds.',
     image: '/images/subway.jpg',
     links: [
-      subwayLink('subway-lowtown', 'To Lowtown'),
-      subwayLink('subway-terminus', 'To Terminus'),
+      ...subwayLinksFrom('subway-university'),
       { dest: 'school', time: 2, label: 'Exit to University' },
     ],
   },
   'subway-lowtown': {
-    name: 'Lowtown Subway',
+    name: 'Lowtown Underground',
     description: 'A dim platform in the industrial depths. Trains clank and hiss.',
     image: '/images/subway.jpg',
     links: [
-      subwayLink('subway-university', 'To University'),
-      subwayLink('subway-terminus', 'To Terminus'),
+      ...subwayLinksFrom('subway-lowtown'),
       { dest: 'lowtown', time: 2, label: 'Exit to Lowtown' },
     ],
+    onFirstArrive: (g: Game) => {
+      g.run('discoverLocation', { location: 'lowtown', text: 'This area is a scary place at night, by all accounts.' })
+    },
     activities: [
       {
         name: 'Slot Machine',
@@ -71,13 +100,30 @@ const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ],
   },
   'subway-terminus': {
-    name: 'Terminus Subway',
+    name: 'Terminus Underground',
     description: 'The underground stop beneath Ironspark Terminus. Crowds and steam.',
     image: '/images/subway.jpg',
     links: [
-      subwayLink('subway-university', 'To University'),
-      subwayLink('subway-lowtown', 'To Lowtown'),
+      ...subwayLinksFrom('subway-terminus'),
       { dest: 'station', time: 2, label: 'Exit to Terminus' },
+    ],
+  },
+  'subway-airport': {
+    name: 'Airport Underground',
+    description: 'The platform beneath the airfield. Dirigibles and steam-ships cast long shadows through the vents.',
+    image: '/images/subway.jpg',
+    links: [
+      ...subwayLinksFrom('subway-airport'),
+      { dest: 'airport', time: 2, label: 'Exit to Airport' },
+    ],
+  },
+  'subway-docks': {
+    name: 'Docks Underground',
+    description: 'A dank platform by the waterfront. The tang of salt and coal steam hangs in the air.',
+    image: '/images/subway.jpg',
+    links: [
+      ...subwayLinksFrom('subway-docks'),
+      { dest: 'docks', time: 2, label: 'Exit to Docks' },
     ],
   },
 }

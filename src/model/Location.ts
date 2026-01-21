@@ -46,6 +46,8 @@ export interface LocationLink {
   travel?: boolean
   /** Cost in Krona; shown in nav e.g. "5 min, 3 kr" when set. */
   cost?: number
+  /** If set, the nav uses this location's image for the thumbnail instead of dest (e.g. for subway links, the main area you're travelling toward). */
+  imageLocation?: LocationId
 }
 
 export interface LocationActivity {

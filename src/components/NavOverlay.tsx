@@ -53,6 +53,8 @@ export function NavOverlay() {
           {groupLinks.map((link, index) => {
             const targetLocation = getLocation(link.dest)
             if (!targetLocation) return null
+            const imageLocation = link.imageLocation ? getLocation(link.imageLocation) : undefined
+            const image = imageLocation?.image ?? targetLocation.image
             const accessReason = link.checkAccess ? link.checkAccess(game) : null
             const isDisabled = !!accessReason
             const displayName = link.label ?? targetLocation.name ?? link.dest
@@ -62,7 +64,7 @@ export function NavOverlay() {
             return (
               <Thumbnail
                 key={`${link.dest}-${index}`}
-                image={targetLocation.image}
+                image={image}
                 name={displayName}
                 subtitle={timeCost}
                 onClick={() => handleLocationClick(link)}

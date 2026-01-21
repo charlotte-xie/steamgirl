@@ -15,7 +15,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/station.jpg',
     mainLocation: true,
     links: [
-      { dest: 'default', time: 10 }, // 10 minutes to city
+      { dest: 'default', time: 8 }, // 10 minutes to city
       { dest: 'subway-terminus', time: 2, label: 'Subway' },
     ],
     activities: [
@@ -82,7 +82,11 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'The heart of the city, where commerce and culture meet.',
     image: '/images/city.jpg',
     mainLocation: true,
-    links: [{ dest: 'station', time: 10 }, { dest: 'backstreets', time: 5 }, { dest: 'school', time: 5 }, { dest: 'market', time: 3 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school, 3 minutes to market
+    links: [
+      { dest: 'station', time: 8 }, 
+      { dest: 'backstreets', time: 8 }, 
+      { dest: 'school', time: 8 }, 
+      { dest: 'market', time: 5 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school, 3 minutes to market
   },
   backstreets: {
     name: 'Backstreets',
@@ -90,9 +94,9 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/backstreet.jpg',
     mainLocation: true,
     links: [
-      { dest: 'default', time: 5 },
+      { dest: 'default', time: 8 },
       { dest: 'market', time: 5 },
-      { dest: 'lowtown', time: 5 },
+      { dest: 'lowtown', time: 8 },
       { dest: 'bedroom', time: 2 },
     ], // 5 to city, 5 to market, 5 to lowtown; 2 to lodgings (shown in Places once discovered)
     activities: [
@@ -155,7 +159,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/school.jpg',
     mainLocation: true,
     links: [
-      { dest: 'default', time: 5 }, 
+      { dest: 'default', time: 8 }, 
       { dest: 'lake', time: 8 }, 
       { dest: 'subway-university', time: 2, label: 'Subway' },
       { 
@@ -242,7 +246,8 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'A serene city lake, where steam gently rises from the surface.',
     image: '/images/lake.jpg',
     mainLocation: true,
-    links: [{ dest: 'school', time: 8 }, { dest: 'market', time: 5 }], // 8 minutes back to school, 5 minutes to market
+    links: [{ dest: 'school', time: 8 }, 
+      { dest: 'market', time: 8 }], // 8 minutes back to school, 8 minutes to market
     secret: true, // Starts as undiscovered - must be found through exploration
     onRelax: (g: Game) => {
       g.run('addStat', { stat: 'Mood', change: 2, max: 80 })
@@ -266,7 +271,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/market.jpg',
     description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
     mainLocation: true,
-    links: [{ dest: 'lake', time: 5 }, { dest: 'backstreets', time: 5 }, { dest: 'default', time: 3 }], // 5 minutes to lake, 5 minutes to backstreets, 3 minutes to city centre
+    links: [{ dest: 'lake', time: 5 }, { dest: 'backstreets', time: 5 }, { dest: 'default', time: 5 }], // 5 minutes to lake, 5 minutes to backstreets, 3 minutes to city centre
     activities: [
       {
         name: 'Explore',
@@ -328,17 +333,12 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // Market scripts
 export const marketScripts = {
   luckyDipPay: (g: Game, _params: {}) => {
-    // Check if player still has enough crowns (in case they spent some)
-    const crownItem = g.player.inventory.find(item => item.id === 'crown')
-    const crownCount = crownItem?.number || 0
-    
-    if (crownCount < 5) {
+    // Check if player still has enough crowns (in case they spent some
+    if (g.player.removeItem('crown', 5)) {
       g.add('You check your pockets, but you don\'t have enough Krona. The vendor looks disappointed.')
       return
     }
-    
-    // Deduct 5 crowns
-    g.player.removeItem('crown', 5)
+
     
     // List of possible items from the lucky dip
     const luckyDipItems: Array<{ id: string; number?: number }> = [
@@ -348,8 +348,7 @@ export const marketScripts = {
       { id: 'sweet-wine' },
       { id: 'lucky-charm' },
       { id: 'mysterious-gear' },
-      { id: 'glowing-crystal' },
-      { id: 'crown', number: 20 },
+      { id: 'glowing-crystal' }
     ]
     
     // Select a random item
@@ -364,6 +363,7 @@ export const marketScripts = {
     g.add('You hand over 5 Krona to the vendor, who smiles and reaches into the brass barrel.')
     g.add('After a moment of rummaging, she pulls out a wrapped item and hands it to you.')
     g.run('gainItem', { text: `You received: ${displayName}!`, item: selectedItemData.id, number: quantity })
+    g.run('addStat', { stat: 'Mood', change: 1, max: 60 })
   },
   
   luckyDipQuit: (g: Game, _params: {}) => {

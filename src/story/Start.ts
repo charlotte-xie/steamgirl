@@ -191,8 +191,9 @@ export const startScripts = {
 
   tourUniversity: (g: Game) => {
     g.run('go', { location: 'school', minutes: 15 })
-    g.add(speech('The University—where you\'ll be studying. A fine institution.'))
+    g.add(speech('The University - you\'ll be studying there you say? A fine institution.'))
     g.add('Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.')
+    g.add(speech('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...'))
     g.add(option('tourLake', {}, 'Continue the Tour'))
   },
 

@@ -9,7 +9,7 @@ import { consumeAlcohol } from './Effects'
 const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   lowtown: {
     name: 'Lowtown',
-    description: 'The industrial underbelly of the city, where the gears of progress grind against the forgotten.',
+    description: 'The underbelly of the city, where the gears of progress grind against the forgotten.',
     image: '/images/lowtown.jpg',
     mainLocation: true,
     links: [
@@ -18,6 +18,9 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'subway-lowtown', time: 2, label: 'Subway' },
     ],
     secret: true, // Starts as undiscovered - must be found through exploration
+    onFirstArrive: (g: Game) => {
+      g.add('So this is Lowtown... the notorious underbelly of Aetheria.')
+    },
     onArrive: (g: Game) => {
       g.getNPC('spice-dealer')
       g.getNPC('elvis-crowe')
