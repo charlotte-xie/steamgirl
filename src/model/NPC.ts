@@ -3,19 +3,30 @@ import type { Script } from "./Scripts"
 
 export type NPCId = string
 
+/**
+ * Known NPC stat names. These are the standard stats tracked for NPCs.
+ * Additional custom stats can be added as string literals.
+ */
+export type NPCStatName =
+  | 'approachCount'  // Number of times the player has approached this NPC
+  | 'nameKnown'      // Whether the player knows the NPC's name (>0 = known, 0 = unknown)
+  | 'affection'      // NPC's affection level toward the player (0-100, typically)
+  | string           // Allow custom stat names for extensibility
+
 // Mutable data for an NPC, used for serialization
 export interface NPCData {
   id?: NPCId
-  approachCount?: number
+  stats?: Record<NPCStatName, number> // NPC stats (e.g. approachCount, nameKnown)
   location?: string | null
-  nameKnown?: boolean // Whether the player knows the NPC's name
-  /** Set when e.g. a successful flirt unlocks a permanent discount from this NPC. */
-  flirtSuccess?: boolean
+  /** @deprecated Use stats.nameKnown instead. Kept for backwards compatibility. */
+  nameKnown?: boolean
 }
 
 // Static / library information for an NPC
 export interface NPCDefinition {
   name?: string
+  /** Unidentified name - generic description shown when name is not known (e.g. "barkeeper", "intimidating gangster"). */
+  uname?: string
   description?: string
   image?: string
   /** Default colour for this NPC's speech/dialogue. Can be overridden per speech() call. */
@@ -35,18 +46,47 @@ export class NPC {
   /** Back-reference to the Game instance. Set in constructor, never changes. */
   readonly game: Game
   id: NPCId
-  approachCount: number
+  stats: Map<NPCStatName, number> // NPC stats (e.g. approachCount, nameKnown)
   location: string | null
-  nameKnown: boolean // Whether the player knows the NPC's name
-  flirtSuccess: boolean
 
   constructor(id: NPCId, game: Game) {
     this.game = game
     this.id = id
-    this.approachCount = 0
+    this.stats = new Map<string, number>()
+    this.stats.set('approachCount', 0)
+    this.stats.set('nameKnown', 0) // Names are unknown by default (0 = unknown, >0 = known)
+    this.stats.set('affection', 0) // Affection starts at 0
     this.location = null
-    this.nameKnown = false // Names are unknown by default
-    this.flirtSuccess = false
+  }
+
+  /** Gets the approachCount stat (for convenience). */
+  get approachCount(): number {
+    return this.stats.get('approachCount') ?? 0
+  }
+
+  /** Sets the approachCount stat (for convenience). */
+  set approachCount(value: number) {
+    this.stats.set('approachCount', value)
+  }
+
+  /** Gets the nameKnown stat (for convenience). >0 = name is known. */
+  get nameKnown(): number {
+    return this.stats.get('nameKnown') ?? 0
+  }
+
+  /** Sets the nameKnown stat (for convenience). >0 = name is known. */
+  set nameKnown(value: number) {
+    this.stats.set('nameKnown', value)
+  }
+
+  /** Gets the affection stat (for convenience). */
+  get affection(): number {
+    return this.stats.get('affection') ?? 0
+  }
+
+  /** Sets the affection stat (for convenience). */
+  set affection(value: number) {
+    this.stats.set('affection', value)
   }
 
   /**
@@ -90,13 +130,17 @@ export class NPC {
   }
 
   toJSON(): NPCData {
+    // Convert stats Map to Record for JSON serialization
+    const statsRecord: Record<string, number> = {}
+    this.stats.forEach((value, key) => {
+      statsRecord[key] = value
+    })
+    
     // Only serialize mutable state and id
     return {
       id: this.id,
-      approachCount: this.approachCount,
+      stats: statsRecord,
       location: this.location,
-      nameKnown: this.nameKnown,
-      flirtSuccess: this.flirtSuccess,
     }
   }
 
@@ -120,11 +164,18 @@ export class NPC {
     // Do NOT call generate() during deserialization - we're restoring from saved state
     // generate() should only be called when creating NPCs on demand via getNPC()
     
+    // Deserialize stats
+    if (data.stats) {
+      npc.stats.clear()
+      Object.entries(data.stats).forEach(([key, value]) => {
+        if (typeof value === 'number') {
+          npc.stats.set(key, value)
+        }
+      })
+    }
+    
     // Apply serialized mutable state directly
-    npc.approachCount = data.approachCount ?? 0
     npc.location = data.location ?? null
-    npc.nameKnown = data.nameKnown ?? false
-    npc.flirtSuccess = data.flirtSuccess ?? false
 
     return npc
   }

@@ -8,9 +8,15 @@ import { Game } from '../model/Game'
 import { Card } from './Card'
 import { StatsPanel } from './StatsPanel'
 import { EffectTag } from './EffectTag'
-import { assetUrl } from '../utils/assetUrl'
+import { AvatarPanel } from './AvatarPanel'
 import { SKILL_NAMES, SKILL_INFO } from '../model/Stats'
 import { getLocation } from '../model/Location'
+import { capitalise } from '../model/Text'
+
+// Capitalize each word in a string (for unames like "spice dealer" -> "Spice Dealer")
+const capitalizeWords = (str: string): string => {
+  return str.split(' ').map(word => capitalise(word)).join(' ')
+}
 
 type TabId = 'Status' | 'Inventory' | 'Quests' | 'Skills' | 'Characters' | 'Settings'
 
@@ -96,7 +102,16 @@ export function PlayerPanel() {
             {npcList
               .map((npc) => {
                 const def = npc.template
-                const displayName = npc.nameKnown && def.name ? def.name : (def.description || def.name || npc.id)
+                // Show name if known, otherwise show uname (never show description in list)
+                // Capitalize uname if it's being used
+                let displayName: string
+                if (npc.nameKnown > 0 && def.name) {
+                  displayName = def.name
+                } else if (def.uname) {
+                  displayName = capitalizeWords(def.uname)
+                } else {
+                  displayName = def.name || npc.id
+                }
                 const locName = npc.location
                   ? (getLocation(npc.location)?.name ?? npc.location)
                   : '—'
@@ -130,45 +145,7 @@ export function PlayerPanel() {
 
   return (
     <div className="player-panel panel-elevated" style={{ height: '100%' }}>
-      <div className="avatar-container" style={{ position: 'relative' }}>
-        <div className="avatar-frame">
-          <div className="rivet rivet-tl"></div>
-          <div className="rivet rivet-tr"></div>
-          <div className="rivet rivet-bl"></div>
-          <div className="rivet rivet-br"></div>
-          <div className="avatar-rivet avatar-rivet-bl"></div>
-          <div className="avatar-rivet avatar-rivet-br"></div>
-          <div className="avatar-placeholder">
-            <img 
-              src={assetUrl('/girl/SteamGirl.png')} 
-              alt="Player Avatar"
-            />
-          </div>
-        </div>
-        {/* Status effect tags overlay - top left */}
-        {(() => {
-          const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
-          if (effectCards.length === 0) return null
-          return (
-            <div className="avatar-effects-overlay">
-              {effectCards.map((card, index) => (
-                <EffectTag key={`${card.id}-${index}`} card={card} />
-              ))}
-            </div>
-          )
-        })()}
-        {/* Player name overlay in bottom right */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          right:20,
-          color: 'var(--text-main)',
-          fontWeight: 500,
-          pointerEvents: 'none'
-        }}>
-          <h3>{game.player.name || 'Unknown'}</h3>
-        </div>
-      </div>
+      <AvatarPanel />
 
       <div className="game-canvas canvas-framed">
         <Clock />

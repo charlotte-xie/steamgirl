@@ -31,24 +31,39 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // Register NPCs in Lowtown
 registerNPC('spice-dealer', {
   name: 'Johnny Bug',
-  description: 'Shady spice dealer',
+  uname: 'spice dealer',
+  description: 'A wiry figure with a mechanical hand that clicks and whirs with every movement. His eyes dart constantly, assessing every passerby for potential customers or threats. The faint scent of exotic compounds clings to his worn coat, and he moves with the practiced caution of someone who knows the value of discretion in Lowtown\'s shadowy economy.',
   image: '/images/npcs/dealer.jpg',
   speechColor: '#7a8b6b',
   onApproach: (game: Game) => {
-    game.add('The spice dealer eyes you warily, his mechanical hand twitching. "What do you want?" he asks in a low voice.')
-    game.run('interact', { script: 'onGeneralChat' })
+    const npc = game.npc!
+    if (npc.nameKnown > 0) {
+      game.add('The spice dealer eyes you warily, his mechanical hand twitching. "What do you want?" he asks in a low voice.')
+      game.run('interact', { script: 'onGeneralChat' })
+    } else {
+      game.add('A shady figure eyes you warily, his mechanical hand twitching. "What do you want?" he asks in a low voice.')
+      const price = npc.affection >= 10 ? 5 : 10
+      game.addOption('interact', { script: 'buySpice' }, `Buy Spice (${price} Kr)`)
+      game.addOption('interact', { script: 'flirt' }, 'Flirt')
+      game.addOption('endConversation', { text: 'You step away. He watches you go with a flicker of suspicion.', reply: "Watch yourself out there." }, 'Leave')
+    }
   },
   scripts: {
     onGeneralChat: (g: Game) => {
       const npc = g.npc!
-      const price = npc.flirtSuccess ? 5 : 10
+      // Only show general chat if name is known (they've introduced themselves)
+      if (npc.nameKnown <= 0) {
+        g.add('He doesn\'t seem interested in talking until you\'ve done business.')
+        return
+      }
+      const price = npc.affection >= 10 ? 5 : 10
       g.addOption('interact', { script: 'buySpice' }, `Buy Spice (${price} Kr)`)
-      if (!npc.flirtSuccess) g.addOption('interact', { script: 'flirt' }, 'Flirt')
+      g.addOption('interact', { script: 'flirt' }, 'Flirt')
       g.addOption('endConversation', { text: 'You step away. He watches you go with a flicker of suspicion.', reply: "Watch yourself out there." }, 'Leave')
     },
     buySpice: (g: Game) => {
       const npc = g.npc!
-      const price = npc.flirtSuccess ? 5 : 10
+      const price = npc.affection >= 10 ? 5 : 10
       const crown = g.player.inventory.find((i) => i.id === 'crown')?.number ?? 0
       if (crown < price) {
         g.add(speech(`You need ${price} Krona. Come back when you've got it.`, g.npc?.template.speechColor))
@@ -57,14 +72,31 @@ registerNPC('spice-dealer', {
       g.player.removeItem('crown', price)
       g.run('gainItem', { item: 'spice', number: 1, text: 'You receive a small packet of Spice.' })
       g.add(speech('Pleasure doin\' business. Don\'t say where you got it.', g.npc?.template.speechColor))
+      // After buying, they introduce themselves
+      if (npc.nameKnown <= 0) {
+        npc.nameKnown = 1
+        g.add('"Name\'s Johnny Bug," he says, extending his mechanical hand. "You\'re alright."')
+        g.run('interact', { script: 'onGeneralChat' })
+      }
     },
     flirt: (g: Game) => {
       const npc = g.npc!
-      const ok = g.player.skillTest('Charm', 0)
+      const ok = g.player.skillTest('Flirtation', 0)
       if (ok) {
-        npc.flirtSuccess = true
+        // Increase affection by +5, capped at 40
+        const currentAffection = npc.affection
+        npc.affection = Math.min(currentAffection + 5, 40)
         g.add('He softens slightly, the corner of his mouth quirking. After a pause, he nods.')
-        g.add(speech('Alright. For you? Five. Don\'t spread it around.', g.npc?.template.speechColor))
+        if (npc.affection >= 10 && currentAffection < 10) {
+          g.add(speech('Alright. For you? Five. Don\'t spread it around.', g.npc?.template.speechColor))
+        } else {
+          g.add(speech('You\'re alright.', g.npc?.template.speechColor))
+        }
+        // After successful flirt, they introduce themselves
+        if (npc.nameKnown <= 0) {
+          npc.nameKnown = 1
+          g.add('"Name\'s Johnny Bug," he says with a slight grin. "You\'re alright."')
+        }
       } else {
         g.add(speech('Save it. I\'m not buyin\'.', g.npc?.template.speechColor))
       }
@@ -84,7 +116,8 @@ registerNPC('spice-dealer', {
 
 registerNPC('jonny-elric', {
   name: 'Jonny Elric',
-  description: 'Monocled Gangster',
+  uname: 'monocled gangster',
+  description: 'A sharp-dressed enforcer with a polished brass monocle that catches the gaslight. His movements are precise, economical—every gesture calculated. The well-maintained revolver at his hip and the scars on his knuckles tell a story of violence meted out with professional detachment.',
   image: '/images/npcs/boss2.jpg',
   speechColor: '#6b5b6b',
   onMove: (game: Game) => {
@@ -101,12 +134,26 @@ registerNPC('jonny-elric', {
     npc.followSchedule(game, schedule)
   },
   onApproach: (game: Game) => {
-    game.add('Jonny Elric adjusts his monocle and fixes you with a flat, assessing stare. Friend of Elvis; enforcer by trade.')
-    game.add(speech("Something I can help you with?", game.npc?.template.speechColor))
-    game.run('interact', { script: 'onGeneralChat' })
+    const npc = game.npc!
+    if (npc.nameKnown > 0) {
+      game.add('Jonny Elric adjusts his monocle and fixes you with a flat, assessing stare. Friend of Elvis; enforcer by trade.')
+      game.add(speech("Something I can help you with?", game.npc?.template.speechColor))
+      game.run('interact', { script: 'onGeneralChat' })
+    } else {
+      game.add('A monocled figure adjusts his monocle and fixes you with a flat, assessing stare. Friend of Elvis; enforcer by trade.')
+      game.add(speech("Something I can help you with?", game.npc?.template.speechColor))
+      game.add('He doesn\'t seem interested in talking until you\'ve proven yourself.')
+      game.addOption('endConversation', { text: "You back away slowly.", reply: "Mind how you go." }, 'Leave')
+    }
   },
   scripts: {
     onGeneralChat: (g: Game) => {
+      const npc = g.npc!
+      // Only show general chat if name is known
+      if (npc.nameKnown <= 0) {
+        g.add('He doesn\'t seem interested in talking until you\'ve proven yourself.')
+        return
+      }
       g.addOption('interact', { script: 'askElvis' }, 'You know Elvis?')
       g.addOption('interact', { script: 'askTerritory' }, "Who runs these streets?")
       g.addOption('interact', { script: 'work' }, 'I need work.')
@@ -129,7 +176,8 @@ registerNPC('jonny-elric', {
 
 registerNPC('elvis-crowe', {
   name: 'Elvis Crowe',
-  description: 'Intimidating gangster',
+  uname: 'intimidating gangster',
+  description: 'Tall and imposing, with eyes that have seen too much and forgotten nothing. His presence commands respect and fear in equal measure. Dressed in fine but practical attire, he moves through the streets like a predator, and the very air seems to still when he passes. Those who cross him don\'t last long in these parts.',
   image: '/images/npcs/boss1.jpg',
   speechColor: '#8b7355',
   onMove: (game: Game) => {
@@ -143,12 +191,26 @@ registerNPC('elvis-crowe', {
     npc.followSchedule(game, schedule)
   },
   onApproach: (game: Game) => {
-    game.add('Elvis Crowe sizes you up with a cold, practised eye. His presence alone makes the air feel heavier.')
-    game.add(speech("You want something?", game.npc?.template.speechColor))
-    game.run('interact', { script: 'onGeneralChat' })
+    const npc = game.npc!
+    if (npc.nameKnown > 0) {
+      game.add('Elvis Crowe sizes you up with a cold, practised eye. His presence alone makes the air feel heavier.')
+      game.add(speech("You want something?", game.npc?.template.speechColor))
+      game.run('interact', { script: 'onGeneralChat' })
+    } else {
+      game.add('An intimidating figure sizes you up with a cold, practised eye. His presence alone makes the air feel heavier.')
+      game.add(speech("You want something?", game.npc?.template.speechColor))
+      game.add('He doesn\'t seem interested in talking until you\'ve proven yourself.')
+      game.addOption('endConversation', { text: "You step back and melt into the crowd.", reply: "Smart. Don't linger." }, 'Leave')
+    }
   },
   scripts: {
     onGeneralChat: (g: Game) => {
+      const npc = g.npc!
+      // Only show general chat if name is known
+      if (npc.nameKnown <= 0) {
+        g.add('He doesn\'t seem interested in talking until you\'ve proven yourself.')
+        return
+      }
       g.addOption('interact', { script: 'askTerritory' }, "Who runs these streets?")
       g.addOption('interact', { script: 'wordOnStreet' }, "What's the word?")
       g.addOption('interact', { script: 'work' }, 'I need work.')

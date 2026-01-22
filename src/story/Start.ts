@@ -11,7 +11,7 @@ import '../story/Lodgings' // Register lodgings scripts
 // Register NPCs that appear at the station
 registerNPC('automaton-greeter', {
   name: 'Automaton Greeter',
-  description: 'A brass-plated automaton that greets visitors to the station.',
+  description: 'A meticulously crafted brass automaton, polished to a warm golden sheen. Its clockwork mechanisms whir and click with mechanical precision as it performs its duties. The optics in its head glow with a soft blue light, and its voicebox produces clear, if somewhat stilted, speech. Despite its mechanical nature, there\'s something almost endearing about its unwavering dedication to welcoming visitors to Ironspark Terminus.',
   image: '/images/npcs/Greeter.jpg',
   speechColor: '#a8d4f0',
   generate: (_game: Game, npc: NPC) => {
@@ -29,7 +29,7 @@ registerNPC('automaton-greeter', {
 
 registerNPC('tour-guide', {
   name: 'Rob Hayes',
-  description: 'A friendly tour guide with a well-worn guidebook.',
+  description: 'A genial man with a warm smile and a well-worn guidebook tucked under his arm. His clothes are practical but neat, and he moves with the easy confidence of someone who knows every street and alley of Aetheria. He takes genuine pleasure in showing newcomers around, and his enthusiasm for the city is infectious. The brass badge pinned to his coat marks him as an official tour guide.',
   image: '/images/npcs/TourGuide.jpg',
   speechColor: '#94a3b8',
   generate: (_game: Game, npc: NPC) => {
@@ -51,7 +51,7 @@ registerNPC('tour-guide', {
 
 registerNPC('commuter', {
   name: 'Commuter',
-  description: 'A regular commuter waiting at the station.',
+  description: 'A typical city dweller, dressed in practical work clothes and carrying a worn leather satchel. They check their pocket watch frequently, a nervous habit born of years of relying on the city\'s steam-powered transit system. Their attention is fixed on the station clock, and they seem lost in their own thoughts, part of the endless flow of people that keeps Aetheria\'s gears turning.',
   // generate is optional - using default NPC instance
   onApproach: (game: Game) => {
     game.add('The commuter looks up from their pocket watch, giving you a brief nod before returning their attention to the station clock.')

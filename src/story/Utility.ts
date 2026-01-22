@@ -479,9 +479,6 @@ export const utilityScripts = {
     
     // Increment approach count
     npc.approachCount++
-    
-    // Player learns the NPC's name when they approach
-    npc.nameKnown = true
 
     // Get the NPC definition
     const npcDef = npc.template
@@ -496,8 +493,10 @@ export const utilityScripts = {
       npcDef.onApproach(game, {})
     } else {
       // Show default message
-      const npcName = npcDef.name || 'The NPC'
-      game.add(`${npcName} isn't interested in talking to you.`)
+      const displayName = npc.nameKnown > 0 && npcDef.name 
+        ? npcDef.name 
+        : (npcDef.uname || npcDef.description || npcDef.name || 'The NPC')
+      game.add(`${displayName} isn't interested in talking to you.`)
     }
   },
 }

@@ -7,6 +7,7 @@ import { option, speech } from '../model/Format'
 
 registerNPC('landlord', {
   name: 'Landlord',
+  description: 'A weathered man with the tired eyes of someone who\'s managed properties in the backstreets for too long. His clothes are serviceable but worn, and he moves with the deliberate pace of someone conserving energy. Despite his gruff exterior, there\'s a hint of kindness in his manner—he\'s seen countless tenants come and go, and he knows how to spot the ones who\'ll cause trouble versus those who just need a place to rest their head.',
   image: '/images/npcs/Landlord.jpg',
   speechColor: '#b895ae',
 })

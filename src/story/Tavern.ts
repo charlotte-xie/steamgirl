@@ -92,7 +92,7 @@ const TAVERN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // Register Ivan Hess NPC
 registerNPC('ivan-hess', {
   name: 'Ivan Hess',
-  description: 'Barkeeper',
+  description: 'The proprietor of the Copper Pot Tavern, a man who\'s seen decades of Lowtown\'s comings and goings. His mechanical arm moves with practiced precision as he polishes glasses and draws pints from the steam-powered taps. He keeps his own counsel but hears everything, and his guarded expression suggests he knows more about the neighborhood\'s secrets than he\'ll ever let on.',
   image: '/images/npcs/barkeep.jpg',
   speechColor: '#c4a35a',
   onMove: (game: Game) => {
