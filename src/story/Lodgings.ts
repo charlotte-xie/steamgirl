@@ -3,7 +3,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { option, speech } from '../model/Format'
+import { option} from '../model/Format'
 
 registerNPC('landlord', {
   name: 'Landlord',

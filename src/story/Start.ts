@@ -1,6 +1,6 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
-import { option, p, highlight, speech } from '../model/Format'
+import { option, p, highlight} from '../model/Format'
 import type { CardDefinition } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'

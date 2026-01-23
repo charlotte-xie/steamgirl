@@ -2,7 +2,6 @@ import { Game } from '../model/Game'
 import { registerNPC } from '../model/NPC'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { speech } from '../model/Format'
 
 // Location definitions for Lowtown
 const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
