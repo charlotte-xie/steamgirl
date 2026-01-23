@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Tooltip } from '../components/Tooltip'
 import { Button } from '../components/Button'
+import { Hypno } from '../components/Hypno'
 import { useNavigate } from 'react-router-dom'
 
 export function DemoControls() {
   const navigate = useNavigate()
+  const [showHypno, setShowHypno] = useState(false)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '2rem', height: '100vh', width: '100vw', overflow: 'auto' }}>
@@ -27,12 +30,25 @@ export function DemoControls() {
           </div>
         </div>
         <Button disabled>Disabled button</Button>
+        <Button color="#ec4899" onClick={() => setShowHypno((v) => !v)}>
+          {showHypno ? 'Hide Hypno' : 'Show Hypno overlay'}
+        </Button>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <Button color="#6b7280" onClick={() => navigate('/')}>
           Back to Home
         </Button>
       </div>
+      {showHypno && (
+        <Hypno
+          fullScreen
+          onDismiss={() => setShowHypno(false)}
+          suggestions={[
+            { text: 'Hello', colour: '#ffffff', size: 24, rate: 0.5, duration: 0.1 },
+            { text: 'Goodbye', colour: '#ffaaaa', size: 24, rate: 0.3, duration: 0.1 }
+          ]}
+        />
+      )}
     </div>
   )
 }

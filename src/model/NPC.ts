@@ -1,41 +1,93 @@
 import { Game } from "./Game"
 import type { Script } from "./Scripts"
+import { speech } from "./Format"
 
 export type NPCId = string
+
+/**
+ * Known NPC stat names. These are the standard stats tracked for NPCs.
+ * Additional custom stats can be added as string literals.
+ */
+export type NPCStatName =
+  | 'approachCount'  // Number of times the player has approached this NPC
+  | 'nameKnown'      // Whether the player knows the NPC's name (>0 = known, 0 = unknown)
+  | 'affection'      // NPC's affection level toward the player (0-100, typically)
+  | string           // Allow custom stat names for extensibility
 
 // Mutable data for an NPC, used for serialization
 export interface NPCData {
   id?: NPCId
-  approachCount?: number
+  stats?: Record<NPCStatName, number> // NPC stats (e.g. approachCount, nameKnown)
   location?: string | null
-  nameKnown?: boolean // Whether the player knows the NPC's name
+  /** @deprecated Use stats.nameKnown instead. Kept for backwards compatibility. */
+  nameKnown?: boolean
 }
 
 // Static / library information for an NPC
 export interface NPCDefinition {
   name?: string
+  /** Unidentified name - generic description shown when name is not known (e.g. "barkeeper", "intimidating gangster"). */
+  uname?: string
   description?: string
   image?: string
+  /** Default colour for this NPC's speech/dialogue. Can be overridden per speech() call. */
+  speechColor?: string
   // Optional generate function that initializes the NPC instance (NPC is already constructed)
   generate?: (game: Game, npc: NPC) => void
   // Script to run when player approaches this NPC
   onApproach?: Script
   // Script to run when the hour changes (for NPC movement)
   onMove?: Script
+  /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */
+  scripts?: Record<string, Script>
 }
 
 /** Represents a game NPC instance with mutable state. Definitional data is accessed via the template property. */
 export class NPC {
+  /** Back-reference to the Game instance. Set in constructor, never changes. */
+  readonly game: Game
   id: NPCId
-  approachCount: number
+  stats: Map<NPCStatName, number> // NPC stats (e.g. approachCount, nameKnown)
   location: string | null
-  nameKnown: boolean // Whether the player knows the NPC's name
 
-  constructor(id: NPCId) {
+  constructor(id: NPCId, game: Game) {
+    this.game = game
     this.id = id
-    this.approachCount = 0
+    this.stats = new Map<string, number>()
+    this.stats.set('approachCount', 0)
+    this.stats.set('nameKnown', 0) // Names are unknown by default (0 = unknown, >0 = known)
+    this.stats.set('affection', 0) // Affection starts at 0
     this.location = null
-    this.nameKnown = false // Names are unknown by default
+  }
+
+  /** Gets the approachCount stat (for convenience). */
+  get approachCount(): number {
+    return this.stats.get('approachCount') ?? 0
+  }
+
+  /** Sets the approachCount stat (for convenience). */
+  set approachCount(value: number) {
+    this.stats.set('approachCount', value)
+  }
+
+  /** Gets the nameKnown stat (for convenience). >0 = name is known. */
+  get nameKnown(): number {
+    return this.stats.get('nameKnown') ?? 0
+  }
+
+  /** Sets the nameKnown stat (for convenience). >0 = name is known. */
+  set nameKnown(value: number) {
+    this.stats.set('nameKnown', value)
+  }
+
+  /** Gets the affection stat (for convenience). */
+  get affection(): number {
+    return this.stats.get('affection') ?? 0
+  }
+
+  /** Sets the affection stat (for convenience). */
+  set affection(value: number) {
+    this.stats.set('affection', value)
   }
 
   /**
@@ -78,17 +130,52 @@ export class NPC {
     return definition
   }
 
+  /** Makes this NPC say something. Uses the NPC's speech color. Returns this for fluent chaining. */
+  say(dialogText: string): this {
+    this.game.add(speech(dialogText, this.template.speechColor))
+    return this
+  }
+
+  /** Adds an option for an NPC interaction with this NPC. Returns this for fluent chaining. */
+  option(label: string, npcInteractionName: string, params?: object): this {
+    this.game.addOption('interact', { script: npcInteractionName, params }, label)
+    return this
+  }
+
+  /** Runs the onGeneralChat script for this NPC. Returns this for fluent chaining. */
+  chat(): this {
+    this.game.run('interact', { script: 'onGeneralChat' })
+    return this
+  }
+
+  /** Ends the conversation by adding an endConversation option. Returns this for fluent chaining. */
+  leaveOption(text?: string, reply?: string, label: string = 'Leave'): this {
+    this.game.addOption('endConversation', { text, reply }, label)
+    return this
+  }
+
+  /** Adds a generic option (for non-NPC scripts). Returns this for fluent chaining. */
+  addOption(scriptName: string, params: {} = {}, label?: string): this {
+    this.game.addOption(scriptName, params, label)
+    return this
+  }
+
   toJSON(): NPCData {
+    // Convert stats Map to Record for JSON serialization
+    const statsRecord: Record<string, number> = {}
+    this.stats.forEach((value, key) => {
+      statsRecord[key] = value
+    })
+    
     // Only serialize mutable state and id
     return {
       id: this.id,
-      approachCount: this.approachCount,
+      stats: statsRecord,
       location: this.location,
-      nameKnown: this.nameKnown,
     }
   }
 
-  static fromJSON(json: string | NPCData, _game: Game): NPC {
+  static fromJSON(json: string | NPCData, game: Game): NPC {
     const data = typeof json === 'string' ? JSON.parse(json) : json
     const npcId = data.id
     
@@ -103,16 +190,24 @@ export class NPC {
     }
     
     // Create the NPC instance
-    const npc = new NPC(npcId)
+    const npc = new NPC(npcId, game)
     
     // Do NOT call generate() during deserialization - we're restoring from saved state
     // generate() should only be called when creating NPCs on demand via getNPC()
     
-    // Apply serialized mutable state directly
-    npc.approachCount = data.approachCount ?? 0
-    npc.location = data.location ?? null
-    npc.nameKnown = data.nameKnown ?? false
+    // Deserialize stats
+    if (data.stats) {
+      npc.stats.clear()
+      Object.entries(data.stats).forEach(([key, value]) => {
+        if (typeof value === 'number') {
+          npc.stats.set(key, value)
+        }
+      })
+    }
     
+    // Apply serialized mutable state directly
+    npc.location = data.location ?? null
+
     return npc
   }
 }

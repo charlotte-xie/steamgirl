@@ -254,6 +254,19 @@ describe('Game', () => {
     expect(npc.approachCount).toBe(3)
   })
 
+  it('should update base stat when addStat script runs with 100% chance', () => {
+    const game = new Game()
+    game.run('init', {}) // ensure scripts/player are set up
+
+    const statName = 'Flirtation'
+    const before = game.player.basestats.get(statName) ?? 0
+
+    game.run('addStat', { stat: statName, change: 1, chance: 1 })
+
+    const after = game.player.basestats.get(statName) ?? 0
+    expect(after).toBe(before + 1)
+  })
+
   it('should have spice dealer present in lowtown at 1am', () => {
     const game = new Game()
     
@@ -280,5 +293,325 @@ describe('Game', () => {
     
     // Check that spice dealer is in npcsPresent
     expect(game.npcsPresent).toContain('spice-dealer')
+  })
+
+  describe('Fluent NPC API', () => {
+    it('should throw when accessing g.npc without an NPC in scene', () => {
+      const game = new Game()
+      
+      // No NPC in scene, so accessing g.npc should throw
+      expect(() => game.npc).toThrow('No NPC in current scene')
+    })
+
+    it('should throw when accessing g.npc with invalid NPC ID', () => {
+      const game = new Game()
+      
+      // Set scene.npc to an invalid ID
+      game.scene.npc = 'non-existent-npc'
+      
+      // Accessing g.npc should throw
+      expect(() => game.npc).toThrow('NPC not found: non-existent-npc')
+    })
+
+    it('should allow npc.say() to add speech with NPC color', () => {
+      const game = new Game()
+      
+      // Register a test NPC with a speech color
+      registerNPC('fluent-test-npc', {
+        name: 'Fluent Test NPC',
+        description: 'An NPC for testing fluent API',
+        speechColor: '#ff00ff',
+      })
+      
+      // Set up NPC in scene
+      game.scene.npc = 'fluent-test-npc'
+      const npc = game.getNPC('fluent-test-npc')
+      
+      // Use fluent API to make NPC say something
+      npc.say('Hello, this is a test!')
+      
+      // Check that speech was added with correct color
+      const speechItem = game.scene.content.find(item => item.type === 'speech')
+      expect(speechItem).toBeDefined()
+      expect(speechItem?.type).toBe('speech')
+      if (speechItem && speechItem.type === 'speech') {
+        expect(speechItem.text).toBe('Hello, this is a test!')
+        expect(speechItem.color).toBe('#ff00ff')
+      }
+    })
+
+    it('should allow npc.option() to add NPC interaction options', () => {
+      const game = new Game()
+      
+      // Register a test NPC with a script
+      registerNPC('fluent-option-npc', {
+        name: 'Fluent Option NPC',
+        description: 'An NPC for testing option API',
+        scripts: {
+          testScript: (g: Game) => {
+            g.add('Script executed!')
+          },
+        },
+      })
+      
+      // Set up NPC in scene
+      game.scene.npc = 'fluent-option-npc'
+      const npc = game.getNPC('fluent-option-npc')
+      
+      // Use fluent API to add an option
+      npc.option('Test Option', 'testScript')
+      
+      // Check that option was added
+      expect(game.scene.options.length).toBe(1)
+      const option = game.scene.options[0]
+      expect(option.type).toBe('button')
+      expect(option.label).toBe('Test Option')
+      expect(option.script[0]).toBe('interact')
+      expect(option.script[1]).toEqual({ script: 'testScript', params: undefined })
+    })
+
+    it('should allow npc.option() with params', () => {
+      const game = new Game()
+      
+      registerNPC('fluent-params-npc', {
+        name: 'Fluent Params NPC',
+        description: 'An NPC for testing option params',
+        scripts: {
+          testScript: (g: Game) => {
+            g.add('Script executed!')
+          },
+        },
+      })
+      
+      game.scene.npc = 'fluent-params-npc'
+      const npc = game.getNPC('fluent-params-npc')
+      
+      // Add option with params
+      npc.option('Test Option', 'testScript', { value: 42 })
+      
+      // Check that params were included
+      const option = game.scene.options[0]
+      expect(option.script[1]).toEqual({ script: 'testScript', params: { value: 42 } })
+    })
+
+    it('should allow npc.addOption() to add generic options', () => {
+      const game = new Game()
+      
+      registerNPC('fluent-generic-npc', {
+        name: 'Fluent Generic NPC',
+        description: 'An NPC for testing generic options',
+      })
+      
+      game.scene.npc = 'fluent-generic-npc'
+      const npc = game.getNPC('fluent-generic-npc')
+      
+      // Add a generic option (not an NPC interaction)
+      npc.addOption('endConversation', { text: 'Goodbye' }, 'Leave')
+      
+      // Check that option was added
+      expect(game.scene.options.length).toBe(1)
+      const option = game.scene.options[0]
+      expect(option.type).toBe('button')
+      expect(option.label).toBe('Leave')
+      expect(option.script[0]).toBe('endConversation')
+      expect(option.script[1]).toEqual({ text: 'Goodbye' })
+    })
+
+    it('should allow npc.leaveOption() to add endConversation option', () => {
+      const game = new Game()
+      
+      registerNPC('fluent-leave-npc', {
+        name: 'Fluent Leave NPC',
+        description: 'An NPC for testing leave API',
+      })
+      
+      game.scene.npc = 'fluent-leave-npc'
+      const npc = game.getNPC('fluent-leave-npc')
+      
+      // Add some options
+      npc.option('Option 1', 'script1')
+      npc.option('Option 2', 'script2')
+      expect(game.scene.options.length).toBe(2)
+      
+      // Use leaveOption() to add endConversation option
+      npc.leaveOption('You step away.', 'Goodbye!')
+      
+      // Should have 3 options now (2 previous + 1 leave)
+      expect(game.scene.options.length).toBe(3)
+      const leaveOption = game.scene.options[2]
+      expect(leaveOption.type).toBe('button')
+      expect(leaveOption.label).toBe('Leave')
+      expect(leaveOption.script[0]).toBe('endConversation')
+      expect(leaveOption.script[1]).toEqual({ text: 'You step away.', reply: 'Goodbye!' })
+    })
+
+    it('should allow npc.leaveOption() with custom label', () => {
+      const game = new Game()
+      
+      registerNPC('fluent-leave-label-npc', {
+        name: 'Fluent Leave Label NPC',
+        description: 'An NPC for testing leave with custom label',
+      })
+      
+      game.scene.npc = 'fluent-leave-label-npc'
+      const npc = game.getNPC('fluent-leave-label-npc')
+      
+      // Use leaveOption() with custom label
+      npc.leaveOption('Farewell!', 'See you later!', 'Say Goodbye')
+      
+      // Check the option
+      expect(game.scene.options.length).toBe(1)
+      const leaveOption = game.scene.options[0]
+      expect(leaveOption.label).toBe('Say Goodbye')
+      expect(leaveOption.script[0]).toBe('endConversation')
+      expect(leaveOption.script[1]).toEqual({ text: 'Farewell!', reply: 'See you later!' })
+    })
+
+    it('should allow npc.leaveOption() without parameters', () => {
+      const game = new Game()
+      
+      registerNPC('fluent-leave-default-npc', {
+        name: 'Fluent Leave Default NPC',
+        description: 'An NPC for testing leave with defaults',
+      })
+      
+      game.scene.npc = 'fluent-leave-default-npc'
+      const npc = game.getNPC('fluent-leave-default-npc')
+      
+      // Use leaveOption() without parameters
+      npc.leaveOption()
+      
+      // Check the option uses defaults
+      expect(game.scene.options.length).toBe(1)
+      const leaveOption = game.scene.options[0]
+      expect(leaveOption.label).toBe('Leave')
+      expect(leaveOption.script[0]).toBe('endConversation')
+      expect(leaveOption.script[1]).toEqual({ text: undefined, reply: undefined })
+    })
+
+    it('should allow npc.chat() to run onGeneralChat script', () => {
+      const game = new Game()
+      
+      let chatCalled = false
+      registerNPC('fluent-chat-npc', {
+        name: 'Fluent Chat NPC',
+        description: 'An NPC for testing chat API',
+        scripts: {
+          onGeneralChat: (g: Game) => {
+            chatCalled = true
+            g.add('General chat executed!')
+          },
+        },
+      })
+      
+      game.scene.npc = 'fluent-chat-npc'
+      const npc = game.getNPC('fluent-chat-npc')
+      
+      // Use chat() to run onGeneralChat
+      const returnedNpc = npc.chat()
+      
+      // Should return the NPC for chaining
+      expect(returnedNpc).toBe(npc)
+      
+      // Should have called the onGeneralChat script
+      expect(chatCalled).toBe(true)
+      
+      // Should have added content
+      const hasChatContent = game.scene.content.some(item => {
+        if (item.type === 'text') {
+          return item.text.includes('General chat executed!')
+        }
+        if (item.type === 'paragraph') {
+          return item.content.some(c => c.type === 'text' && c.text.includes('General chat executed!'))
+        }
+        return false
+      })
+      expect(hasChatContent).toBe(true)
+    })
+
+    it('should allow fluent chaining of npc methods', () => {
+      const game = new Game()
+      
+      registerNPC('fluent-chain-npc', {
+        name: 'Fluent Chain NPC',
+        description: 'An NPC for testing fluent chaining',
+        speechColor: '#00ff00',
+        scripts: {
+          script1: (g: Game) => g.add('Script 1'),
+          script2: (g: Game) => g.add('Script 2'),
+        },
+      })
+      
+      game.scene.npc = 'fluent-chain-npc'
+      const npc = game.getNPC('fluent-chain-npc')
+      
+      // Chain multiple methods
+      const returnedNpc = npc
+        .say('First message')
+        .say('Second message')
+        .option('Option 1', 'script1')
+        .option('Option 2', 'script2')
+        .leaveOption('Goodbye!', 'Farewell!')
+      
+      // Should return the same NPC instance
+      expect(returnedNpc).toBe(npc)
+      
+      // Check that all content and options were added
+      const speechItems = game.scene.content.filter(item => item.type === 'speech')
+      expect(speechItems.length).toBe(2)
+      expect(speechItems[0].type === 'speech' && speechItems[0].text).toBe('First message')
+      expect(speechItems[1].type === 'speech' && speechItems[1].text).toBe('Second message')
+      
+      expect(game.scene.options.length).toBe(3)
+      expect(game.scene.options[0].label).toBe('Option 1')
+      expect(game.scene.options[1].label).toBe('Option 2')
+      expect(game.scene.options[2].label).toBe('Leave')
+      expect(game.scene.options[2].script[0]).toBe('endConversation')
+      expect(game.scene.options[2].script[1]).toEqual({ text: 'Goodbye!', reply: 'Farewell!' })
+    })
+
+    it('should use NPC speech color when say() is called', () => {
+      const game = new Game()
+      
+      // Test with NPC that has speech color
+      registerNPC('colored-npc', {
+        name: 'Colored NPC',
+        description: 'An NPC with a speech color',
+        speechColor: '#abcdef',
+      })
+      
+      game.scene.npc = 'colored-npc'
+      const npc = game.getNPC('colored-npc')
+      
+      npc.say('Colored speech')
+      
+      const speechItem = game.scene.content.find(item => item.type === 'speech')
+      expect(speechItem).toBeDefined()
+      if (speechItem && speechItem.type === 'speech') {
+        expect(speechItem.color).toBe('#abcdef')
+      }
+    })
+
+    it('should handle NPC without speech color in say()', () => {
+      const game = new Game()
+      
+      // Test with NPC that has no speech color
+      registerNPC('no-color-npc', {
+        name: 'No Color NPC',
+        description: 'An NPC without a speech color',
+        // No speechColor defined
+      })
+      
+      game.scene.npc = 'no-color-npc'
+      const npc = game.getNPC('no-color-npc')
+      
+      npc.say('Speech without color')
+      
+      const speechItem = game.scene.content.find(item => item.type === 'speech')
+      expect(speechItem).toBeDefined()
+      if (speechItem && speechItem.type === 'speech') {
+        expect(speechItem.color).toBeUndefined()
+      }
+    })
   })
 })

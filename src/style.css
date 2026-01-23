@@ -22,6 +22,7 @@
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 10px;
+  --radius-xs: 4px;
 
   --space-xs: 6px;
   --space-sm: 12px;
@@ -124,7 +125,7 @@ img {
   padding: var(--space-sm);
 
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   gap: var(--space-sm);
   height: 100%;
 }
@@ -235,14 +236,15 @@ img {
 .game-canvas {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
   width: 100%;
 }
 
 .panel-tabs {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   width: 100%;
 }
 
@@ -319,10 +321,31 @@ img {
   backdrop-filter: blur(10px);
 }
 
+.scene-npc-image-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scene-npc-image {
+  max-height: 32em;
+  max-width: 32em;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
 .scene-overlay p {
   margin: 0;
   color: var(--text-main);
   margin-bottom: var(--space-sm);
+}
+
+.speech {
+  padding-left: 1em;
+  margin-left: 0.5em;
+  border-left: 3px solid var(--border-subtle);
 }
 
 .scene-actions {
@@ -385,6 +408,13 @@ img {
    Names here are purely visual, not logical.
    ========================================================================== */
 
+.panel {
+  background: var(--bg-panel-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs);
+}
+
 .panel-elevated {
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
@@ -435,15 +465,59 @@ img {
   font-size: 0.9rem;
 }
 
-.clock-container {
+/* Clock and wait: shared panel style, always above tabs */
+.widget-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: var(--space-sm) 0;
+  flex-direction: row;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.widget-panel {
+  position: relative;
+  width: 200px;
+  height: 120px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-sizing: border-box;
 }
 
 .clock-svg {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  display: block;
+}
+
+.clock-wait-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.clock-wait-btn {
+  min-width: 24px;
+  padding: 4px;
+  font-size: 0.75rem;
+  line-height: 1;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  background: var(--bg-panel-soft);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.clock-wait-btn:hover:not(:disabled) {
+  border-color: var(--border-main);
+  background: var(--bg-panel);
+}
+
+.clock-wait-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .button-primary {
@@ -470,15 +544,20 @@ img {
   font-size: 0.9rem;
 }
 
-.clock-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: var(--space-sm) 0;
+/* Hypno overlay – transparent pink with rotating centre box */
+@keyframes hypno-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.clock-svg {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+.hypno-box {
+  width: 64px;
+  height: 64px;
+  border: 4px solid rgba(200, 100, 120, 0.9);
+  border-radius: var(--radius-sm);
+  animation: hypno-rotate 4s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 182, 193, 0.5);
+  flex-shrink: 0;
 }
 
 /* Bottom overlays for activities and navigation links */
@@ -487,36 +566,71 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: var(--space-lg);
-  gap: var(--space-md);
+  padding: var(--space-md);
+  gap: var(--space-xs);
   width: 100%;
 }
 
-.activities,
-.npcs,
 .nav-links {
   display: flex;
   flex-direction: row;
   gap: var(--space-sm);
   flex-wrap: wrap;
   max-width: 600px;
-}
-
-.activities {
-  justify-content: flex-start;
-}
-
-.npcs {
-  justify-content: center;
-}
-
-.nav-links {
   justify-content: flex-end;
 }
 
 /* When nav-links is the only child, push it to the right */
 .bottom-overlays > .nav-links:only-child {
   margin-left: auto;
+}
+
+/* Shared overlay box: nav groups (Places/Travel), Characters, Activities */
+.overlay-group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-xs);
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-strong), var(--shadow-inner);
+  backdrop-filter: blur(10px);
+  max-width: 600px;
+}
+
+.overlay-group-title {
+  font-size: 0.7rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.overlay-group-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.overlay-group-content--center {
+  justify-content: center;
+}
+
+/* Thumbnails inside overlay groups: no per-item box, minimal styling (shared for nav, activities, characters) */
+.overlay-group .thumbnail,
+.nav-group .thumbnail {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.overlay-group .thumbnail:hover:not(:disabled),
+.nav-group .thumbnail:hover:not(:disabled) {
+  border: 1px solid transparent;
+  background: var(--bg-panel-soft);
+  border-color: var(--border-subtle);
+  box-shadow: none;
 }
 
 /* General-purpose thumbnail component */
@@ -528,10 +642,9 @@ img {
   gap: var(--space-xs);
   padding: var(--space-xs);
   background: var(--bg-overlay);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-strong), var(--shadow-inner);
-  backdrop-filter: blur(10px);
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 100px;
@@ -555,7 +668,7 @@ img {
 .thumbnail:disabled:hover {
   transform: none;
   background: var(--bg-overlay);
-  border-color: var(--border-subtle);
+  border-color: transparent;
 }
 
 .thumbnail-image {

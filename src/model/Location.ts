@@ -29,14 +29,25 @@ export interface LocationDefinition {
   activities?: LocationActivity[]
   onFirstArrive?: Script
   onArrive?: Script
+  onRelax?: Script
   secret?: boolean // If true, location starts as undiscovered (discovered = false)
+  /** If true, this is a main area for travel (e.g. City Centre, Station). Links between two mainLocation sites appear under Travel. */
+  mainLocation?: boolean
 }
 
 export interface LocationLink {
   dest: LocationId
   time: number
+  /** If set, overrides the destination location name in the nav (e.g. "Leave for Backstreets"). */
+  label?: string
   onFollow?: Script
   checkAccess?: (game: Game) => string | null | undefined // Returns reason string if access denied, null/undefined if allowed
+  /** If true, show this link under Travel instead of Places (e.g. subway-to-subway). */
+  travel?: boolean
+  /** Cost in Krona; shown in nav e.g. "5 min, 3 kr" when set. */
+  cost?: number
+  /** If set, the nav uses this location's image for the thumbnail instead of dest (e.g. for subway links, the main area you're travelling toward). */
+  imageLocation?: LocationId
 }
 
 export interface LocationActivity {
@@ -107,6 +118,11 @@ export class Location {
 // Get a location definition by id
 export function getLocation(id: LocationId): LocationDefinition | undefined {
   return LOCATION_DEFINITIONS[id]
+}
+
+// Get all registered location IDs (for iteration, e.g. discover-all in debug)
+export function getAllLocationIds(): LocationId[] {
+  return Object.keys(LOCATION_DEFINITIONS)
 }
 
 

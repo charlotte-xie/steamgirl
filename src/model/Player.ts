@@ -9,6 +9,7 @@ export type TimerName =
   | 'lastNap'
   | 'lastWash'
   | 'lastExercise'
+  | 'lastEat'
 
 export interface PlayerData {
   name: string
@@ -150,14 +151,15 @@ export class Player {
    * Remove an item from the inventory. Reduces stack size or removes the item entirely.
    * @param itemSpec - Either an item ID string or an Item instance
    * @param number - Optional quantity to remove (defaults to 1)
+   * @returns the item removed, or null if the item was not found
    */
-  removeItem(itemSpec: ItemSpec, number: number = 1): void {
+  removeItem(itemSpec: ItemSpec, number: number = 1): Item | null {
     const item = ensureItem(itemSpec)
     const itemId = item.id
     
     const itemIndex = this.inventory.findIndex(invItem => invItem.id === itemId)
     if (itemIndex === -1) {
-      return // Item not found
+      return null// Item not found
     }
     
     const inventoryItem = this.inventory[itemIndex]
@@ -167,6 +169,7 @@ export class Player {
       // Remove item entirely if quantity is 0 or less
       this.inventory.splice(itemIndex, 1)
     }
+    return new Item(itemId, number)
   }
 
   /**
@@ -212,6 +215,11 @@ export class Player {
     this.stats.forEach((value, statName) => {
       this.stats.set(statName, Math.max(0, Math.min(100, value)))
     })
+  }
+
+  /** True if the player's base value for the given skill (or stat) is at least minLevel. */
+  hasSkill(statOrSkill: StatName, minLevel: number =1): boolean {
+    return (this.basestats.get(statOrSkill) ?? 0) >= minLevel
   }
 
   /**

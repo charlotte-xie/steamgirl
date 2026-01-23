@@ -13,13 +13,17 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Ironspark Terminus',
     description: 'The bustling main railway station, filled with travelers.',
     image: '/images/station.jpg',
-    links: [{ dest: 'default', time: 10 }], // 10 minutes to city, 10 minutes to backstreets
+    mainLocation: true,
+    links: [
+      { dest: 'default', time: 8 }, // 10 minutes to city
+      { dest: 'subway-terminus', time: 2, label: 'Subway' },
+    ],
     activities: [
       {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Random encounters for the station
           const encounters = [
@@ -77,17 +81,29 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'City Centre',
     description: 'The heart of the city, where commerce and culture meet.',
     image: '/images/city.jpg',
-    links: [{ dest: 'station', time: 10 }, { dest: 'backstreets', time: 5 }, { dest: 'school', time: 5 }, { dest: 'market', time: 3 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school, 3 minutes to market
+    mainLocation: true,
+    links: [
+      { dest: 'station', time: 8 }, 
+      { dest: 'backstreets', time: 8 }, 
+      { dest: 'school', time: 8 }, 
+      { dest: 'market', time: 5 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school, 3 minutes to market
   },
   backstreets: {
     name: 'Backstreets',
     description: 'The winding alleys and hidden passages of the city, where secrets lurk in the shadows.',
     image: '/images/backstreet.jpg',
-    links: [{ dest: 'default', time: 5 }, { dest: 'market', time: 5 }, { dest: 'lowtown', time: 5 }], // 5 minutes to city centre, 5 minutes to market, 5 minutes to lowtown
+    mainLocation: true,
+    links: [
+      { dest: 'default', time: 8 },
+      { dest: 'market', time: 5 },
+      { dest: 'lowtown', time: 8 },
+      { dest: 'bedroom', time: 2 },
+    ], // 5 to city, 5 to market, 5 to lowtown; 2 to lodgings (shown in Places once discovered)
     activities: [
       {
-        name: 'Go to Lodgings',
+        name: 'Find Lodgings',
         symbol: 'H',
+        condition: (g: Game) => !g.getLocation('bedroom').discovered,
         script: (g: Game, _params: {}) => {
           g.run('enterLodgings')
         },
@@ -96,7 +112,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Attempt to discover Lowtown - if discovered, stop exploration
           if (maybeDiscoverLocation(
@@ -133,16 +149,22 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     onFirstArrive: (g: Game) => {
       g.add('You arrive in the backstreets. The air is thick with the smell of coal and oil. You can hear the sound of steam engines in the distance.')
     },
+    onArrive: (g: Game) => {
+      g.getNPC('jonny-elric')
+    },
   },
   school: {
     name: 'University',
-    description: 'A grand educational institution where knowledge flows like steam through pipes.',
+    description: 'The precinct of the University of Aetheria, a grand educational institution where knowledge flows like steam through pipes.',
     image: '/images/school.jpg',
+    mainLocation: true,
     links: [
-      { dest: 'default', time: 5 }, 
+      { dest: 'default', time: 8 }, 
       { dest: 'lake', time: 8 }, 
+      { dest: 'subway-university', time: 2, label: 'Subway' },
       { 
         dest: 'hallway', 
+        label: 'Enter University',
         time: 2,
         checkAccess: (game: Game) => {
           // Check if access is allowed: 7am-9pm (7-21) on weekdays (Mon-Fri, day 1-5)
@@ -188,7 +210,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Attempt to discover the Lake - if discovered, stop exploration
           if (maybeDiscoverLocation(
@@ -224,20 +246,42 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'The Lake',
     description: 'A serene city lake, where steam gently rises from the surface.',
     image: '/images/lake.jpg',
-    links: [{ dest: 'school', time: 8 }, { dest: 'market', time: 5 }], // 8 minutes back to school, 5 minutes to market
+    mainLocation: true,
+    links: [{ dest: 'school', time: 8 }, 
+      { dest: 'market', time: 8 }], // 8 minutes back to school, 8 minutes to market
     secret: true, // Starts as undiscovered - must be found through exploration
+    onRelax: (g: Game) => {
+      g.run('addStat', { stat: 'Mood', change: 2, max: 80 })
+      g.run('wait', { minutes: 30 })
+    },
+    activities: [
+      {
+        name: 'Relax',
+        condition: (g: Game) => {
+          const h = g.hourOfDay
+          return h >= 7 && h < 19 // 7am to 7pm
+        },
+        script: (g: Game) => {
+          g.run('relaxAtLocation', {})
+        },
+      },
+    ],
   },
   market: {
     name: 'Market',
     image: '/images/market.jpg',
     description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
-    links: [{ dest: 'lake', time: 5 }, { dest: 'backstreets', time: 5 }, { dest: 'default', time: 3 }], // 5 minutes to lake, 5 minutes to backstreets, 3 minutes to city centre
+    mainLocation: true,
+    links: [
+      { dest: 'lake', time: 8 }, 
+      { dest: 'backstreets', time: 8 }, 
+      { dest: 'default', time: 5 }], 
     activities: [
       {
         name: 'Explore',
         script: (g: Game, _params: {}) => {
           // Advance time by 10 minutes (600 seconds)
-          g.run('timeLapse', { seconds: 10 * 60 })
+          g.timeLapse(10)
           
           // Attempt to discover the Lake - if discovered, stop exploration
           if (maybeDiscoverLocation(
@@ -293,17 +337,12 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // Market scripts
 export const marketScripts = {
   luckyDipPay: (g: Game, _params: {}) => {
-    // Check if player still has enough crowns (in case they spent some)
-    const crownItem = g.player.inventory.find(item => item.id === 'crown')
-    const crownCount = crownItem?.number || 0
-    
-    if (crownCount < 5) {
+    // Check if player still has enough crowns (in case they spent some
+    if (g.player.removeItem('crown', 5)) {
       g.add('You check your pockets, but you don\'t have enough Krona. The vendor looks disappointed.')
       return
     }
-    
-    // Deduct 5 crowns
-    g.player.removeItem('crown', 5)
+
     
     // List of possible items from the lucky dip
     const luckyDipItems: Array<{ id: string; number?: number }> = [
@@ -313,8 +352,7 @@ export const marketScripts = {
       { id: 'sweet-wine' },
       { id: 'lucky-charm' },
       { id: 'mysterious-gear' },
-      { id: 'glowing-crystal' },
-      { id: 'crown', number: 20 },
+      { id: 'glowing-crystal' }
     ]
     
     // Select a random item
@@ -329,6 +367,7 @@ export const marketScripts = {
     g.add('You hand over 5 Krona to the vendor, who smiles and reaches into the brass barrel.')
     g.add('After a moment of rummaging, she pulls out a wrapped item and hands it to you.')
     g.run('gainItem', { text: `You received: ${displayName}!`, item: selectedItemData.id, number: quantity })
+    g.run('addStat', { stat: 'Mood', change: 1, max: 60 })
   },
   
   luckyDipQuit: (g: Game, _params: {}) => {

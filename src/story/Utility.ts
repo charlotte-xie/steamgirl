@@ -1,9 +1,10 @@
 import { Game } from '../model/Game'
+import { getItem } from '../model/Item'
 import { makeScripts } from '../model/Scripts'
-import { getLocation } from '../model/Location'
-import { type StatName, type MeterName, METER_INFO } from '../model/Stats'
+import { getLocation, getAllLocationIds } from '../model/Location'
+import { type StatName, type MeterName, MAIN_STAT_INFO, SKILL_INFO, METER_INFO } from '../model/Stats'
 import { capitalise } from '../model/Text'
-import { colour } from '../model/Format'
+import { colour, speech } from '../model/Format'
 
 export const utilityScripts = {
   /* Advance the game's time by a given number of seconds
@@ -86,7 +87,29 @@ export const utilityScripts = {
       game.updateNPCsPresent()
     }
   },
-  
+
+  /** Conscious wait at current location: timeLapse, optional narrative, then optionally run another script if not in a scene. */
+  wait: (game: Game, params: { minutes?: number; text?: string; then?: { script: string; params?: object } } = {}) => {
+    const minutes = params.minutes ?? 15
+    if (typeof minutes !== 'number' || minutes < 0) {
+      throw new Error('wait script requires minutes (non-negative number)')
+    }
+    game.timeLapse(minutes)
+    if (params.text) {
+      game.add(params.text)
+    }
+
+    if (game.inScene) {
+      return;
+    }
+
+
+    const t = params.then
+    if (t?.script) {
+      game.run(t.script, t.params ?? {})
+    }
+  },
+
   // Add an item to the player's inventory with optional text
   gainItem: (game: Game, params: { text?: string; item?: string; number?: number } = {}) => {
     const itemId = params.item
@@ -114,7 +137,7 @@ export const utilityScripts = {
   // Explore the current location - shows a random encounter
   explore: (game: Game) => {
     // Advance time by 10 minutes (600 seconds)
-    game.run('timeLapse', { seconds: 10 * 60 })
+    game.timeLapse(10)
     
     // Random encounters for flavor
     const encounters = [
@@ -189,6 +212,11 @@ export const utilityScripts = {
     // Run onFollow script when navigating down a link (if set)
     if (link.onFollow) {
       link.onFollow(game, {})
+      // If onFollow created a scene with options, don't proceed with automatic navigation
+      // (the scene options will handle navigation instead)
+      if (game.inScene) {
+        return
+      }
     }
     
     // Get the location from the game (ensuring it exists)
@@ -206,7 +234,7 @@ export const utilityScripts = {
     if (typeof minutes !== 'number' || minutes < 0) {
       throw new Error('go script minutes must be a non-negative number')
     }
-    game.run('timeLapse', { seconds: minutes * 60 })
+    game.timeLapse(minutes)
     
     // Actually move the player
     game.run('move', { location: locationId })
@@ -257,7 +285,7 @@ export const utilityScripts = {
   
   // Modify a base stat with optional display text and color
   addStat: (game: Game, params: { 
-    stat?: string
+    stat?: StatName
     change?: number
     min?: number
     max?: number
@@ -265,12 +293,15 @@ export const utilityScripts = {
     text?: string
     chance?: number
     hidden?: boolean
-  } = {}) => {
+  }) => {
     const statName = params.stat
     if (!statName || typeof statName !== 'string') {
       throw new Error('addStat script requires a stat parameter')
     }
-    
+    if (!(statName in MAIN_STAT_INFO || statName in SKILL_INFO || statName in METER_INFO)) {
+      throw new Error(`addStat: unknown stat '${statName}'`)
+    }
+
     const change = params.change
     if (typeof change !== 'number') {
       throw new Error('addStat script requires a change parameter')
@@ -297,6 +328,12 @@ export const utilityScripts = {
     const min = params.min ?? 0
     const max = params.max ?? 100
     newValue = Math.max(min, Math.min(max, newValue))
+    const actualChange = newValue - currentValue
+
+    if ((actualChange == 0) ||(Math.sign(actualChange) != Math.sign(change))) {
+      // No state change, maybe already at max/min
+      return
+    }
     
     // Update base stat
     game.player.basestats.set(statName as StatName, newValue)
@@ -331,9 +368,110 @@ export const utilityScripts = {
         displayText = `${capitalise(statName)} ${sign}${change}`
       }
       
-      // Add colored text to scene
-      game.add(colour(displayText, displayColor))
+      // Add colored text to scene if something changed
+      if (actualChange !== 0) {
+        game.add(colour(displayText, displayColor))
+      }
     }
+  },
+
+  // End the current NPC conversation with optional text (no options, so afterAction unsets scene.npc).
+  // Optional reply: NPC's response as speech, shown after the text.
+  endConversation: (game: Game, params: { text?: string; reply?: string } = {}) => {
+    const text = params.text ?? 'You politely end the conversation.'
+    game.add(text)
+    if (params.reply) {
+      // Only use fluent API if NPC is in scene
+      if (game.scene.npc) {
+        const npc = game.npc
+        npc.say(params.reply)
+      } else {
+        // Fallback for edge cases where endConversation is called without NPC
+        game.add(speech(params.reply, '#a8d4f0'))
+      }
+    }
+  },
+
+  endScene: (game: Game, params: { text?: string } = {}) => {
+    if (params.text) {
+      game.add(params.text)
+    }
+  },
+
+  runActivity: (game: Game, params: { activity?: string } = {}) => {
+    const name = params.activity
+    if (!name || typeof name !== 'string') {
+      throw new Error('runActivity script requires an activity parameter (string name)')
+    }
+    const activities = game.location.template.activities || []
+    const act = activities.find((a) => a.name === name)
+    if (!act) {
+      game.add('Activity not found.')
+      return
+    }
+    act.script(game, {})
+  },
+
+  /** Run the current location's onRelax if defined; otherwise a generic message. */
+  relaxAtLocation: (game: Game, _params: {} = {}) => {
+    const onRelax = game.location.template.onRelax
+    if (onRelax) {
+      onRelax(game, {})
+    } else {
+      game.add("There's nothing particularly relaxing to do here.")
+    }
+  },
+
+  examineItem: (game: Game, params: { item?: string } = {}) => {
+    const itemId = params.item
+    if (!itemId || typeof itemId !== 'string') {
+      throw new Error('examineItem script requires an item parameter (string id)')
+    }
+    const def = getItem(itemId)
+    if (!def?.onExamine) {
+      game.add('Nothing happens.')
+      return
+    }
+    def.onExamine(game, {})
+  },
+
+  consumeItem: (game: Game, params: { item?: string } = {}) => {
+    const itemId = params.item
+    if (!itemId || typeof itemId !== 'string') {
+      throw new Error('consumeItem script requires an item parameter (string id)')
+    }
+    const def = getItem(itemId)
+    if (!def?.onConsume) {
+      game.add('You cannot use that.')
+      return
+    }
+    const has = game.player.inventory.some((i) => i.id === itemId && i.number >= 1)
+    if (!has) {
+      game.add("You don't have that item.")
+      return
+    }
+    game.player.removeItem(itemId, 1)
+    game.player.calcStats()
+    def.onConsume(game, {})
+  },
+
+  /** Run a named script on an NPC. Params: script (name), npc? (id; default: game.scene.npc), params? (passed to the NPC script). */
+  interact: (game: Game, params: { npc?: string; script?: string; params?: object } = {}) => {
+    const npcId = params.npc ?? game.scene.npc
+    const scriptName = params.script
+    if (!npcId || typeof npcId !== 'string') {
+      throw new Error('interact script requires an npc parameter (or an active NPC scene) and a script parameter')
+    }
+    if (!scriptName || typeof scriptName !== 'string') {
+      throw new Error('interact script requires a script parameter (string name)')
+    }
+    const npc = game.getNPC(npcId)
+    const fn = npc.template.scripts?.[scriptName]
+    if (!fn) {
+      throw new Error(`NPC ${npcId} has no script "${scriptName}"`)
+    }
+    game.timeLapse(1)
+    fn(game, params.params ?? {})
   },
 
   // Approach an NPC to talk to them
@@ -348,12 +486,13 @@ export const utilityScripts = {
     
     // Increment approach count
     npc.approachCount++
-    
-    // Player learns the NPC's name when they approach
-    npc.nameKnown = true
 
     // Get the NPC definition
     const npcDef = npc.template
+
+    // Mark scene as NPC interaction before onApproach (cleared scene already has npc/hideNpcImage preserved or undefined)
+    game.scene.npc = npcId
+    game.scene.hideNpcImage = false
 
     // Check if the NPC has an onApproach script
     if (npcDef.onApproach) {
@@ -361,14 +500,24 @@ export const utilityScripts = {
       npcDef.onApproach(game, {})
     } else {
       // Show default message
-      const npcName = npcDef.name || 'The NPC'
-      game.add(`${npcName} isn't interested in talking to you.`)
+      const displayName = npc.nameKnown > 0 && npcDef.name 
+        ? npcDef.name 
+        : (npcDef.uname || npcDef.description || npcDef.name || 'The NPC')
+      game.add(`${displayName} isn't interested in talking to you.`)
     }
   },
 }
 
 // Register all utility scripts when module loads
 makeScripts(utilityScripts)
+
+/** Sets all registered locations to discovered. For fast debug access (e.g. Skip Intro). */
+export function discoverAllLocations(game: Game): void {
+  for (const id of getAllLocationIds()) {
+    const loc = game.getLocation(id)
+    loc.discovered = true
+  }
+}
 
 // Helper function for location discovery checks (can be called directly, not as a script)
 export function maybeDiscoverLocation(

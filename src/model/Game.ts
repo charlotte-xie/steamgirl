@@ -11,6 +11,7 @@ export type ParagraphContent =
 export type SceneContentItem = 
   | { type: 'text'; text: string; color?: string }
   | { type: 'paragraph'; content: ParagraphContent[] }
+  | { type: 'speech'; text: string; color?: string }
 
 export type SceneOptionItem = 
   | { type: 'button'; script: [string, {}]; label?: string }
@@ -19,6 +20,10 @@ export type SceneData = {
   type: 'story'
   content: SceneContentItem[]
   options: SceneOptionItem[]
+  /** Set when the scene is an NPC interaction (from the approach script). */
+  npc?: string
+  /** When true, do not show the NPC image in the scene overlay. Set by approach to false; e.g. landlord sets true when showing rooms. */
+  hideNpcImage?: boolean
 }
 
 export interface GameData {
@@ -126,6 +131,23 @@ export class Game {
     this.updateNPCsPresent()
   }
 
+  /** Checks if we are currently in a scene. This usually disables other actions like waiting. */
+  get inScene(): boolean {
+    return this.scene.options.length > 0
+  }
+
+  /** Gets the current NPC. Throws if no NPC is in the current scene. */
+  get npc(): NPC {
+    if (!this.scene.npc) {
+      throw new Error('No NPC in current scene')
+    }
+    const npc = this.npcs.get(this.scene.npc)
+    if (!npc) {
+      throw new Error(`NPC not found: ${this.scene.npc}`)
+    }
+    return npc
+  }
+
   /** Gets an NPC from the game's NPCs map, generating it if needed. Returns the NPC instance. */
   getNPC(npcId: string): NPC {
     // Check if NPC already exists
@@ -142,7 +164,7 @@ export class Game {
     }
     
     // Create the NPC instance
-    const npc = new NPC(npcId)
+    const npc = new NPC(npcId, this)
     
     // Call generate function if it exists (to initialize any fields)
     if (definition.generate) {
@@ -233,6 +255,12 @@ export class Game {
         cardDef.afterUpdate(this, {})
       }
     })
+
+    // Unset npc when there are no scene options (conversation has ended)
+    if (this.scene.options.length === 0) {
+      this.scene.npc = undefined
+      this.scene.hideNpcImage = undefined
+    }
     
     // Note: NPC movement is handled by timeLapse script when hour changes
     // If we need to check NPC positions after actions, it would go here
@@ -245,6 +273,12 @@ export class Game {
       throw new Error(`Script not found: ${scriptName}`)
     }
     script(this, params)
+    return this
+  }
+
+  /** Advance time by the given minutes (runs the timeLapse script). Returns this for chaining. */
+  timeLapse(minutes?: number): this {
+    this.run('timeLapse', { minutes })
     return this
   }
 
@@ -330,12 +364,14 @@ export class Game {
     })
   }
 
-  /** Clear the current scene (resets content and options). */
+  /** Clear the current scene (resets content and options). Preserves npc and hideNpcImage so follow-up scripts in the same flow keep speech colour and image behaviour. */
   clearScene(): void {
     this.scene = {
       type: 'story',
       content: [],
       options: [],
+      npc: this.scene.npc,
+      hideNpcImage: this.scene.hideNpcImage,
     }
   }
 
