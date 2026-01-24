@@ -230,6 +230,10 @@ export const hideNpcImage = (): Instruction =>
 export const showNpcImage = (): Instruction =>
   run('showNpcImage', {})
 
+/** Mark the current scene NPC's name as known to the player */
+export const learnNpcName = (): Instruction =>
+  run('learnNpcName', {})
+
 /** Add to a player stat */
 export const addStat = (
   stat: string,

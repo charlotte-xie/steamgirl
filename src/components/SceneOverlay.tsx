@@ -11,7 +11,7 @@ interface SceneOverlayProps {
 }
 
 export function SceneOverlay({ scene }: SceneOverlayProps) {
-  const { game, runScript } = useGame()
+  const { game, runScript, dismissScene } = useGame()
 
   const handleOption = (option: SceneOptionItem) => {
     if (option.type === 'button') {
@@ -44,8 +44,8 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
                 const scriptExists = getScript(scriptName) !== undefined
                 const buttonLabel = option.label || 'Continue'
                 return (
-                  <Button 
-                    key={index} 
+                  <Button
+                    key={index}
                     onClick={() => handleOption(option)}
                     disabled={!scriptExists}
                   >
@@ -54,8 +54,18 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
                 )
               }
               return null
-            })} 
+            })}
         </div>
+      )}
+      {!inScene && scene.content.length > 0 && (
+        <button
+          className="scene-dismiss-button"
+          onClick={dismissScene}
+          title="Dismiss"
+          aria-label="Dismiss scene"
+        >
+          ×
+        </button>
       )}
     </div>
   )

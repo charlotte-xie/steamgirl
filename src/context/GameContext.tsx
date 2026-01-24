@@ -7,6 +7,7 @@ type GameContextType = {
   game: Game
   setGame: (game: Game) => void
   runScript: (name: string, params?: {}) => void
+  dismissScene: () => void
 }
 
 const throwMissing = (): never => {
@@ -17,6 +18,7 @@ const GameContext = createContext<GameContextType>({
   game: undefined! as Game,
   setGame: throwMissing,
   runScript: throwMissing,
+  dismissScene: throwMissing,
 })
 
 function loadFromStorage(source: unknown): Game | null {
@@ -52,9 +54,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(game.toJSON()))
   }
 
+  const dismissScene = () => {
+    game.clearScene()
+    setUpdateCounter((c) => c + 1)
+  }
+
   return (
     <GameContext.Provider
-      value={{ game, setGame, runScript }}
+      value={{ game, setGame, runScript, dismissScene }}
     >
       {children}
     </GameContext.Provider>

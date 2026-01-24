@@ -2,7 +2,7 @@
  * Script Registry and Core Scripts
  *
  * This module provides:
- * 1. The script registry - where all scripts are registered and looked up
+ * 1. The script registry - where global scripts are registered and looked up
  * 2. Core scripts - generic, reusable scripts that are part of the scripting system itself
  *
  * Core scripts are:
@@ -210,6 +210,14 @@ const coreScripts: Record<string, ScriptFn> = {
   /** Show the NPC image in the current scene */
   showNpcImage: (game: Game) => {
     game.scene.hideNpcImage = false
+  },
+
+  /** Mark the current scene NPC's name as known to the player */
+  learnNpcName: (game: Game) => {
+    const npcId = game.scene.npc
+    if (!npcId) return
+    const npc = game.getNPC(npcId)
+    npc.nameKnown = 1
   },
 
   /** Add an item to the player's inventory */
