@@ -96,8 +96,8 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'default', time: 8 },
       { dest: 'market', time: 5 },
       { dest: 'lowtown', time: 8 },
-      { dest: 'bedroom', time: 2 },
-    ], // 5 to city, 5 to market, 5 to lowtown; 2 to lodgings (shown in Places once discovered)
+      { dest: 'stairwell', time: 1, label: 'Enter Lodgings' },
+    ], // 5 to city, 5 to market, 5 to lowtown; 1 to lodgings (shown in Places once discovered)
     activities: [
       {
         name: 'Find Lodgings',

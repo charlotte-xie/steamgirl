@@ -57,7 +57,8 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/lodgings/stairwell.jpg',
     secret: true, // Discovered during landlord tour
     links: [
-      { dest: 'bedroom', time: 1, label: 'Go to Your Room' },
+      { dest: 'bedroom', time: 1, label: 'Your Room' },
+      { dest: 'bathroom', time: 1 },
       { dest: 'backstreets', time: 1, label: 'Exit to Backstreets' },
     ],
   },
@@ -102,7 +103,10 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Bathroom',
     description: 'A small shared bathroom with steam-powered fixtures.',
     image: '/images/bathroom.jpg',
-    links: [{ dest: 'bedroom', time: 1 }], // 1 minute back to bedroom
+    links: [
+      { dest: 'bedroom', time: 1, label: 'Back to Your Room' },
+      { dest: 'stairwell', time: 1 },
+    ],
     activities: [
       {
         name: 'Take Shower',
@@ -129,20 +133,21 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // Scripts for lodgings interactions
 export const lodgingsScripts = {
   enterLodgings: (g: Game, _params: {}) => {
-    const bedroomLocation = g.getLocation('bedroom')
-    const isFirstVisit = bedroomLocation.numVisits === 0
+    const stairwellLocation = g.getLocation('stairwell')
+    const isFirstVisit = !stairwellLocation.discovered
 
     if (isFirstVisit) {
       // First-time lodgings sequence - landlord shows you around
       g.scene.npc = 'landlord'
       g.run('interact', { script: 'showAround' })
       // Mark bedroom as visited and discovered so it appears as a Place in nav
+      const bedroomLocation = g.getLocation('bedroom')
       bedroomLocation.numVisits++
       bedroomLocation.discovered = true
     } else {
-      // Normal movement to lodgings
-      g.timeLapse(2)
-      g.run('move', { location: 'bedroom' })
+      // Normal movement to stairwell
+      g.timeLapse(1)
+      g.run('move', { location: 'stairwell' })
     }
   },
 }
