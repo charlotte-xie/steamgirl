@@ -1,7 +1,6 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { option } from '../model/Format'
 import { makeScripts } from '../model/Scripts'
 import { Item } from '../model/Item'
 import { maybeDiscoverLocation } from './Utility'
@@ -322,11 +321,11 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           g.add('"Try your luck at the Lucky Dip!" she calls, gesturing to a large brass barrel filled with mysterious items. "Just 5 Krona for a chance at something special!"')
           
           if (crownCount >= 5) {
-            g.add(option('luckyDipPay', {}, 'Pay 5 Krona'))
-            g.add(option('luckyDipQuit', {}, 'Walk Away'))
+            g.addOption('luckyDipPay', {}, 'Pay 5 Krona')
+            g.addOption('luckyDipQuit', {}, 'Walk Away')
           } else {
             g.add('Sadly, you don\'t have the coins to play this game. The vendor looks disappointed but smiles understandingly.')
-            g.add(option('luckyDipQuit', {}, 'Walk Away'))
+            g.addOption('luckyDipQuit', {}, 'Walk Away')
           }
         },
       },

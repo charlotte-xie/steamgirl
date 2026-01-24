@@ -1,19 +1,13 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
-import { option, p, highlight} from '../model/Format'
+import { p, highlight} from '../model/Format'
 import type { CardDefinition } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
-import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation } from '../model/ScriptDSL'
+import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option } from '../model/ScriptDSL'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
-
-import type { Instruction } from '../model/Scripts'
-
-// Helper to create an NPC interaction option (calls 'interact' with script name)
-const npcOption = (label: string, script: string, params?: object): Instruction =>
-  ['option', { script: 'interact', params: { script, params }, label }]
 
 // Register NPCs that appear at the station
 registerNPC('automaton-greeter', {
@@ -27,10 +21,10 @@ registerNPC('automaton-greeter', {
   onApproach: seq(
     text('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting:'),
     say('Welcome to Ironspark Terminus. How may I assist you today?'),
+    option('Get directions', 'onGetDirections'),
+    option('Flirt', 'onFlirt'),
+    option('???', 'onGlitch'),
     npcLeaveOption('The automaton whirs softly as you depart.', 'Safe travels. May your gears never seize.', 'Say goodbye'),
-    npcOption('Get directions', 'onGetDirections'),
-    npcOption('Flirt', 'onFlirt'),
-    npcOption('???', 'onGlitch'),
   ),
   scripts: {
     onGetDirections: seq(
@@ -157,8 +151,8 @@ export const startScripts = {
   start: (g: Game) => {
     g.add('The train exhales a long, wet hiss as it comes to a halt at the platform.')
       .add(p('You have travelled across the whole continent, and are finally here, in the city of ', highlight('Aetheria', '#fbbf24', 'Aetheria: The great steam-powered city of brass and gears, where mechanical marvels and Victorian elegance meet in a symphony of innovation and tradition.'), '.'))
-      .add(option('startPlatform', {}, 'Step onto Platform'))
-      .add(option('skipIntro', {}, 'Skip Intro'))
+      .addOption('startPlatform', {}, 'Step onto Platform')
+      .addOption('skipIntro', {}, 'Skip Intro')
   },
 
   /** Skip intro: discover all locations for debug access, then jump to bedroom with key and goals. */
@@ -180,7 +174,7 @@ export const startScripts = {
     .add('You step onto the platform of Ironspark Terminus.')
     .add('Coal smoke curls around your ankles like fingers. The station cathedral looms above: brass vertebrae, glass skin revealing grinding intestines of gear and piston. Somewhere a valve releases steam that tastes faintly of iron and skin.')
     .add(p('You are here. Alone. The ', highlight('acceptance letter', '#fbbf24', 'You managed to get accepted by the most prestigious University in Aetheria! A remarkable achievement for a country girl like you.'), ' pressed against your is your only connection to this place.'))
-    .add(option('whatNow', {}, 'What Now?'))
+    .addOption('whatNow', {}, 'What Now?')
     g.addQuest('attend-university')
 
   },
@@ -201,7 +195,7 @@ export const startScripts = {
     const npc = g.npc
     npc.say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?')
     g.add('Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city.')
-    g.add(option('tourUniversity', {}, 'Continue the Tour'))
+    g.addOption('tourUniversity', {}, 'Continue the Tour')
   },
 
   tourUniversity: (g: Game) => {
@@ -210,7 +204,7 @@ export const startScripts = {
     npc.say('The University - you\'ll be studying there you say? A fine institution.')
     g.add('Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.')
     npc.say('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...')
-    g.add(option('tourLake', {}, 'Continue the Tour'))
+    g.addOption('tourLake', {}, 'Continue the Tour')
   },
 
   tourLake: (g: Game) => {
@@ -218,7 +212,7 @@ export const startScripts = {
     const npc = g.npc
     npc.say('The Lake. A peaceful spot when the city gets too much. Steam off the water—rather lovely.')
     g.add('Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.')
-    g.add(option('tourMarket', {}, 'Continue the Tour'))
+    g.addOption('tourMarket', {}, 'Continue the Tour')
   },
 
   tourMarket: (g: Game) => {
@@ -226,7 +220,7 @@ export const startScripts = {
     const npc = g.npc
     npc.say('The Market. Best place for oddities and curios. Keep your wits about you.')
     g.add('Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam. The market throbs. Fingers brush you as you pass—accidental, deliberate, promising.')
-    g.add(option('tourBackstreets', {}, 'Continue the Tour'))
+    g.addOption('tourBackstreets', {}, 'Continue the Tour')
   },
 
   tourBackstreets: (g: Game) => {
@@ -234,7 +228,7 @@ export const startScripts = {
     g.add('The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.')
     const npc = g.npc
     npc.say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.') 
-    g.add(option('tourEnds', {}, 'Finish the Tour'))
+    g.addOption('tourEnds', {}, 'Finish the Tour')
   },
 
   tourEnds: (g: Game) => {
@@ -242,7 +236,7 @@ export const startScripts = {
     g.add('Rob shows you around the backstreets for a while.')
     const npc = g.npc
     npc.say('I hope this helps you find your feet. Enjoy Aetheria!')
-    g.add(option('endScene', {text: 'You thank Rob and he leaves you in the backstreets.'}, 'Say goodbye'))
+    g.addOption('endScene', {text: 'You thank Rob and he leaves you in the backstreets.'}, 'Say goodbye')
   },
 }
 

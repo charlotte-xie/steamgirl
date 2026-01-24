@@ -71,9 +71,24 @@ export const playerName = (): Instruction =>
 export const npcName = (npc?: string): Instruction =>
   run('npcName', { npc })
 
-/** Add an option button to the scene */
-export const option = (script: string, params?: object, label?: string): Instruction =>
-  run('option', { script, params: params ?? {}, label })
+/**
+ * Add an option button to the scene.
+ *
+ * Script resolution:
+ * - 'npc:scriptName' - explicitly call NPC script
+ * - 'global:scriptName' - explicitly call global script
+ * - 'scriptName' (no prefix) - context-aware:
+ *   - If in NPC scene, tries NPC script first, falls back to global
+ *   - Otherwise uses global script
+ *
+ * If script is omitted, derives it from label (lowercase, spaces removed).
+ *
+ * @param label - Button label shown to player (required)
+ * @param script - Script name with optional namespace prefix (default: derived from label)
+ * @param params - Parameters to pass to the script
+ */
+export const option = (label: string, script?: string, params?: object): Instruction =>
+  run('option', { label, script, params: params ?? {} })
 
 /** Standard NPC conversation leave option */
 export const npcLeaveOption = (text?: string, reply?: string, label = 'Leave'): Instruction =>

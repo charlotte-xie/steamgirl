@@ -534,10 +534,59 @@ const coreScripts: Record<string, ScriptFn> = {
     return { type: 'text', text: displayName, color }
   },
 
-  /** Add an option button to the scene */
-  option: (game: Game, params: { script?: string; params?: object; label?: string }) => {
-    if (!params.script) return
-    game.addOption(params.script, params.params ?? {}, params.label)
+  /**
+   * Add an option button to the scene.
+   *
+   * Script resolution with namespace prefixes:
+   * - 'npc:scriptName' - explicitly call NPC script via interact
+   * - 'global:scriptName' - explicitly call global script
+   * - 'scriptName' (no prefix) - context-aware:
+   *   - If in NPC scene and NPC has this script, calls it via interact
+   *   - Otherwise uses global script
+   *
+   * If script is omitted, derives it from label (lowercase, non-alphanumeric removed).
+   */
+  option: (game: Game, params: { label?: string; script?: string; params?: object }) => {
+    const label = params.label
+    if (!label) return
+
+    // Derive script name from label if not provided
+    const rawScript = params.script ?? label.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const scriptParams = params.params ?? {}
+
+    // Parse namespace prefix
+    let namespace: 'npc' | 'global' | 'auto' = 'auto'
+    let scriptName = rawScript
+
+    if (rawScript.startsWith('npc:')) {
+      namespace = 'npc'
+      scriptName = rawScript.slice(4)
+    } else if (rawScript.startsWith('global:')) {
+      namespace = 'global'
+      scriptName = rawScript.slice(7)
+    }
+
+    // Resolve the script based on namespace and context
+    if (namespace === 'npc') {
+      // Explicit NPC script
+      game.addOption('interact', { script: scriptName, params: scriptParams }, label)
+    } else if (namespace === 'global') {
+      // Explicit global script
+      game.addOption(scriptName, scriptParams, label)
+    } else {
+      // Auto: check NPC context first
+      const npcId = game.scene.npc
+      if (npcId) {
+        const npc = game.getNPC(npcId)
+        if (npc.template.scripts?.[scriptName]) {
+          // NPC has this script - use interact
+          game.addOption('interact', { script: scriptName, params: scriptParams }, label)
+          return
+        }
+      }
+      // Fall back to global script
+      game.addOption(scriptName, scriptParams, label)
+    }
   },
 
   /** Standard NPC conversation leave option */

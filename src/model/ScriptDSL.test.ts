@@ -114,8 +114,8 @@ describe('ScriptDSL', () => {
       })
 
       it('option() produces option instruction', () => {
-        expect(option('nextScript', { x: 1 }, 'Click me')).toEqual(['option', { script: 'nextScript', params: { x: 1 }, label: 'Click me' }])
-        expect(option('nextScript')).toEqual(['option', { script: 'nextScript', params: {}, label: undefined }])
+        expect(option('Click me', 'nextScript', { x: 1 })).toEqual(['option', { label: 'Click me', script: 'nextScript', params: { x: 1 } }])
+        expect(option('Next')).toEqual(['option', { label: 'Next', script: undefined, params: {} }])
       })
 
       it('npcLeaveOption() produces npcLeaveOption instruction', () => {
@@ -319,7 +319,7 @@ describe('ScriptDSL', () => {
           text('Hello'),
           when(and(hasItem('gold'), not(inScene())),
             say('Rich!'),
-            option('next', { x: 1 })
+            option('Next', 'next', { x: 1 })
           ),
           text(npcName(), ' greets ', playerName())
         ]
@@ -448,7 +448,7 @@ describe('ScriptDSL', () => {
       })
 
       it('option adds scene option', () => {
-        execAll(game, [option('testScript', { foo: 'bar' }, 'Click me')])
+        execAll(game, [option('Click me', 'testScript', { foo: 'bar' })])
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0]).toEqual({
           type: 'button',
@@ -649,9 +649,9 @@ describe('ScriptDSL', () => {
           text('This is a declarative script'),
           when(hasItem('crown'),
             text('You are rich!'),
-            option('spend', {}, 'Spend money')
+            option('Spend money', 'spend')
           ),
-          option('leave', {}, 'Leave')
+          option('Leave', 'leave')
         ]
 
         registerDslScript('testDeclarative', testScript)
@@ -677,12 +677,12 @@ describe('ScriptDSL', () => {
           cond(
             hasItem('crown', 5), seq(
               say('What can I get you?'),
-              option('buyAle', { price: 2 }, 'Buy an ale'),
-              option('buyWine', { price: 5 }, 'Buy wine')
+              option('Buy an ale', 'buyAle', { price: 2 }),
+              option('Buy wine', 'buyWine', { price: 5 })
             ),
             say('Come back when you have coin.')
           ),
-          option('lookAround', {}, 'Look around'),
+          option('Look around', 'lookAround'),
           npcLeaveOption('You nod and head out.', 'Safe travels!', 'Leave')
         ]
 

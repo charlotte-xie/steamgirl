@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { txt, p, colour, option, highlight } from './Format'
+import { txt, p, colour, highlight } from './Format'
 
 describe('Format', () => {
   describe('txt', () => {
@@ -98,39 +98,4 @@ describe('Format', () => {
     })
   })
 
-  describe('option', () => {
-    it('should create a button SceneOptionItem with script name', () => {
-      const result = option('nextScene')
-      expect(result).toEqual({
-        type: 'button',
-        script: ['nextScene', {}],
-      })
-    })
-
-    it('should create a button SceneOptionItem with params', () => {
-      const result = option('go', { location: 'city', time: 10 })
-      expect(result).toEqual({
-        type: 'button',
-        script: ['go', { location: 'city', time: 10 }],
-      })
-    })
-
-    it('should create a button SceneOptionItem with label', () => {
-      const result = option('nextScene', {}, 'Continue')
-      expect(result).toEqual({
-        type: 'button',
-        script: ['nextScene', {}],
-        label: 'Continue',
-      })
-    })
-
-    it('should create a button SceneOptionItem with params and label', () => {
-      const result = option('go', { location: 'city', time: 15 }, 'Go to City')
-      expect(result).toEqual({
-        type: 'button',
-        script: ['go', { location: 'city', time: 15 }],
-        label: 'Go to City',
-      })
-    })
-  })
 })

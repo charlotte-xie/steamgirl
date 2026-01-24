@@ -3,7 +3,6 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { option} from '../model/Format'
 
 registerNPC('landlord', {
   name: 'Landlord',
@@ -102,7 +101,7 @@ export const lodgingsScripts = {
     const npc = g.npc
     npc.say(`${g.player.name}, I presume? I'm your landlord. You're all paid up for two weeks. Let me show you around.`)
     g.timeLapse(5) // Walking to the building
-    g.add(option('enterLodgingsPhase2', {}, 'Next'))
+    g.addOption('enterLodgingsPhase2', {}, 'Next')
   },
 
   enterLodgingsPhase2: (g: Game, _params: {}) => {
@@ -113,7 +112,7 @@ export const lodgingsScripts = {
     const npc = g.npc
     npc.say("This is the bathroom - it's shared with the other tenants. Keep it clean, won't you?")
     g.run('move', { location: 'bathroom'})
-    g.add(option('finishIntroduction', {}, 'Next'))
+    g.addOption('finishIntroduction', {}, 'Next')
   },
 
   finishIntroduction: (g: Game, _params: {}) => {

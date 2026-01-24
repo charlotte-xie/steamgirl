@@ -68,7 +68,3 @@ export function highlight(text: string, color: string, hoverText?: string): Inli
   return { type: 'text', text, color, hoverText }
 }
 
-/** Creates a button option that runs a script. */
-export function option(scriptName: string, params: {} = {}, label?: string): SceneOptionItem {
-  return { type: 'button', script: [scriptName, params], label }
-}
