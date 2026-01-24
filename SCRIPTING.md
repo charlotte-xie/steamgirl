@@ -81,9 +81,9 @@ DSL builder functions construct these tuples:
 ```typescript
 import { text, say, option } from './ScriptDSL'
 
-text('Hello')        // ['dsl.text', { text: 'Hello' }]
-say('Welcome!', 'npc')  // ['dsl.say', { text: 'Welcome!', npc: 'npc', color: undefined }]
-option('next', {})   // ['dsl.option', { script: 'next', params: {}, label: undefined }]
+text('Hello')        // ['text', { text: 'Hello' }]
+say('Welcome!', 'npc')  // ['say', { text: 'Welcome!', npc: 'npc', color: undefined }]
+option('next', {})   // ['option', { script: 'next', params: {}, label: undefined }]
 ```
 
 ### DSL Builders Reference
@@ -92,21 +92,21 @@ option('next', {})   // ['dsl.option', { script: 'next', params: {}, label: unde
 
 | Builder | Output | Description |
 |---------|--------|-------------|
-| `text(t)` | `['dsl.text', { text: t }]` | Plain text paragraph |
-| `say(text, npc?, color?)` | `['dsl.say', {...}]` | NPC speech (uses NPC's color if not specified) |
-| `paragraph(...content)` | `['dsl.paragraph', { content }]` | Formatted paragraph with highlights |
+| `text(t)` | `['text', { text: t }]` | Plain text paragraph |
+| `say(text, npc?, color?)` | `['say', {...}]` | NPC speech (uses NPC's color if not specified) |
+| `paragraph(...content)` | `['paragraph', { content }]` | Formatted paragraph with highlights |
 | `hl(text, color, hover?)` | `{ text, color, hoverText }` | Highlight helper (not an instruction) |
-| `option(script, params?, label?)` | `['dsl.option', {...}]` | Add an option button |
-| `npcLeaveOption(text?, reply?, label?)` | `['dsl.npcLeaveOption', {...}]` | Standard NPC leave option |
+| `option(script, params?, label?)` | `['option', {...}]` | Add an option button |
+| `npcLeaveOption(text?, reply?, label?)` | `['npcLeaveOption', {...}]` | Standard NPC leave option |
 
 #### Control Flow
 
 | Builder | Output | Description |
 |---------|--------|-------------|
-| `seq(...instructions)` | `['dsl.seq', { instructions }]` | Execute sequence |
-| `when(cond, ...then)` | `['dsl.when', { condition, then }]` | Conditional (if true) |
-| `unless(cond, ...then)` | `['dsl.when', { condition: not(cond), then }]` | Conditional (if false) |
-| `cond(c1, e1, c2, e2, ..., default)` | `['dsl.cond', { branches, default }]` | Multi-branch conditional |
+| `seq(...instructions)` | `['seq', { instructions }]` | Execute sequence |
+| `when(cond, ...then)` | `['when', { condition, then }]` | Conditional (if true) |
+| `unless(cond, ...then)` | `['when', { condition: not(cond), then }]` | Conditional (if false) |
+| `cond(c1, e1, c2, e2, ..., default)` | `['cond', { branches, default }]` | Multi-branch conditional |
 
 #### Game Actions
 
@@ -117,9 +117,9 @@ option('next', {})   // ['dsl.option', { script: 'next', params: {}, label: unde
 | `move(location)` | `['move', { location }]` | Move player |
 | `timeLapse(minutes)` | `['timeLapse', { minutes }]` | Advance time |
 | `addStat(stat, change)` | `['addStat', { stat, change }]` | Modify stat |
-| `addQuest(id, args?)` | `['dsl.addQuest', {...}]` | Add quest card |
-| `completeQuest(id)` | `['dsl.completeQuest', {...}]` | Complete quest |
-| `addEffect(id, args?)` | `['dsl.addEffect', {...}]` | Add effect card |
+| `addQuest(id, args?)` | `['addQuest', {...}]` | Add quest card |
+| `completeQuest(id)` | `['completeQuest', {...}]` | Complete quest |
+| `addEffect(id, args?)` | `['addEffect', {...}]` | Add effect card |
 
 #### Predicates
 
@@ -127,16 +127,16 @@ Predicates are instructions that return boolean values:
 
 | Builder | Output | Description |
 |---------|--------|-------------|
-| `hasItem(item, count?)` | `['dsl.hasItem', {...}]` | Check inventory |
-| `hasStat(stat, min?, max?)` | `['dsl.hasStat', {...}]` | Check player stat |
-| `inLocation(location)` | `['dsl.inLocation', {...}]` | Check current location |
-| `inScene()` | `['dsl.inScene', {}]` | Check if scene has options |
-| `npcStat(npc, stat, min?, max?)` | `['dsl.npcStat', {...}]` | Check NPC stat |
-| `hasCard(cardId)` | `['dsl.hasCard', {...}]` | Check if player has card |
-| `cardCompleted(cardId)` | `['dsl.cardCompleted', {...}]` | Check if card is completed |
-| `not(predicate)` | `['dsl.not', {...}]` | Negate predicate |
-| `and(...predicates)` | `['dsl.and', {...}]` | All must be true |
-| `or(...predicates)` | `['dsl.or', {...}]` | Any must be true |
+| `hasItem(item, count?)` | `['hasItem', {...}]` | Check inventory |
+| `hasStat(stat, min?, max?)` | `['hasStat', {...}]` | Check player stat |
+| `inLocation(location)` | `['inLocation', {...}]` | Check current location |
+| `inScene()` | `['inScene', {}]` | Check if scene has options |
+| `npcStat(npc, stat, min?, max?)` | `['npcStat', {...}]` | Check NPC stat |
+| `hasCard(cardId)` | `['hasCard', {...}]` | Check if player has card |
+| `cardCompleted(cardId)` | `['cardCompleted', {...}]` | Check if card is completed |
+| `not(predicate)` | `['not', {...}]` | Negate predicate |
+| `and(...predicates)` | `['and', {...}]` | All must be true |
+| `or(...predicates)` | `['or', {...}]` | Any must be true |
 
 #### Generic Builder
 
@@ -293,20 +293,21 @@ The DSL coexists with imperative scripts. You can:
 
 ### Script Registry
 
-All scripts (both imperative and DSL) are registered in a global registry (`Scripts.ts`). Scripts can call other scripts via `game.run(scriptName, params)`.
+All scripts are registered in a global registry (`model/Scripts.ts`). Scripts can call other scripts via `game.run(scriptName, params)`.
 
-### DSL Script Prefix
+### File Organization
 
-DSL-specific scripts use the `dsl.` prefix to avoid collisions:
-- `dsl.text`, `dsl.say`, `dsl.option` - content scripts
-- `dsl.when`, `dsl.cond`, `dsl.seq` - control flow
-- `dsl.hasItem`, `dsl.hasStat`, etc. - predicates
+- **`model/Scripts.ts`** - Core script registry and all generic scripts (game actions, control flow, predicates, content)
+- **`model/ScriptDSL.ts`** - DSL builder functions that construct instruction tuples
+- **`story/Utility.ts`** - Story-specific scripts containing game world content (e.g., flavor text)
+
+Scripts belong in `Scripts.ts` unless they contain story-specific content like hardcoded narrative text or world-specific logic.
 
 ### Return Values
 
 Scripts can return values. The DSL leverages this for predicates:
 - `exec(game, hasItem('crown'))` returns `true` or `false`
-- Control flow scripts like `dsl.when` use `exec()` internally to evaluate conditions
+- Control flow scripts like `when` use `exec()` internally to evaluate conditions
 
 ### Type Safety
 

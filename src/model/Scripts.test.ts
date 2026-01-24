@@ -20,7 +20,7 @@ describe('Scripts', () => {
     // Get and run the script
     const script = getScript('testScript')
     expect(script).toBeDefined()
-    const result = script!(game, { testParam: 'value' })
+    const result = script!(game, { testParam: 'value' }) as { gameVersion: number; score: number; params: object }
 
     // Verify the script executed correctly
     expect(result).toBeDefined()

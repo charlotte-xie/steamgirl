@@ -63,14 +63,14 @@ describe('ScriptDSL', () => {
     })
 
     describe('content builders', () => {
-      it('text() produces dsl.text instruction', () => {
+      it('text() produces text instruction', () => {
         const result = text('Hello world')
-        expect(result).toEqual(['dsl.text', { text: 'Hello world' }])
+        expect(result).toEqual(['text', { text: 'Hello world' }])
       })
 
-      it('paragraph() produces dsl.paragraph instruction', () => {
+      it('paragraph() produces paragraph instruction', () => {
         const result = paragraph('Hello ', hl('world', '#ff0000'), '!')
-        expect(result).toEqual(['dsl.paragraph', {
+        expect(result).toEqual(['paragraph', {
           content: ['Hello ', { text: 'world', color: '#ff0000' }, '!']
         }])
       })
@@ -80,66 +80,66 @@ describe('ScriptDSL', () => {
         expect(result).toEqual({ text: 'important', color: '#ff0000', hoverText: 'Hover text' })
       })
 
-      it('say() produces dsl.say instruction', () => {
-        expect(say('Hello!', 'npcId', '#00ff00')).toEqual(['dsl.say', { text: 'Hello!', npc: 'npcId', color: '#00ff00' }])
-        expect(say('Hello!')).toEqual(['dsl.say', { text: 'Hello!', npc: undefined, color: undefined }])
+      it('say() produces say instruction', () => {
+        expect(say('Hello!', 'npcId', '#00ff00')).toEqual(['say', { text: 'Hello!', npc: 'npcId', color: '#00ff00' }])
+        expect(say('Hello!')).toEqual(['say', { text: 'Hello!', npc: undefined, color: undefined }])
       })
 
-      it('option() produces dsl.option instruction', () => {
-        expect(option('nextScript', { x: 1 }, 'Click me')).toEqual(['dsl.option', { script: 'nextScript', params: { x: 1 }, label: 'Click me' }])
-        expect(option('nextScript')).toEqual(['dsl.option', { script: 'nextScript', params: {}, label: undefined }])
+      it('option() produces option instruction', () => {
+        expect(option('nextScript', { x: 1 }, 'Click me')).toEqual(['option', { script: 'nextScript', params: { x: 1 }, label: 'Click me' }])
+        expect(option('nextScript')).toEqual(['option', { script: 'nextScript', params: {}, label: undefined }])
       })
 
-      it('npcLeaveOption() produces dsl.npcLeaveOption instruction', () => {
-        expect(npcLeaveOption('Goodbye', 'See you!')).toEqual(['dsl.npcLeaveOption', { text: 'Goodbye', reply: 'See you!', label: 'Leave' }])
-        expect(npcLeaveOption()).toEqual(['dsl.npcLeaveOption', { text: undefined, reply: undefined, label: 'Leave' }])
+      it('npcLeaveOption() produces npcLeaveOption instruction', () => {
+        expect(npcLeaveOption('Goodbye', 'See you!')).toEqual(['npcLeaveOption', { text: 'Goodbye', reply: 'See you!', label: 'Leave' }])
+        expect(npcLeaveOption()).toEqual(['npcLeaveOption', { text: undefined, reply: undefined, label: 'Leave' }])
       })
     })
 
     describe('control flow builders', () => {
-      it('seq() produces dsl.seq instruction with nested instructions', () => {
+      it('seq() produces seq instruction with nested instructions', () => {
         const result = seq(text('A'), text('B'))
-        expect(result).toEqual(['dsl.seq', {
+        expect(result).toEqual(['seq', {
           instructions: [
-            ['dsl.text', { text: 'A' }],
-            ['dsl.text', { text: 'B' }]
+            ['text', { text: 'A' }],
+            ['text', { text: 'B' }]
           ]
         }])
       })
 
-      it('when() produces dsl.when instruction', () => {
+      it('when() produces when instruction', () => {
         const result = when(hasItem('gold'), text('Rich!'))
-        expect(result).toEqual(['dsl.when', {
-          condition: ['dsl.hasItem', { item: 'gold', count: 1 }],
-          then: [['dsl.text', { text: 'Rich!' }]]
+        expect(result).toEqual(['when', {
+          condition: ['hasItem', { item: 'gold', count: 1 }],
+          then: [['text', { text: 'Rich!' }]]
         }])
       })
 
       it('when() supports multiple then instructions (variadic)', () => {
         const result = when(hasItem('gold'), text('A'), text('B'), text('C'))
-        expect(result).toEqual(['dsl.when', {
-          condition: ['dsl.hasItem', { item: 'gold', count: 1 }],
+        expect(result).toEqual(['when', {
+          condition: ['hasItem', { item: 'gold', count: 1 }],
           then: [
-            ['dsl.text', { text: 'A' }],
-            ['dsl.text', { text: 'B' }],
-            ['dsl.text', { text: 'C' }]
+            ['text', { text: 'A' }],
+            ['text', { text: 'B' }],
+            ['text', { text: 'C' }]
           ]
         }])
       })
 
-      it('unless() produces dsl.when with negated condition', () => {
+      it('unless() produces when with negated condition', () => {
         const result = unless(hasItem('gold'), text('Poor!'))
-        expect(result).toEqual(['dsl.when', {
-          condition: ['dsl.not', { predicate: ['dsl.hasItem', { item: 'gold', count: 1 }] }],
-          then: [['dsl.text', { text: 'Poor!' }]]
+        expect(result).toEqual(['when', {
+          condition: ['not', { predicate: ['hasItem', { item: 'gold', count: 1 }] }],
+          then: [['text', { text: 'Poor!' }]]
         }])
       })
 
       it('cond() with 3 args produces if/else branches', () => {
         const result = cond(hasItem('gold'), text('Rich!'), text('Poor!'))
-        expect(result).toEqual(['dsl.cond', {
-          branches: [{ condition: ['dsl.hasItem', { item: 'gold', count: 1 }], then: ['dsl.text', { text: 'Rich!' }] }],
-          default: ['dsl.text', { text: 'Poor!' }]
+        expect(result).toEqual(['cond', {
+          branches: [{ condition: ['hasItem', { item: 'gold', count: 1 }], then: ['text', { text: 'Rich!' }] }],
+          default: ['text', { text: 'Poor!' }]
         }])
       })
 
@@ -149,12 +149,12 @@ describe('ScriptDSL', () => {
           hasItem('silver'), text('Silver!'),
           text('Nothing!')
         )
-        expect(result).toEqual(['dsl.cond', {
+        expect(result).toEqual(['cond', {
           branches: [
-            { condition: ['dsl.hasItem', { item: 'gold', count: 1 }], then: ['dsl.text', { text: 'Gold!' }] },
-            { condition: ['dsl.hasItem', { item: 'silver', count: 1 }], then: ['dsl.text', { text: 'Silver!' }] }
+            { condition: ['hasItem', { item: 'gold', count: 1 }], then: ['text', { text: 'Gold!' }] },
+            { condition: ['hasItem', { item: 'silver', count: 1 }], then: ['text', { text: 'Silver!' }] }
           ],
-          default: ['dsl.text', { text: 'Nothing!' }]
+          default: ['text', { text: 'Nothing!' }]
         }])
       })
     })
@@ -181,68 +181,68 @@ describe('ScriptDSL', () => {
         expect(addStat('Agility', 5)).toEqual(['addStat', { stat: 'Agility', change: 5 }])
       })
 
-      it('addQuest() produces dsl.addQuest instruction', () => {
-        expect(addQuest('find-lodgings', { silent: true })).toEqual(['dsl.addQuest', { questId: 'find-lodgings', args: { silent: true } }])
+      it('addQuest() produces addQuest instruction', () => {
+        expect(addQuest('find-lodgings', { silent: true })).toEqual(['addQuest', { questId: 'find-lodgings', args: { silent: true } }])
       })
 
-      it('completeQuest() produces dsl.completeQuest instruction', () => {
-        expect(completeQuest('find-lodgings')).toEqual(['dsl.completeQuest', { questId: 'find-lodgings' }])
+      it('completeQuest() produces completeQuest instruction', () => {
+        expect(completeQuest('find-lodgings')).toEqual(['completeQuest', { questId: 'find-lodgings' }])
       })
 
-      it('addEffect() produces dsl.addEffect instruction', () => {
-        expect(addEffect('tired', { level: 2 })).toEqual(['dsl.addEffect', { effectId: 'tired', args: { level: 2 } }])
+      it('addEffect() produces addEffect instruction', () => {
+        expect(addEffect('tired', { level: 2 })).toEqual(['addEffect', { effectId: 'tired', args: { level: 2 } }])
       })
     })
 
     describe('predicate builders', () => {
-      it('hasItem() produces dsl.hasItem instruction', () => {
-        expect(hasItem('gold')).toEqual(['dsl.hasItem', { item: 'gold', count: 1 }])
-        expect(hasItem('gold', 100)).toEqual(['dsl.hasItem', { item: 'gold', count: 100 }])
+      it('hasItem() produces hasItem instruction', () => {
+        expect(hasItem('gold')).toEqual(['hasItem', { item: 'gold', count: 1 }])
+        expect(hasItem('gold', 100)).toEqual(['hasItem', { item: 'gold', count: 100 }])
       })
 
-      it('hasStat() produces dsl.hasStat instruction', () => {
-        expect(hasStat('Agility', 30)).toEqual(['dsl.hasStat', { stat: 'Agility', min: 30, max: undefined }])
-        expect(hasStat('Agility', 10, 50)).toEqual(['dsl.hasStat', { stat: 'Agility', min: 10, max: 50 }])
+      it('hasStat() produces hasStat instruction', () => {
+        expect(hasStat('Agility', 30)).toEqual(['hasStat', { stat: 'Agility', min: 30, max: undefined }])
+        expect(hasStat('Agility', 10, 50)).toEqual(['hasStat', { stat: 'Agility', min: 10, max: 50 }])
       })
 
-      it('inLocation() produces dsl.inLocation instruction', () => {
-        expect(inLocation('tavern')).toEqual(['dsl.inLocation', { location: 'tavern' }])
+      it('inLocation() produces inLocation instruction', () => {
+        expect(inLocation('tavern')).toEqual(['inLocation', { location: 'tavern' }])
       })
 
-      it('inScene() produces dsl.inScene instruction', () => {
-        expect(inScene()).toEqual(['dsl.inScene', {}])
+      it('inScene() produces inScene instruction', () => {
+        expect(inScene()).toEqual(['inScene', {}])
       })
 
-      it('npcStat() produces dsl.npcStat instruction', () => {
-        expect(npcStat('barkeeper', 'trust', 50)).toEqual(['dsl.npcStat', { npc: 'barkeeper', stat: 'trust', min: 50, max: undefined }])
+      it('npcStat() produces npcStat instruction', () => {
+        expect(npcStat('barkeeper', 'trust', 50)).toEqual(['npcStat', { npc: 'barkeeper', stat: 'trust', min: 50, max: undefined }])
       })
 
-      it('hasCard() produces dsl.hasCard instruction', () => {
-        expect(hasCard('find-lodgings')).toEqual(['dsl.hasCard', { cardId: 'find-lodgings' }])
+      it('hasCard() produces hasCard instruction', () => {
+        expect(hasCard('find-lodgings')).toEqual(['hasCard', { cardId: 'find-lodgings' }])
       })
 
-      it('cardCompleted() produces dsl.cardCompleted instruction', () => {
-        expect(cardCompleted('find-lodgings')).toEqual(['dsl.cardCompleted', { cardId: 'find-lodgings' }])
+      it('cardCompleted() produces cardCompleted instruction', () => {
+        expect(cardCompleted('find-lodgings')).toEqual(['cardCompleted', { cardId: 'find-lodgings' }])
       })
 
-      it('not() produces dsl.not instruction', () => {
-        expect(not(hasItem('gold'))).toEqual(['dsl.not', { predicate: ['dsl.hasItem', { item: 'gold', count: 1 }] }])
+      it('not() produces not instruction', () => {
+        expect(not(hasItem('gold'))).toEqual(['not', { predicate: ['hasItem', { item: 'gold', count: 1 }] }])
       })
 
-      it('and() produces dsl.and instruction', () => {
-        expect(and(hasItem('gold'), inLocation('tavern'))).toEqual(['dsl.and', {
+      it('and() produces and instruction', () => {
+        expect(and(hasItem('gold'), inLocation('tavern'))).toEqual(['and', {
           predicates: [
-            ['dsl.hasItem', { item: 'gold', count: 1 }],
-            ['dsl.inLocation', { location: 'tavern' }]
+            ['hasItem', { item: 'gold', count: 1 }],
+            ['inLocation', { location: 'tavern' }]
           ]
         }])
       })
 
-      it('or() produces dsl.or instruction', () => {
-        expect(or(hasItem('gold'), hasItem('silver'))).toEqual(['dsl.or', {
+      it('or() produces or instruction', () => {
+        expect(or(hasItem('gold'), hasItem('silver'))).toEqual(['or', {
           predicates: [
-            ['dsl.hasItem', { item: 'gold', count: 1 }],
-            ['dsl.hasItem', { item: 'silver', count: 1 }]
+            ['hasItem', { item: 'gold', count: 1 }],
+            ['hasItem', { item: 'silver', count: 1 }]
           ]
         }])
       })
