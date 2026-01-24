@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Game } from './Game'
 import '../story/World' // Load all story content
 
@@ -573,15 +573,19 @@ describe('ScriptDSL', () => {
       })
 
       it('skillCheck with callbacks executes appropriate branch', () => {
-        // Run with low difficulty to (likely) succeed
-        // Since skill tests are probabilistic, we test the callback mechanism
-        execAll(game, [
-          skillCheck('Flirtation', -100, [text('Success!')], [text('Failure!')])
-        ])
-        expect(game.scene.content.length).toBe(1)
-        // With difficulty -100, should always succeed
-        const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
-        expect(txt).toBe('Success!')
+        // Mock Math.random to return a value that results in roll 50 (not 100, which always fails)
+        vi.spyOn(Math, 'random').mockReturnValue(0.49)
+        try {
+          execAll(game, [
+            skillCheck('Flirtation', -100, [text('Success!')], [text('Failure!')])
+          ])
+          expect(game.scene.content.length).toBe(1)
+          // With difficulty -100 and roll 50, should succeed (threshold = stat + skill + 100 > 50)
+          const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
+          expect(txt).toBe('Success!')
+        } finally {
+          vi.restoreAllMocks()
+        }
       })
 
       it('move changes location', () => {

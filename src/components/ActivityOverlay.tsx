@@ -17,7 +17,7 @@ export function ActivityOverlay() {
     if (!activity.condition) {
       return true
     }
-    const result = activity.condition(game, {})
+    const result = game.run(activity.condition)
     return Boolean(result)
   })
 

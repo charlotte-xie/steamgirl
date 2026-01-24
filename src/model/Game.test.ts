@@ -106,12 +106,12 @@ describe('Game', () => {
     // Get the item definition and call onConsume
     const wineDef = wineItem!.template
     expect(wineDef.onConsume).toBeDefined()
-    
+
     // Remove the item from inventory first (as the UI does)
     game.player.removeItem('sweet-wine', 1)
-    
-    // Call the onConsume script
-    wineDef.onConsume!(game, {})
+
+    // Call the onConsume script via game.run (supports all Script forms)
+    game.run(wineDef.onConsume!)
     
     // Check that player has the intoxicated effect
     const intoxicatedCard = game.player.cards.find(card => card.id === 'intoxicated' && card.type === 'Effect')

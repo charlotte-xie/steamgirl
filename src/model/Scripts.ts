@@ -25,48 +25,62 @@ import { getLocation } from './Location'
 import { getItem } from './Item'
 
 // ============================================================================
+// SCRIPT TYPES
+// ============================================================================
+
+/** A script function - the imperative form */
+export type ScriptFn = (game: Game, params: Record<string, unknown>) => unknown
+
+/** An instruction is a script call: [scriptName, params] tuple - the declarative form */
+export type Instruction = [string, Record<string, unknown>]
+
+/**
+ * A Script can be any of:
+ * - ScriptFn: A function (imperative) - (game, params) => result
+ * - Instruction: A tuple [scriptName, params] (declarative) - use seq() for multiple
+ * - string: A registered script name
+ */
+export type Script = ScriptFn | Instruction | string
+
+/** Check if a value is a ScriptFn (function) */
+export function isScriptFn(value: unknown): value is ScriptFn {
+  return typeof value === 'function'
+}
+
+/** Check if a value is an Instruction tuple */
+export function isInstruction(value: unknown): value is Instruction {
+  return Array.isArray(value) && value.length === 2 && typeof value[0] === 'string'
+}
+
+// ============================================================================
 // SCRIPT REGISTRY
 // ============================================================================
 
-export type Script = (game: Game, params: {}) => unknown
+const SCRIPTS: Record<string, ScriptFn> = {}
 
-const SCRIPTS: Record<string, Script> = {}
-
-export function makeScript(name: string, script: Script): void {
+export function makeScript(name: string, script: ScriptFn): void {
   if (name in SCRIPTS) {
     throw new Error(`Duplicate script name: ${name}`)
   }
   SCRIPTS[name] = script
 }
 
-export function makeScripts(scripts: Record<string, Script>): void {
+export function makeScripts(scripts: Record<string, ScriptFn>): void {
   for (const [name, script] of Object.entries(scripts)) {
     makeScript(name, script)
   }
 }
 
-export function getScript(name: string): Script | undefined {
+export function getScript(name: string): ScriptFn | undefined {
   return SCRIPTS[name]
 }
 
-export function getAllScripts(): Record<string, Script> {
+export function getAllScripts(): Record<string, ScriptFn> {
   return { ...SCRIPTS }
 }
 
-// ============================================================================
-// SCRIPT REFERENCE TYPES
-// ============================================================================
-
-/** An instruction is a script call: [scriptName, params] tuple */
-export type Instruction = [string, Record<string, unknown>]
-
-/** A script reference can be a name (string) or an instruction tuple */
+/** @deprecated Use Script type instead */
 export type ScriptRef = string | Instruction
-
-/** Check if a value is an Instruction tuple */
-export function isInstruction(value: unknown): value is Instruction {
-  return Array.isArray(value) && value.length === 2 && typeof value[0] === 'string'
-}
 
 // ============================================================================
 // CORE SCRIPTS - Generic scripts that are part of the scripting system
@@ -102,7 +116,7 @@ function resolveParts(game: Game, parts: (string | Instruction)[]): (string | In
   return result
 }
 
-const coreScripts: Record<string, Script> = {
+const coreScripts: Record<string, ScriptFn> = {
   // -------------------------------------------------------------------------
   // GAME ACTIONS
   // -------------------------------------------------------------------------
@@ -163,10 +177,7 @@ const coreScripts: Record<string, Script> = {
     // If hour changed, call onMove for all NPCs
     if (hourChanged) {
       game.npcs.forEach((npc) => {
-        const npcDef = npc.template
-        if (npcDef.onMove && typeof npcDef.onMove === 'function') {
-          npcDef.onMove(game, {})
-        }
+        game.run(npc.template.onMove)
       })
       game.updateNPCsPresent()
     }
@@ -608,7 +619,7 @@ const coreScripts: Record<string, Script> = {
     }
 
     if (link.onFollow) {
-      link.onFollow(game, {})
+      game.run(link.onFollow)
       if (game.inScene) {
         return
       }
@@ -629,11 +640,11 @@ const coreScripts: Record<string, Script> = {
     gameLocation.discovered = true
 
     if (isFirstVisit && gameLocation.template.onFirstArrive) {
-      gameLocation.template.onFirstArrive(game, {})
+      game.run(gameLocation.template.onFirstArrive)
     }
 
     if (gameLocation.template.onArrive) {
-      gameLocation.template.onArrive(game, {})
+      game.run(gameLocation.template.onArrive)
     }
   },
 
@@ -692,14 +703,14 @@ const coreScripts: Record<string, Script> = {
       game.add('Activity not found.')
       return
     }
-    act.script(game, {})
+    game.run(act.script)
   },
 
   /** Run the current location's onRelax if defined; otherwise a generic message. */
   relaxAtLocation: (game: Game) => {
     const onRelax = game.location.template.onRelax
     if (onRelax) {
-      onRelax(game, {})
+      game.run(onRelax)
     } else {
       game.add("There's nothing particularly relaxing to do here.")
     }
@@ -716,7 +727,7 @@ const coreScripts: Record<string, Script> = {
       game.add('Nothing happens.')
       return
     }
-    def.onExamine(game, {})
+    game.run(def.onExamine)
   },
 
   /** Consume an item (run its onConsume script and remove from inventory) */
@@ -737,7 +748,7 @@ const coreScripts: Record<string, Script> = {
     }
     game.player.removeItem(itemId, 1)
     game.player.calcStats()
-    def.onConsume(game, {})
+    game.run(def.onConsume)
   },
 
   /** Run a named script on an NPC */
@@ -751,12 +762,12 @@ const coreScripts: Record<string, Script> = {
       throw new Error('interact script requires a script parameter (string name)')
     }
     const npc = game.getNPC(npcId)
-    const fn = npc.template.scripts?.[scriptName]
-    if (!fn) {
+    const script = npc.template.scripts?.[scriptName]
+    if (!script) {
       throw new Error(`NPC ${npcId} has no script "${scriptName}"`)
     }
     game.timeLapse(1)
-    fn(game, params.params ?? {})
+    game.run(script, (params.params ?? {}) as Record<string, unknown>)
   },
 
   /** Approach an NPC to talk to them */
@@ -775,7 +786,7 @@ const coreScripts: Record<string, Script> = {
     game.scene.hideNpcImage = false
 
     if (npcDef.onApproach) {
-      npcDef.onApproach(game, {})
+      game.run(npcDef.onApproach)
     } else {
       const displayName = npc.nameKnown > 0 && npcDef.name
         ? npcDef.name

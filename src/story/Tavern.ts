@@ -152,7 +152,7 @@ const tavernScripts = {
     // Run onArrive if it exists
     const def = gentsLocation.template
     if (def.onArrive) {
-      def.onArrive(g, {})
+      g.run(def.onArrive)
     }
   },
 }

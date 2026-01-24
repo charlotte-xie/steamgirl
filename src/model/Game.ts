@@ -1,7 +1,7 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
-import { getScript, isInstruction, type ScriptRef } from './Scripts'
+import { getScript, isInstruction, isScriptFn, type Script } from './Scripts'
 import { Card } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 
@@ -172,9 +172,7 @@ export class Game {
     
     // Call onMove immediately after generation so NPC can position itself
     // This is safe now because the NPC is already in the map
-    if (definition.onMove) {
-      definition.onMove(this, {})
-    }
+    this.run(definition.onMove)
     
     return npc
   }
@@ -245,10 +243,7 @@ export class Game {
   afterAction(): void {
     // Run afterUpdate scripts for all cards
     this.player.cards.forEach(card => {
-      const cardDef = card.template
-      if (cardDef.afterUpdate) {
-        cardDef.afterUpdate(this, {})
-      }
+      this.run(card.template.afterUpdate)
     })
 
     // Unset npc when there are no scene options (conversation has ended)
@@ -263,16 +258,33 @@ export class Game {
 
   /**
    * Run a script on this game instance. Returns the script's result (or undefined if none).
-   * Accepts either a script name with params, or an Instruction tuple [name, params].
+   *
+   * Accepts any Script form (or null/undefined as a no-op):
+   * - null/undefined: No-op, returns undefined
+   * - string: A registered script name
+   * - Instruction: A tuple [scriptName, params]
+   * - ScriptFn: A function (game, params) => result
+   *
+   * For multiple instructions, use seq() to combine them into a single Instruction.
    */
-  run(script: ScriptRef, params: Record<string, unknown> = {}): unknown {
-    // If it's an Instruction tuple, extract name and params from it
-    if (isInstruction(script)) {
-      const [name, instrParams] = script
-      return this.run(name, instrParams)
+  run(script: Script | null | undefined, params: Record<string, unknown> = {}): unknown {
+    // Null/undefined - no-op
+    if (script == null) {
+      return undefined
     }
 
-    // It's a script name string
+    // Function - call directly
+    if (isScriptFn(script)) {
+      return script(this, params)
+    }
+
+    // Instruction tuple - extract name and params, merge with provided params
+    if (isInstruction(script)) {
+      const [name, instrParams] = script
+      return this.run(name, { ...instrParams, ...params })
+    }
+
+    // String - look up registered script
     const scriptFn = getScript(script)
     if (!scriptFn) {
       throw new Error(`Script not found: ${script}`)
