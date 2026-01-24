@@ -8,6 +8,10 @@ SteamGirl is a steampunk-inspired life simulator game featuring Elise, a young w
 
 **Demo**: https://charlotte-xie.github.io/steamgirl
 
+## Vision
+
+The game is an immersive, rich, story driven game with complex characters and themes. The theme mixes steampunk glamour and beauty with dark fantasy and psychological elements.
+
 ## Tech Stack
 
 - **React 19** with TypeScript
