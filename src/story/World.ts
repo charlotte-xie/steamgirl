@@ -29,6 +29,7 @@ import './Lowtown' // Register lowtown location and NPCs
 import './Tavern' // Register tavern locations and NPCs
 import './School' // Register university interior locations
 import './Pier' // Register pier location
+import './Industrial' // Register industrial district locations
 
 /**
  * This module serves as a central import point for all story content.

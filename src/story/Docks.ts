@@ -9,7 +9,10 @@ const DOCKS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     nightImage: '/images/docks/docks-night.jpg',
 
     mainLocation: true,
-    links: [{ dest: 'subway-docks', time: 2, label: 'Underground' }],
+    links: [
+      { dest: 'subway-docks', time: 2, label: 'Underground' },
+      { dest: 'industrial-district', time: 10 },
+    ],
   },
 }
 
