@@ -11,6 +11,93 @@ SteamGirl uses a two-layer scripting system:
 
 Both layers coexist. The DSL compiles down to imperative script calls, so authors can use whichever approach fits their needs.
 
+## Design Principles
+
+### Why Two Layers?
+
+The dual-layer design serves different needs:
+
+| Need | Solution |
+|------|----------|
+| Complex game logic (calculations, state machines) | Imperative scripts |
+| Narrative content (dialogue, branching scenes) | Declarative DSL |
+| Save/load game state | DSL (JSON-serializable) |
+| Hot-reloading content | DSL (data, not code) |
+| Type safety for builders | DSL builder functions |
+
+### JSON Serialization is Critical
+
+**The entire game state must be JSON-serializable.** This enables:
+- Saving/loading games to localStorage
+- Restoring exact game position (including available options)
+- Future features: cloud saves, sharing, replays
+
+This means:
+- **NO functions in Instructions** - only `[scriptName, params]` tuples
+- **NO class instances** - only plain objects
+- **NO circular references** - flat data structures
+
+### Instructions are Data, Not Code
+
+An `Instruction` is simply data describing what to do:
+
+```typescript
+type Instruction = [string, Record<string, unknown>]
+
+// Example: ['text', { text: 'Hello world' }]
+// Meaning: "Call the 'text' script with these params"
+```
+
+The DSL builders are just convenience functions that construct these tuples:
+
+```typescript
+text('Hello')  // Returns: ['text', { text: 'Hello' }]
+```
+
+### ScriptRef: Flexible Script References
+
+`game.run()` accepts either form:
+
+```typescript
+type ScriptRef = string | Instruction
+
+// Both are equivalent:
+game.run('gainItem', { item: 'crown', number: 5 })
+game.run(['gainItem', { item: 'crown', number: 5 }])
+
+// Use Instruction form with DSL builders:
+game.run(addItem('crown', 5))
+```
+
+### Predicates Return Values
+
+Some scripts return values (typically booleans). These are used for conditions:
+
+```typescript
+// hasItem returns boolean
+const rich = game.run(hasItem('crown', 100))  // true or false
+
+// Control flow uses predicates internally
+when(hasItem('crown'), text('You have money!'))
+// The 'when' script calls exec() on the condition to get true/false
+```
+
+### Scene State
+
+A "scene" is when the player has options to choose from. Key patterns:
+
+```typescript
+// Check if in a scene (has options)
+if (game.inScene) { ... }
+
+// Many scripts should not run if already in a scene
+// (e.g., auto-generated location descriptions)
+
+// Options are stored as Instructions for JSON serialization
+game.addOption('scriptName', { params }, 'Button Label')
+// Internally: { script: ['scriptName', { params }], label: 'Button Label' }
+```
+
 ## Imperative Scripts
 
 Scripts are registered globally using `makeScript` or `makeScripts`:
@@ -370,3 +457,125 @@ const instr: Instruction = ['dsl.hasItem', { item: 'crown', count: 10 }]
 4. **Leverage existing utility scripts** - `gainItem`, `loseItem`, `move`, etc.
 5. **Test builder output** - verify instructions produce expected tuples
 6. **Keep instructions JSON-clean** - no functions, classes, or circular references
+
+## When to Use Which Approach
+
+### Use Declarative DSL When:
+
+- Writing dialogue scenes or narrative content
+- Creating branching storylines with conditions
+- Building content that should be saveable/loadable
+- The logic is primarily "if X then show Y"
+- You want the content to be hot-reloadable
+
+```typescript
+// Good DSL usage: narrative scene
+const tavernScene: Instruction[] = [
+  text('The barkeeper looks up as you enter.'),
+  cond(
+    hasItem('crown', 10), say('Welcome, valued customer!', 'barkeeper'),
+    say('You look like you could use a drink.', 'barkeeper')
+  ),
+  option('orderDrink', {}, 'Order a drink'),
+  npcLeaveOption()
+]
+```
+
+### Use Imperative Scripts When:
+
+- Complex calculations or game mechanics
+- Interacting with external systems
+- Dynamic content generation based on complex state
+- Loops or recursive logic
+- Direct manipulation of multiple game systems
+
+```typescript
+// Good imperative usage: complex game logic
+makeScript('calculateDamage', (game, { weapon, target }) => {
+  const baseDamage = getWeaponDamage(weapon)
+  const modifier = game.player.stats.get('Strength') / 10
+  const defense = game.getNPC(target).stats.get('defense') ?? 0
+  const finalDamage = Math.max(0, baseDamage * modifier - defense)
+
+  game.getNPC(target).stats.set('health',
+    (game.getNPC(target).stats.get('health') ?? 100) - finalDamage
+  )
+
+  return finalDamage
+})
+```
+
+### Hybrid Approach
+
+Often the best solution combines both:
+
+```typescript
+// Imperative script that uses DSL for its narrative parts
+makeScript('enterShop', (game, params) => {
+  const shopkeeper = game.getNPC('shopkeeper')
+  const playerGold = game.player.inventory.find(i => i.id === 'crown')?.number ?? 0
+
+  // Complex logic in imperative
+  const discount = shopkeeper.stats.get('relationship') > 50 ? 0.9 : 1.0
+  const canAfford = playerGold >= 10 * discount
+
+  // Narrative in DSL
+  execAll(game, [
+    text('You enter the shop.'),
+    say(`Welcome! Everything is ${discount < 1 ? '10% off for you!' : 'at regular prices.'}`, 'shopkeeper'),
+    when(canAfford ? hasItem('crown') : not(hasItem('crown')),
+      option('buyItem', { discount }, 'Browse wares')
+    ),
+    npcLeaveOption()
+  ])
+})
+```
+
+## Common Patterns
+
+### Gated Content
+
+```typescript
+// Only show option if player meets requirements
+when(and(hasItem('key'), hasStat('Perception', 20)),
+  option('secretDoor', {}, 'Examine the strange wall')
+)
+```
+
+### Progressive Dialogue
+
+```typescript
+// Different dialogue based on relationship
+cond(
+  npcStat('merchant', 'trust', 80), say('My dear friend! I have something special for you.', 'merchant'),
+  npcStat('merchant', 'trust', 40), say('Ah, a familiar face. What can I do for you?', 'merchant'),
+  say('What do you want?', 'merchant')
+)
+```
+
+### Random Variety
+
+```typescript
+// Add flavor without repetition
+random(
+  text('A steam whistle echoes in the distance.'),
+  text('Gears click and whir from the machinery above.'),
+  text('The gaslights flicker momentarily.')
+)
+```
+
+### Skill Checks with Consequences
+
+```typescript
+skillCheck('Flirtation', 15,
+  [
+    say('You charm them effortlessly.', 'target'),
+    addStat('Charm', 1),
+    run('unlockSpecialOption', {})
+  ],
+  [
+    text('They seem unimpressed by your advances.'),
+    addStat('Composure', -5)
+  ]
+)
+```

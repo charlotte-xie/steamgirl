@@ -71,16 +71,28 @@ NPCs, Items, Locations etc. Have template definitions that contain static data. 
 
 ### Script-Based Narrative System
 
-Globally defined game interactions are scripts registered via `makeScript`:
+**See [SCRIPTING.md](./SCRIPTING.md) for complete scripting documentation.**
+
+The game uses a two-layer scripting system:
+1. **Imperative Scripts** - TypeScript functions for complex logic
+2. **Declarative DSL** - JSON-serializable instructions for narrative content
+
+Key principle: The DSL produces `[scriptName, params]` tuples that are fully JSON-serializable. This enables save/load, hot-reloading, and data-driven content.
 
 ```typescript
+// Imperative (for complex logic)
 makeScript('scriptName', (game, params) => {
   game.add('Story text')
   game.addOption('nextScript', {}, 'Button Label')
 })
-```
 
-Global scripts can be used to run local scripts defined in specific objects definitions, or to trigger them on specific events - e.g. specific conversations with an NPC.
+// Declarative DSL (for narrative content)
+const scene: Instruction[] = [
+  text('You enter the room.'),
+  when(hasItem('key'), text('The door unlocks!')),
+  option('leave', {}, 'Leave')
+]
+```
 
 Script processing may be conditional:
 - Many things shouldn't happen if already in a scene (i.e. scene options available)
