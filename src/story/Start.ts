@@ -60,6 +60,7 @@ registerNPC('automaton-greeter', {
 
 registerNPC('tour-guide', {
   name: 'Rob Hayes',
+  uname: 'tour guide',
   description: 'A genial man with a warm smile and a well-worn guidebook tucked under his arm. His clothes are practical but neat, and he moves with the easy confidence of someone who knows every street and alley of Aetheria. He takes genuine pleasure in showing newcomers around, and his enthusiasm for the city is infectious. The brass badge pinned to his coat marks him as an official tour guide.',
   image: '/images/npcs/TourGuide.jpg',
   speechColor: '#94a3b8',
@@ -72,12 +73,19 @@ registerNPC('tour-guide', {
       [9, 18, 'station'],
     ])
   },
-  onApproach: (game: Game) => {
+  onFirstApproach: (game: Game) => {
     const npc = game.npc
     game.add('A man with a well-worn guidebook catches your eye and steps over with a warm smile.')
-    npc.say('Rob Hayes. I lead tours of the city for new arrivals. It takes about an hour and ends in the backstreets—handy if that\'s where you\'re headed. Fancy it?')
+    npc.say("The name's Rob Hayes. I lead tours of the city for new arrivals. It takes about an hour and ends in the backstreets—handy if that's where you're headed. Fancy it?")
+    npc.nameKnown = 1
     game.addOption('tourCity', {}, 'Accept')
     npc.leaveOption('You politely decline the invitation.', "Whenever you're ready. I'm usually here at the station.", 'Decline')
+  },
+  onApproach: (game: Game) => {
+    const npc = game.npc
+    npc.say("Back again? The tour offer still stands if you're interested.")
+    game.addOption('tourCity', {}, 'Accept the tour')
+    npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
   },
 })
 

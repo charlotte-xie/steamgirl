@@ -1,7 +1,7 @@
 /**
- * Declarative Script DSL
+ * Declarative Script DSL for narrative content
  *
- * A thin syntax layer that compiles to [scriptName, params] tuples.
+ * A thin syntax layer that compiles to serialisable [scriptName, params] tuples.
  * Instructions are executed by calling scripts from the script library.
  *
  * Key concepts:
@@ -9,6 +9,12 @@
  * - DSL builders are pure functions that construct these tuples
  * - Control flow (when, cond, seq) and predicates are also scripts
  * - Everything is JSON-serializable
+ *
+ * General flow:
+ * DSL builder => Instruction like ['scriptName', { text: 'Hello' }]
+ * Instruction => game.run(scriptName, params)
+ * game.run => script function(s)
+ * script function => game state changes
  *
  * Example usage:
  * ```typescript
@@ -19,7 +25,7 @@
  *     say('"A paying customer!"'),
  *     option('buyDrink', {}, 'Buy a drink')
  *   ),
- *   option('leave', {}, 'Leave')
+ *   option('Leave', {}, 'leave')
  * ]
  * ```
  */

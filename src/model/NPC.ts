@@ -34,7 +34,9 @@ export interface NPCDefinition {
   speechColor?: string
   // Optional generate function that initializes the NPC instance (NPC is already constructed)
   generate?: (game: Game, npc: NPC) => void
-  // Script to run when player approaches this NPC
+  // Script to run when player approaches this NPC for the first time
+  onFirstApproach?: Script
+  // Script to run when player approaches this NPC (used after first approach, or if no onFirstApproach)
   onApproach?: Script
   // Script to run when the hour changes (for NPC movement)
   onMove?: Script

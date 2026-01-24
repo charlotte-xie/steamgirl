@@ -837,8 +837,14 @@ const coreScripts: Record<string, ScriptFn> = {
     game.scene.npc = npcId
     game.scene.hideNpcImage = false
 
-    if (npcDef.onApproach) {
-      game.run(npcDef.onApproach)
+    // Use onFirstApproach for first meeting, onApproach for subsequent
+    const isFirstApproach = npc.approachCount === 1
+    const script = isFirstApproach && npcDef.onFirstApproach
+      ? npcDef.onFirstApproach
+      : npcDef.onApproach
+
+    if (script) {
+      game.run(script)
     } else {
       const displayName = npc.nameKnown > 0 && npcDef.name
         ? npcDef.name
