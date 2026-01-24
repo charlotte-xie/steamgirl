@@ -14,6 +14,7 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'backstreets', time: 5 }, // 5 minutes back to backstreets
       { dest: 'copper-pot-tavern', time: 2 }, // 2 minutes to Copper Pot Tavern
       { dest: 'subway-lowtown', time: 2, label: 'Subway' },
+      { dest: 'back-alley', time: 2 },
     ],
     secret: true, // Starts as undiscovered - must be found through exploration
     onFirstArrive: (g: Game) => {
@@ -24,6 +25,14 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       g.getNPC('elvis-crowe')
       g.getNPC('jonny-elric')
     },
+  },
+  'back-alley': {
+    name: 'Back Alley',
+    description: 'A narrow passage between crumbling brick buildings, where the gaslight barely reaches. Puddles of oily water reflect the dim glow of distant lamps, and the air is thick with the smell of rust and decay.',
+    image: '/images/lowtown/alley.jpg',
+    links: [
+      { dest: 'lowtown', time: 2 },
+    ],
   },
 }
 

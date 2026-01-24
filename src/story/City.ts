@@ -246,8 +246,11 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'A serene city lake, where steam gently rises from the surface.',
     image: '/images/lake.jpg',
     mainLocation: true,
-    links: [{ dest: 'school', time: 8 }, 
-      { dest: 'market', time: 8 }], // 8 minutes back to school, 8 minutes to market
+    links: [
+      { dest: 'school', time: 8 },
+      { dest: 'market', time: 8 },
+      { dest: 'pier', time: 10 },
+    ],
     secret: true, // Starts as undiscovered - must be found through exploration
     onRelax: (g: Game) => {
       g.run('addStat', { stat: 'Mood', change: 2, max: 80 })
