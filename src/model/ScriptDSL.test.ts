@@ -5,6 +5,7 @@ import '../story/World' // Load all story content
 import {
   // Core type
   type Instruction,
+  type TextPart,
   // Generic builder
   run,
   // Predicates
@@ -23,6 +24,8 @@ import {
   paragraph,
   hl,
   say,
+  playerName,
+  npcName,
   option,
   npcLeaveOption,
   when,
@@ -65,9 +68,19 @@ describe('ScriptDSL', () => {
     })
 
     describe('content builders', () => {
-      it('text() produces text instruction', () => {
+      it('text() produces text instruction with parts array', () => {
         const result = text('Hello world')
-        expect(result).toEqual(['text', { text: 'Hello world' }])
+        expect(result).toEqual(['text', { parts: ['Hello world'] }])
+      })
+
+      it('text() accepts multiple parts', () => {
+        const result = text('Hello ', 'world', '!')
+        expect(result).toEqual(['text', { parts: ['Hello ', 'world', '!'] }])
+      })
+
+      it('text() accepts Instructions as parts', () => {
+        const result = text('Hello ', playerName(), '!')
+        expect(result).toEqual(['text', { parts: ['Hello ', ['playerName', {}], '!'] }])
       })
 
       it('paragraph() produces paragraph instruction', () => {
@@ -82,9 +95,21 @@ describe('ScriptDSL', () => {
         expect(result).toEqual({ text: 'important', color: '#ff0000', hoverText: 'Hover text' })
       })
 
-      it('say() produces say instruction', () => {
-        expect(say('Hello!', 'npcId', '#00ff00')).toEqual(['say', { text: 'Hello!', npc: 'npcId', color: '#00ff00' }])
-        expect(say('Hello!')).toEqual(['say', { text: 'Hello!', npc: undefined, color: undefined }])
+      it('say() produces say instruction with parts array', () => {
+        expect(say('Hello!')).toEqual(['say', { parts: ['Hello!'] }])
+      })
+
+      it('say() accepts multiple parts including Instructions', () => {
+        expect(say(npcName(), ' says "Welcome!"')).toEqual(['say', { parts: [['npcName', { npc: undefined }], ' says "Welcome!"'] }])
+      })
+
+      it('playerName() produces playerName instruction', () => {
+        expect(playerName()).toEqual(['playerName', {}])
+      })
+
+      it('npcName() produces npcName instruction', () => {
+        expect(npcName()).toEqual(['npcName', { npc: undefined }])
+        expect(npcName('barkeeper')).toEqual(['npcName', { npc: 'barkeeper' }])
       })
 
       it('option() produces option instruction', () => {
@@ -103,8 +128,8 @@ describe('ScriptDSL', () => {
         const result = seq(text('A'), text('B'))
         expect(result).toEqual(['seq', {
           instructions: [
-            ['text', { text: 'A' }],
-            ['text', { text: 'B' }]
+            ['text', { parts: ['A'] }],
+            ['text', { parts: ['B'] }]
           ]
         }])
       })
@@ -113,7 +138,7 @@ describe('ScriptDSL', () => {
         const result = when(hasItem('gold'), text('Rich!'))
         expect(result).toEqual(['when', {
           condition: ['hasItem', { item: 'gold', count: 1 }],
-          then: [['text', { text: 'Rich!' }]]
+          then: [['text', { parts: ['Rich!'] }]]
         }])
       })
 
@@ -122,9 +147,9 @@ describe('ScriptDSL', () => {
         expect(result).toEqual(['when', {
           condition: ['hasItem', { item: 'gold', count: 1 }],
           then: [
-            ['text', { text: 'A' }],
-            ['text', { text: 'B' }],
-            ['text', { text: 'C' }]
+            ['text', { parts: ['A'] }],
+            ['text', { parts: ['B'] }],
+            ['text', { parts: ['C'] }]
           ]
         }])
       })
@@ -133,15 +158,15 @@ describe('ScriptDSL', () => {
         const result = unless(hasItem('gold'), text('Poor!'))
         expect(result).toEqual(['when', {
           condition: ['not', { predicate: ['hasItem', { item: 'gold', count: 1 }] }],
-          then: [['text', { text: 'Poor!' }]]
+          then: [['text', { parts: ['Poor!'] }]]
         }])
       })
 
       it('cond() with 3 args produces if/else branches', () => {
         const result = cond(hasItem('gold'), text('Rich!'), text('Poor!'))
         expect(result).toEqual(['cond', {
-          branches: [{ condition: ['hasItem', { item: 'gold', count: 1 }], then: ['text', { text: 'Rich!' }] }],
-          default: ['text', { text: 'Poor!' }]
+          branches: [{ condition: ['hasItem', { item: 'gold', count: 1 }], then: ['text', { parts: ['Rich!'] }] }],
+          default: ['text', { parts: ['Poor!'] }]
         }])
       })
 
@@ -153,10 +178,10 @@ describe('ScriptDSL', () => {
         )
         expect(result).toEqual(['cond', {
           branches: [
-            { condition: ['hasItem', { item: 'gold', count: 1 }], then: ['text', { text: 'Gold!' }] },
-            { condition: ['hasItem', { item: 'silver', count: 1 }], then: ['text', { text: 'Silver!' }] }
+            { condition: ['hasItem', { item: 'gold', count: 1 }], then: ['text', { parts: ['Gold!'] }] },
+            { condition: ['hasItem', { item: 'silver', count: 1 }], then: ['text', { parts: ['Silver!'] }] }
           ],
-          default: ['text', { text: 'Nothing!' }]
+          default: ['text', { parts: ['Nothing!'] }]
         }])
       })
 
@@ -164,9 +189,9 @@ describe('ScriptDSL', () => {
         const result = random(text('A'), text('B'), text('C'))
         expect(result).toEqual(['random', {
           children: [
-            ['text', { text: 'A' }],
-            ['text', { text: 'B' }],
-            ['text', { text: 'C' }]
+            ['text', { parts: ['A'] }],
+            ['text', { parts: ['B'] }],
+            ['text', { parts: ['C'] }]
           ]
         }])
       })
@@ -184,8 +209,8 @@ describe('ScriptDSL', () => {
         expect(skillCheck('Flirtation', 10, [text('Success!')], [text('Fail!')])).toEqual(['skillCheck', {
           skill: 'Flirtation',
           difficulty: 10,
-          onSuccess: [['text', { text: 'Success!' }]],
-          onFailure: [['text', { text: 'Fail!' }]]
+          onSuccess: [['text', { parts: ['Success!'] }]],
+          onFailure: [['text', { parts: ['Fail!'] }]]
         }])
       })
     })
@@ -286,7 +311,8 @@ describe('ScriptDSL', () => {
           when(and(hasItem('gold'), not(inScene())),
             say('Rich!'),
             option('next', { x: 1 })
-          )
+          ),
+          text(npcName(), ' greets ', playerName())
         ]
 
         const json = JSON.stringify(instructions)
@@ -403,12 +429,12 @@ describe('ScriptDSL', () => {
       })
 
       it('say adds speech content', () => {
-        execAll(game, [say('Welcome!', undefined, '#00ff00')])
+        execAll(game, [say('Welcome!')])
         expect(game.scene.content.length).toBe(1)
         expect(game.scene.content[0]).toEqual({
           type: 'speech',
           text: 'Welcome!',
-          color: '#00ff00'
+          color: undefined
         })
       })
 

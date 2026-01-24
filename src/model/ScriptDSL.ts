@@ -13,10 +13,10 @@
  * Example usage:
  * ```typescript
  * const enterTavern = [
- *   text("You enter the tavern"),
- *   say("Welcome!", "barkeeper"),
+ *   text("You enter the tavern."),
+ *   say(npcName(), " looks up. ", '"Welcome!"'),
  *   when(hasItem('crown', 5),
- *     say("A paying customer!", "barkeeper"),
+ *     say('"A paying customer!"'),
  *     option('buyDrink', {}, 'Buy a drink')
  *   ),
  *   option('leave', {}, 'Leave')
@@ -44,9 +44,12 @@ export const run = (script: string, params: Record<string, unknown> = {}): Instr
 
 // --- Content ---
 
-/** Add plain text to the scene */
-export const text = (t: string): Instruction =>
-  run('text', { text: t })
+/** A text part can be a string or an Instruction that produces content */
+export type TextPart = string | Instruction
+
+/** Add plain text to the scene. Accepts strings and Instructions (like npcName, playerName). */
+export const text = (...parts: TextPart[]): Instruction =>
+  run('text', { parts })
 
 /** Add a formatted paragraph with optional highlights */
 export const paragraph = (...content: (string | { text: string; color: string; hoverText?: string })[]): Instruction =>
@@ -56,9 +59,17 @@ export const paragraph = (...content: (string | { text: string; color: string; h
 export const hl = (text: string, color: string, hoverText?: string): { text: string; color: string; hoverText?: string } =>
   ({ text, color, hoverText })
 
-/** NPC speech - uses NPC's default color if npc provided */
-export const say = (text: string, npc?: string, color?: string): Instruction =>
-  run('say', { text, npc, color })
+/** NPC speech - uses NPC's default color if npc provided. Accepts strings and Instructions. */
+export const say = (...parts: TextPart[]): Instruction =>
+  run('say', { parts })
+
+/** Display player name with highlight formatting */
+export const playerName = (): Instruction =>
+  run('playerName', {})
+
+/** Display NPC name with their speech color. Uses scene NPC if not specified. */
+export const npcName = (npc?: string): Instruction =>
+  run('npcName', { npc })
 
 /** Add an option button to the scene */
 export const option = (script: string, params?: object, label?: string): Instruction =>

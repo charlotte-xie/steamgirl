@@ -84,6 +84,23 @@ function execAll(game: Game, instructions: Instruction[]): void {
   }
 }
 
+/** Resolve an array of parts (strings or Instructions) into resolved content */
+function resolveParts(game: Game, parts: (string | Instruction)[]): (string | ParagraphContent)[] {
+  const result: (string | ParagraphContent)[] = []
+  for (const part of parts) {
+    if (typeof part === 'string') {
+      result.push(part)
+    } else if (isInstruction(part)) {
+      const resolved = exec(game, part)
+      // If the instruction returned ParagraphContent, add it
+      if (resolved && typeof resolved === 'object' && 'type' in resolved) {
+        result.push(resolved as ParagraphContent)
+      }
+    }
+  }
+  return result
+}
+
 const coreScripts: Record<string, Script> = {
   // -------------------------------------------------------------------------
   // GAME ACTIONS
@@ -426,10 +443,12 @@ const coreScripts: Record<string, Script> = {
   // CONTENT (add to scene)
   // -------------------------------------------------------------------------
 
-  /** Add plain text to the scene */
-  text: (game: Game, params: { text?: string }) => {
-    if (params.text) {
-      game.add(params.text)
+  /** Add plain text to the scene. Parts can be strings or Instructions that return ParagraphContent. */
+  text: (game: Game, params: { parts?: (string | Instruction)[] }) => {
+    if (!params.parts || params.parts.length === 0) return
+    const resolvedParts = resolveParts(game, params.parts)
+    if (resolvedParts.length > 0) {
+      game.add(p(...resolvedParts))
     }
   },
 
@@ -443,15 +462,38 @@ const coreScripts: Record<string, Script> = {
     game.add(p(...content))
   },
 
-  /** NPC speech - uses NPC's default color if npc provided */
-  say: (game: Game, params: { text?: string; npc?: string; color?: string }) => {
-    if (!params.text) return
-    let color = params.color
-    if (!color && params.npc) {
-      const npcDef = getNPCDefinition(params.npc)
-      color = npcDef?.speechColor
+  /** NPC speech - parts can be strings or Instructions that return ParagraphContent */
+  say: (game: Game, params: { parts?: (string | Instruction)[] }) => {
+    if (!params.parts || params.parts.length === 0) return
+    const resolvedParts = resolveParts(game, params.parts)
+    if (resolvedParts.length > 0) {
+      // Join all parts into a single text string for speech
+      const text = resolvedParts.map(part => {
+        if (typeof part === 'string') return part
+        // ParagraphContent - extract text
+        return part.text
+      }).join('')
+      game.add(speech(text))
     }
-    game.add(speech(params.text, color))
+  },
+
+  /** Return the player's name as ParagraphContent */
+  playerName: (game: Game): ParagraphContent => {
+    const name = game.player.name || 'Elise'
+    return { type: 'highlight', text: name, color: '#e0b0ff' }
+  },
+
+  /** Return an NPC's name as ParagraphContent. Uses scene NPC if not specified. */
+  npcName: (game: Game, params: { npc?: string }): ParagraphContent => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) {
+      return { type: 'text', text: 'someone' }
+    }
+    const npc = game.getNPC(npcId)
+    const name = npc.nameKnown > 0 ? npc.template.name : npc.template.uname
+    const displayName = name || 'someone'
+    const color = npc.template.speechColor ?? '#888'
+    return { type: 'highlight', text: displayName, color }
   },
 
   /** Add an option button to the scene */
