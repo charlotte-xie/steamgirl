@@ -50,7 +50,7 @@ describe('Format', () => {
         type: 'paragraph',
         content: [
           { type: 'text', text: 'Hello ' },
-          { type: 'highlight', text: 'world', color: '#ff0000', hoverText: 'A world' },
+          { type: 'text', text: 'world', color: '#ff0000', hoverText: 'A world' },
           { type: 'text', text: '!' },
         ],
       })
@@ -58,20 +58,20 @@ describe('Format', () => {
   })
 
   describe('highlight', () => {
-    it('should create a highlight ParagraphContent', () => {
+    it('should create an InlineContent with color', () => {
       const result = highlight('Text', '#ff0000', 'Hover text')
       expect(result).toEqual({
-        type: 'highlight',
+        type: 'text',
         text: 'Text',
         color: '#ff0000',
         hoverText: 'Hover text',
       })
     })
 
-    it('should create a highlight without hover text', () => {
+    it('should create InlineContent without hover text', () => {
       const result = highlight('Text', '#ff0000')
       expect(result).toEqual({
-        type: 'highlight',
+        type: 'text',
         text: 'Text',
         color: '#ff0000',
       })

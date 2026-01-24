@@ -5,7 +5,6 @@ import '../story/World' // Load all story content
 import {
   // Core type
   type Instruction,
-  type TextPart,
   // Generic builder
   run,
   // Predicates
@@ -624,14 +623,14 @@ describe('ScriptDSL', () => {
             hl('pipe smoke', '#888888', 'Tobacco blend'),
             '.'
           ),
-          say('Welcome, traveler!', undefined, '#aa8855'),
+          say('Welcome, traveler!'),
           cond(
             hasItem('crown', 5), seq(
-              say('What can I get you?', undefined, '#aa8855'),
+              say('What can I get you?'),
               option('buyAle', { price: 2 }, 'Buy an ale'),
               option('buyWine', { price: 5 }, 'Buy wine')
             ),
-            say('Come back when you have coin.', undefined, '#aa8855')
+            say('Come back when you have coin.')
           ),
           option('lookAround', {}, 'Look around'),
           npcLeaveOption('You nod and head out.', 'Safe travels!', 'Leave')

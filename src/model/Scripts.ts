@@ -15,9 +15,9 @@
  * Story-specific scripts (that depend on game world content) belong in story/Utility.ts
  */
 
-import { Game, type ParagraphContent } from './Game'
+import { Game} from './Game'
+import { type InlineContent } from './Format'
 import { speech, p, highlight, colour } from './Format'
-import { getNPCDefinition } from './NPC'
 import { type StatName, type MeterName, MAIN_STAT_INFO, SKILL_INFO, METER_INFO } from './Stats'
 import { capitalise } from './Text'
 import { getLocation } from './Location'
@@ -85,16 +85,16 @@ function execAll(game: Game, instructions: Instruction[]): void {
 }
 
 /** Resolve an array of parts (strings or Instructions) into resolved content */
-function resolveParts(game: Game, parts: (string | Instruction)[]): (string | ParagraphContent)[] {
-  const result: (string | ParagraphContent)[] = []
+function resolveParts(game: Game, parts: (string | Instruction)[]): (string | InlineContent)[] {
+  const result: (string | InlineContent)[] = []
   for (const part of parts) {
     if (typeof part === 'string') {
       result.push(part)
     } else if (isInstruction(part)) {
       const resolved = exec(game, part)
-      // If the instruction returned ParagraphContent, add it
+      // If the instruction returned InlineContent, add it
       if (resolved && typeof resolved === 'object' && 'type' in resolved) {
-        result.push(resolved as ParagraphContent)
+        result.push(resolved as InlineContent)
       }
     }
   }
@@ -455,7 +455,7 @@ const coreScripts: Record<string, Script> = {
   /** Add a formatted paragraph with optional highlights */
   paragraph: (game: Game, params: { content?: (string | { text: string; color: string; hoverText?: string })[] }) => {
     if (!params.content) return
-    const content: (string | ParagraphContent)[] = params.content.map(item => {
+    const content: (string | InlineContent)[] = params.content.map(item => {
       if (typeof item === 'string') return item
       return highlight(item.text, item.color, item.hoverText)
     })
@@ -477,14 +477,14 @@ const coreScripts: Record<string, Script> = {
     }
   },
 
-  /** Return the player's name as ParagraphContent */
-  playerName: (game: Game): ParagraphContent => {
+  /** Return the player's name as InlineContent */
+  playerName: (game: Game): InlineContent => {
     const name = game.player.name || 'Elise'
-    return { type: 'highlight', text: name, color: '#e0b0ff' }
+    return { type: 'text', text: name, color: '#e0b0ff' }
   },
 
-  /** Return an NPC's name as ParagraphContent. Uses scene NPC if not specified. */
-  npcName: (game: Game, params: { npc?: string }): ParagraphContent => {
+  /** Return an NPC's name as InlineContent. Uses scene NPC if not specified. */
+  npcName: (game: Game, params: { npc?: string }): InlineContent => {
     const npcId = params.npc ?? game.scene.npc
     if (!npcId) {
       return { type: 'text', text: 'someone' }
@@ -493,7 +493,7 @@ const coreScripts: Record<string, Script> = {
     const name = npc.nameKnown > 0 ? npc.template.name : npc.template.uname
     const displayName = name || 'someone'
     const color = npc.template.speechColor ?? '#888'
-    return { type: 'highlight', text: displayName, color }
+    return { type: 'text', text: displayName, color }
   },
 
   /** Add an option button to the scene */

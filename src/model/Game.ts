@@ -1,24 +1,19 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
-import { getScript, isInstruction, type ScriptRef, type Instruction } from './Scripts'
+import { getScript, isInstruction, type ScriptRef } from './Scripts'
 import { Card } from './Card'
+import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 
-export type ParagraphContent = 
-  | { type: 'text'; text: string }
-  | { type: 'highlight'; text: string; color: string; hoverText?: string }
+// Re-export Content types for convenience
+export type { Content, InlineContent, ParagraphContent, SceneOptionItem }
 
-export type SceneContentItem = 
-  | { type: 'text'; text: string; color?: string }
-  | { type: 'paragraph'; content: ParagraphContent[] }
-  | { type: 'speech'; text: string; color?: string }
-
-export type SceneOptionItem =
-  | { type: 'button'; script: Instruction; label?: string }
+// Legacy alias - use Content instead
+export type SceneContentItem = Content
 
 export type SceneData = {
   type: 'story'
-  content: SceneContentItem[]
+  content: Content[]
   options: SceneOptionItem[]
   /** Set when the scene is an NPC interaction (from the approach script). */
   npc?: string

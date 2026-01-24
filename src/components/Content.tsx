@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { SceneContentItem, ParagraphContent, SceneData } from '../model/Game'
+import type { Content, InlineContent, SceneData } from '../model/Game'
 import { getNPCDefinition } from '../model/NPC'
 import { Tooltip } from './Tooltip'
 
@@ -21,10 +21,12 @@ export function renderScene(scene: SceneData): ReactNode {
 }
 
 /**
- * Renders a SceneContentItem into a React component
+ * Renders a Content item into a React component
  */
-function ContentItem({ item, npcId }: { item: SceneContentItem; npcId?: string }): ReactNode {
+function ContentItem({ item, npcId }: { item: Content; npcId?: string }): ReactNode {
   if (item.type === 'text') {
+    // Check if this is a simple text (to render as block) or has inline styling
+    // For top-level Content, we render as a paragraph
     return (
       <p style={item.color ? { color: item.color } : undefined}>
         {item.text}
@@ -36,7 +38,7 @@ function ContentItem({ item, npcId }: { item: SceneContentItem; npcId?: string }
     return (
       <p>
         {item.content.map((part, partIndex) => (
-          <ParagraphPart key={partIndex} part={part} />
+          <InlinePart key={partIndex} part={part} />
         ))}
       </p>
     )
@@ -55,14 +57,13 @@ function ContentItem({ item, npcId }: { item: SceneContentItem; npcId?: string }
 }
 
 /**
- * Renders a ParagraphContent part into a React component
+ * Renders an InlineContent part into a React component
  */
-function ParagraphPart({ part }: { part: ParagraphContent }): ReactNode {
-  if (part.type === 'text') {
-    return <span>{part.text}</span>
-  }
+function InlinePart({ part }: { part: InlineContent }): ReactNode {
+  // All InlineContent has type: 'text' - check for color to determine styling
+  const hasHighlight = part.color !== undefined
 
-  if (part.type === 'highlight') {
+  if (hasHighlight) {
     const highlightSpan = (
       <span style={{ color: part.color, fontWeight: 600 }}>
         {part.text}
@@ -80,5 +81,6 @@ function ParagraphPart({ part }: { part: ParagraphContent }): ReactNode {
     return highlightSpan
   }
 
-  return null
+  // Plain text
+  return <span>{part.text}</span>
 }
