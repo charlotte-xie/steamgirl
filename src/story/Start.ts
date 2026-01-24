@@ -5,7 +5,7 @@ import type { CardDefinition } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
-import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option } from '../model/ScriptDSL'
+import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option, scenes, move, timeLapse, hideNpcImage, showNpcImage } from '../model/ScriptDSL'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
 
@@ -78,14 +78,58 @@ registerNPC('tour-guide', {
     game.add('A man with a well-worn guidebook catches your eye and steps over with a warm smile.')
     npc.say("The name's Rob Hayes. I lead tours of the city for new arrivals. It takes about an hour and ends in the backstreets—handy if that's where you're headed. Fancy it?")
     npc.nameKnown = 1
-    game.addOption('tourCity', {}, 'Accept')
+    game.addOption('interact', { script: 'tour' }, 'Accept')
     npc.leaveOption('You politely decline the invitation.', "Whenever you're ready. I'm usually here at the station.", 'Decline')
   },
   onApproach: (game: Game) => {
     const npc = game.npc
     npc.say("Back again? The tour offer still stands if you're interested.")
-    game.addOption('tourCity', {}, 'Accept the tour')
+    game.addOption('interact', { script: 'tour' }, 'Accept the tour')
     npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
+  },
+  scripts: {
+    tour: scenes(
+      // Scene 1: City centre
+      [
+        hideNpcImage(),
+        text('You set off with Rob.'),
+        move('default'), timeLapse(15),
+        say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?'),
+        text('Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city.'),
+      ],
+      // Scene 2: University
+      [
+        move('school'), timeLapse(15),
+        say('The University - you\'ll be studying there you say? A fine institution.'),
+        text('Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.'),
+        say('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...'),
+      ],
+      // Scene 3: Lake
+      [
+        move('lake'), timeLapse(18),
+        say('The Lake. A peaceful spot when the city gets too much. Steam off the water—rather lovely.'),
+        text('Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.'),
+      ],
+      // Scene 4: Market
+      [
+        move('market'), timeLapse(15),
+        say('The Market. Best place for oddities and curios. Keep your wits about you.'),
+        text('Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam. The market throbs. Fingers brush you as you pass—accidental, deliberate, promising.'),
+      ],
+      // Scene 5: Backstreets
+      [
+        move('backstreets'), timeLapse(15),
+        text('The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.'),
+        say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.'),
+      ],
+      // Scene 6: Tour ends - farewell
+      [
+        showNpcImage(),
+        text('Rob shows you around the backstreets for a while.'),
+        say('I hope this helps you find your feet. Enjoy Aetheria!'),
+        npcLeaveOption('You thank Rob and he leaves you in the backstreets.'),
+      ],
+    ),
   },
 })
 
@@ -192,59 +236,6 @@ export const startScripts = {
     // add find-lodgings tutorial quest
     g.addQuest('find-lodgings', {})
     g.add("You could explore yourself and find your way to your room. Or the tour guide offers city tours that end in the backstreets - you could ask him?")
-  },
-
-
-  tourCity: (g: Game) => {
-    g.scene.npc = 'tour-guide'
-    g.scene.hideNpcImage = true // Hide NPC image because we're showing off location scenery
-    g.add('You set off with Rob.')
-    g.run('go', { location: 'default', minutes: 15 })
-    const npc = g.npc
-    npc.say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?')
-    g.add('Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city.')
-    g.addOption('tourUniversity', {}, 'Continue the Tour')
-  },
-
-  tourUniversity: (g: Game) => {
-    g.run('go', { location: 'school', minutes: 15 })
-    const npc = g.npc
-    npc.say('The University - you\'ll be studying there you say? A fine institution.')
-    g.add('Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.')
-    npc.say('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...')
-    g.addOption('tourLake', {}, 'Continue the Tour')
-  },
-
-  tourLake: (g: Game) => {
-    g.run('go', { location: 'lake', minutes: 18 })
-    const npc = g.npc
-    npc.say('The Lake. A peaceful spot when the city gets too much. Steam off the water—rather lovely.')
-    g.add('Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.')
-    g.addOption('tourMarket', {}, 'Continue the Tour')
-  },
-
-  tourMarket: (g: Game) => {
-    g.run('go', { location: 'market', minutes: 15 })
-    const npc = g.npc
-    npc.say('The Market. Best place for oddities and curios. Keep your wits about you.')
-    g.add('Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam. The market throbs. Fingers brush you as you pass—accidental, deliberate, promising.')
-    g.addOption('tourBackstreets', {}, 'Continue the Tour')
-  },
-
-  tourBackstreets: (g: Game) => {
-    g.run('go', { location: 'backstreets', minutes: 15 })
-    g.add('The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.')
-    const npc = g.npc
-    npc.say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.') 
-    g.addOption('tourEnds', {}, 'Finish the Tour')
-  },
-
-  tourEnds: (g: Game) => {
-    g.scene.hideNpcImage = false
-    g.add('Rob shows you around the backstreets for a while.')
-    const npc = g.npc
-    npc.say('I hope this helps you find your feet. Enjoy Aetheria!')
-    g.addOption('endScene', {text: 'You thank Rob and he leaves you in the backstreets.'}, 'Say goodbye')
   },
 }
 

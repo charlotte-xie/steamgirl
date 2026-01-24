@@ -193,6 +193,25 @@ const coreScripts: Record<string, ScriptFn> = {
     game.moveToLocation(locationId)
   },
 
+  /** Set the current scene's NPC */
+  setNpc: (game: Game, params: { npc?: string } = {}) => {
+    const npcId = params.npc
+    if (!npcId || typeof npcId !== 'string') {
+      throw new Error('setNpc script requires an npc parameter')
+    }
+    game.scene.npc = npcId
+  },
+
+  /** Hide the NPC image in the current scene */
+  hideNpcImage: (game: Game) => {
+    game.scene.hideNpcImage = true
+  },
+
+  /** Show the NPC image in the current scene */
+  showNpcImage: (game: Game) => {
+    game.scene.hideNpcImage = false
+  },
+
   /** Add an item to the player's inventory */
   gainItem: (game: Game, params: { text?: string; item?: string; number?: number } = {}) => {
     const itemId = params.item
@@ -851,6 +870,29 @@ const coreScripts: Record<string, ScriptFn> = {
         : (npcDef.uname || npcDef.description || npcDef.name || 'The NPC')
       game.add(`${displayName} isn't interested in talking to you.`)
     }
+  },
+
+  /**
+   * Continue a scenes() sequence. Called by the Continue button with remaining scenes.
+   * Runs the next scene and adds another Continue button if more scenes remain.
+   * If the scene adds its own options, the Continue button is skipped (scene interrupted).
+   */
+  continueScenes: (game: Game, params: { remaining?: Instruction[][] } = {}) => {
+    const remaining = params.remaining
+    if (!remaining || remaining.length === 0) return
+
+    const [current, ...rest] = remaining
+
+    // Run the current scene's instructions
+    for (const instruction of current) {
+      game.run(instruction)
+    }
+
+    // Add continue button if more scenes remain AND no options were added by the scene
+    if (rest.length > 0 && game.scene.options.length === 0) {
+      game.addOption('continueScenes', { remaining: rest }, 'Continue')
+    }
+    // Otherwise scene ends naturally or was interrupted with custom options
   },
 }
 

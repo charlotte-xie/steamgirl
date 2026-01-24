@@ -153,6 +153,37 @@ export const random = (...children: Instruction[]): Instruction =>
   run('random', { children })
 
 /**
+ * Create a linear sequence of scenes with automatic "Continue" buttons.
+ * Each scene is an array of instructions. After each scene (except the last),
+ * a Continue button advances to the next scene. The last scene ends naturally.
+ *
+ * @param sceneArrays - Each argument is an array of instructions for one scene
+ * @returns An instruction that runs the first scene and sets up continuations
+ *
+ * @example
+ * scenes(
+ *   [move('city'), say('Welcome to the city!')],
+ *   [move('market'), say('Here is the market.')],
+ *   [move('park'), say('And finally, the park.')]
+ * )
+ */
+export const scenes = (...sceneArrays: Instruction[][]): Instruction => {
+  if (sceneArrays.length === 0) {
+    return seq()
+  }
+  const [first, ...rest] = sceneArrays
+  if (rest.length === 0) {
+    // Last scene - no continue button
+    return seq(...first)
+  }
+  // Add continue button that carries the remaining scenes
+  return seq(
+    ...first,
+    option('Continue', 'global:continueScenes', { remaining: rest })
+  )
+}
+
+/**
  * Perform a skill test. Can be used as:
  * - Predicate: skillCheck('Flirtation', 10) - returns boolean
  * - With callbacks: skillCheck('Flirtation', 10, [text('Success!')], [text('Failure!')])
@@ -179,9 +210,25 @@ export const removeItem = (item: string, number = 1): Instruction =>
 export const move = (location: string): Instruction =>
   run('move', { location })
 
+/** Move player to location and advance time (combines move + timeLapse) */
+export const go = (location: string, minutes?: number): Instruction =>
+  run('go', { location, minutes })
+
 /** Advance game time */
 export const timeLapse = (minutes: number): Instruction =>
   run('timeLapse', { minutes })
+
+/** Set the current scene's NPC (for dialogue scenes with a specific character) */
+export const setNpc = (npc: string): Instruction =>
+  run('setNpc', { npc })
+
+/** Hide the NPC image in the current scene (e.g., when showing location scenery) */
+export const hideNpcImage = (): Instruction =>
+  run('hideNpcImage', {})
+
+/** Show the NPC image in the current scene */
+export const showNpcImage = (): Instruction =>
+  run('showNpcImage', {})
 
 /** Add to a player stat */
 export const addStat = (
@@ -287,3 +334,16 @@ export function registerDslScript(name: string, instructions: Instruction[]): vo
     [name]: (game: Game) => execAll(game, instructions)
   })
 }
+
+/**
+ * Convert DSL instruction(s) to a ScriptFn for use in makeScripts.
+ * Allows mixing DSL and imperative scripts in the same makeScripts call.
+ *
+ * @example
+ * makeScripts({
+ *   myImperativeScript: (g) => { g.add('Hello') },
+ *   myDslScript: script(scenes([...], [...]))
+ * })
+ */
+export const script = (instruction: Instruction): ((game: Game) => void) =>
+  (game: Game) => exec(game, instruction)
