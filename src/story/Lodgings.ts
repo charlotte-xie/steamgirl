@@ -3,7 +3,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, say, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName } from '../model/ScriptDSL'
+import { text, say, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
 
 registerNPC('landlord', {
   name: 'Gerald Moss',
@@ -20,15 +20,23 @@ registerNPC('landlord', {
         learnNpcName(),
         timeLapse(5),
       ],
-      // Scene 2: Landlord shows bathroom
+      // Scene 2: Landlord leads you into the building
       [
         hideNpcImage(),
+        timeLapse(1),
+        move('stairwell'),
+        discoverLocation('stairwell'),
+        text('He leads you through a narrow doorway and into the building. The stairwell is dimly lit by gas lamps, the walls lined with faded wallpaper. The smell of coal smoke and old wood fills the air.'),
+        say("Mind your step on these stairs. The third one creaks something awful."),
+      ],
+      // Scene 3: Landlord shows bathroom
+      [
         timeLapse(2),
-        text('He leads you down the hallway.'),
+        text('He leads you down the hallway on the first floor.'),
         say("This is the bathroom - it's shared with the other tenants. Keep it clean, won't you?"),
         move('bathroom'),
       ],
-      // Scene 3: Landlord shows bedroom and hands over key
+      // Scene 4: Landlord shows bedroom and hands over key
       [
         timeLapse(3),
         move('bedroom'),
@@ -43,6 +51,16 @@ registerNPC('landlord', {
 
 // Location definitions for the player's lodgings
 const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
+  stairwell: {
+    name: 'Stairwell',
+    description: 'The entrance stairwell of your lodgings. Gas lamps cast a warm glow on faded wallpaper, and the scent of coal smoke lingers in the air.',
+    image: '/images/lodgings/stairwell.jpg',
+    secret: true, // Discovered during landlord tour
+    links: [
+      { dest: 'bedroom', time: 1, label: 'Go to Your Room' },
+      { dest: 'backstreets', time: 1, label: 'Exit to Backstreets' },
+    ],
+  },
   bedroom: {
     name: 'Bedroom',
     description: 'Your small but comfortable room in the backstreets.',
@@ -51,7 +69,7 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     secret: true, // Undiscovered until after initial "Go to Lodgings" / landlord intro; then appears as a Place in nav
     links: [
       { dest: 'bathroom', time: 1 },
-      { dest: 'backstreets', time: 2, label: 'Leave for Backstreets' },
+      { dest: 'stairwell', time: 1, label: 'Exit to Stairwell' },
     ],
     activities: [
       {
