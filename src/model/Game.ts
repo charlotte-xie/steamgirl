@@ -266,14 +266,13 @@ export class Game {
     // If we need to check NPC positions after actions, it would go here
   }
 
-  /** Run a script on this game instance. Returns this for fluent chaining. */
-  run(scriptName: string, params: {} = {}): this {
+  /** Run a script on this game instance. Returns the script's result (or undefined if none). */
+  run(scriptName: string, params: {} = {}): unknown {
     const script = getScript(scriptName)
     if (!script) {
       throw new Error(`Script not found: ${scriptName}`)
     }
-    script(this, params)
-    return this
+    return script(this, params)
   }
 
   /** Advance time by the given minutes (runs the timeLapse script). Returns this for chaining. */

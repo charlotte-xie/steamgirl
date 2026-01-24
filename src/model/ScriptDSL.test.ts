@@ -1,0 +1,565 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { Game } from './Game'
+import '../story/World' // Load all story content
+
+import {
+  // Core type
+  type Instruction,
+  // Generic builder
+  run,
+  // Predicates
+  hasItem,
+  hasStat,
+  inLocation,
+  inScene,
+  hasCard,
+  cardCompleted,
+  npcStat,
+  not,
+  and,
+  or,
+  // Instructions
+  text,
+  paragraph,
+  hl,
+  say,
+  option,
+  npcLeaveOption,
+  when,
+  unless,
+  cond,
+  seq,
+  move,
+  addItem,
+  removeItem,
+  addStat,
+  timeLapse,
+  addQuest,
+  completeQuest,
+  addEffect,
+  // Execution
+  exec,
+  execAll,
+  registerDslScript,
+} from './ScriptDSL'
+
+describe('ScriptDSL', () => {
+  // ============================================================================
+  // DSL BUILDER OUTPUT TESTS
+  // These verify that builder functions produce the correct [scriptName, params] tuples
+  // ============================================================================
+
+  describe('Builder Output', () => {
+    describe('run() - generic builder', () => {
+      it('produces [scriptName, params] tuple', () => {
+        const result = run('myScript', { foo: 'bar', count: 5 })
+        expect(result).toEqual(['myScript', { foo: 'bar', count: 5 }])
+      })
+
+      it('defaults to empty params', () => {
+        const result = run('myScript')
+        expect(result).toEqual(['myScript', {}])
+      })
+    })
+
+    describe('content builders', () => {
+      it('text() produces dsl.text instruction', () => {
+        const result = text('Hello world')
+        expect(result).toEqual(['dsl.text', { text: 'Hello world' }])
+      })
+
+      it('paragraph() produces dsl.paragraph instruction', () => {
+        const result = paragraph('Hello ', hl('world', '#ff0000'), '!')
+        expect(result).toEqual(['dsl.paragraph', {
+          content: ['Hello ', { text: 'world', color: '#ff0000' }, '!']
+        }])
+      })
+
+      it('hl() produces highlight object (not instruction)', () => {
+        const result = hl('important', '#ff0000', 'Hover text')
+        expect(result).toEqual({ text: 'important', color: '#ff0000', hoverText: 'Hover text' })
+      })
+
+      it('say() produces dsl.say instruction', () => {
+        expect(say('Hello!', 'npcId', '#00ff00')).toEqual(['dsl.say', { text: 'Hello!', npc: 'npcId', color: '#00ff00' }])
+        expect(say('Hello!')).toEqual(['dsl.say', { text: 'Hello!', npc: undefined, color: undefined }])
+      })
+
+      it('option() produces dsl.option instruction', () => {
+        expect(option('nextScript', { x: 1 }, 'Click me')).toEqual(['dsl.option', { script: 'nextScript', params: { x: 1 }, label: 'Click me' }])
+        expect(option('nextScript')).toEqual(['dsl.option', { script: 'nextScript', params: {}, label: undefined }])
+      })
+
+      it('npcLeaveOption() produces dsl.npcLeaveOption instruction', () => {
+        expect(npcLeaveOption('Goodbye', 'See you!')).toEqual(['dsl.npcLeaveOption', { text: 'Goodbye', reply: 'See you!', label: 'Leave' }])
+        expect(npcLeaveOption()).toEqual(['dsl.npcLeaveOption', { text: undefined, reply: undefined, label: 'Leave' }])
+      })
+    })
+
+    describe('control flow builders', () => {
+      it('seq() produces dsl.seq instruction with nested instructions', () => {
+        const result = seq(text('A'), text('B'))
+        expect(result).toEqual(['dsl.seq', {
+          instructions: [
+            ['dsl.text', { text: 'A' }],
+            ['dsl.text', { text: 'B' }]
+          ]
+        }])
+      })
+
+      it('when() produces dsl.when instruction', () => {
+        const result = when(hasItem('gold'), text('Rich!'))
+        expect(result).toEqual(['dsl.when', {
+          condition: ['dsl.hasItem', { item: 'gold', count: 1 }],
+          then: [['dsl.text', { text: 'Rich!' }]]
+        }])
+      })
+
+      it('when() supports multiple then instructions (variadic)', () => {
+        const result = when(hasItem('gold'), text('A'), text('B'), text('C'))
+        expect(result).toEqual(['dsl.when', {
+          condition: ['dsl.hasItem', { item: 'gold', count: 1 }],
+          then: [
+            ['dsl.text', { text: 'A' }],
+            ['dsl.text', { text: 'B' }],
+            ['dsl.text', { text: 'C' }]
+          ]
+        }])
+      })
+
+      it('unless() produces dsl.when with negated condition', () => {
+        const result = unless(hasItem('gold'), text('Poor!'))
+        expect(result).toEqual(['dsl.when', {
+          condition: ['dsl.not', { predicate: ['dsl.hasItem', { item: 'gold', count: 1 }] }],
+          then: [['dsl.text', { text: 'Poor!' }]]
+        }])
+      })
+
+      it('cond() with 3 args produces if/else branches', () => {
+        const result = cond(hasItem('gold'), text('Rich!'), text('Poor!'))
+        expect(result).toEqual(['dsl.cond', {
+          branches: [{ condition: ['dsl.hasItem', { item: 'gold', count: 1 }], then: ['dsl.text', { text: 'Rich!' }] }],
+          default: ['dsl.text', { text: 'Poor!' }]
+        }])
+      })
+
+      it('cond() with multiple branches', () => {
+        const result = cond(
+          hasItem('gold'), text('Gold!'),
+          hasItem('silver'), text('Silver!'),
+          text('Nothing!')
+        )
+        expect(result).toEqual(['dsl.cond', {
+          branches: [
+            { condition: ['dsl.hasItem', { item: 'gold', count: 1 }], then: ['dsl.text', { text: 'Gold!' }] },
+            { condition: ['dsl.hasItem', { item: 'silver', count: 1 }], then: ['dsl.text', { text: 'Silver!' }] }
+          ],
+          default: ['dsl.text', { text: 'Nothing!' }]
+        }])
+      })
+    })
+
+    describe('game action builders', () => {
+      it('addItem() produces gainItem instruction', () => {
+        expect(addItem('gold', 10)).toEqual(['gainItem', { item: 'gold', number: 10 }])
+        expect(addItem('sword')).toEqual(['gainItem', { item: 'sword', number: 1 }])
+      })
+
+      it('removeItem() produces loseItem instruction', () => {
+        expect(removeItem('gold', 5)).toEqual(['loseItem', { item: 'gold', number: 5 }])
+      })
+
+      it('move() produces move instruction', () => {
+        expect(move('tavern')).toEqual(['move', { location: 'tavern' }])
+      })
+
+      it('timeLapse() produces timeLapse instruction', () => {
+        expect(timeLapse(30)).toEqual(['timeLapse', { minutes: 30 }])
+      })
+
+      it('addStat() produces addStat instruction', () => {
+        expect(addStat('Agility', 5)).toEqual(['addStat', { stat: 'Agility', change: 5 }])
+      })
+
+      it('addQuest() produces dsl.addQuest instruction', () => {
+        expect(addQuest('find-lodgings', { silent: true })).toEqual(['dsl.addQuest', { questId: 'find-lodgings', args: { silent: true } }])
+      })
+
+      it('completeQuest() produces dsl.completeQuest instruction', () => {
+        expect(completeQuest('find-lodgings')).toEqual(['dsl.completeQuest', { questId: 'find-lodgings' }])
+      })
+
+      it('addEffect() produces dsl.addEffect instruction', () => {
+        expect(addEffect('tired', { level: 2 })).toEqual(['dsl.addEffect', { effectId: 'tired', args: { level: 2 } }])
+      })
+    })
+
+    describe('predicate builders', () => {
+      it('hasItem() produces dsl.hasItem instruction', () => {
+        expect(hasItem('gold')).toEqual(['dsl.hasItem', { item: 'gold', count: 1 }])
+        expect(hasItem('gold', 100)).toEqual(['dsl.hasItem', { item: 'gold', count: 100 }])
+      })
+
+      it('hasStat() produces dsl.hasStat instruction', () => {
+        expect(hasStat('Agility', 30)).toEqual(['dsl.hasStat', { stat: 'Agility', min: 30, max: undefined }])
+        expect(hasStat('Agility', 10, 50)).toEqual(['dsl.hasStat', { stat: 'Agility', min: 10, max: 50 }])
+      })
+
+      it('inLocation() produces dsl.inLocation instruction', () => {
+        expect(inLocation('tavern')).toEqual(['dsl.inLocation', { location: 'tavern' }])
+      })
+
+      it('inScene() produces dsl.inScene instruction', () => {
+        expect(inScene()).toEqual(['dsl.inScene', {}])
+      })
+
+      it('npcStat() produces dsl.npcStat instruction', () => {
+        expect(npcStat('barkeeper', 'trust', 50)).toEqual(['dsl.npcStat', { npc: 'barkeeper', stat: 'trust', min: 50, max: undefined }])
+      })
+
+      it('hasCard() produces dsl.hasCard instruction', () => {
+        expect(hasCard('find-lodgings')).toEqual(['dsl.hasCard', { cardId: 'find-lodgings' }])
+      })
+
+      it('cardCompleted() produces dsl.cardCompleted instruction', () => {
+        expect(cardCompleted('find-lodgings')).toEqual(['dsl.cardCompleted', { cardId: 'find-lodgings' }])
+      })
+
+      it('not() produces dsl.not instruction', () => {
+        expect(not(hasItem('gold'))).toEqual(['dsl.not', { predicate: ['dsl.hasItem', { item: 'gold', count: 1 }] }])
+      })
+
+      it('and() produces dsl.and instruction', () => {
+        expect(and(hasItem('gold'), inLocation('tavern'))).toEqual(['dsl.and', {
+          predicates: [
+            ['dsl.hasItem', { item: 'gold', count: 1 }],
+            ['dsl.inLocation', { location: 'tavern' }]
+          ]
+        }])
+      })
+
+      it('or() produces dsl.or instruction', () => {
+        expect(or(hasItem('gold'), hasItem('silver'))).toEqual(['dsl.or', {
+          predicates: [
+            ['dsl.hasItem', { item: 'gold', count: 1 }],
+            ['dsl.hasItem', { item: 'silver', count: 1 }]
+          ]
+        }])
+      })
+    })
+
+    describe('JSON serialization', () => {
+      it('instructions are fully JSON-serializable', () => {
+        const instructions: Instruction[] = [
+          text('Hello'),
+          when(and(hasItem('gold'), not(inScene())),
+            say('Rich!'),
+            option('next', { x: 1 })
+          )
+        ]
+
+        const json = JSON.stringify(instructions)
+        const parsed = JSON.parse(json)
+
+        expect(parsed).toEqual(instructions)
+      })
+
+      it('cond serializes and deserializes correctly', () => {
+        const instruction = cond(
+          hasItem('a'), text('A'),
+          hasItem('b'), text('B'),
+          text('Default')
+        )
+
+        const json = JSON.stringify(instruction)
+        const parsed = JSON.parse(json)
+
+        expect(parsed).toEqual(instruction)
+      })
+    })
+  })
+
+  // ============================================================================
+  // EXECUTION TESTS
+  // These verify that instructions execute correctly against game state
+  // ============================================================================
+
+  describe('Execution', () => {
+    let game: Game
+
+    beforeEach(() => {
+      game = new Game()
+      // Run init to set up game state properly
+      game.run('init', {})
+      // Don't clear scene - we'll clear it in tests that need a clean scene
+    })
+
+    describe('Predicates', () => {
+      it('hasItem checks inventory', () => {
+        // Player starts with crown (120 from init)
+        expect(exec(game, hasItem('crown'))).toBe(true)
+        expect(exec(game, hasItem('crown', 100))).toBe(true)
+        expect(exec(game, hasItem('crown', 200))).toBe(false)
+        expect(exec(game, hasItem('nonexistent'))).toBe(false)
+      })
+
+      it('hasStat checks player stats', () => {
+        // Player starts with Agility 30
+        expect(exec(game, hasStat('Agility', 30))).toBe(true)
+        expect(exec(game, hasStat('Agility', 50))).toBe(false)
+        expect(exec(game, hasStat('Agility', 0, 50))).toBe(true)
+        expect(exec(game, hasStat('Agility', 0, 20))).toBe(false)
+      })
+
+      it('inLocation checks current location', () => {
+        expect(exec(game, inLocation('station'))).toBe(true)
+        expect(exec(game, inLocation('tavern'))).toBe(false)
+      })
+
+      it('inScene checks if scene has options', () => {
+        // After init, scene has options
+        expect(exec(game, inScene())).toBe(true)
+        game.clearScene()
+        expect(exec(game, inScene())).toBe(false)
+        game.addOption('test', {}, 'Test')
+        expect(exec(game, inScene())).toBe(true)
+      })
+
+      it('hasCard checks player cards', () => {
+        // Add a quest manually for testing
+        game.addQuest('find-lodgings', { silent: true })
+        expect(exec(game, hasCard('find-lodgings'))).toBe(true)
+        expect(exec(game, hasCard('nonexistent'))).toBe(false)
+      })
+
+      it('not inverts predicates', () => {
+        expect(exec(game, not(hasItem('crown')))).toBe(false)
+        expect(exec(game, not(hasItem('nonexistent')))).toBe(true)
+      })
+
+      it('and combines predicates', () => {
+        expect(exec(game, and(hasItem('crown'), inLocation('station')))).toBe(true)
+        expect(exec(game, and(hasItem('crown'), inLocation('tavern')))).toBe(false)
+      })
+
+      it('or combines predicates', () => {
+        expect(exec(game, or(hasItem('nonexistent'), inLocation('station')))).toBe(true)
+        expect(exec(game, or(hasItem('nonexistent'), inLocation('tavern')))).toBe(false)
+      })
+    })
+
+    describe('Instructions', () => {
+      beforeEach(() => {
+        game.clearScene()
+      })
+
+      it('text adds to scene content', () => {
+        execAll(game, [text('Hello world')])
+        expect(game.scene.content.length).toBe(1)
+        expect(game.scene.content[0]).toEqual({
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Hello world' }]
+        })
+      })
+
+      it('paragraph adds formatted paragraph', () => {
+        execAll(game, [
+          paragraph('Hello ', hl('world', '#ff0000', 'Earth'), '!')
+        ])
+        expect(game.scene.content.length).toBe(1)
+        const para = game.scene.content[0]
+        expect(para.type).toBe('paragraph')
+      })
+
+      it('say adds speech content', () => {
+        execAll(game, [say('Welcome!', undefined, '#00ff00')])
+        expect(game.scene.content.length).toBe(1)
+        expect(game.scene.content[0]).toEqual({
+          type: 'speech',
+          text: 'Welcome!',
+          color: '#00ff00'
+        })
+      })
+
+      it('option adds scene option', () => {
+        execAll(game, [option('testScript', { foo: 'bar' }, 'Click me')])
+        expect(game.scene.options.length).toBe(1)
+        expect(game.scene.options[0]).toEqual({
+          type: 'button',
+          script: ['testScript', { foo: 'bar' }],
+          label: 'Click me'
+        })
+      })
+
+      it('when executes conditionally - true', () => {
+        execAll(game, [
+          when(hasItem('crown'), text('You have gold!'))
+        ])
+        expect(game.scene.content.length).toBe(1)
+      })
+
+      it('when executes conditionally - false', () => {
+        execAll(game, [
+          when(hasItem('nonexistent'), text('You have something'))
+        ])
+        expect(game.scene.content.length).toBe(0)
+      })
+
+      it('when with multiple expressions (variadic)', () => {
+        execAll(game, [
+          when(hasItem('crown'),
+            text('Line 1'),
+            text('Line 2'),
+            text('Line 3')
+          )
+        ])
+        expect(game.scene.content.length).toBe(3)
+      })
+
+      it('unless executes when condition is false', () => {
+        execAll(game, [
+          unless(hasItem('nonexistent'), text('You do not have it'))
+        ])
+        expect(game.scene.content.length).toBe(1)
+
+        game.clearScene()
+
+        execAll(game, [
+          unless(hasItem('crown'), text('Missing crown'))
+        ])
+        expect(game.scene.content.length).toBe(0)
+      })
+
+      it('unless with multiple expressions', () => {
+        execAll(game, [
+          unless(hasItem('nonexistent'),
+            text('Line 1'),
+            text('Line 2')
+          )
+        ])
+        expect(game.scene.content.length).toBe(2)
+      })
+
+      it('cond with 3 args is if/else', () => {
+        // True branch
+        execAll(game, [
+          cond(hasItem('crown'), text('Rich!'), text('Poor!'))
+        ])
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Rich!')
+
+        game.clearScene()
+
+        // False branch
+        execAll(game, [
+          cond(hasItem('nonexistent'), text('Rich!'), text('Poor!'))
+        ])
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Poor!')
+      })
+
+      it('cond with multiple branches', () => {
+        // First branch matches
+        execAll(game, [
+          cond(
+            hasItem('crown'), text('Has crown'),
+            hasItem('sword'), text('Has sword'),
+            text('Has nothing')
+          )
+        ])
+        expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Has crown')
+
+        game.clearScene()
+
+        // No branch matches, uses default
+        execAll(game, [
+          cond(
+            hasItem('nonexistent1'), text('Has 1'),
+            hasItem('nonexistent2'), text('Has 2'),
+            text('Default')
+          )
+        ])
+        expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Default')
+      })
+
+      it('seq runs instructions in sequence', () => {
+        execAll(game, [
+          seq(text('A'), text('B'), text('C'))
+        ])
+        expect(game.scene.content.length).toBe(3)
+      })
+
+      it('move changes location', () => {
+        execAll(game, [move('default')])
+        expect(game.currentLocation).toBe('default')
+      })
+
+      it('addItem adds to inventory', () => {
+        const initialCount = game.player.inventory.find(i => i.id === 'crown')?.number ?? 0
+        execAll(game, [addItem('crown', 10)])
+        const newCount = game.player.inventory.find(i => i.id === 'crown')?.number ?? 0
+        expect(newCount).toBe(initialCount + 10)
+      })
+
+      it('addStat modifies player stats', () => {
+        const initial = game.player.basestats.get('Agility') ?? 0
+        execAll(game, [addStat('Agility', 5)])
+        expect(game.player.basestats.get('Agility')).toBe(initial + 5)
+      })
+    })
+
+    describe('registerDslScript', () => {
+      it('registers and executes declarative script', () => {
+        const testScript: Instruction[] = [
+          text('This is a declarative script'),
+          when(hasItem('crown'),
+            text('You are rich!'),
+            option('spend', {}, 'Spend money')
+          ),
+          option('leave', {}, 'Leave')
+        ]
+
+        registerDslScript('testDeclarative', testScript)
+
+        game.clearScene()
+        game.run('testDeclarative', {})
+
+        expect(game.scene.content.length).toBe(2) // text + "You are rich!"
+        expect(game.scene.options.length).toBe(2) // "Spend money" + "Leave"
+      })
+    })
+
+    describe('Complex script example', () => {
+      it('handles realistic tavern entry scenario', () => {
+        const enterTavern: Instruction[] = [
+          text('You push open the heavy oak door.'),
+          paragraph(
+            'The air is thick with ',
+            hl('pipe smoke', '#888888', 'Tobacco blend'),
+            '.'
+          ),
+          say('Welcome, traveler!', undefined, '#aa8855'),
+          cond(
+            hasItem('crown', 5), seq(
+              say('What can I get you?', undefined, '#aa8855'),
+              option('buyAle', { price: 2 }, 'Buy an ale'),
+              option('buyWine', { price: 5 }, 'Buy wine')
+            ),
+            say('Come back when you have coin.', undefined, '#aa8855')
+          ),
+          option('lookAround', {}, 'Look around'),
+          npcLeaveOption('You nod and head out.', 'Safe travels!', 'Leave')
+        ]
+
+        registerDslScript('enterTavern', enterTavern)
+        game.clearScene()
+        game.run('enterTavern', {})
+
+        // Content: text, paragraph, speech("Welcome"), speech("What can I get you?")
+        expect(game.scene.content.length).toBe(4)
+        // Options: buyAle, buyWine, lookAround, leave
+        expect(game.scene.options.length).toBe(4)
+      })
+    })
+  })
+})
