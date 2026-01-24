@@ -31,18 +31,11 @@ export function LocationView({ location }: LocationViewProps) {
   const showNPCs = game.npcsPresent.length > 0 && !sceneHasOptions
 
   return (
-    <div 
+    <div
+      className="location-view"
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
         ...(locationImage && {
           backgroundImage: `url(${assetUrl(locationImage)})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
         }),
       }}
     >
