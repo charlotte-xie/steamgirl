@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext'
 import { EffectTag } from './EffectTag'
+import { Frame } from './Frame'
 import { assetUrl } from '../utils/assetUrl'
 
 interface AvatarPanelProps {
@@ -14,39 +15,24 @@ export function AvatarPanel({ nameOverride }: AvatarPanelProps = {}) {
   const displayName = nameOverride ?? (game.player.name || '???')
 
   return (
-    <div className="avatar-container" style={{ position: 'relative' }}>
-      <div className="avatar-frame">
-        <div className="rivet rivet-tl"></div>
-        <div className="rivet rivet-tr"></div>
-        <div className="rivet rivet-bl"></div>
-        <div className="rivet rivet-br"></div>
-        <div className="avatar-rivet avatar-rivet-bl"></div>
-        <div className="avatar-rivet avatar-rivet-br"></div>
+    <div className="avatar-container">
+      <Frame className="avatar-frame">
         <div className="avatar-placeholder">
           <img src={assetUrl('/girl/SteamGirl.png')} alt="Player Avatar" />
         </div>
-      </div>
-      {/* Status effect tags overlay - top left */}
-      {effectCards.length > 0 && (
-        <div className="avatar-effects-overlay">
-          {effectCards.map((card, index) => (
-            <EffectTag key={`${card.id}-${index}`} card={card} />
-          ))}
+        {/* Status effect tags overlay - top left */}
+        {effectCards.length > 0 && (
+          <div className="avatar-effects-overlay">
+            {effectCards.map((card, index) => (
+              <EffectTag key={`${card.id}-${index}`} card={card} />
+            ))}
+          </div>
+        )}
+        {/* Player name overlay in bottom right */}
+        <div className="avatar-name">
+          <h3>{displayName}</h3>
         </div>
-      )}
-      {/* Player name overlay in bottom right */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          right: 20,
-          color: 'var(--text-main)',
-          fontWeight: 500,
-          pointerEvents: 'none',
-        }}
-      >
-        <h3>{displayName}</h3>
-      </div>
+      </Frame>
     </div>
   )
 }
