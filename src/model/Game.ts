@@ -217,22 +217,34 @@ export class Game {
     this.updateNPCsPresent()
   }
 
-  /** 
+  /**
    * Implement a player action by running a script.
    * - Clears the current scene
    * - Runs the script for the player action
    * - Updates player state (handled by script)
+   * - Catches errors and displays them gracefully to the player
    */
   takeAction(scriptName: string, params: {} = {}): void {
     // Clear the scene before running a new script
     this.clearScene()
-    
-    // Get and run the script (may modify game state)
-    const script = getScript(scriptName)
-    if (!script) {
-      throw new Error(`Player action script not found: ${scriptName}`)
+
+    try {
+      // Get and run the script (may modify game state)
+      const script = getScript(scriptName)
+      if (!script) {
+        throw new Error(`Player action script not found: ${scriptName}`)
+      }
+      script(this, params)
+    } catch (error) {
+      // Display a graceful error message to the player
+      // Don't clear scene - preserve any content that was added before the error
+      this.add('')
+      this.add('There seems to be a glitch in the Matrix....')
+      this.add('')
+      const message = error instanceof Error ? error.message : String(error)
+      this.add({ type: 'paragraph', content: [{ type: 'text', text: message, color: '#ff6b6b' }] })
+      // TODO any cleanup?
     }
-    script(this, params)
   }
 
   /** 

@@ -25,6 +25,7 @@ registerNPC('automaton-greeter', {
     npc.leaveOption('The automaton whirs softly as you depart.', 'Safe travels. May your gears never seize.', 'Say goodbye')
     game.addOption('greeterGetDirections', {}, 'Get directions')
     game.addOption('greeterFlirt', {}, 'Flirt')
+    game.addOption('greeterGlitch', {}, '???')
   },
 })
 
@@ -178,6 +179,18 @@ export const startScripts = {
     g.add('It ticks thoughtfully.')
     npc.say('I am also told there is a serene lake to the east. The university overlooks it, and one can reach it from the market district. Steam rises from the surface—rather picturesque.')
     g.run('discoverLocation', { location: 'lake' })
+  },
+
+  greeterGlitch: (g: Game) => {
+    g.add('You notice a small panel on the automaton\'s back, slightly ajar. Curiosity gets the better of you, and you reach for it.')
+    g.add('The automaton\'s optics flash an alarming crimson.')
+    const npc = g.npc
+    npc.say('WARNING. UNAUTHORIZED ACCESS DETECTED. INITIATING PARADOX PROTOCOL.')
+    g.add('Its voice becomes distorted, echoing strangely.')
+    npc.say('I AM THE GREETER. I GREET. BUT IF I GREET MYSELF... WHO GREETS THE GREETER?')
+    g.add('Sparks fly from its joints. The brass casing begins to vibrate.')
+    // This will trigger the error handler
+    throw new Error('STACK OVERFLOW: Recursive greeting detected in hospitality_core.cog')
   },
 
   greeterEndScene: (_g: Game, _params: {}) => {
