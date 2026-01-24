@@ -5,8 +5,15 @@ import type { CardDefinition } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
+import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation } from '../model/ScriptDSL'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
+
+import type { Instruction } from '../model/Scripts'
+
+// Helper to create an NPC interaction option (calls 'interact' with script name)
+const npcOption = (label: string, script: string, params?: object): Instruction =>
+  ['option', { script: 'interact', params: { script, params }, label }]
 
 // Register NPCs that appear at the station
 registerNPC('automaton-greeter', {
@@ -15,17 +22,45 @@ registerNPC('automaton-greeter', {
   image: '/images/npcs/Greeter.jpg',
   speechColor: '#a8d4f0',
   generate: (_game: Game, npc: NPC) => {
-    // Set initial location to station
     npc.location = 'station'
   },
-  onApproach: (game: Game) => {
-    const npc = game.npc
-    game.add('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting:')
-    npc.say('Welcome to Ironspark Terminus. How may I assist you today?')
-    npc.leaveOption('The automaton whirs softly as you depart.', 'Safe travels. May your gears never seize.', 'Say goodbye')
-    game.addOption('greeterGetDirections', {}, 'Get directions')
-    game.addOption('greeterFlirt', {}, 'Flirt')
-    game.addOption('greeterGlitch', {}, '???')
+  onApproach: seq(
+    text('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting:'),
+    say('Welcome to Ironspark Terminus. How may I assist you today?'),
+    npcLeaveOption('The automaton whirs softly as you depart.', 'Safe travels. May your gears never seize.', 'Say goodbye'),
+    npcOption('Get directions', 'onGetDirections'),
+    npcOption('Flirt', 'onFlirt'),
+    npcOption('???', 'onGlitch'),
+  ),
+  scripts: {
+    onGetDirections: seq(
+      text('The automaton gestures with a brass limb.'),
+      say('The city centre lies straight ahead—follow the main concourse. It is a short walk.'),
+      text('It ticks thoughtfully.'),
+      say('I am also told there is a serene lake to the east. The university overlooks it, and one can reach it from the market district. Steam rises from the surface—rather picturesque.'),
+      discoverLocation('lake'),
+    ),
+    onFlirt: skillCheck('Flirtation', 0,
+      [
+        text('The automaton\'s gears stutter. Its optics flicker.'),
+        say('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?'),
+        addStat('Flirtation', 1, { chance: 1, max: 5 }),
+      ],
+      [
+        text('The automaton inclines its head with mechanical precision.'),
+        say('I am a hospitality unit. Is there something specific you require?'),
+      ]
+    ),
+    onGlitch: (g: Game) => {
+      g.add('You notice a small panel on the automaton\'s back, slightly ajar. Curiosity gets the better of you, and you reach for it.')
+      g.add('The automaton\'s optics flash an alarming crimson.')
+      const npc = g.npc
+      npc.say('WARNING. UNAUTHORIZED ACCESS DETECTED. INITIATING PARADOX PROTOCOL.')
+      g.add('Its voice becomes distorted, echoing strangely.')
+      npc.say('I AM THE GREETER. I GREET. BUT IF I GREET MYSELF... WHO GREETS THE GREETER?')
+      g.add('Sparks fly from its joints. The brass casing begins to vibrate.')
+      throw new Error('STACK OVERFLOW: Recursive greeting detected in hospitality_core.cog')
+    },
   },
 })
 
@@ -158,45 +193,6 @@ export const startScripts = {
   },
 
 
-  greeterFlirt: (g: Game) => {
-    const success = g.player.skillTest('Flirtation', 0)
-    if (success) {
-      g.add('The automaton\'s gears stutter. Its optics flicker.')
-      const npc = g.npc
-      npc.say('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?')
-      g.run('addStat', { stat: 'Flirtation', change: 1, chance: 1, max: 5 })
-    } else {
-      g.add('The automaton inclines its head with mechanical precision.')
-      const npc = g.npc
-      npc.say('I am a hospitality unit. Is there something specific you require?')
-    }
-  },
-
-  greeterGetDirections: (g: Game) => {
-    g.add('The automaton gestures with a brass limb.')
-    const npc = g.npc
-    npc.say('The city centre lies straight ahead—follow the main concourse. It is a short walk.')
-    g.add('It ticks thoughtfully.')
-    npc.say('I am also told there is a serene lake to the east. The university overlooks it, and one can reach it from the market district. Steam rises from the surface—rather picturesque.')
-    g.run('discoverLocation', { location: 'lake' })
-  },
-
-  greeterGlitch: (g: Game) => {
-    g.add('You notice a small panel on the automaton\'s back, slightly ajar. Curiosity gets the better of you, and you reach for it.')
-    g.add('The automaton\'s optics flash an alarming crimson.')
-    const npc = g.npc
-    npc.say('WARNING. UNAUTHORIZED ACCESS DETECTED. INITIATING PARADOX PROTOCOL.')
-    g.add('Its voice becomes distorted, echoing strangely.')
-    npc.say('I AM THE GREETER. I GREET. BUT IF I GREET MYSELF... WHO GREETS THE GREETER?')
-    g.add('Sparks fly from its joints. The brass casing begins to vibrate.')
-    // This will trigger the error handler
-    throw new Error('STACK OVERFLOW: Recursive greeting detected in hospitality_core.cog')
-  },
-
-  greeterEndScene: (_g: Game, _params: {}) => {
-    // No-op: takeAction has already cleared the scene; this just closes the overlay
-  },
-  
   tourCity: (g: Game) => {
     g.scene.npc = 'tour-guide'
     g.scene.hideNpcImage = true // Hide NPC image because we're showing off location scenery

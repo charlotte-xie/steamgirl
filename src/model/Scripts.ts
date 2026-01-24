@@ -508,7 +508,10 @@ const coreScripts: Record<string, ScriptFn> = {
         // ParagraphContent - extract text
         return part.text
       }).join('')
-      game.add(speech(text))
+      // Use the scene NPC's speech color if available
+      const npcId = game.scene.npc
+      const color = npcId ? game.getNPC(npcId).template.speechColor : undefined
+      game.add(speech(text, color))
     }
   },
 
