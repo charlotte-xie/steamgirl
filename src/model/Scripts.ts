@@ -53,11 +53,23 @@ export function getAllScripts(): Record<string, Script> {
 }
 
 // ============================================================================
-// CORE SCRIPTS - Generic scripts that are part of the scripting system
+// SCRIPT REFERENCE TYPES
 // ============================================================================
 
-// For DSL instruction execution (forward declaration, actual type in ScriptDSL.ts)
-type Instruction = [string, Record<string, unknown>]
+/** An instruction is a script call: [scriptName, params] tuple */
+export type Instruction = [string, Record<string, unknown>]
+
+/** A script reference can be a name (string) or an instruction tuple */
+export type ScriptRef = string | Instruction
+
+/** Check if a value is an Instruction tuple */
+export function isInstruction(value: unknown): value is Instruction {
+  return Array.isArray(value) && value.length === 2 && typeof value[0] === 'string'
+}
+
+// ============================================================================
+// CORE SCRIPTS - Generic scripts that are part of the scripting system
+// ============================================================================
 
 /** Execute an instruction and return its result */
 function exec(game: Game, instruction: Instruction): unknown {
@@ -304,6 +316,39 @@ const coreScripts: Record<string, Script> = {
     }
   },
 
+  /** Execute a random child instruction from the provided array */
+  random: (game: Game, params: { children?: Instruction[] }) => {
+    if (!params.children || params.children.length === 0) return
+    const index = Math.floor(Math.random() * params.children.length)
+    return exec(game, params.children[index])
+  },
+
+  /** Perform a skill test. Returns boolean if no callbacks provided, otherwise executes callbacks. */
+  skillCheck: (game: Game, params: {
+    skill?: string
+    difficulty?: number
+    onSuccess?: Instruction[]
+    onFailure?: Instruction[]
+  }): boolean | void => {
+    if (!params.skill) return false
+    const difficulty = params.difficulty ?? 0
+    const success = game.player.skillTest(params.skill as StatName, difficulty)
+
+    // If no callbacks, return boolean (predicate mode)
+    if (!params.onSuccess && !params.onFailure) {
+      return success
+    }
+
+    // Execute appropriate callback
+    if (success && params.onSuccess) {
+      execAll(game, params.onSuccess)
+    } else if (!success && params.onFailure) {
+      execAll(game, params.onFailure)
+    }
+
+    return success
+  },
+
   // -------------------------------------------------------------------------
   // PREDICATES (return boolean)
   // -------------------------------------------------------------------------
@@ -447,7 +492,7 @@ const coreScripts: Record<string, Script> = {
   // -------------------------------------------------------------------------
 
   /** Conscious wait at current location: timeLapse, optional narrative, then optionally run another script if not in a scene. */
-  wait: (game: Game, params: { minutes?: number; text?: string; then?: { script: string; params?: object } } = {}) => {
+  wait: (game: Game, params: { minutes?: number; text?: string; then?: { script: string; params?: Record<string, unknown> } } = {}) => {
     const minutes = params.minutes ?? 15
     if (typeof minutes !== 'number' || minutes < 0) {
       throw new Error('wait script requires minutes (non-negative number)')

@@ -107,6 +107,8 @@ option('next', {})   // ['option', { script: 'next', params: {}, label: undefine
 | `when(cond, ...then)` | `['when', { condition, then }]` | Conditional (if true) |
 | `unless(cond, ...then)` | `['when', { condition: not(cond), then }]` | Conditional (if false) |
 | `cond(c1, e1, c2, e2, ..., default)` | `['cond', { branches, default }]` | Multi-branch conditional |
+| `random(...children)` | `['random', { children }]` | Execute one random child |
+| `skillCheck(skill, diff?, onSuccess?, onFailure?)` | `['skillCheck', {...}]` | Skill test (predicate or callback) |
 
 #### Game Actions
 
@@ -258,6 +260,45 @@ cond(
     option('buyExpensive', {}, 'Premium goods')
   ),
   say('Just browsing?')
+)
+```
+
+### random
+
+`random` executes one randomly selected child instruction:
+
+```typescript
+// Random flavor text
+random(
+  text('A brass-plated automaton whirs past.'),
+  text('Steam hisses from a nearby pipe.'),
+  text('A clockwork bird chirps on a lamppost.')
+)
+
+// Random item reward
+random(
+  seq(text('You found a coin!'), addItem('crown')),
+  seq(text('You found a gem!'), addItem('gem')),
+  text('You found nothing.')
+)
+```
+
+### skillCheck
+
+`skillCheck` performs a skill test. It can be used in two modes:
+
+**Predicate mode** (no callbacks): Returns boolean, useful in conditions:
+```typescript
+when(skillCheck('Perception', 10),
+  text('You notice something hidden.')
+)
+```
+
+**Callback mode**: Executes different instructions based on success/failure:
+```typescript
+skillCheck('Flirtation', 15,
+  [say('You charm them successfully.'), addStat('Charm', 1)],
+  [text('They seem unimpressed.')]
 )
 ```
 

@@ -25,14 +25,14 @@
  */
 
 import { Game } from './Game'
-import { makeScripts } from './Scripts'
+import { makeScripts, type Instruction } from './Scripts'
+
+// Re-export Instruction for convenience
+export type { Instruction }
 
 // ============================================================================
 // CORE TYPES
 // ============================================================================
-
-/** An instruction is a script call: [scriptName, params] */
-export type Instruction = [string, Record<string, unknown>]
 
 // ============================================================================
 // DSL BUILDERS - Pure functions that construct instruction tuples
@@ -115,6 +115,23 @@ export function cond(...args: Instruction[]): Instruction {
 
   return run('cond', { branches, default: defaultExpr })
 }
+
+/** Execute a random instruction from the provided children */
+export const random = (...children: Instruction[]): Instruction =>
+  run('random', { children })
+
+/**
+ * Perform a skill test. Can be used as:
+ * - Predicate: skillCheck('Flirtation', 10) - returns boolean
+ * - With callbacks: skillCheck('Flirtation', 10, [text('Success!')], [text('Failure!')])
+ */
+export const skillCheck = (
+  skill: string,
+  difficulty = 0,
+  onSuccess?: Instruction[],
+  onFailure?: Instruction[]
+): Instruction =>
+  run('skillCheck', { skill, difficulty, onSuccess, onFailure })
 
 // --- Game Actions ---
 

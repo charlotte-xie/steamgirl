@@ -1,7 +1,7 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
-import { getScript } from './Scripts'
+import { getScript, isInstruction, type ScriptRef, type Instruction } from './Scripts'
 import { Card } from './Card'
 
 export type ParagraphContent = 
@@ -13,8 +13,8 @@ export type SceneContentItem =
   | { type: 'paragraph'; content: ParagraphContent[] }
   | { type: 'speech'; text: string; color?: string }
 
-export type SceneOptionItem = 
-  | { type: 'button'; script: [string, {}]; label?: string }
+export type SceneOptionItem =
+  | { type: 'button'; script: Instruction; label?: string }
 
 export type SceneData = {
   type: 'story'
@@ -266,13 +266,23 @@ export class Game {
     // If we need to check NPC positions after actions, it would go here
   }
 
-  /** Run a script on this game instance. Returns the script's result (or undefined if none). */
-  run(scriptName: string, params: {} = {}): unknown {
-    const script = getScript(scriptName)
-    if (!script) {
-      throw new Error(`Script not found: ${scriptName}`)
+  /**
+   * Run a script on this game instance. Returns the script's result (or undefined if none).
+   * Accepts either a script name with params, or an Instruction tuple [name, params].
+   */
+  run(script: ScriptRef, params: Record<string, unknown> = {}): unknown {
+    // If it's an Instruction tuple, extract name and params from it
+    if (isInstruction(script)) {
+      const [name, instrParams] = script
+      return this.run(name, instrParams)
     }
-    return script(this, params)
+
+    // It's a script name string
+    const scriptFn = getScript(script)
+    if (!scriptFn) {
+      throw new Error(`Script not found: ${script}`)
+    }
+    return scriptFn(this, params)
   }
 
   /** Advance time by the given minutes (runs the timeLapse script). Returns this for chaining. */

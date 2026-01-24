@@ -124,20 +124,39 @@ describe('Game', () => {
 
   it('should initialize player correctly when running init script', () => {
     const game = new Game()
-    
+
     // Run the init script
     game.run('init', {})
-    
+
     // Check that player has an acceptance letter
     const acceptanceLetter = game.player.inventory.find(item => item.id === 'acceptance-letter')
     expect(acceptanceLetter).toBeDefined()
     expect(acceptanceLetter?.number).toBe(1)
-    
+
     // Check that Agility is >10 (should be 30 from init script)
     const agility = game.player.stats.get('Agility')
     expect(agility).toBeDefined()
     expect(agility!).toBeGreaterThan(10)
     expect(agility).toBe(30) // Should be exactly 30
+  })
+
+  it('should run scripts via Instruction tuple using game.run()', () => {
+    const game = new Game()
+
+    // Run using string (traditional way)
+    game.run('gainItem', { item: 'crown', number: 5 })
+    expect(game.player.inventory.find(i => i.id === 'crown')?.number).toBe(5)
+
+    // Run using Instruction tuple
+    game.run(['gainItem', { item: 'crown', number: 3 }])
+    expect(game.player.inventory.find(i => i.id === 'crown')?.number).toBe(8)
+
+    // Run a predicate using Instruction tuple and check return value
+    const hasEnoughCrowns = game.run(['hasItem', { item: 'crown', count: 5 }])
+    expect(hasEnoughCrowns).toBe(true)
+
+    const hasTooManyCrowns = game.run(['hasItem', { item: 'crown', count: 100 }])
+    expect(hasTooManyCrowns).toBe(false)
   })
 
   it('should generate NPC correctly when getNPC is called', () => {

@@ -29,6 +29,8 @@ import {
   unless,
   cond,
   seq,
+  random,
+  skillCheck,
   move,
   addItem,
   removeItem,
@@ -155,6 +157,35 @@ describe('ScriptDSL', () => {
             { condition: ['hasItem', { item: 'silver', count: 1 }], then: ['text', { text: 'Silver!' }] }
           ],
           default: ['text', { text: 'Nothing!' }]
+        }])
+      })
+
+      it('random() produces random instruction', () => {
+        const result = random(text('A'), text('B'), text('C'))
+        expect(result).toEqual(['random', {
+          children: [
+            ['text', { text: 'A' }],
+            ['text', { text: 'B' }],
+            ['text', { text: 'C' }]
+          ]
+        }])
+      })
+
+      it('skillCheck() produces skillCheck instruction (predicate mode)', () => {
+        expect(skillCheck('Flirtation', 10)).toEqual(['skillCheck', {
+          skill: 'Flirtation',
+          difficulty: 10,
+          onSuccess: undefined,
+          onFailure: undefined
+        }])
+      })
+
+      it('skillCheck() produces skillCheck instruction (callback mode)', () => {
+        expect(skillCheck('Flirtation', 10, [text('Success!')], [text('Fail!')])).toEqual(['skillCheck', {
+          skill: 'Flirtation',
+          difficulty: 10,
+          onSuccess: [['text', { text: 'Success!' }]],
+          onFailure: [['text', { text: 'Fail!' }]]
         }])
       })
     })
@@ -487,6 +518,35 @@ describe('ScriptDSL', () => {
           seq(text('A'), text('B'), text('C'))
         ])
         expect(game.scene.content.length).toBe(3)
+      })
+
+      it('random executes one random child', () => {
+        // Run multiple times to verify it picks one
+        for (let i = 0; i < 10; i++) {
+          game.clearScene()
+          execAll(game, [random(text('A'), text('B'), text('C'))])
+          expect(game.scene.content.length).toBe(1)
+          const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
+          expect(['A', 'B', 'C']).toContain(txt)
+        }
+      })
+
+      it('skillCheck as predicate returns boolean', () => {
+        // With no callbacks, returns boolean
+        const result = exec(game, skillCheck('Flirtation', 0))
+        expect(typeof result).toBe('boolean')
+      })
+
+      it('skillCheck with callbacks executes appropriate branch', () => {
+        // Run with low difficulty to (likely) succeed
+        // Since skill tests are probabilistic, we test the callback mechanism
+        execAll(game, [
+          skillCheck('Flirtation', -100, [text('Success!')], [text('Failure!')])
+        ])
+        expect(game.scene.content.length).toBe(1)
+        // With difficulty -100, should always succeed
+        const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
+        expect(txt).toBe('Success!')
       })
 
       it('move changes location', () => {
