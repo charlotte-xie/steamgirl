@@ -163,8 +163,12 @@ export const timeLapse = (minutes: number): Instruction =>
   run('timeLapse', { minutes })
 
 /** Add to a player stat */
-export const addStat = (stat: string, change: number): Instruction =>
-  run('addStat', { stat, change })
+export const addStat = (
+  stat: string,
+  change: number,
+  options?: { max?: number; min?: number; chance?: number; hidden?: boolean }
+): Instruction =>
+  run('addStat', { stat, change, ...options })
 
 /** Add a quest card */
 export const addQuest = (questId: string, args?: object): Instruction =>
@@ -177,6 +181,18 @@ export const completeQuest = (questId: string): Instruction =>
 /** Add an effect card */
 export const addEffect = (effectId: string, args?: object): Instruction =>
   run('addEffect', { effectId, args })
+
+/** Record the current game time to a named timer */
+export const recordTime = (timer: string): Instruction =>
+  run('recordTime', { timer })
+
+/** Discover a location (sets discovered flag) */
+export const discoverLocation = (location: string): Instruction =>
+  run('discoverLocation', { location })
+
+/** Advance time until a specific hour of day (e.g., 10.25 for 10:15am) */
+export const timeLapseUntil = (untilTime: number): Instruction =>
+  run('timeLapse', { untilTime })
 
 // --- Predicates (return boolean) ---
 
@@ -207,6 +223,10 @@ export const hasCard = (cardId: string): Instruction =>
 /** Check if a card is completed */
 export const cardCompleted = (cardId: string): Instruction =>
   run('cardCompleted', { cardId })
+
+/** Check if at least `minutes` have elapsed since a recorded timer */
+export const timeElapsed = (timer: string, minutes: number): Instruction =>
+  run('timeElapsed', { timer, minutes })
 
 /** Negate a predicate */
 export const not = (predicate: Instruction): Instruction =>

@@ -19,6 +19,7 @@ import { Game} from './Game'
 import { type InlineContent } from './Format'
 import { speech, p, highlight, colour } from './Format'
 import { type StatName, type MeterName, MAIN_STAT_INFO, SKILL_INFO, METER_INFO } from './Stats'
+import { type TimerName } from './Player'
 import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
@@ -297,6 +298,14 @@ const coreScripts: Record<string, Script> = {
     game.player.calcStats()
   },
 
+  /** Record the current game time to a named timer */
+  recordTime: (game: Game, params: { timer?: string }) => {
+    if (!params.timer || typeof params.timer !== 'string') {
+      throw new Error('recordTime requires a timer parameter (string name)')
+    }
+    game.player.timers.set(params.timer as TimerName, game.time)
+  },
+
   // -------------------------------------------------------------------------
   // CONTROL FLOW
   // -------------------------------------------------------------------------
@@ -437,6 +446,21 @@ const coreScripts: Record<string, Script> = {
   or: (game: Game, params: { predicates?: Instruction[] }): boolean => {
     if (!params.predicates) return false
     return params.predicates.some(p => exec(game, p))
+  },
+
+  /** Check if at least `minutes` have elapsed since a recorded timer */
+  timeElapsed: (game: Game, params: { timer?: string; minutes?: number }): boolean => {
+    if (!params.timer || typeof params.timer !== 'string') {
+      throw new Error('timeElapsed requires a timer parameter (string name)')
+    }
+    if (params.minutes === undefined || typeof params.minutes !== 'number') {
+      throw new Error('timeElapsed requires a minutes parameter (number)')
+    }
+    const recorded = game.player.timers.get(params.timer as TimerName)
+    if (recorded === undefined) return true // No record means "long enough ago"
+    const elapsed = game.time - recorded
+    const required = params.minutes * 60 // Convert minutes to seconds
+    return elapsed >= required
   },
 
   // -------------------------------------------------------------------------

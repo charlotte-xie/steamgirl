@@ -15,6 +15,7 @@ import {
   hasCard,
   cardCompleted,
   npcStat,
+  timeElapsed,
   not,
   and,
   or,
@@ -41,6 +42,7 @@ import {
   addQuest,
   completeQuest,
   addEffect,
+  recordTime,
   // Execution
   exec,
   execAll,
@@ -247,6 +249,10 @@ describe('ScriptDSL', () => {
       it('addEffect() produces addEffect instruction', () => {
         expect(addEffect('tired', { level: 2 })).toEqual(['addEffect', { effectId: 'tired', args: { level: 2 } }])
       })
+
+      it('recordTime() produces recordTime instruction', () => {
+        expect(recordTime('lastEat')).toEqual(['recordTime', { timer: 'lastEat' }])
+      })
     })
 
     describe('predicate builders', () => {
@@ -278,6 +284,10 @@ describe('ScriptDSL', () => {
 
       it('cardCompleted() produces cardCompleted instruction', () => {
         expect(cardCompleted('find-lodgings')).toEqual(['cardCompleted', { cardId: 'find-lodgings' }])
+      })
+
+      it('timeElapsed() produces timeElapsed instruction', () => {
+        expect(timeElapsed('lastEat', 60)).toEqual(['timeElapsed', { timer: 'lastEat', minutes: 60 }])
       })
 
       it('not() produces not instruction', () => {
@@ -590,6 +600,42 @@ describe('ScriptDSL', () => {
         const initial = game.player.basestats.get('Agility') ?? 0
         execAll(game, [addStat('Agility', 5)])
         expect(game.player.basestats.get('Agility')).toBe(initial + 5)
+      })
+
+      it('recordTime records current time to a timer', () => {
+        const currentTime = game.time
+        execAll(game, [recordTime('lastEat')])
+        expect(game.player.timers.get('lastEat')).toBe(currentTime)
+      })
+
+      it('timeElapsed returns true when no timer recorded', () => {
+        // Unrecorded timer should return true (long enough ago)
+        const result = exec(game, timeElapsed('unrecorded', 60))
+        expect(result).toBe(true)
+      })
+
+      it('timeElapsed returns false when not enough time passed', () => {
+        execAll(game, [recordTime('testTimer')])
+        // Just recorded, so 60 minutes hasn't passed
+        const result = exec(game, timeElapsed('testTimer', 60))
+        expect(result).toBe(false)
+      })
+
+      it('timeElapsed returns true when enough time passed', () => {
+        execAll(game, [recordTime('testTimer')])
+        // Advance time by 61 minutes (3660 seconds)
+        game.time += 3660
+        const result = exec(game, timeElapsed('testTimer', 60))
+        expect(result).toBe(true)
+      })
+
+      it('recordTime throws on missing timer name', () => {
+        expect(() => exec(game, ['recordTime', {}])).toThrow('recordTime requires a timer parameter')
+      })
+
+      it('timeElapsed throws on missing parameters', () => {
+        expect(() => exec(game, ['timeElapsed', {}])).toThrow('timeElapsed requires a timer parameter')
+        expect(() => exec(game, ['timeElapsed', { timer: 'test' }])).toThrow('timeElapsed requires a minutes parameter')
       })
     })
 
