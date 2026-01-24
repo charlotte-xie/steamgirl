@@ -29,7 +29,7 @@ export class Player {
   cards: Card[]
 
   constructor() {
-    this.name = "Unnamed Player"
+    this.name = "" // Empty name indicates uninitialized character
     this.basestats = new Map<StatName, number>()
     this.stats = new Map<StatName, number>()
     this.timers = new Map<TimerName, number>()

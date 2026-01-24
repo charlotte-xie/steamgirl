@@ -4,11 +4,11 @@ import type { PlayerData } from './Player'
 import { Item } from './Item'
 
 describe('Player', () => {
-  it('should create a new Player with empty inventory', () => {
+  it('should create a new Player with empty name and inventory', () => {
     const player = new Player()
 
     expect(player).toBeDefined()
-    expect(player.name).toBe('Unnamed Player')
+    expect(player.name).toBe('')
     expect(player.inventory).toBeDefined()
     expect(player.inventory.length).toBe(0)
   })

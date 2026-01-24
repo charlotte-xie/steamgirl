@@ -23,7 +23,7 @@ type TabId = 'Status' | 'Inventory' | 'Quests' | 'Skills' | 'Characters' | 'Sett
 
 export function PlayerPanel() {
   const { game, setGame } = useGame()
-  const { newGame, saveGame, loadGameSave, hasManualSave, returnToStart } = useGameLoader()
+  const { quickRestart, saveGame, loadGameSave, hasManualSave, returnToStart } = useGameLoader()
   const [selectedTab, setSelectedTab] = useState<TabId>('Status')
 
   const tabs: TabId[] = ['Status', 'Inventory', 'Quests', 'Skills', 'Characters', 'Settings']
@@ -173,7 +173,7 @@ export function PlayerPanel() {
       </div>
 
       <div className="dev-controls">
-        <Button onClick={() => newGame({ replace: true })}>
+        <Button onClick={() => quickRestart({ replace: true })}>
           Restart
         </Button>
         <Button onClick={() => saveGame(game)}>

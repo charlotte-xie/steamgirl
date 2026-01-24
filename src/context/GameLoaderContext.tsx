@@ -6,6 +6,7 @@ import { GAME_SAVE, GAME_SAVE_AUTO } from '../constants/storage'
 
 type GameLoaderContextType = {
   newGame: (opts?: { replace?: boolean }) => void
+  quickRestart: (opts?: { replace?: boolean }) => void
   loadGame: () => boolean
   continueGame: () => boolean
   hasGame: boolean
@@ -22,6 +23,7 @@ const throwMissingProvider = (): never => {
 
 const GameLoaderContext = createContext<GameLoaderContextType>({
   newGame: throwMissingProvider,
+  quickRestart: throwMissingProvider,
   loadGame: throwMissingProvider,
   continueGame: throwMissingProvider,
   hasGame: false,
@@ -36,6 +38,17 @@ export function GameLoaderProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
 
   const newGame = (opts?: { replace?: boolean }) => {
+    // Create a new uninitialized game - the GameScreen will show the character
+    // creation screen, and init will be run after the user creates their character
+    const g = new Game()
+    localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(g.toJSON()))
+    const state = opts?.replace ? { source: 'newGame' as const, _t: Date.now() } : { source: 'newGame' as const }
+    navigate('/game', { state, replace: opts?.replace })
+  }
+
+  const quickRestart = (opts?: { replace?: boolean }) => {
+    // Create and initialize a game immediately, skipping character creation
+    // Useful for quick testing during development
     const g = new Game()
     const init = getScript('init')
     if (init) init(g, {})
@@ -86,6 +99,7 @@ export function GameLoaderProvider({ children }: { children: ReactNode }) {
     <GameLoaderContext.Provider
       value={{
         newGame,
+        quickRestart,
         loadGame,
         continueGame,
         hasGame,

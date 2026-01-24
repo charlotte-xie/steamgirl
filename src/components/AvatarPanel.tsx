@@ -2,10 +2,16 @@ import { useGame } from '../context/GameContext'
 import { EffectTag } from './EffectTag'
 import { assetUrl } from '../utils/assetUrl'
 
-export function AvatarPanel() {
+interface AvatarPanelProps {
+  /** Override the displayed name (useful for character creation screen) */
+  nameOverride?: string
+}
+
+export function AvatarPanel({ nameOverride }: AvatarPanelProps = {}) {
   const { game } = useGame()
 
-  const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
+  const effectCards = game.player.cards?.filter((card) => card && card.type === 'Effect') || []
+  const displayName = nameOverride ?? (game.player.name || '???')
 
   return (
     <div className="avatar-container" style={{ position: 'relative' }}>
@@ -17,10 +23,7 @@ export function AvatarPanel() {
         <div className="avatar-rivet avatar-rivet-bl"></div>
         <div className="avatar-rivet avatar-rivet-br"></div>
         <div className="avatar-placeholder">
-          <img 
-            src={assetUrl('/girl/SteamGirl.png')} 
-            alt="Player Avatar"
-          />
+          <img src={assetUrl('/girl/SteamGirl.png')} alt="Player Avatar" />
         </div>
       </div>
       {/* Status effect tags overlay - top left */}
@@ -32,15 +35,17 @@ export function AvatarPanel() {
         </div>
       )}
       {/* Player name overlay in bottom right */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        right: 20,
-        color: 'var(--text-main)',
-        fontWeight: 500,
-        pointerEvents: 'none'
-      }}>
-        <h3>{game.player.name || 'Unknown'}</h3>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          right: 20,
+          color: 'var(--text-main)',
+          fontWeight: 500,
+          pointerEvents: 'none',
+        }}
+      >
+        <h3>{displayName}</h3>
       </div>
     </div>
   )

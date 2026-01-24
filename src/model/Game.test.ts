@@ -633,4 +633,42 @@ describe('Game', () => {
       }
     })
   })
+
+  describe('isStarted', () => {
+    it('should return false for a new uninitialized game', () => {
+      const game = new Game()
+      expect(game.isStarted()).toBe(false)
+    })
+
+    it('should return true after init script is run', () => {
+      const game = new Game()
+      game.run('init', {})
+      expect(game.isStarted()).toBe(true)
+    })
+
+    it('should return true when player name is changed directly', () => {
+      const game = new Game()
+      game.player.name = 'Elise'
+      expect(game.isStarted()).toBe(true)
+    })
+
+    it('should persist isStarted state through serialization', () => {
+      // Uninitialized game
+      const game1 = new Game()
+      expect(game1.isStarted()).toBe(false)
+
+      const json1 = JSON.stringify(game1.toJSON())
+      const reloaded1 = Game.fromJSON(json1)
+      expect(reloaded1.isStarted()).toBe(false)
+
+      // Initialized game
+      const game2 = new Game()
+      game2.run('init', {})
+      expect(game2.isStarted()).toBe(true)
+
+      const json2 = JSON.stringify(game2.toJSON())
+      const reloaded2 = Game.fromJSON(json2)
+      expect(reloaded2.isStarted()).toBe(true)
+    })
+  })
 })

@@ -441,6 +441,14 @@ export class Game {
     }
   }
 
+  /**
+   * Check if the game has been started (init script has been run).
+   * A game is considered started when the player has a non-empty name.
+   */
+  isStarted(): boolean {
+    return this.player.name !== ''
+  }
+
   static fromJSON(json: string | GameData): Game {
     // Use Partial<> for backwards compatibility with old saves that might be missing required fields
     const data = typeof json === 'string' ? JSON.parse(json) : json as Partial<GameData> & { version: number; player: PlayerData }
