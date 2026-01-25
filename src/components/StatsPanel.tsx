@@ -1,17 +1,19 @@
 import { useGame } from '../context/GameContext'
 import { STAT_NAMES, MAIN_STAT_INFO } from '../model/Stats'
 import { MeterPanel } from './MeterPanel'
+import { Frame } from './Frame'
 
 export function StatsPanel() {
   const { game } = useGame()
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr 1fr', 
-        gap: 'var(--space-xs)',
-        fontSize: '0.8rem'
-      }}>
+    <Frame className="stats-panel-frame">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: 'var(--space-xs)',
+          fontSize: '0.8rem'
+        }}>
         {STAT_NAMES.map((statName) => {
           const statValue = game.player.stats.get(statName) || 0
           const baseValue = game.player.basestats.get(statName) || 0
@@ -123,8 +125,9 @@ export function StatsPanel() {
             </div>
           )
         })}
+        </div>
+        <MeterPanel />
       </div>
-      <MeterPanel />
-    </div>
+    </Frame>
   )
 }

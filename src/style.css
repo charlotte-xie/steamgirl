@@ -1028,10 +1028,6 @@ img {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-xs);
-  background: var(--bg-panel-soft);
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--border-dashed);
 }
 
 .effects-section h4 {
@@ -1161,6 +1157,68 @@ img {
 .skill-value {
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   Meter panel (steampunk gauges)
+   ========================================================================== */
+
+.meter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-xs);
+  background: var(--bg-panel-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.meter-gauges {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--space-xs);
+}
+
+.meter-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.meter-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.meter-bar-label {
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: help;
+  width: 5em;
+}
+
+.meter-bar-track {
+  flex: 1;
+  height: 0.75em;
+  background: var(--bg-overlay);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.meter-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+}
+
+.meter-bar-value {
+  color: var(--text-main);
+  font-size: 0.7rem;
+  text-align: right;
 }
 
 /* ==========================================================================
