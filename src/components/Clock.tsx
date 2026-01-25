@@ -70,16 +70,21 @@ export function Clock() {
         <div className="clock-wait-row">
           <span className="clock-wait-label">Wait:</span>
           <div className="clock-wait-buttons">
-            {([1, 10, 60, 360] as const).map((m) => (
+            {([
+              { minutes: 1, label: '1' },
+              { minutes: 10, label: '10' },
+              { minutes: 60, label: '1h' },
+              { minutes: 360, label: '6h' },
+            ] as const).map(({ minutes, label }) => (
               <button
-                key={m}
+                key={minutes}
                 type="button"
                 className="clock-wait-btn"
                 disabled={inScene}
-                onClick={() => runScript('wait', { minutes: m, text: 'You wait for a while.' })}
-                title={`Wait ${m} minute${m === 1 ? '' : 's'}`}
+                onClick={() => runScript('wait', { minutes, text: 'You wait for a while.' })}
+                title={`Wait ${minutes} minute${minutes === 1 ? '' : 's'}`}
               >
-                {m}
+                {label}
               </button>
             ))}
           </div>
