@@ -188,10 +188,14 @@ export const startScripts = {
     g.run('gainItem', { item: 'fun-juice', number: 1 })
     
     // Generate NPCs that should be present at the start
+    // NOTE: NPCs are lazily instantiated - they only exist in game.npcs after getNPC() is called.
+    // Most NPCs are generated when their home location's onArrive hook runs (e.g., Tavern.ts).
+    // If you want an NPC to appear in the Characters list before visiting their location,
+    // add a getNPC() call here or in an early game event.
     g.getNPC('automaton-greeter')
     g.getNPC('tour-guide')
     g.getNPC('commuter')
-    
+
     // Update npcsPresent after generating NPCs
     g.updateNPCsPresent()
 

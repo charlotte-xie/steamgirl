@@ -6,6 +6,8 @@ type ButtonProps = {
   onClick?: () => void
   /** Bright accent color, e.g. "#ff8800" */
   color?: string
+  /** Tooltip text shown on hover */
+  title?: string
 }
 
 function darkenHex(hex: string, factor = 0.3): string {
@@ -22,7 +24,7 @@ function darkenHex(hex: string, factor = 0.3): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
-export function Button({ children, disabled, onClick, color = '#fbbf24' }: ButtonProps) {
+export function Button({ children, disabled, onClick, color = '#fbbf24', title }: ButtonProps) {
   const isDisabled = Boolean(disabled)
   const hasCustomColor = color !== undefined
 
@@ -51,6 +53,7 @@ export function Button({ children, disabled, onClick, color = '#fbbf24' }: Butto
       disabled={isDisabled}
       onClick={isDisabled ? undefined : onClick}
       style={style}
+      title={title}
     >
       {children}
     </button>
