@@ -10,8 +10,8 @@
 // Register effect definitions first (used by other modules)
 import './Effects'
 
-// Register clothing items (used by other modules)
-import './Clothing'
+// Register item definitions (used by other modules)
+import './items'
 
 // Register utility scripts (used by other modules)
 import './Utility'
