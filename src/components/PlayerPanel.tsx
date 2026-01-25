@@ -1,5 +1,4 @@
 import { Clock } from './Clock'
-import { WaitPanel } from './WaitPanel'
 import { StatsPanel } from './StatsPanel'
 import { AvatarPanel } from './AvatarPanel'
 import { ScreenSwitcher, type ScreenId } from './ScreenSwitcher'
@@ -16,7 +15,6 @@ export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps)
 
       <div className="widget-container">
         <Clock />
-        <WaitPanel />
       </div>
 
       <div className="status-panel">

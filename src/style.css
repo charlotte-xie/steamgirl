@@ -695,13 +695,21 @@ img {
 .widget-panel {
   height: 7.5rem;
   flex-shrink: 0;
+  width: 100%;
+}
+
+.clock-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 100%;
 }
 
 .clock-layout {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  height: 100%;
 }
 
 .clock-text {
@@ -734,20 +742,17 @@ img {
   flex-shrink: 0;
 }
 
-.wait-layout {
+.clock-wait-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
   gap: var(--space-sm);
+  padding-top: var(--space-xs);
+  border-top: 1px solid rgba(220, 170, 90, 0.4);
 }
 
-.wait-label {
-  font-size: var(--font-md);
-  font-weight: 600;
+.clock-wait-label {
+  font-size: var(--font-sm);
   color: var(--text-main);
-  letter-spacing: 0.1em;
 }
 
 .clock-wait-buttons {

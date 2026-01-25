@@ -8,7 +8,7 @@ interface WidgetProps {
 
 export function Widget({ children, className = '' }: WidgetProps) {
   return (
-    <Frame size="md" className={`widget-panel ${className}`}>
+    <Frame size="auto" className={`widget-panel ${className}`}>
       {children}
     </Frame>
   )
