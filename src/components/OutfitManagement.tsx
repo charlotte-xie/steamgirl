@@ -6,13 +6,14 @@ import { Button } from './Button'
 export function OutfitManagement() {
   const { game, refresh } = useGame()
   const player = game.player
-  const inScene = game.scene.options.length > 0
+  const inScene = game.inScene
   const sceneTooltip = inScene ? 'Cannot change clothes during scene' : undefined
   const [selectedOutfit, setSelectedOutfit] = useState<string | null>(null)
   const [isNaming, setIsNaming] = useState(false)
   const [newName, setNewName] = useState('')
 
   const outfitNames = getOutfitNames(player.outfits)
+  const nameMatchesExisting = isNaming && outfitNames.includes(newName.trim())
 
   const handleSaveAs = () => {
     setIsNaming(true)
@@ -81,7 +82,13 @@ export function OutfitManagement() {
             <button
               key={name}
               className={`outfit-item ${selectedOutfit === name ? 'selected' : ''}`}
-              onClick={() => setSelectedOutfit(name === selectedOutfit ? null : name)}
+              onClick={() => {
+                if (isNaming) {
+                  setNewName(name)
+                } else {
+                  setSelectedOutfit(name === selectedOutfit ? null : name)
+                }
+              }}
             >
               {name}
             </button>
@@ -99,16 +106,16 @@ export function OutfitManagement() {
             placeholder="Outfit name..."
             autoFocus
           />
-          <Button onClick={handleConfirmSave} disabled={!newName.trim()}>Save</Button>
-          <Button onClick={handleCancelSave}>Cancel</Button>
+          <Button size="small" onClick={handleConfirmSave} disabled={!newName.trim()}>{nameMatchesExisting ? 'Update' : 'Save'}</Button>
+          <Button size="small" onClick={handleCancelSave}>Cancel</Button>
         </div>
       ) : (
         <div className="outfit-actions">
-          <Button onClick={handleSaveAs}>Save As...</Button>
-          <Button onClick={handleUpdate} disabled={!selectedOutfit}>Update</Button>
-          <Button onClick={handleWear} disabled={!selectedOutfit || inScene} title={sceneTooltip}>Wear</Button>
-          <Button onClick={handleStrip} disabled={inScene} title={sceneTooltip}>Strip</Button>
-          <Button onClick={handleDelete} disabled={!selectedOutfit}>Delete</Button>
+          <Button size="small" onClick={handleSaveAs}>Save As...</Button>
+          <Button size="small" onClick={handleUpdate} disabled={!selectedOutfit}>Update</Button>
+          <Button size="small" onClick={handleWear} disabled={!selectedOutfit || inScene} title={sceneTooltip}>Wear</Button>
+          <Button size="small" onClick={handleStrip} disabled={inScene} title={sceneTooltip}>Strip</Button>
+          <Button size="small" onClick={handleDelete} disabled={!selectedOutfit}>Delete</Button>
         </div>
       )}
     </div>

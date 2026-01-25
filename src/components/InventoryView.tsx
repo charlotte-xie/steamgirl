@@ -72,7 +72,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
   const canWear = isWearable && !selectedItem?.worn
   const isLocked = selectedItem?.locked
   const canDiscard = selectedItem && selectedItem.template.category !== 'Special' && !selectedItem.worn
-  const inScene = game.scene.options.length > 0
+  const inScene = game.inScene
   const sceneTooltip = inScene ? 'Cannot use items during scene' : undefined
   const lockedTooltip = isLocked ? 'This item is locked and cannot be removed' : undefined
 

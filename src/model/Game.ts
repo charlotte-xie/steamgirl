@@ -144,7 +144,7 @@ export class Game {
 
   /** Checks if we are currently in a scene. This usually disables other actions like waiting. */
   get inScene(): boolean {
-    return this.scene.options.length > 0
+    return this.scene.options.length > 0 || !!this.scene.shop
   }
 
   /** Gets the current NPC. Throws if no NPC is in the current scene. */

@@ -1458,12 +1458,14 @@ img {
 
 .outfit-naming {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-xs);
   align-items: center;
 }
 
 .outfit-naming input {
   flex: 1;
+  min-width: 6rem;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
