@@ -361,12 +361,13 @@ export class Player {
   }
 
   /**
-   * Add a bonus/penalty to a stat. The stat can go outside 0-100 during calculation,
-   * but will be bounded when calcStats completes.
+   * Apply a temporary modifier to a stat. The stat can go outside 0-100 during calculation,
+   * but will be bounded when calcStats completes. This is used by calcStats callbacks
+   * (items, effects) to apply bonuses/penalties that reset each time stats are recalculated.
    * @param statName - The stat to modify
    * @param bonus - The amount to add (can be negative for penalties)
    */
-  addStat(statName: StatName, bonus: number): void {
+  modifyStat(statName: StatName, bonus: number): void {
     const currentValue = this.stats.get(statName) || 0
     this.stats.set(statName, currentValue + bonus)
   }

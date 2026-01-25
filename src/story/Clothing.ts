@@ -197,7 +197,7 @@ registerItemDefinition('goggles-brass', extendItem('base-hat', {
   name: 'brass goggles',
   description: 'Polished brass goggles with tinted lenses and adjustable straps. Essential for any aspiring engineer.',
   calcStats: (player) => {
-    player.addStat('Perception', 5)
+    player.modifyStat('Perception', 5)
   },
 }))
 
@@ -205,7 +205,7 @@ registerItemDefinition('hat-bowler', extendItem('base-hat', {
   name: 'bowler hat',
   description: 'A classic black bowler hat with a silk ribbon. Respectable and refined.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
+    player.modifyStat('Charm', 3)
   },
 }))
 
@@ -213,8 +213,8 @@ registerItemDefinition('hat-top', extendItem('base-hat', {
   name: 'top hat',
   description: 'A tall silk top hat with brass clockwork decorations. The height of fashion.',
   calcStats: (player) => {
-    player.addStat('Charm', 5)
-    player.addStat('Etiquette', 3)
+    player.modifyStat('Charm', 5)
+    player.modifyStat('Etiquette', 3)
   },
 }))
 
@@ -236,7 +236,7 @@ registerItemDefinition('chemise-silk', extendItem('base-bra', {
   name: 'silk chemise',
   description: 'A luxuriously soft silk chemise that feels wonderful against the skin.',
   calcStats: (player) => {
-    player.addStat('Mood', 5)
+    player.modifyStat('Mood', 5)
   },
 }))
 
@@ -249,7 +249,7 @@ registerItemDefinition('bra-silk', extendItem('base-bra', {
   name: 'silk brassiere',
   description: 'A luxurious silk undergarment with delicate lace trim.',
   calcStats: (player) => {
-    player.addStat('Mood', 3)
+    player.modifyStat('Mood', 3)
   },
 }))
 
@@ -261,7 +261,7 @@ registerItemDefinition('blouse-silk', extendItem('base-top', {
   name: 'silk blouse',
   description: 'A luxurious silk blouse in deep burgundy with mother-of-pearl buttons.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
+    player.modifyStat('Charm', 3)
   },
 }))
 
@@ -269,7 +269,7 @@ registerItemDefinition('vest-brocade', extendItem('base-vest', {
   name: 'brocade vest',
   description: 'A fitted vest of gold and green brocade with brass buttons.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -282,7 +282,7 @@ registerItemDefinition('blouse-white', extendItem('base-top', {
   name: 'white blouse',
   description: 'A crisp white cotton blouse with a high collar and delicate pin-tucks.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -294,8 +294,8 @@ registerItemDefinition('corset-leather', extendItem('base-corset', {
   name: 'leather corset',
   description: 'A structured leather corset with brass buckles and intricate stitching. Cinches the waist dramatically.',
   calcStats: (player) => {
-    player.addStat('Charm', 5)
-    player.addStat('Agility', -3)
+    player.modifyStat('Charm', 5)
+    player.modifyStat('Agility', -3)
   },
 }))
 
@@ -303,8 +303,8 @@ registerItemDefinition('corset-suede', extendItem('base-corset', {
   name: 'suede corset',
   description: 'A soft brown suede corset with subtle brass lacing. Flattering but comfortable.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
-    player.addStat('Agility', -1)
+    player.modifyStat('Charm', 3)
+    player.modifyStat('Agility', -1)
   },
 }))
 
@@ -312,8 +312,8 @@ registerItemDefinition('jacket-aviator', extendItem('base-outerwear', {
   name: 'aviator jacket',
   description: 'A rugged leather jacket lined with fleece. Built for high altitudes and adventure.',
   calcStats: (player) => {
-    player.addStat('Agility', 3)
-    player.addStat('Willpower', 2)
+    player.modifyStat('Agility', 3)
+    player.modifyStat('Willpower', 2)
   },
 }))
 
@@ -321,7 +321,7 @@ registerItemDefinition('coat-velvet', extendItem('base-outerwear', {
   name: 'velvet coat',
   description: 'A rich burgundy velvet coat with brass buttons and embroidered cuffs.',
   calcStats: (player) => {
-    player.addStat('Charm', 4)
+    player.modifyStat('Charm', 4)
   },
 }))
 
@@ -338,7 +338,7 @@ registerItemDefinition('panties-silk', extendItem('base-panties', {
   name: 'silk drawers',
   description: 'Luxuriously soft silk undergarments with delicate lace edges.',
   calcStats: (player) => {
-    player.addStat('Mood', 3)
+    player.modifyStat('Mood', 3)
   },
 }))
 
@@ -350,8 +350,8 @@ registerItemDefinition('skirt-bustle', extendItem('base-bottom', {
   name: 'bustle skirt',
   description: 'An elaborate skirt with a pronounced bustle and layers of ruffled fabric.',
   calcStats: (player) => {
-    player.addStat('Charm', 4)
-    player.addStat('Agility', -2)
+    player.modifyStat('Charm', 4)
+    player.modifyStat('Agility', -2)
   },
 }))
 
@@ -364,7 +364,7 @@ registerItemDefinition('skirt-pleated', extendItem('base-bottom', {
   name: 'pleated skirt',
   description: 'A navy blue skirt with crisp pleats. Modest and practical.',
   calcStats: (player) => {
-    player.addStat('Charm', 1)
+    player.modifyStat('Charm', 1)
   },
 }))
 
@@ -372,7 +372,7 @@ registerItemDefinition('trousers-riding', extendItem('base-bottom', {
   name: 'riding trousers',
   description: 'Fitted trousers of supple leather, designed for riding or adventuring.',
   calcStats: (player) => {
-    player.addStat('Agility', 3)
+    player.modifyStat('Agility', 3)
   },
 }))
 
@@ -380,7 +380,7 @@ registerItemDefinition('trousers-work', extendItem('base-bottom', {
   name: 'work trousers',
   description: 'Durable canvas trousers with reinforced knees. Built for hard labor.',
   calcStats: (player) => {
-    player.addStat('Strength', 2)
+    player.modifyStat('Strength', 2)
   },
 }))
 
@@ -397,8 +397,8 @@ registerItemDefinition('dress-evening', extendItem('base-dress', {
   name: 'evening gown',
   description: 'An elegant gown of midnight blue velvet with silver embroidery and a sweeping train.',
   calcStats: (player) => {
-    player.addStat('Charm', 8)
-    player.addStat('Agility', -4)
+    player.modifyStat('Charm', 8)
+    player.modifyStat('Agility', -4)
   },
 }))
 
@@ -406,7 +406,7 @@ registerItemDefinition('dress-day', extendItem('base-dress', {
   name: 'day dress',
   description: 'A tasteful dress of printed cotton with a fitted bodice and modest bustle.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
+    player.modifyStat('Charm', 3)
   },
 }))
 
@@ -428,7 +428,7 @@ registerItemDefinition('stockings-silk', extendItem('base-stockings', {
   name: 'silk stockings',
   description: 'Sheer silk stockings with a subtle sheen. Luxurious against the skin.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -440,7 +440,7 @@ registerItemDefinition('boots-leather', extendItem('base-footwear', {
   name: 'leather boots',
   description: 'Sturdy leather boots with brass buckles. Practical for any occasion.',
   calcStats: (player) => {
-    player.addStat('Agility', 2)
+    player.modifyStat('Agility', 2)
   },
 }))
 
@@ -448,8 +448,8 @@ registerItemDefinition('boots-heeled', extendItem('base-footwear', {
   name: 'heeled boots',
   description: 'Elegant boots with a modest heel and delicate button closures.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
-    player.addStat('Agility', -1)
+    player.modifyStat('Charm', 3)
+    player.modifyStat('Agility', -1)
   },
 }))
 
@@ -457,8 +457,8 @@ registerItemDefinition('shoes-dancing', extendItem('base-footwear', {
   name: 'dancing shoes',
   description: 'Lightweight shoes with flexible soles, perfect for dancing.',
   calcStats: (player) => {
-    player.addStat('Dancing', 5)
-    player.addStat('Agility', 2)
+    player.modifyStat('Dancing', 5)
+    player.modifyStat('Agility', 2)
   },
 }))
 
@@ -466,7 +466,7 @@ registerItemDefinition('boots-work', extendItem('base-footwear', {
   name: 'work boots',
   description: 'Heavy-duty boots with steel toe caps. Essential for factory work.',
   calcStats: (player) => {
-    player.addStat('Strength', 2)
+    player.modifyStat('Strength', 2)
   },
 }))
 
@@ -478,7 +478,7 @@ registerItemDefinition('gloves-leather', extendItem('base-gloves', {
   name: 'leather gloves',
   description: 'Fine leather gloves that add a touch of elegance to any outfit.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -486,8 +486,8 @@ registerItemDefinition('gloves-lace', extendItem('base-gloves', {
   name: 'lace gloves',
   description: 'Delicate lace gloves that extend to the elbow. Purely decorative.',
   calcStats: (player) => {
-    player.addStat('Charm', 4)
-    player.addStat('Etiquette', 2)
+    player.modifyStat('Charm', 4)
+    player.modifyStat('Etiquette', 2)
   },
 }))
 
@@ -495,7 +495,7 @@ registerItemDefinition('gloves-work', extendItem('base-gloves', {
   name: 'work gloves',
   description: 'Heavy canvas gloves for manual labor. Protect the hands from harm.',
   calcStats: (player) => {
-    player.addStat('Strength', 1)
+    player.modifyStat('Strength', 1)
   },
 }))
 
@@ -507,7 +507,7 @@ registerItemDefinition('mask-masquerade', extendItem('base-mask', {
   name: 'masquerade mask',
   description: 'An ornate mask of black velvet with gold filigree and peacock feathers.',
   calcStats: (player) => {
-    player.addStat('Charm', 4)
+    player.modifyStat('Charm', 4)
   },
 }))
 
@@ -515,7 +515,7 @@ registerItemDefinition('mask-plague', extendItem('base-mask', {
   name: 'plague doctor mask',
   description: 'A beaked leather mask stuffed with aromatic herbs. Unsettling but practical.',
   calcStats: (player) => {
-    player.addStat('Willpower', 3)
+    player.modifyStat('Willpower', 3)
   },
 }))
 
@@ -523,8 +523,8 @@ registerItemDefinition('spectacles-brass', extendItem('base-eyewear', {
   name: 'brass spectacles',
   description: 'Round spectacles with brass frames and magnifying lenses.',
   calcStats: (player) => {
-    player.addStat('Perception', 3)
-    player.addStat('Wits', 2)
+    player.modifyStat('Perception', 3)
+    player.modifyStat('Wits', 2)
   },
 }))
 
@@ -532,8 +532,8 @@ registerItemDefinition('monocle', extendItem('base-eyewear', {
   name: 'monocle',
   description: 'A brass-rimmed monocle on a fine chain. Gives an air of scholarly distinction.',
   calcStats: (player) => {
-    player.addStat('Perception', 3)
-    player.addStat('Wits', 2)
+    player.modifyStat('Perception', 3)
+    player.modifyStat('Wits', 2)
   },
 }))
 
@@ -545,7 +545,7 @@ registerItemDefinition('scarf-silk', extendItem('base-necklace', {
   name: 'silk scarf',
   description: 'A flowing silk scarf in rich jewel tones.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -553,8 +553,8 @@ registerItemDefinition('cravat-silk', extendItem('base-necklace', {
   name: 'silk cravat',
   description: 'A formal silk cravat tied in an elegant knot.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
-    player.addStat('Etiquette', 2)
+    player.modifyStat('Charm', 3)
+    player.modifyStat('Etiquette', 2)
   },
 }))
 
@@ -562,7 +562,7 @@ registerItemDefinition('necklace-pearl', extendItem('base-necklace', {
   name: 'pearl necklace',
   description: 'A strand of lustrous pearls with a silver clasp.',
   calcStats: (player) => {
-    player.addStat('Charm', 4)
+    player.modifyStat('Charm', 4)
   },
 }))
 
@@ -570,7 +570,7 @@ registerItemDefinition('choker-velvet', extendItem('base-necklace', {
   name: 'velvet choker',
   description: 'A black velvet choker with a small cameo pendant.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -578,7 +578,7 @@ registerItemDefinition('pocket-watch-gold', extendItem('base-necklace', {
   name: 'gold pocket watch',
   description: 'An exquisite gold pocket watch with intricate engravings. A mark of status.',
   calcStats: (player) => {
-    player.addStat('Charm', 3)
+    player.modifyStat('Charm', 3)
   },
 }))
 
@@ -590,7 +590,7 @@ registerItemDefinition('bracelet-silver', extendItem('base-bracelet', {
   name: 'silver bracelet',
   description: 'A delicate silver chain bracelet with tiny gear charms.',
   calcStats: (player) => {
-    player.addStat('Charm', 2)
+    player.modifyStat('Charm', 2)
   },
 }))
 
@@ -598,7 +598,7 @@ registerItemDefinition('cuff-leather', extendItem('base-bracelet', {
   name: 'leather cuff',
   description: 'A wide leather cuff with brass studs.',
   calcStats: (player) => {
-    player.addStat('Strength', 1)
+    player.modifyStat('Strength', 1)
   },
 }))
 
@@ -615,7 +615,7 @@ registerItemDefinition('belt-tool', extendItem('base-belt', {
   name: 'tool belt',
   description: 'A wide leather belt with loops and pouches for tools.',
   calcStats: (player) => {
-    player.addStat('Mechanics', 3)
+    player.modifyStat('Mechanics', 3)
   },
 }))
 
@@ -627,7 +627,7 @@ registerItemDefinition('school-blazer', extendItem('base-outerwear', {
   name: 'school blazer',
   description: 'A navy blue blazer with the university crest embroidered on the breast pocket. Standard issue for students.',
   calcStats: (player) => {
-    player.addStat('Etiquette', 2)
+    player.modifyStat('Etiquette', 2)
   },
 }))
 
@@ -635,7 +635,7 @@ registerItemDefinition('school-necktie', extendItem('base-necktie', {
   name: 'school necktie',
   description: 'A striped necktie in the university colours of navy and gold.',
   calcStats: (player) => {
-    player.addStat('Etiquette', 1)
+    player.modifyStat('Etiquette', 1)
   },
 }))
 
@@ -643,7 +643,7 @@ registerItemDefinition('school-skirt', extendItem('base-bottom', {
   name: 'school skirt',
   description: 'A navy blue pleated skirt that falls just below the knee. Part of the standard uniform.',
   calcStats: (player) => {
-    player.addStat('Etiquette', 1)
+    player.modifyStat('Etiquette', 1)
   },
 }))
 
@@ -660,8 +660,8 @@ registerItemDefinition('gloves-cursed', extendItem('base-gloves', {
   name: 'elegant black gloves',
   description: 'Exquisitely crafted gloves of supple black leather. They seem to shimmer with an unnatural darkness. Once worn, you feel an unsettling compulsion to keep them on...',
   calcStats: (player) => {
-    player.addStat('Charm', 5)
-    player.addStat('Willpower', -10)
+    player.modifyStat('Charm', 5)
+    player.modifyStat('Willpower', -10)
   },
   onWorn: (_player, item) => {
     // Lock the gloves when worn - they're cursed!
