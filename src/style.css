@@ -1028,6 +1028,9 @@ img {
 .inventory-with-grid .inventory-clothing {
   width: 16rem;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .inventory-with-grid .inventory-clothing h4 {
@@ -1101,6 +1104,81 @@ img {
   justify-content: center;
   font-size: var(--font-xs);
   color: var(--text-main);
+}
+
+/* Outfit management */
+.outfit-management {
+  margin-top: auto;
+  padding-top: var(--space-sm);
+}
+
+.outfit-management h4 {
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--text-main);
+}
+
+.outfit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-xs);
+}
+
+.outfit-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-sm);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+
+.outfit-item:hover {
+  background: var(--bg-panel-soft);
+}
+
+.outfit-item.selected {
+  background: var(--bg-panel);
+  border-color: var(--border-main);
+}
+
+.outfit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.outfit-actions .button {
+  font-size: var(--font-xs);
+  padding: 0.25rem 0.5rem;
+}
+
+.outfit-naming {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.outfit-naming input {
+  flex: 1;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-sm);
+  color: var(--text-main);
+}
+
+.outfit-naming input:focus {
+  outline: none;
+  border-color: var(--border-main);
+}
+
+.outfit-naming .button {
+  font-size: var(--font-xs);
+  padding: 0.25rem 0.5rem;
 }
 
 /* Card component (playing card style) */

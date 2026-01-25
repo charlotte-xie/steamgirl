@@ -56,6 +56,13 @@ registerItemDefinition('base-collar', {
   layer: 'under',
 })
 
+registerItemDefinition('base-necktie', {
+  name: 'necktie',
+  category: 'Clothes',
+  positions: ['neck'],
+  layer: 'inner',
+})
+
 // Wrists
 registerItemDefinition('base-bracelet', {
   name: 'bracelet',
@@ -131,11 +138,11 @@ registerItemDefinition('base-dress', {
   layer: 'inner',
 })
 
-// Stockings (under layer on feet)
+// Stockings (under layer on feet and legs)
 registerItemDefinition('base-stockings', {
   name: 'stockings',
   category: 'Clothes',
-  positions: ['feet'],
+  positions: ['legs', 'feet'],
   layer: 'under',
 })
 
@@ -591,4 +598,37 @@ registerItemDefinition('belt-tool', extendItem('base-belt', {
   calcStats: (player) => {
     player.addStat('Mechanics', 3)
   },
+}))
+
+// ============================================================================
+// SCHOOL UNIFORM
+// ============================================================================
+
+registerItemDefinition('school-blazer', extendItem('base-outerwear', {
+  name: 'school blazer',
+  description: 'A navy blue blazer with the university crest embroidered on the breast pocket. Standard issue for students.',
+  calcStats: (player) => {
+    player.addStat('Etiquette', 2)
+  },
+}))
+
+registerItemDefinition('school-necktie', extendItem('base-necktie', {
+  name: 'school necktie',
+  description: 'A striped necktie in the university colours of navy and gold.',
+  calcStats: (player) => {
+    player.addStat('Etiquette', 1)
+  },
+}))
+
+registerItemDefinition('school-skirt', extendItem('base-bottom', {
+  name: 'school skirt',
+  description: 'A navy blue pleated skirt that falls just below the knee. Part of the standard uniform.',
+  calcStats: (player) => {
+    player.addStat('Etiquette', 1)
+  },
+}))
+
+registerItemDefinition('school-socks', extendItem('base-stockings', {
+  name: 'school socks',
+  description: 'Knee-high white socks with navy trim at the top. Standard issue for students.',
 }))

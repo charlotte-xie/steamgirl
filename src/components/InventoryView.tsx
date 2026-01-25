@@ -3,6 +3,7 @@ import { useGame } from '../context/GameContext'
 import { ItemView } from './ItemView'
 import { Button } from './Button'
 import { ClothingGrid } from './ClothingGrid'
+import { OutfitManagement } from './OutfitManagement'
 import { capitalise } from '../model/Text'
 import type { Item, ItemCategory } from '../model/Item'
 
@@ -170,6 +171,10 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
           player={game.player}
           selectedItem={selectedItem}
           onSelectItem={handleSelectFromGrid}
+        />
+        <OutfitManagement
+          player={game.player}
+          onOutfitChange={refresh}
         />
       </div>
     </div>

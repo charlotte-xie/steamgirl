@@ -1,6 +1,7 @@
 import { Item, type ItemData, ensureItem, type ClothingSlotKey, type ClothingPosition, type ClothingLayer } from './Item'
 import { Card, type CardData } from './Card'
 import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO } from './Stats'
+import { type OutfitData, saveOutfit, deleteOutfit } from './Outfits'
 
 export type ItemSpec = string | Item
 
@@ -17,6 +18,7 @@ export interface PlayerData {
   timers?: Record<string, number>
   inventory: ItemData[]
   cards: CardData[]
+  outfits?: OutfitData
 }
 
 /** Represents the player character with name and JSON serialization capabilities. */
@@ -27,6 +29,7 @@ export class Player {
   timers: Map<TimerName, number>
   inventory: Item[]
   cards: Card[]
+  outfits: OutfitData
 
   constructor() {
     this.name = "" // Empty name indicates uninitialized character
@@ -46,6 +49,7 @@ export class Player {
     })
     this.inventory = []
     this.cards = []
+    this.outfits = {}
   }
 
   toJSON(): PlayerData {
@@ -67,6 +71,7 @@ export class Player {
       timers: timersRecord,
       inventory: this.inventory.map(item => item.toJSON()),
       cards: this.cards.map(card => card.toJSON()),
+      outfits: this.outfits,
     }
   }
 
@@ -119,6 +124,12 @@ export class Player {
       // If cards is missing, start with empty array
       player.cards = []
     }
+
+    // Deserialize outfits
+    if (data.outfits) {
+      player.outfits = data.outfits
+    }
+
     return player
   }
 
@@ -273,6 +284,55 @@ export class Player {
    */
   getWornItems(): Item[] {
     return this.inventory.filter(item => item.worn)
+  }
+
+  /**
+   * Strip all worn items (unwear everything).
+   */
+  stripAll(): void {
+    this.inventory.forEach(item => {
+      if (item.worn) {
+        item.worn = false
+      }
+    })
+  }
+
+  /**
+   * Save the currently worn items as an outfit.
+   * @param name - The name for the outfit
+   */
+  saveOutfit(name: string): void {
+    const wornItemIds = this.getWornItems().map(item => item.id)
+    this.outfits = saveOutfit(this.outfits, name, wornItemIds)
+  }
+
+  /**
+   * Delete an outfit.
+   * @param name - The name of the outfit to delete
+   */
+  deleteOutfit(name: string): void {
+    this.outfits = deleteOutfit(this.outfits, name)
+  }
+
+  /**
+   * Wear an outfit (strip current clothes and wear the outfit items).
+   * Only wears items that exist in inventory.
+   * @param name - The name of the outfit to wear
+   * @returns true if outfit exists, false otherwise
+   */
+  wearOutfit(name: string): boolean {
+    const itemIds = this.outfits[name]
+    if (!itemIds) return false
+
+    // Strip all current clothes
+    this.stripAll()
+
+    // Wear each item in the outfit (if it exists in inventory)
+    for (const itemId of itemIds) {
+      this.wearItem(itemId)
+    }
+
+    return true
   }
 
   /**

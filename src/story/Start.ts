@@ -187,7 +187,7 @@ export const startScripts = {
     g.run('gainItem', { item: 'magic-potion', number: 1 })
     g.run('gainItem', { item: 'fun-juice', number: 1 })
 
-    // Add starting clothing
+    // Add starting clothing (casual outfit)
     g.run('gainItem', { item: 'bra-cotton' })
     g.run('gainItem', { item: 'panties-cotton' })
     g.run('gainItem', { item: 'blouse-white' })
@@ -197,7 +197,13 @@ export const startScripts = {
     g.run('gainItem', { item: 'boots-leather' })
     g.run('gainItem', { item: 'hat-bowler' }) // Not worn, for testing
 
-    // Wear starting clothes
+    // Add school uniform items
+    g.run('gainItem', { item: 'school-blazer' })
+    g.run('gainItem', { item: 'school-necktie' })
+    g.run('gainItem', { item: 'school-skirt' })
+    g.run('gainItem', { item: 'school-socks' })
+
+    // Wear starting clothes (casual outfit)
     pc.wearItem('bra-cotton')
     pc.wearItem('panties-cotton')
     pc.wearItem('blouse-white')
@@ -205,6 +211,19 @@ export const startScripts = {
     pc.wearItem('skirt-pleated')
     pc.wearItem('stockings-long')
     pc.wearItem('boots-leather')
+
+    // Save starting outfits
+    pc.saveOutfit('Casual') // Save current worn items as Casual
+    pc.outfits['School'] = [
+      'bra-cotton',
+      'panties-cotton',
+      'blouse-white',
+      'school-necktie',
+      'school-blazer',
+      'school-skirt',
+      'school-socks',
+      'boots-leather',
+    ]
     
     // Generate NPCs that should be present at the start
     // NOTE: NPCs are lazily instantiated - they only exist in game.npcs after getNPC() is called.
