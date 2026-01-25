@@ -142,7 +142,7 @@ img {
   position: relative;
   padding: var(--space-sm);
   background:
-    radial-gradient(circle at 20% 20%, rgba(212, 168, 83, 0.2), transparent 30%);
+    radial-gradient(circle at 20% 20%, rgba(212, 168, 83, 0.2), transparent 50%);
   border: 2px solid var(--brass-light);
   border-radius: var(--radius-lg);
   box-shadow:
@@ -1354,7 +1354,7 @@ img {
 
 .card-title {
   margin: 0;
-  font-size: var(--font-md);
+  font-size: var(--font-sm);
   color: var(--text-main);
   font-weight: 600;
   text-align: center;
@@ -1543,10 +1543,6 @@ img {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  padding: var(--space-xs);
-  background: var(--bg-panel-soft);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
 }
 
 .meter-gauges {
@@ -1559,8 +1555,6 @@ img {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding-top: var(--space-xs);
-  border-top: 1px solid var(--border-subtle);
 }
 
 .meter-bar-row {

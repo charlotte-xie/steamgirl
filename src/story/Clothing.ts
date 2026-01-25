@@ -648,8 +648,8 @@ registerItemDefinition('school-skirt', extendItem('base-bottom', {
 }))
 
 registerItemDefinition('school-socks', extendItem('base-socks', {
-  name: 'school socks',
-  description: 'Knee-high white socks with navy trim at the top. Standard issue for students.',
+  name: 'school socks',  
+  description: 'Knee-high white socks with red and white stripes. Standard issue for students.',
 }))
 
 // ============================================================================

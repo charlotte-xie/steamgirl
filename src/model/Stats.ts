@@ -122,7 +122,7 @@ export const SKILL_NAMES: SkillName[] = Object.keys(SKILL_INFO) as SkillName[]
  */
 export const METER_INFO: Record<MeterName, MeterInfo> = {
   Energy: {
-    description: 'Your current energy level. Affects your ability to perform physical activities.',
+    description: 'Your current energy level. Affects your ability to perform activities. Consumed by activity, regained by rest.',
     gainColor: '#10b981', // Green for energy gain
     lossColor: '#ef4444', // Red for energy loss
     alwaysDisplay: true, // Always show energy meter
@@ -144,12 +144,12 @@ export const METER_INFO: Record<MeterName, MeterInfo> = {
     lossColor: '#10b981', // Green for stress loss (positive)
   },
   Pain: {
-    description: 'Your current level of physical pain or discomfort.',
+    description: 'Your level of physical pain or discomfort.',
     gainColor: '#dc2626', // Dark red for pain gain (negative)
     lossColor: '#10b981', // Green for pain loss (positive)
   },
   Mood: {
-    description: 'Your overall emotional state and mood.',
+    description: 'Your overall feeling of happiness and contentment.',
     gainColor: '#fbbf24', // Yellow/amber for mood gain
     lossColor: '#6366f1', // Indigo for mood loss
     alwaysDisplay: true, // Always show mood meter

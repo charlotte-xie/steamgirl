@@ -24,13 +24,14 @@ export function MeterPanel() {
         {GAUGE_METERS.map((meterName) => {
           const meterValue = game.player.stats.get(meterName) || 0
           const meterInfo = METER_INFO[meterName]
+          const tooltip = `${meterName} = ${meterValue}\n${meterInfo.description}`
           return (
             <SteamGauge
               key={meterName}
               value={meterValue}
               label={meterName}
               color={meterInfo.gainColor}
-              description={meterInfo.description}
+              description={tooltip}
             />
           )
         })}
@@ -44,11 +45,13 @@ export function MeterPanel() {
             const meterInfo = METER_INFO[meterName]
             const percent = Math.max(0, Math.min(100, meterValue))
 
+            const tooltip = `${meterName} = ${meterValue}\n${meterInfo.description}`
+
             return (
               <div key={meterName} className="meter-bar-row">
                 <span
                   className="meter-bar-label"
-                  title={meterInfo.description}
+                  title={tooltip}
                 >
                   {meterName}
                 </span>

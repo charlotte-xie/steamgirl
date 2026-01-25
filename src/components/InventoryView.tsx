@@ -7,9 +7,9 @@ import { OutfitManagement } from './OutfitManagement'
 import { capitalise } from '../model/Text'
 import type { Item, ItemCategory } from '../model/Item'
 
-type FilterOption = 'All' | ItemCategory
+type FilterOption = 'All' | 'Worn' | ItemCategory
 
-const FILTER_OPTIONS: FilterOption[] = ['All', 'Consumables', 'Clothes', 'Components', 'Valuables', 'Special']
+const FILTER_OPTIONS: FilterOption[] = ['All', 'Worn', 'Consumables', 'Clothes', 'Components', 'Valuables', 'Special']
 
 interface InventoryViewProps {
   onUseItem?: () => void
@@ -24,7 +24,9 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
   // Filter inventory based on selected category
   const filteredInventory = filter === 'All'
     ? inventory
-    : inventory.filter(item => item.template.category === filter)
+    : filter === 'Worn'
+      ? inventory.filter(item => item.worn)
+      : inventory.filter(item => item.template.category === filter)
 
   // Reset selection when filter changes
   const handleFilterChange = (newFilter: FilterOption) => {
