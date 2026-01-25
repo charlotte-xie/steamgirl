@@ -26,7 +26,7 @@ registerItemDefinition('base-hat', {
   name: 'hat',
   category: 'Clothes',
   positions: ['head'],
-  layer: 'accessory',
+  layer: 'outer',
 })
 
 // ============================================================================
@@ -187,7 +187,7 @@ registerItemDefinition('base-footwear', {
   name: 'footwear',
   category: 'Clothes',
   positions: ['feet'],
-  layer: 'inner',
+  layer: 'outer',
 })
 
 // ============================================================================

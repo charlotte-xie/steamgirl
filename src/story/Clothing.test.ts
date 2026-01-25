@@ -1,80 +1,159 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Player } from '../model/Player'
-import { getItem, extendItem } from '../model/Item'
+import { getItem, extendItem, registerItemDefinition } from '../model/Item'
 import '../story/World' // Load all registrations
+
+/**
+ * Tests for the clothing/item system mechanics.
+ *
+ * These tests focus on the core mechanics (extending items, wearing/unwearing,
+ * stat calculations, serialization) rather than specific item definitions.
+ * This allows content authors to change item definitions without breaking tests.
+ */
+
+// Register test-only items with known properties for reliable testing
+registerItemDefinition('test-base-accessory', {
+  name: 'test accessory base',
+  category: 'Clothes',
+  positions: ['head'],
+  layer: 'accessory',
+})
+
+registerItemDefinition(
+  'test-hat',
+  extendItem('test-base-accessory', {
+    name: 'test hat',
+    description: 'A hat for testing',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 5)
+    },
+  })
+)
+
+registerItemDefinition(
+  'test-hat-plain',
+  extendItem('test-base-accessory', {
+    name: 'plain test hat',
+    description: 'A plain hat for testing without stat bonuses',
+  })
+)
+
+registerItemDefinition('test-base-under', {
+  name: 'test under base',
+  category: 'Clothes',
+  positions: ['chest'],
+  layer: 'under',
+})
+
+registerItemDefinition(
+  'test-undershirt',
+  extendItem('test-base-under', {
+    name: 'test undershirt',
+    description: 'An undershirt for testing',
+  })
+)
+
+registerItemDefinition('test-base-inner', {
+  name: 'test inner base',
+  category: 'Clothes',
+  positions: ['chest', 'belly'],
+  layer: 'inner',
+})
+
+registerItemDefinition(
+  'test-shirt',
+  extendItem('test-base-inner', {
+    name: 'test shirt',
+    description: 'A shirt for testing',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 3)
+    },
+  })
+)
+
+registerItemDefinition('test-base-outer', {
+  name: 'test outer base',
+  category: 'Clothes',
+  positions: ['chest', 'belly'],
+  layer: 'outer',
+})
+
+registerItemDefinition(
+  'test-jacket',
+  extendItem('test-base-outer', {
+    name: 'test jacket',
+    description: 'A jacket for testing',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 2)
+      player.modifyStat('Agility', -1)
+    },
+  })
+)
+
+registerItemDefinition('test-base-dress', {
+  name: 'test dress base',
+  category: 'Clothes',
+  positions: ['chest', 'belly', 'arms', 'hips', 'legs'],
+  layer: 'inner',
+})
+
+registerItemDefinition(
+  'test-dress',
+  extendItem('test-base-dress', {
+    name: 'test dress',
+    description: 'A dress for testing',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 8)
+    },
+  })
+)
+
+registerItemDefinition('test-base-feet', {
+  name: 'test feet base',
+  category: 'Clothes',
+  positions: ['feet'],
+  layer: 'outer',
+})
+
+registerItemDefinition(
+  'test-boots',
+  extendItem('test-base-feet', {
+    name: 'test boots',
+    description: 'Boots for testing',
+    calcStats: (player) => {
+      player.modifyStat('Agility', 2)
+    },
+  })
+)
 
 describe('Clothing', () => {
   describe('extendItem', () => {
     it('should inherit base properties', () => {
-      const hatBowler = getItem('hat-bowler')
-      expect(hatBowler).toBeDefined()
-      expect(hatBowler!.category).toBe('Clothes')
-      expect(hatBowler!.positions).toEqual(['head'])
-      expect(hatBowler!.layer).toBe('accessory')
+      const testHat = getItem('test-hat')
+      expect(testHat).toBeDefined()
+      expect(testHat!.category).toBe('Clothes')
+      expect(testHat!.positions).toEqual(['head'])
+      expect(testHat!.layer).toBe('accessory')
     })
 
     it('should override base properties with new values', () => {
-      const hatBowler = getItem('hat-bowler')
-      expect(hatBowler!.name).toBe('bowler hat')
-      expect(hatBowler!.description).toContain('bowler')
+      const testHat = getItem('test-hat')
+      expect(testHat!.name).toBe('test hat')
+      expect(testHat!.description).toContain('testing')
     })
 
     it('should add new properties not in base', () => {
-      const hatTop = getItem('hat-top')
-      expect(hatTop!.calcStats).toBeDefined()
+      const testHat = getItem('test-hat')
+      expect(testHat!.calcStats).toBeDefined()
     })
 
     it('should not have calcStats if not specified in extension', () => {
-      const capNewsboy = getItem('cap-newsboy')
-      expect(capNewsboy!.calcStats).toBeUndefined()
+      const plainHat = getItem('test-hat-plain')
+      expect(plainHat!.calcStats).toBeUndefined()
     })
 
     it('should throw when extending non-existent base', () => {
       expect(() => extendItem('non-existent-item', { name: 'test' })).toThrow()
-    })
-  })
-
-  describe('position and layer system', () => {
-    it('should have correct positions and layers for each category', () => {
-      // Head accessories
-      expect(getItem('hat-bowler')!.positions).toEqual(['head'])
-      expect(getItem('hat-bowler')!.layer).toBe('accessory')
-
-      // Chest layers - bra only covers chest
-      expect(getItem('chemise-silk')!.positions).toEqual(['chest'])
-      expect(getItem('chemise-silk')!.layer).toBe('under')
-
-      // Blouse covers chest, belly, and arms
-      expect(getItem('blouse-silk')!.positions).toEqual(['chest', 'belly', 'arms'])
-      expect(getItem('blouse-silk')!.layer).toBe('inner')
-
-      // Corset covers chest and belly
-      expect(getItem('corset-leather')!.positions).toEqual(['chest', 'belly'])
-      expect(getItem('corset-leather')!.layer).toBe('outer')
-
-      // Vest covers chest and belly (no arms)
-      expect(getItem('vest-brocade')!.positions).toEqual(['chest', 'belly'])
-      expect(getItem('vest-brocade')!.layer).toBe('inner')
-
-      // Hips layers - panties cover hips
-      expect(getItem('panties-cotton')!.positions).toEqual(['hips'])
-      expect(getItem('panties-cotton')!.layer).toBe('under')
-
-      // Skirt covers hips and legs
-      expect(getItem('skirt-bustle')!.positions).toEqual(['hips', 'legs'])
-      expect(getItem('skirt-bustle')!.layer).toBe('inner')
-
-      // Dresses cover chest, belly, arms, hips, and legs
-      expect(getItem('dress-evening')!.positions).toEqual(['chest', 'belly', 'arms', 'hips', 'legs'])
-      expect(getItem('dress-evening')!.layer).toBe('inner')
-
-      // Feet
-      expect(getItem('boots-leather')!.positions).toEqual(['feet'])
-      expect(getItem('boots-leather')!.layer).toBe('inner')
-
-      // Accessories
-      expect(getItem('gloves-leather')!.positions).toEqual(['hands'])
-      expect(getItem('gloves-leather')!.layer).toBe('accessory')
     })
   })
 
@@ -87,20 +166,19 @@ describe('Clothing', () => {
     })
 
     it('should wear an item from inventory', () => {
-      player.addItem('hat-bowler')
+      player.addItem('test-hat')
       expect(player.inventory.length).toBe(1)
 
-      const result = player.wearItem('hat-bowler')
+      const result = player.wearItem('test-hat')
       expect(result).toBe(true)
-      // Item stays in inventory but is marked as worn
       expect(player.inventory.length).toBe(1)
       expect(player.inventory[0].worn).toBe(true)
-      expect(player.isWearing('hat-bowler')).toBe(true)
-      expect(player.getWorn('head:accessory')?.id).toBe('hat-bowler')
+      expect(player.isWearing('test-hat')).toBe(true)
+      expect(player.getWorn('head:accessory')?.id).toBe('test-hat')
     })
 
     it('should fail to wear item not in inventory', () => {
-      const result = player.wearItem('hat-bowler')
+      const result = player.wearItem('test-hat')
       expect(result).toBe(false)
     })
 
@@ -111,96 +189,77 @@ describe('Clothing', () => {
     })
 
     it('should swap worn items in same slot', () => {
-      player.addItem('hat-bowler')
-      player.addItem('hat-top')
+      player.addItem('test-hat')
+      player.addItem('test-hat-plain')
 
-      player.wearItem('hat-bowler')
-      expect(player.isWearing('hat-bowler')).toBe(true)
+      player.wearItem('test-hat')
+      expect(player.isWearing('test-hat')).toBe(true)
 
-      player.wearItem('hat-top')
-      expect(player.isWearing('hat-top')).toBe(true)
-      expect(player.isWearing('hat-bowler')).toBe(false)
-      // Old hat should be back in inventory
-      expect(player.inventory.some(i => i.id === 'hat-bowler')).toBe(true)
+      player.wearItem('test-hat-plain')
+      expect(player.isWearing('test-hat-plain')).toBe(true)
+      expect(player.isWearing('test-hat')).toBe(false)
+      expect(player.inventory.some((i) => i.id === 'test-hat')).toBe(true)
     })
 
     it('should allow wearing items at different layers on same position', () => {
-      player.addItem('chemise-silk')  // chest:under
-      player.addItem('vest-brocade')   // chest:inner (vest doesn't cover arms)
-      player.addItem('corset-leather') // chest:outer
+      player.addItem('test-undershirt') // chest:under
+      player.addItem('test-shirt') // chest:inner
+      player.addItem('test-jacket') // chest:outer
 
-      player.wearItem('chemise-silk')
-      player.wearItem('vest-brocade')
-      player.wearItem('corset-leather')
+      player.wearItem('test-undershirt')
+      player.wearItem('test-shirt')
+      player.wearItem('test-jacket')
 
-      expect(player.isWearing('chemise-silk')).toBe(true)
-      expect(player.isWearing('vest-brocade')).toBe(true)
-      expect(player.isWearing('corset-leather')).toBe(true)
-      expect(player.getWorn('chest:under')?.id).toBe('chemise-silk')
-      expect(player.getWorn('chest:inner')?.id).toBe('vest-brocade')
-      expect(player.getWorn('chest:outer')?.id).toBe('corset-leather')
+      expect(player.isWearing('test-undershirt')).toBe(true)
+      expect(player.isWearing('test-shirt')).toBe(true)
+      expect(player.isWearing('test-jacket')).toBe(true)
+      expect(player.getWorn('chest:under')?.id).toBe('test-undershirt')
+      expect(player.getWorn('chest:inner')?.id).toBe('test-shirt')
+      expect(player.getWorn('chest:outer')?.id).toBe('test-jacket')
     })
 
     it('should handle dress covering multiple positions', () => {
-      player.addItem('dress-evening')
-      player.wearItem('dress-evening')
+      player.addItem('test-dress')
+      player.wearItem('test-dress')
 
-      // Dress covers chest, belly, arms, hips, and legs at inner layer
-      expect(player.getWorn('chest:inner')?.id).toBe('dress-evening')
-      expect(player.getWorn('belly:inner')?.id).toBe('dress-evening')
-      expect(player.getWorn('arms:inner')?.id).toBe('dress-evening')
-      expect(player.getWorn('hips:inner')?.id).toBe('dress-evening')
-      expect(player.getWorn('legs:inner')?.id).toBe('dress-evening')
-    })
-
-    it('should remove dress from both positions when wearing top or skirt', () => {
-      player.addItem('dress-evening')
-      player.addItem('blouse-silk')
-
-      player.wearItem('dress-evening')
-      expect(player.isWearing('dress-evening')).toBe(true)
-
-      player.wearItem('blouse-silk')
-      expect(player.isWearing('blouse-silk')).toBe(true)
-      // Dress should be removed from chest:inner (replaced by blouse)
-      expect(player.getWorn('chest:inner')?.id).toBe('blouse-silk')
-      // But dress is still in legs:inner... wait, that's wrong
-      // Actually when we wear the blouse, we only replace chest:inner
-      // The dress entries are separate Map entries
+      expect(player.getWorn('chest:inner')?.id).toBe('test-dress')
+      expect(player.getWorn('belly:inner')?.id).toBe('test-dress')
+      expect(player.getWorn('arms:inner')?.id).toBe('test-dress')
+      expect(player.getWorn('hips:inner')?.id).toBe('test-dress')
+      expect(player.getWorn('legs:inner')?.id).toBe('test-dress')
     })
 
     it('should unwear item by slot key', () => {
-      player.addItem('hat-bowler')
-      player.wearItem('hat-bowler')
-      expect(player.inventory.length).toBe(1)
+      player.addItem('test-hat')
+      player.wearItem('test-hat')
       expect(player.inventory[0].worn).toBe(true)
 
       const removed = player.unwearItem('head:accessory')
-      expect(removed?.id).toBe('hat-bowler')
+      expect(removed?.id).toBe('test-hat')
       expect(player.inventory.length).toBe(1)
       expect(player.inventory[0].worn).toBe(false)
-      expect(player.isWearing('hat-bowler')).toBe(false)
+      expect(player.isWearing('test-hat')).toBe(false)
     })
 
     it('should unwear item by item ID', () => {
-      player.addItem('hat-bowler')
-      player.wearItem('hat-bowler')
+      player.addItem('test-hat')
+      player.wearItem('test-hat')
 
-      const removed = player.unwearItem('hat-bowler')
-      expect(removed?.id).toBe('hat-bowler')
-      expect(player.isWearing('hat-bowler')).toBe(false)
+      const removed = player.unwearItem('test-hat')
+      expect(removed?.id).toBe('test-hat')
+      expect(player.isWearing('test-hat')).toBe(false)
     })
 
     it('should unwear dress from all positions', () => {
-      player.addItem('dress-evening')
-      player.wearItem('dress-evening')
-      expect(player.getWorn('chest:inner')?.id).toBe('dress-evening')
-      expect(player.getWorn('legs:inner')?.id).toBe('dress-evening')
+      player.addItem('test-dress')
+      player.wearItem('test-dress')
+      expect(player.getWorn('chest:inner')?.id).toBe('test-dress')
+      expect(player.getWorn('legs:inner')?.id).toBe('test-dress')
 
-      player.unwearItem('dress-evening')
+      player.unwearItem('test-dress')
       expect(player.getWorn('chest:inner')).toBeUndefined()
       expect(player.getWorn('legs:inner')).toBeUndefined()
-      expect(player.inventory.some(i => i.id === 'dress-evening')).toBe(true)
+      expect(player.inventory.some((i) => i.id === 'test-dress')).toBe(true)
     })
 
     it('should return null when unwearing empty slot', () => {
@@ -209,34 +268,28 @@ describe('Clothing', () => {
     })
 
     it('should handle multiple items with same ID (non-stackable)', () => {
-      // Add two separate bowler hats (non-stackable items)
-      player.addItem('hat-bowler')
-      player.addItem('hat-bowler')
+      player.addItem('test-hat')
+      player.addItem('test-hat')
       expect(player.inventory.length).toBe(2)
 
-      // Wear one of them
-      player.wearItem('hat-bowler')
+      player.wearItem('test-hat')
 
-      // One should be worn, one should not
-      const wornHats = player.inventory.filter(i => i.id === 'hat-bowler' && i.worn)
-      const unwornHats = player.inventory.filter(i => i.id === 'hat-bowler' && !i.worn)
+      const wornHats = player.inventory.filter((i) => i.id === 'test-hat' && i.worn)
+      const unwornHats = player.inventory.filter((i) => i.id === 'test-hat' && !i.worn)
       expect(wornHats.length).toBe(1)
       expect(unwornHats.length).toBe(1)
 
-      // Wearing another hat should swap - old one unworn, new one worn
-      player.wearItem('hat-bowler')
-      const wornHatsAfter = player.inventory.filter(i => i.id === 'hat-bowler' && i.worn)
+      player.wearItem('test-hat')
+      const wornHatsAfter = player.inventory.filter((i) => i.id === 'test-hat' && i.worn)
       expect(wornHatsAfter.length).toBe(1)
     })
 
     it('should only wear unworn items of same ID', () => {
-      player.addItem('hat-bowler')
-      player.wearItem('hat-bowler')
-      expect(player.isWearing('hat-bowler')).toBe(true)
+      player.addItem('test-hat')
+      player.wearItem('test-hat')
+      expect(player.isWearing('test-hat')).toBe(true)
 
-      // Try to wear again with no unworn hat-bowler - should fail
-      // (the only hat-bowler is already worn)
-      const result = player.wearItem('hat-bowler')
+      const result = player.wearItem('test-hat')
       expect(result).toBe(false)
     })
   })
@@ -249,62 +302,59 @@ describe('Clothing', () => {
       player.name = 'Test'
       player.basestats.set('Charm', 50)
       player.basestats.set('Agility', 50)
-      player.basestats.set('Perception', 50)
     })
 
     it('should apply stat bonuses from worn items', () => {
-      player.addItem('hat-bowler') // +3 Charm
-      player.wearItem('hat-bowler')
-      player.calcStats()
-
-      expect(player.stats.get('Charm')).toBe(53)
-    })
-
-    it('should apply stat penalties from worn items', () => {
-      player.addItem('corset-leather') // +5 Charm, -3 Agility
-      player.wearItem('corset-leather')
+      player.addItem('test-hat') // +5 Charm
+      player.wearItem('test-hat')
       player.calcStats()
 
       expect(player.stats.get('Charm')).toBe(55)
-      expect(player.stats.get('Agility')).toBe(47)
+    })
+
+    it('should apply stat penalties from worn items', () => {
+      player.addItem('test-jacket') // +2 Charm, -1 Agility
+      player.wearItem('test-jacket')
+      player.calcStats()
+
+      expect(player.stats.get('Charm')).toBe(52)
+      expect(player.stats.get('Agility')).toBe(49)
     })
 
     it('should stack bonuses from multiple worn items', () => {
-      player.addItem('hat-top') // +5 Charm
-      player.addItem('gloves-lace') // +4 Charm
-      player.wearItem('hat-top')
-      player.wearItem('gloves-lace')
+      player.addItem('test-hat') // +5 Charm
+      player.addItem('test-shirt') // +3 Charm
+      player.wearItem('test-hat')
+      player.wearItem('test-shirt')
       player.calcStats()
 
-      expect(player.stats.get('Charm')).toBe(59) // 50 + 5 + 4
+      expect(player.stats.get('Charm')).toBe(58) // 50 + 5 + 3
     })
 
     it('should not apply bonuses from items in inventory only', () => {
-      player.addItem('hat-bowler') // +3 Charm, but not worn
+      player.addItem('test-hat') // +5 Charm, but not worn
       player.calcStats()
 
-      expect(player.stats.get('Charm')).toBe(50) // No bonus - wearable items only apply when worn
+      expect(player.stats.get('Charm')).toBe(50)
     })
 
     it('should remove bonuses when item is unworn', () => {
-      player.addItem('goggles-brass') // +5 Perception
-      player.wearItem('goggles-brass')
+      player.addItem('test-hat') // +5 Charm
+      player.wearItem('test-hat')
       player.calcStats()
-      expect(player.stats.get('Perception')).toBe(55)
+      expect(player.stats.get('Charm')).toBe(55)
 
-      player.unwearItem('head:accessory')
+      player.unwearItem('test-hat')
       player.calcStats()
-      expect(player.stats.get('Perception')).toBe(50) // Back in inventory, no bonus
+      expect(player.stats.get('Charm')).toBe(50)
     })
 
-    it('should only apply dress bonus once even though it covers two positions', () => {
-      player.addItem('dress-evening') // +8 Charm, -4 Agility
-      player.wearItem('dress-evening')
+    it('should only apply dress bonus once even though it covers multiple positions', () => {
+      player.addItem('test-dress') // +8 Charm
+      player.wearItem('test-dress')
       player.calcStats()
 
-      // Should be +8 Charm, not +16
-      expect(player.stats.get('Charm')).toBe(58)
-      expect(player.stats.get('Agility')).toBe(46)
+      expect(player.stats.get('Charm')).toBe(58) // Should be +8, not +40
     })
   })
 
@@ -312,44 +362,41 @@ describe('Clothing', () => {
     it('should serialize and deserialize worn items', () => {
       const player = new Player()
       player.name = 'Test'
-      player.addItem('hat-bowler')
-      player.addItem('boots-leather')
-      player.wearItem('hat-bowler')
-      player.wearItem('boots-leather')
+      player.addItem('test-hat')
+      player.addItem('test-boots')
+      player.wearItem('test-hat')
+      player.wearItem('test-boots')
 
       const json = player.toJSON()
-      // Worn state is now stored on the items themselves
-      const hatItem = json.inventory.find(i => i.id === 'hat-bowler')
-      const bootsItem = json.inventory.find(i => i.id === 'boots-leather')
+      const hatItem = json.inventory.find((i) => i.id === 'test-hat')
+      const bootsItem = json.inventory.find((i) => i.id === 'test-boots')
       expect(hatItem?.worn).toBe(true)
       expect(bootsItem?.worn).toBe(true)
 
       const restored = Player.fromJSON(json)
-      expect(restored.isWearing('hat-bowler')).toBe(true)
-      expect(restored.isWearing('boots-leather')).toBe(true)
-      expect(restored.getWorn('head:accessory')?.id).toBe('hat-bowler')
-      expect(restored.getWorn('feet:inner')?.id).toBe('boots-leather')
+      expect(restored.isWearing('test-hat')).toBe(true)
+      expect(restored.isWearing('test-boots')).toBe(true)
+      expect(restored.getWorn('head:accessory')?.id).toBe('test-hat')
+      expect(restored.getWorn('feet:outer')?.id).toBe('test-boots')
     })
 
     it('should serialize dress worn state', () => {
       const player = new Player()
       player.name = 'Test'
-      player.addItem('dress-evening')
-      player.wearItem('dress-evening')
+      player.addItem('test-dress')
+      player.wearItem('test-dress')
 
       const json = player.toJSON()
-      // Just one item with worn=true
       expect(json.inventory.length).toBe(1)
-      expect(json.inventory[0].id).toBe('dress-evening')
+      expect(json.inventory[0].id).toBe('test-dress')
       expect(json.inventory[0].worn).toBe(true)
 
-      // Verify it covers all positions after restore
       const restored = Player.fromJSON(json)
-      expect(restored.getWorn('chest:inner')?.id).toBe('dress-evening')
-      expect(restored.getWorn('belly:inner')?.id).toBe('dress-evening')
-      expect(restored.getWorn('arms:inner')?.id).toBe('dress-evening')
-      expect(restored.getWorn('hips:inner')?.id).toBe('dress-evening')
-      expect(restored.getWorn('legs:inner')?.id).toBe('dress-evening')
+      expect(restored.getWorn('chest:inner')?.id).toBe('test-dress')
+      expect(restored.getWorn('belly:inner')?.id).toBe('test-dress')
+      expect(restored.getWorn('arms:inner')?.id).toBe('test-dress')
+      expect(restored.getWorn('hips:inner')?.id).toBe('test-dress')
+      expect(restored.getWorn('legs:inner')?.id).toBe('test-dress')
     })
   })
 })
