@@ -1,4 +1,5 @@
 import { SceneOverlay } from './SceneOverlay'
+import { ShopOverlay } from './ShopOverlay'
 import { NavOverlay } from './NavOverlay'
 import { ActivityOverlay } from './ActivityOverlay'
 import { NPCOverlay } from './NPCOverlay'
@@ -24,11 +25,12 @@ export function LocationView({ location }: LocationViewProps) {
   }
 
   const scene = game.scene
+  const hasShop = !!scene.shop
   const sceneHasOptions = scene.options.length > 0
   const sceneHasContent = scene.content.length > 0
-  const showLocationLinks = !sceneHasOptions
-  const showActivities = !!(template.activities && template.activities.length > 0 && !sceneHasOptions)
-  const showNPCs = game.npcsPresent.length > 0 && !sceneHasOptions
+  const showLocationLinks = !sceneHasOptions && !hasShop
+  const showActivities = !!(template.activities && template.activities.length > 0 && !sceneHasOptions && !hasShop)
+  const showNPCs = game.npcsPresent.length > 0 && !sceneHasOptions && !hasShop
 
   return (
     <div
@@ -43,7 +45,8 @@ export function LocationView({ location }: LocationViewProps) {
         {!locationImage && <p>No Location</p>}
       </div>
       <div className="overlays-container">
-        {(sceneHasContent || sceneHasOptions) && <SceneOverlay scene={scene} />}
+        {hasShop && <ShopOverlay shop={scene.shop!} />}
+        {!hasShop && (sceneHasContent || sceneHasOptions) && <SceneOverlay scene={scene} />}
       </div>
       <div className="bottom-overlays">
         {showActivities && <ActivityOverlay />}

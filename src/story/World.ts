@@ -27,6 +27,7 @@ import './Subway' // Subway stations (before City/Lowtown so links to them exist
 import './Airport' // Airport and subway-airport (uses subwayLink from Subway)
 import './Docks' // Docks and subway-docks (uses subwayLink from Subway)
 import './City' // Register city locations
+import './Market' // Register market shops and NPCs
 import './Lodgings' // Register lodgings locations and scripts
 import './Lowtown' // Register lowtown location and NPCs
 import './Tavern' // Register tavern locations and NPCs

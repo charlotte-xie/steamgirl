@@ -314,6 +314,17 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         },
       },
       {
+        name: 'Shopping',
+        symbol: 'S',
+        condition: (g: Game) => {
+          const h = g.hourOfDay
+          return h >= 8 && h < 18
+        },
+        script: (g: Game) => {
+          g.run('enterMarketShopping')
+        },
+      },
+      {
         name: 'Lucky Dip',
         script: (g: Game, _params: {}) => {
           // Check if player has at least 5 crowns

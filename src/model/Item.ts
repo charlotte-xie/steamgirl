@@ -129,38 +129,15 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
       ])
     },
   },
-  'brass-trinket': {
-    name: 'brass trinket',
-    description: 'A small, intricate brass trinket with delicate gears that catch the light.',
-    category: 'Components',
-    stackable: true,
-  },
   'clockwork-toy': {
     name: 'clockwork toy',
     description: 'A charming mechanical toy that moves when wound. The gears inside click and whir with precision.',
     category: 'Valuables',
   },
-  'steam-whistle': {
-    name: 'steam whistle',
-    description: 'A small brass whistle that emits a high-pitched steam-powered sound when blown.',
-    category: 'Components',
-  },
   'lucky-charm': {
     name: 'lucky charm',
     description: 'A small mechanical charm made of brass gears and cogs. It feels warm to the touch.',
     category: 'Special',
-  },
-  'mysterious-gear': {
-    name: 'mysterious gear',
-    description: 'An unusual gear of unknown origin. It seems to be part of something larger.',
-    category: 'Components',
-    stackable: true,
-  },
-  'glowing-crystal': {
-    name: 'glowing crystal',
-    stackable: true,
-    description: 'A crystal that glows with a soft inner light, wrapped in brass wire and gears.',
-    category: 'Components',
   },
   'magic-potion': {
     name: 'magic potion',

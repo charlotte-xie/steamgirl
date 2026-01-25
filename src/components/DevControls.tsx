@@ -3,7 +3,7 @@ import { useGameLoader } from '../context/GameLoaderContext'
 import { Game } from '../model/Game'
 
 export function DevControls() {
-  const { game, setGame } = useGame()
+  const { game, setGame, refresh } = useGame()
   const { quickRestart, saveGame, loadGameSave, hasManualSave } = useGameLoader()
 
   return (
@@ -35,6 +35,14 @@ export function DevControls() {
       >
         <span className="dev-btn-icon">🔄</span>
         <span className="dev-btn-label">Reload</span>
+      </button>
+      <button
+        className="dev-btn"
+        onClick={() => { game.player.addItem('crown', 1000); refresh() }}
+        title="Add 1000 Krona"
+      >
+        <span className="dev-btn-icon">💰</span>
+        <span className="dev-btn-label">+1k Kr</span>
       </button>
     </div>
   )

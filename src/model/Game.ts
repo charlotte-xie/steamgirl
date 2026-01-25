@@ -11,6 +11,17 @@ export type { Content, InlineContent, ParagraphContent, SceneOptionItem }
 // Legacy alias - use Content instead
 export type SceneContentItem = Content
 
+export type ShopItemEntry = {
+  itemId: string
+  price: number
+}
+
+export type ActiveShop = {
+  name: string
+  npcId?: string
+  items: ShopItemEntry[]
+}
+
 export type SceneData = {
   type: 'story'
   content: Content[]
@@ -19,6 +30,8 @@ export type SceneData = {
   npc?: string
   /** When true, do not show the NPC image in the scene overlay. Set by approach to false; e.g. landlord sets true when showing rooms. */
   hideNpcImage?: boolean
+  /** When set, the scene renders as a shop interface. */
+  shop?: ActiveShop
 }
 
 export interface GameData {

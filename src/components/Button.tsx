@@ -8,6 +8,8 @@ type ButtonProps = {
   color?: string
   /** Tooltip text shown on hover */
   title?: string
+  /** Compact size for inline contexts like shop rows */
+  size?: 'small'
 }
 
 function darkenHex(hex: string, factor = 0.3): string {
@@ -24,32 +26,22 @@ function darkenHex(hex: string, factor = 0.3): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
-export function Button({ children, disabled, onClick, color = '#fbbf24', title }: ButtonProps) {
+export function Button({ children, disabled, onClick, color = '#fbbf24', title, size }: ButtonProps) {
   const isDisabled = Boolean(disabled)
-  const hasCustomColor = color !== undefined
 
-  const accent = isDisabled
-    ? hasCustomColor
-      ? color
-      : '#9ca3af'
-    : color
-
-  const background = isDisabled
-    ? hasCustomColor
-      ? darkenHex(color, 0.25)
-      : '#2b3533'
-    : darkenHex(color, 0.25)
+  const accent = isDisabled ? '#8a8a8a' : color
+  const background = isDisabled ? '#1a1a1a' : darkenHex(color, 0.25)
 
   const style: CSSProperties = {
     color: accent,
-    borderColor: accent,
+    borderColor: isDisabled ? '#5a5a5a' : accent,
     backgroundColor: background,
   }
 
   return (
     <button
       type="button"
-      className="button-base button-primary"
+      className={`button-base button-primary${size === 'small' ? ' button-small' : ''}`}
       disabled={isDisabled}
       onClick={isDisabled ? undefined : onClick}
       style={style}

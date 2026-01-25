@@ -185,6 +185,15 @@ export class Player {
   }
 
   /**
+   * Count how many of a given item the player owns (works for both stackable and non-stackable items).
+   */
+  countItem(itemId: string): number {
+    return this.inventory
+      .filter(i => i.id === itemId)
+      .reduce((sum, i) => sum + i.number, 0)
+  }
+
+  /**
    * Wear an item from inventory. Marks it as worn.
    * Items can occupy multiple positions at the same layer (e.g., a dress covers chest + legs).
    * If something is already worn in any slot, it is unworn first (unless locked).
@@ -198,8 +207,11 @@ export class Player {
       return false // Item is not wearable (needs positions and layer)
     }
 
-    // Find the item in inventory (must not already be worn)
-    const invItem = this.inventory.find(i => i.id === item.id && !i.worn)
+    // Find the item in inventory (must not already be worn).
+    // If the exact instance is in inventory, use it directly; otherwise find by ID.
+    const invItem = this.inventory.includes(item)
+      ? (item.worn ? null : item)
+      : this.inventory.find(i => i.id === item.id && !i.worn)
     if (!invItem) {
       return false // Item not in inventory or already worn
     }

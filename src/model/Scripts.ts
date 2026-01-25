@@ -770,6 +770,13 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
+  /** Leave the current shop (clearScene removes scene.shop automatically) */
+  leaveShop: (game: Game, params: { text?: string } = {}) => {
+    if (params.text) {
+      game.add(params.text)
+    }
+  },
+
   /** Run a named activity at the current location */
   runActivity: (game: Game, params: { activity?: string } = {}) => {
     const name = params.activity

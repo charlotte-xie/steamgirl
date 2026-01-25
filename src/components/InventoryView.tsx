@@ -125,6 +125,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
               <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
                 {selectedItem.template.onExamine && (
                   <Button
+                    size="small"
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={() => runScript('examineItem', { item: selectedItem.id })}
@@ -134,6 +135,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                 )}
                 {selectedItem.template.onConsume && (
                   <Button
+                    size="small"
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={() => {
@@ -146,6 +148,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                 )}
                 {canWear && (
                   <Button
+                    size="small"
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={handleWear}
@@ -155,6 +158,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                 )}
                 {isWearable && selectedItem?.worn && (
                   <Button
+                    size="small"
                     disabled={inScene || isLocked}
                     title={isLocked ? lockedTooltip : sceneTooltip}
                     onClick={handleRemove}
@@ -163,6 +167,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                   </Button>
                 )}
                 <Button
+                  size="small"
                   disabled={inScene || !canDiscard}
                   title={!canDiscard ? (selectedItem.worn ? 'Remove item first' : 'Cannot discard special items') : sceneTooltip}
                   onClick={handleDiscard}

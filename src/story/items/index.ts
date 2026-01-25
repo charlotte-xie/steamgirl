@@ -10,6 +10,7 @@ import './base-templates'
 
 // Specific item categories (alphabetical)
 import './accessories'
+import './components'
 import './dresses'
 import './footwear'
 import './headwear'
