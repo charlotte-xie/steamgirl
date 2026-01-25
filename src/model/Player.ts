@@ -1,4 +1,4 @@
-import { Item, type ItemData, ensureItem } from './Item'
+import { Item, type ItemData, ensureItem, type ClothingSlotKey, type ClothingPosition, type ClothingLayer } from './Item'
 import { Card, type CardData } from './Card'
 import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO } from './Stats'
 
@@ -54,13 +54,13 @@ export class Player {
     this.basestats.forEach((value, statName) => {
       basestatsRecord[statName] = value
     })
-    
+
     // Convert timers Map to Record for JSON serialization
     const timersRecord: Record<string, number> = {}
     this.timers.forEach((value, timerName) => {
       timersRecord[timerName] = value
     })
-    
+
     return {
       name: this.name,
       basestats: basestatsRecord,
@@ -103,6 +103,7 @@ export class Player {
       // If inventory is missing, clear the default inventory from constructor
       player.inventory = []
     }
+
     if (data.cards) {
       player.cards = data.cards
         .map((cardData: CardData) => {
@@ -173,6 +174,108 @@ export class Player {
   }
 
   /**
+   * Wear an item from inventory. Marks it as worn.
+   * Items can occupy multiple positions at the same layer (e.g., a dress covers chest + legs).
+   * If something is already worn in any slot, it is unworn first.
+   * @param itemSpec - Either an item ID string or an Item instance
+   * @returns true if successfully worn, false if item not found or not wearable
+   */
+  wearItem(itemSpec: ItemSpec): boolean {
+    const item = ensureItem(itemSpec)
+    const { positions, layer } = item.template
+    if (!positions || positions.length === 0 || !layer) {
+      return false // Item is not wearable (needs positions and layer)
+    }
+
+    // Find the item in inventory (must not already be worn)
+    const invItem = this.inventory.find(i => i.id === item.id && !i.worn)
+    if (!invItem) {
+      return false // Item not in inventory or already worn
+    }
+
+    // Unwear any existing items in all slots this item will occupy
+    for (const position of positions) {
+      const existingItem = this.getWornAt(position, layer)
+      if (existingItem) {
+        existingItem.worn = false
+      }
+    }
+
+    // Mark the item as worn
+    invItem.worn = true
+    return true
+  }
+
+  /**
+   * Remove a worn item (mark as not worn).
+   * @param slotKeyOrItemId - Either a slot key (e.g., "chest:inner") or an item ID
+   * @returns the item that was unworn, or null if nothing was worn in that slot
+   */
+  unwearItem(slotKeyOrItemId: ClothingSlotKey | string): Item | null {
+    // First try as a slot key (e.g., "chest:inner")
+    if (slotKeyOrItemId.includes(':')) {
+      const [position, layer] = slotKeyOrItemId.split(':') as [ClothingPosition, ClothingLayer]
+      const wornItem = this.getWornAt(position, layer)
+      if (wornItem) {
+        wornItem.worn = false
+        return wornItem
+      }
+      return null
+    }
+
+    // Try as an item ID
+    const wornItem = this.inventory.find(i => i.id === slotKeyOrItemId && i.worn)
+    if (wornItem) {
+      wornItem.worn = false
+      return wornItem
+    }
+
+    return null
+  }
+
+  /**
+   * Check if an item is currently worn.
+   * @param itemId - The item ID to check
+   * @returns true if the item is worn
+   */
+  isWearing(itemId: string): boolean {
+    return this.inventory.some(item => item.id === itemId && item.worn)
+  }
+
+  /**
+   * Get the item worn in a specific slot.
+   * @param slotKey - The clothing slot key (e.g., "chest:inner") to check
+   * @returns the worn item, or undefined if nothing is worn
+   */
+  getWorn(slotKey: ClothingSlotKey): Item | undefined {
+    const [position, layer] = slotKey.split(':') as [ClothingPosition, ClothingLayer]
+    return this.getWornAt(position, layer)
+  }
+
+  /**
+   * Get the item worn at a specific position and layer.
+   * @param position - The body position to check
+   * @param layer - The clothing layer to check
+   * @returns the worn item covering that position/layer, or undefined
+   */
+  getWornAt(position: ClothingPosition, layer: ClothingLayer): Item | undefined {
+    return this.inventory.find(item => {
+      if (!item.worn) return false
+      const def = item.template
+      if (def.layer !== layer) return false
+      return def.positions?.includes(position) ?? false
+    })
+  }
+
+  /**
+   * Get all currently worn items.
+   * @returns array of worn items
+   */
+  getWornItems(): Item[] {
+    return this.inventory.filter(item => item.worn)
+  }
+
+  /**
    * Add a bonus/penalty to a stat. The stat can go outside 0-100 during calculation,
    * but will be bounded when calcStats completes.
    * @param statName - The stat to modify
@@ -195,12 +298,16 @@ export class Player {
       this.stats.set(statName, value)
     })
 
-    // Apply modifiers from active Items
+    // Apply modifiers from inventory items
     this.inventory.forEach(item => {
       const itemDef = item.template
-      if (itemDef.calcStats) {
-        itemDef.calcStats(this, item, this.stats)
-      }
+      if (!itemDef.calcStats) return
+
+      // Wearable items (have positions and layer) only apply when worn
+      const isWearable = itemDef.positions && itemDef.positions.length > 0 && itemDef.layer
+      if (isWearable && !item.worn) return
+
+      itemDef.calcStats(this, item, this.stats)
     })
 
     // Apply modifiers from active Cards

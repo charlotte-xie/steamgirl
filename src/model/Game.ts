@@ -59,6 +59,9 @@ export class Game {
   scene: SceneData
   time: number
 
+  // Transient UI state (not serialized, survives HMR)
+  uiScreen: string = 'game'
+
   constructor() {
     this.version = 1
     this.score = 0

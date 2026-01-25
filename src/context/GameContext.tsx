@@ -16,6 +16,7 @@ type GameContextType = {
   runScript: (name: string, params?: {}) => void
   dismissScene: () => void
   initializeCharacter: (options: CharacterOptions) => void
+  refresh: () => void
 }
 
 const throwMissing = (): never => {
@@ -28,6 +29,7 @@ const GameContext = createContext<GameContextType>({
   runScript: throwMissing,
   dismissScene: throwMissing,
   initializeCharacter: throwMissing,
+  refresh: throwMissing,
 })
 
 function loadFromStorage(source: unknown): Game | null {
@@ -68,6 +70,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setUpdateCounter((c) => c + 1)
   }
 
+  const refresh = () => {
+    setUpdateCounter((c) => c + 1)
+  }
+
   const initializeCharacter = (options: CharacterOptions) => {
     // Run the init script to set up the game
     const init = getScript('init')
@@ -104,7 +110,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   return (
     <GameContext.Provider
-      value={{ game, setGame, runScript, dismissScene, initializeCharacter }}
+      value={{ game, setGame, runScript, dismissScene, initializeCharacter, refresh }}
     >
       {children}
     </GameContext.Provider>

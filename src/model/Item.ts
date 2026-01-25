@@ -10,10 +10,51 @@ export type ItemId = string
 // Item categories for filtering in inventory
 export type ItemCategory = 'Consumables' | 'Clothes' | 'Components' | 'Valuables' | 'Special'
 
+// Clothing position - where on the body
+export type ClothingPosition =
+  | 'head'
+  | 'face'
+  | 'neck'
+  | 'chest'
+  | 'belly'
+  | 'arms'
+  | 'wrists'
+  | 'hands'
+  | 'waist'
+  | 'legs'
+  | 'feet'
+
+// Clothing layer - what order items are worn in (innermost to outermost)
+export type ClothingLayer =
+  | 'body'       // Skin-level (tattoos, body paint)
+  | 'under'      // Underwear layer (bra, panties, undershirt)
+  | 'inner'      // Inner clothing (shirt, blouse, chemise)
+  | 'outer'      // Outer clothing (jacket, coat, corset worn over blouse)
+  | 'accessory'  // Accessories (jewelry, scarves, hats, gloves)
+
+// Combined slot for worn items - position + layer
+export interface ClothingSlot {
+  position: ClothingPosition
+  layer: ClothingLayer
+}
+
+// String key for the worn map (e.g., "chest:inner", "legs:under")
+export type ClothingSlotKey = `${ClothingPosition}:${ClothingLayer}`
+
+export function slotKey(position: ClothingPosition, layer: ClothingLayer): ClothingSlotKey {
+  return `${position}:${layer}`
+}
+
+export function parseSlotKey(key: ClothingSlotKey): ClothingSlot {
+  const [position, layer] = key.split(':') as [ClothingPosition, ClothingLayer]
+  return { position, layer }
+}
+
 // Mutable data for an item, used for serialization
 export interface ItemData {
   id: ItemId
   number: number
+  worn?: boolean  // True if this item is currently worn (slots derived from definition)
 }
 
 // Static / library information for an item
@@ -23,6 +64,8 @@ export interface ItemDefinition {
   image?: string
   category?: ItemCategory
   stackable?: boolean
+  positions?: ClothingPosition[]  // For wearable items - where on the body (can occupy multiple)
+  layer?: ClothingLayer           // For wearable items - what layer (under, inner, outer, accessory)
   onConsume?: Script
   onExamine?: Script
   calcStats?: (player: Player, item: Item, stats: Map<StatName, number>) => void
@@ -159,10 +202,12 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
 export class Item {
   id: ItemId
   number: number
+  worn: boolean  // True if this item is currently being worn
 
-  constructor(id: ItemId, number: number = 1) {
+  constructor(id: ItemId, number: number = 1, worn: boolean = false) {
     this.id = id
     this.number = number
+    this.worn = worn
   }
 
   /** Gets the item definition template. */
@@ -195,10 +240,14 @@ export class Item {
   }
 
   toJSON(): ItemData {
-    return {
+    const data: ItemData = {
       id: this.id,
       number: this.number,
     }
+    if (this.worn) {
+      data.worn = true
+    }
+    return data
   }
 
   static fromJSON(json: string | ItemData): Item {
@@ -214,12 +263,36 @@ export class Item {
       throw new Error(`Item definition not found: ${itemId}`)
     }
     
-    // Create item instance with id and number
+    // Create item instance with id, number, and worn state
     const number = data.number ?? 1
-    const item = new Item(itemId, number)
-    
+    const worn = data.worn ?? false
+    const item = new Item(itemId, number, worn)
+
     return item
   }
+}
+
+// Register a new item definition
+export function registerItemDefinition(id: ItemId, definition: ItemDefinition): void {
+  if (ITEM_DEFINITIONS[id]) {
+    console.warn(`Item definition already exists for id: ${id}`)
+  }
+  ITEM_DEFINITIONS[id] = definition
+}
+
+/**
+ * Create a new item definition by extending an existing one.
+ * Shallow-merges the base definition with the overrides.
+ * @param baseId - The ID of the existing item to extend
+ * @param overrides - Properties to override or add
+ * @returns A new ItemDefinition combining base and overrides
+ */
+export function extendItem(baseId: ItemId, overrides: Partial<ItemDefinition>): ItemDefinition {
+  const base = ITEM_DEFINITIONS[baseId]
+  if (!base) {
+    throw new Error(`Cannot extend item: base definition not found for id: ${baseId}`)
+  }
+  return { ...base, ...overrides }
 }
 
 // Get an item definition by id

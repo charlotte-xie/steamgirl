@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { PlayerPanel } from '../components/PlayerPanel'
 import { LocationView } from '../components/LocationView'
 import { InventoryView } from '../components/InventoryView'
@@ -13,9 +12,15 @@ import { CharacterScreen } from './CharacterScreen'
 import type { ScreenId } from '../components/ScreenSwitcher'
 
 export function GameScreen() {
-  const { game, initializeCharacter } = useGame()
+  const { game, initializeCharacter, refresh } = useGame()
   const { clearGame } = useGameLoader()
-  const [currentScreen, setCurrentScreen] = useState<ScreenId>('game')
+
+  // Store screen in game object to survive HMR
+  const currentScreen = game.uiScreen as ScreenId
+  const setCurrentScreen = (screen: ScreenId) => {
+    game.uiScreen = screen
+    refresh()
+  }
 
   // Show character creation screen if game hasn't been started yet
   if (!game.isStarted()) {

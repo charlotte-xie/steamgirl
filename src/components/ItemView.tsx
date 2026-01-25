@@ -1,7 +1,7 @@
-import { Item } from '../model/Item'
+import type { Item } from '../model/Item'
 import { Tooltip } from './Tooltip'
 import { capitalise } from '../model/Text'
-import { assetUrl } from '../utils/assetUrl'
+import { ItemIcon } from './ItemIcon'
 
 type ItemViewProps = {
   item: Item
@@ -11,35 +11,10 @@ type ItemViewProps = {
 
 export function ItemView({ item, selected = false, onClick }: ItemViewProps) {
   const itemDef = item.template
-  const showNumber = itemDef.stackable && item.number > 1
-  const iconSize = 32
-
-  const iconContent = (
-    <div className="item-icon-container">
-      {itemDef.image ? (
-        <img 
-          src={assetUrl(itemDef.image)} 
-          alt={itemDef.name}
-          className="item-icon"
-          style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
-        />
-      ) : (
-        <div 
-          className="item-icon-placeholder"
-          style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
-        >
-          {capitalise(itemDef.name).charAt(0)}
-        </div>
-      )}
-      {showNumber && (
-        <span className="item-number-badge">{item.number}</span>
-      )}
-    </div>
-  )
 
   const content = (
-    <div className={`item-view ${selected ? 'selected' : ''}`} onClick={onClick}>
-      {iconContent}
+    <div className={`item-view ${selected ? 'selected' : ''} ${item.worn ? 'worn' : ''}`} onClick={onClick}>
+      <ItemIcon item={item} showNumber />
       <div className="item-info">
         <span className="item-name">{capitalise(itemDef.name)}</span>
       </div>

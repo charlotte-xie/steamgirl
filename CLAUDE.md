@@ -196,6 +196,7 @@ The game uses a screen switcher pattern for different views:
 - **Responsive sizing**: Base font uses `clamp()` for viewport scaling
 - **Use rem units** for sizes that should scale with base font (not px)
 - **CSS class naming**: Semantic layout classes (`.game-screen`) plus visual utility classes (`.panel-elevated`)
+- **CSS structure**: prefer to re-use common CSS styles as far as possible. keep minimal
 - **Steampunk theme**: Brass/copper gradients, parchment text colors, shadow effects
 
 ### Key CSS Variables

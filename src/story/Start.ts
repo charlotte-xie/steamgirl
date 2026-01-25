@@ -186,6 +186,25 @@ export const startScripts = {
     g.run('gainItem', { item: 'acceptance-letter', number: 1 })
     g.run('gainItem', { item: 'magic-potion', number: 1 })
     g.run('gainItem', { item: 'fun-juice', number: 1 })
+
+    // Add starting clothing
+    g.run('gainItem', { item: 'bra-cotton' })
+    g.run('gainItem', { item: 'panties-cotton' })
+    g.run('gainItem', { item: 'blouse-white' })
+    g.run('gainItem', { item: 'corset-suede' })
+    g.run('gainItem', { item: 'skirt-pleated' })
+    g.run('gainItem', { item: 'stockings-long' })
+    g.run('gainItem', { item: 'boots-leather' })
+    g.run('gainItem', { item: 'hat-bowler' }) // Not worn, for testing
+
+    // Wear starting clothes
+    pc.wearItem('bra-cotton')
+    pc.wearItem('panties-cotton')
+    pc.wearItem('blouse-white')
+    pc.wearItem('corset-suede')
+    pc.wearItem('skirt-pleated')
+    pc.wearItem('stockings-long')
+    pc.wearItem('boots-leather')
     
     // Generate NPCs that should be present at the start
     // NOTE: NPCs are lazily instantiated - they only exist in game.npcs after getNPC() is called.
