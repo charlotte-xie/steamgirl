@@ -610,9 +610,9 @@ img {
   min-height: 2.25rem;
   padding: 0 var(--space-md);
   font: inherit;
-  border-radius: var(--radius-sm);
-  border-width: 1px;
-  border-style: solid;
+  border-radius: 999px;
+  border: 2px solid var(--brass-light);
+  color: var(--brass-light);
   background: none;
   cursor: pointer;
 }
