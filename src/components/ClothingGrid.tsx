@@ -5,9 +5,22 @@ import { capitalise } from '../model/Text'
 import { Tooltip } from './Tooltip'
 import { ItemIcon } from './ItemIcon'
 
-// Grid layout: rows = positions (top to bottom of body), columns = layers (inner to outer)
-const POSITIONS: ClothingPosition[] = ['head', 'face', 'neck', 'chest', 'arms', 'wrists', 'hands', 'waist', 'legs', 'feet']
-const LAYERS: ClothingLayer[] = ['under', 'inner', 'outer', 'accessory']
+// Grid layout: rows = positions (top to bottom of body), columns = layers (outermost to innermost)
+// Arms/hands/wrists before chest so that connected items (chest+belly+waist, chest+arms) are adjacent
+const POSITIONS: ClothingPosition[] = ['head', 'face', 'neck', 'hands', 'wrists', 'arms', 'chest', 'belly', 'waist', 'legs', 'feet']
+const LAYERS: ClothingLayer[] = ['accessory', 'outer', 'inner', 'under', 'body']
+
+// Always show these positions even if empty
+const ALWAYS_SHOW: ClothingPosition[] = ['head', 'chest', 'belly', 'legs', 'feet']
+
+// Short labels for header
+const LAYER_LABELS: Record<ClothingLayer, string> = {
+  accessory: 'Acc.',
+  outer: 'Outer',
+  inner: 'Inner',
+  under: 'Under',
+  body: 'Body',
+}
 
 // Short labels for positions
 const POSITION_LABELS: Record<ClothingPosition, string> = {
@@ -35,6 +48,16 @@ export function ClothingGrid({ player, selectedItem, onSelectItem }: ClothingGri
     return player.getWornAt(position, layer)
   }
 
+  // Check if a position has any items worn
+  const hasItemsAtPosition = (position: ClothingPosition): boolean => {
+    return LAYERS.some(layer => getWornItem(position, layer) !== undefined)
+  }
+
+  // Filter positions: always show essential ones, others only if they have items
+  const visiblePositions = POSITIONS.filter(position =>
+    ALWAYS_SHOW.includes(position) || hasItemsAtPosition(position)
+  )
+
   const handleCellClick = (item: Item | undefined) => {
     if (item) {
       onSelectItem(item)
@@ -48,13 +71,13 @@ export function ClothingGrid({ player, selectedItem, onSelectItem }: ClothingGri
         <div className="clothing-grid-label"></div>
         {LAYERS.map(layer => (
           <div key={layer} className="clothing-grid-cell clothing-grid-header-cell">
-            {capitalise(layer)}
+            {LAYER_LABELS[layer]}
           </div>
         ))}
       </div>
 
       {/* Body rows */}
-      {POSITIONS.map(position => (
+      {visiblePositions.map(position => (
         <div key={position} className="clothing-grid-row">
           <div className="clothing-grid-label">{POSITION_LABELS[position]}</div>
           {LAYERS.map(layer => {
