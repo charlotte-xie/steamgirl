@@ -68,10 +68,11 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
   // Check if selected item is wearable
   const isWearable = selectedItem?.template.positions && selectedItem.template.positions.length > 0 && selectedItem.template.layer
   const canWear = isWearable && !selectedItem?.worn
-  const canRemove = isWearable && selectedItem?.worn
+  const isLocked = selectedItem?.locked
   const canDiscard = selectedItem && selectedItem.template.category !== 'Special' && !selectedItem.worn
   const inScene = game.scene.options.length > 0
   const sceneTooltip = inScene ? 'Cannot use items during scene' : undefined
+  const lockedTooltip = isLocked ? 'This item is locked and cannot be removed' : undefined
 
   if (inventory.length === 0) {
     return (
@@ -142,12 +143,20 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                   </Button>
                 )}
                 {canWear && (
-                  <Button onClick={handleWear}>
+                  <Button
+                    disabled={inScene}
+                    title={sceneTooltip}
+                    onClick={handleWear}
+                  >
                     Wear
                   </Button>
                 )}
-                {canRemove && (
-                  <Button onClick={handleRemove}>
+                {isWearable && selectedItem?.worn && (
+                  <Button
+                    disabled={inScene || isLocked}
+                    title={isLocked ? lockedTooltip : sceneTooltip}
+                    onClick={handleRemove}
+                  >
                     Remove
                   </Button>
                 )}
@@ -172,10 +181,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
           selectedItem={selectedItem}
           onSelectItem={handleSelectFromGrid}
         />
-        <OutfitManagement
-          player={game.player}
-          onOutfitChange={refresh}
-        />
+        <OutfitManagement />
       </div>
     </div>
   )

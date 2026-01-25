@@ -92,7 +92,7 @@ export function ClothingGrid({ player, selectedItem, onSelectItem }: ClothingGri
               >
                 {item ? (
                   <Tooltip content={item.template.description || capitalise(item.template.name)}>
-                    <ItemIcon item={item} />
+                    <ItemIcon item={item} showLocked />
                   </Tooltip>
                 ) : null}
               </div>

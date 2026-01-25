@@ -187,9 +187,9 @@ export class Player {
   /**
    * Wear an item from inventory. Marks it as worn.
    * Items can occupy multiple positions at the same layer (e.g., a dress covers chest + legs).
-   * If something is already worn in any slot, it is unworn first.
+   * If something is already worn in any slot, it is unworn first (unless locked).
    * @param itemSpec - Either an item ID string or an Item instance
-   * @returns true if successfully worn, false if item not found or not wearable
+   * @returns true if successfully worn, false if item not found, not wearable, or blocked by locked item
    */
   wearItem(itemSpec: ItemSpec): boolean {
     const item = ensureItem(itemSpec)
@@ -204,6 +204,14 @@ export class Player {
       return false // Item not in inventory or already worn
     }
 
+    // Check if any slot is blocked by a locked item
+    for (const position of positions) {
+      const existingItem = this.getWornAt(position, layer)
+      if (existingItem?.locked) {
+        return false // Cannot wear - slot blocked by locked item
+      }
+    }
+
     // Unwear any existing items in all slots this item will occupy
     for (const position of positions) {
       const existingItem = this.getWornAt(position, layer)
@@ -214,20 +222,32 @@ export class Player {
 
     // Mark the item as worn
     invItem.worn = true
+
+    // Call onWorn hook if defined
+    const template = invItem.template
+    if (template.onWorn) {
+      template.onWorn(this, invItem)
+    }
+
     return true
   }
 
   /**
    * Remove a worn item (mark as not worn).
+   * Will not remove locked items unless force is true.
    * @param slotKeyOrItemId - Either a slot key (e.g., "chest:inner") or an item ID
-   * @returns the item that was unworn, or null if nothing was worn in that slot
+   * @param force - If true, removes even locked items (for special unlock mechanics)
+   * @returns the item that was unworn, or null if nothing was worn or item is locked
    */
-  unwearItem(slotKeyOrItemId: ClothingSlotKey | string): Item | null {
+  unwearItem(slotKeyOrItemId: ClothingSlotKey | string, force: boolean = false): Item | null {
     // First try as a slot key (e.g., "chest:inner")
     if (slotKeyOrItemId.includes(':')) {
       const [position, layer] = slotKeyOrItemId.split(':') as [ClothingPosition, ClothingLayer]
       const wornItem = this.getWornAt(position, layer)
       if (wornItem) {
+        if (wornItem.locked && !force) {
+          return null // Cannot remove locked item
+        }
         wornItem.worn = false
         return wornItem
       }
@@ -237,6 +257,9 @@ export class Player {
     // Try as an item ID
     const wornItem = this.inventory.find(i => i.id === slotKeyOrItemId && i.worn)
     if (wornItem) {
+      if (wornItem.locked && !force) {
+        return null // Cannot remove locked item
+      }
       wornItem.worn = false
       return wornItem
     }
@@ -288,10 +311,12 @@ export class Player {
 
   /**
    * Strip all worn items (unwear everything).
+   * Skips locked items unless force is true.
+   * @param force - If true, removes even locked items
    */
-  stripAll(): void {
+  stripAll(force: boolean = false): void {
     this.inventory.forEach(item => {
-      if (item.worn) {
+      if (item.worn && (force || !item.locked)) {
         item.worn = false
       }
     })

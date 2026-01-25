@@ -203,6 +203,9 @@ export const startScripts = {
     g.run('gainItem', { item: 'school-skirt' })
     g.run('gainItem', { item: 'school-socks' })
 
+    // Add cursed gloves for testing locked items
+    g.run('gainItem', { item: 'gloves-cursed' })
+
     // Wear starting clothes (casual outfit)
     pc.wearItem('bra-cotton')
     pc.wearItem('panties-cotton')

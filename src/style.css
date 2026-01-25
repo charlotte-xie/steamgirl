@@ -909,6 +909,11 @@ img {
   color: var(--border-main);
 }
 
+.item-number-badge.locked {
+  background: #8b4513;
+  color: var(--text-main);
+}
+
 .item-worn-badge {
   font-size: var(--font-xs);
   color: var(--text-muted);

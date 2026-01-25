@@ -5,12 +5,14 @@ import { assetUrl } from '../utils/assetUrl'
 interface ItemIconProps {
   item: Item
   showNumber?: boolean
+  showLocked?: boolean // Show locked badge even without showNumber
 }
 
-export function ItemIcon({ item, showNumber = false }: ItemIconProps) {
+export function ItemIcon({ item, showNumber = false, showLocked = false }: ItemIconProps) {
   const itemDef = item.template
   const displayNumber = showNumber && itemDef.stackable && item.number > 1
-  const displayWorn = showNumber && item.worn
+  const displayWorn = showNumber && item.worn && !item.locked
+  const displayLocked = (showNumber || showLocked) && item.worn && item.locked
 
   return (
     <div className="item-icon-container">
@@ -30,6 +32,9 @@ export function ItemIcon({ item, showNumber = false }: ItemIconProps) {
       )}
       {displayWorn && (
         <span className="item-number-badge worn">w</span>
+      )}
+      {displayLocked && (
+        <span className="item-number-badge locked">🔒</span>
       )}
     </div>
   )

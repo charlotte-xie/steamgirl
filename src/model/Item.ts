@@ -54,7 +54,8 @@ export function parseSlotKey(key: ClothingSlotKey): ClothingSlot {
 export interface ItemData {
   id: ItemId
   number: number
-  worn?: boolean  // True if this item is currently worn (slots derived from definition)
+  worn?: boolean   // True if this item is currently worn (slots derived from definition)
+  locked?: boolean // True if this item cannot be removed (cursed, restraints, etc.)
 }
 
 // Static / library information for an item
@@ -68,6 +69,7 @@ export interface ItemDefinition {
   layer?: ClothingLayer           // For wearable items - what layer (under, inner, outer, accessory)
   onConsume?: Script
   onExamine?: Script
+  onWorn?: (player: Player, item: Item) => void  // Called after item is worn
   calcStats?: (player: Player, item: Item, stats: Map<StatName, number>) => void
 }
 
@@ -202,12 +204,14 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
 export class Item {
   id: ItemId
   number: number
-  worn: boolean  // True if this item is currently being worn
+  worn: boolean   // True if this item is currently being worn
+  locked: boolean // True if this item cannot be removed (cursed, restraints, etc.)
 
-  constructor(id: ItemId, number: number = 1, worn: boolean = false) {
+  constructor(id: ItemId, number: number = 1, worn: boolean = false, locked: boolean = false) {
     this.id = id
     this.number = number
     this.worn = worn
+    this.locked = locked
   }
 
   /** Gets the item definition template. */
@@ -247,6 +251,9 @@ export class Item {
     if (this.worn) {
       data.worn = true
     }
+    if (this.locked) {
+      data.locked = true
+    }
     return data
   }
 
@@ -263,10 +270,11 @@ export class Item {
       throw new Error(`Item definition not found: ${itemId}`)
     }
     
-    // Create item instance with id, number, and worn state
+    // Create item instance with id, number, worn state, and locked state
     const number = data.number ?? 1
     const worn = data.worn ?? false
-    const item = new Item(itemId, number, worn)
+    const locked = data.locked ?? false
+    const item = new Item(itemId, number, worn, locked)
 
     return item
   }

@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import type { Player } from '../model/Player'
+import { useGame } from '../context/GameContext'
 import { getOutfitNames } from '../model/Outfits'
 import { Button } from './Button'
 
-interface OutfitManagementProps {
-  player: Player
-  onOutfitChange: () => void
-}
-
-export function OutfitManagement({ player, onOutfitChange }: OutfitManagementProps) {
+export function OutfitManagement() {
+  const { game, refresh } = useGame()
+  const player = game.player
+  const inScene = game.scene.options.length > 0
+  const sceneTooltip = inScene ? 'Cannot change clothes during scene' : undefined
   const [selectedOutfit, setSelectedOutfit] = useState<string | null>(null)
   const [isNaming, setIsNaming] = useState(false)
   const [newName, setNewName] = useState('')
@@ -26,7 +25,7 @@ export function OutfitManagement({ player, onOutfitChange }: OutfitManagementPro
       setSelectedOutfit(newName.trim())
       setIsNaming(false)
       setNewName('')
-      onOutfitChange()
+      refresh()
     }
   }
 
@@ -38,21 +37,21 @@ export function OutfitManagement({ player, onOutfitChange }: OutfitManagementPro
   const handleUpdate = () => {
     if (selectedOutfit) {
       player.saveOutfit(selectedOutfit)
-      onOutfitChange()
+      refresh()
     }
   }
 
   const handleStrip = () => {
     player.stripAll()
     player.calcStats()
-    onOutfitChange()
+    refresh()
   }
 
   const handleWear = () => {
     if (selectedOutfit) {
       player.wearOutfit(selectedOutfit)
       player.calcStats()
-      onOutfitChange()
+      refresh()
     }
   }
 
@@ -60,7 +59,7 @@ export function OutfitManagement({ player, onOutfitChange }: OutfitManagementPro
     if (selectedOutfit) {
       player.deleteOutfit(selectedOutfit)
       setSelectedOutfit(null)
-      onOutfitChange()
+      refresh()
     }
   }
 
@@ -107,8 +106,8 @@ export function OutfitManagement({ player, onOutfitChange }: OutfitManagementPro
         <div className="outfit-actions">
           <Button onClick={handleSaveAs}>Save As...</Button>
           <Button onClick={handleUpdate} disabled={!selectedOutfit}>Update</Button>
-          <Button onClick={handleWear} disabled={!selectedOutfit}>Wear</Button>
-          <Button onClick={handleStrip}>Strip</Button>
+          <Button onClick={handleWear} disabled={!selectedOutfit || inScene} title={sceneTooltip}>Wear</Button>
+          <Button onClick={handleStrip} disabled={inScene} title={sceneTooltip}>Strip</Button>
           <Button onClick={handleDelete} disabled={!selectedOutfit}>Delete</Button>
         </div>
       )}

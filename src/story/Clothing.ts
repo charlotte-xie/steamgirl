@@ -146,6 +146,14 @@ registerItemDefinition('base-stockings', {
   layer: 'under',
 })
 
+// Socks (under layer on feet only)
+registerItemDefinition('base-socks', {
+  name: 'socks',
+  category: 'Clothes',
+  positions: ['feet'],
+  layer: 'under',
+})
+
 // Feet
 registerItemDefinition('base-footwear', {
   name: 'footwear',
@@ -628,7 +636,24 @@ registerItemDefinition('school-skirt', extendItem('base-bottom', {
   },
 }))
 
-registerItemDefinition('school-socks', extendItem('base-stockings', {
+registerItemDefinition('school-socks', extendItem('base-socks', {
   name: 'school socks',
   description: 'Knee-high white socks with navy trim at the top. Standard issue for students.',
+}))
+
+// ============================================================================
+// CURSED ITEMS
+// ============================================================================
+
+registerItemDefinition('gloves-cursed', extendItem('base-gloves', {
+  name: 'elegant black gloves',
+  description: 'Exquisitely crafted gloves of supple black leather. They seem to shimmer with an unnatural darkness. Once worn, you feel an unsettling compulsion to keep them on...',
+  calcStats: (player) => {
+    player.addStat('Charm', 5)
+    player.addStat('Willpower', -10)
+  },
+  onWorn: (_player, item) => {
+    // Lock the gloves when worn - they're cursed!
+    item.locked = true
+  },
 }))
