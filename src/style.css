@@ -1,4 +1,20 @@
 :root {
+  /* Metallic colors (brass/copper palette) */
+  --brass-light: #d4a853; /* Prominent borders / brass features */
+  --brass-mid: #b8860b;
+  --brass-dark: #8b6914;
+  --copper-light: #b87333;
+  --copper-mid: #8b4513;
+  --copper-dark: #5c3317;
+
+  /* Metallic gradients and shadows (shared by brass buttons, screen switcher, frames) */
+  --gradient-brass: linear-gradient(180deg, var(--brass-light) 0%, var(--brass-mid) 50%, var(--brass-dark) 100%);
+  --gradient-brass-hover: linear-gradient(180deg, #e0b860 0%, var(--brass-light) 50%, var(--brass-mid) 100%);
+  --gradient-copper: linear-gradient(180deg, rgba(92, 51, 23, 0.8) 0%, rgba(70, 40, 20, 0.9) 100%);
+  --gradient-copper-hover: linear-gradient(180deg, rgba(120, 70, 35, 0.9) 0%, rgba(92, 51, 23, 0.95) 100%);
+  --shadow-brass: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-copper: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3);
+
   /* Design tokens / color system */
   --bg-main: #0e0b09; /* deep soot / iron */
   --bg-panel: rgba(34, 24, 16); /* dark brass panel */
@@ -6,12 +22,12 @@
   --bg-placeholder: radial-gradient(circle at 0 0, rgba(255, 176, 59, 0.16), transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(146, 79, 46, 0.2), transparent 55%),
     linear-gradient(135deg, #291812, #14100f);
+  --bg-overlay: rgba(20, 20, 20, 0.6);
 
-    --bg-overlay: rgba(20, 20, 20, 0.6);
-
-  --border-subtle: rgba(220, 170, 90, 0.4); /* brass edge */
-  --border-dashed: rgba(255, 200, 120, 0.6); /* riveted accent */
-  --border-main: rgb(218, 122, 20); /* brass highlight */
+  /* Borders (using brass palette) */
+  --border-subtle: rgba(212, 168, 83, 0.4); /* brass-light at 40% */
+  --border-dashed: rgba(212, 168, 83, 0.6); /* brass-light at 60% */
+  --border-main: var(--brass-mid);
 
   --text-main: #f4e4c4; /* parchment */
   --text-muted: #d0b691; /* aged parchment */
@@ -126,12 +142,11 @@ img {
   position: relative;
   padding: var(--space-sm);
   background:
-    radial-gradient(circle at 20% 20%, rgba(255, 200, 120, 0.3), transparent 50%),
-    linear-gradient(135deg, rgba(88, 57, 33, 0.6), rgba(34, 24, 16, 0.8));
-  border: 3px solid var(--border-subtle);
+    radial-gradient(circle at 20% 20%, rgba(212, 168, 83, 0.2), transparent 30%);
+  border: 2px solid var(--brass-light);
   border-radius: var(--radius-lg);
   box-shadow:
-    inset 0 2px 4px rgba(255, 214, 170, 0.2),
+    inset 0 2px 4px rgba(212, 168, 83, 0.15),
     inset 0 -2px 4px rgba(0, 0, 0, 0.4),
     0 8px 16px rgba(0, 0, 0, 0.5),
     var(--shadow-inner);
@@ -147,8 +162,8 @@ img {
   position: absolute;
   width: 8px;
   height: 8px;
-  background: radial-gradient(circle, rgba(255, 200, 120, 0.6), rgba(220, 170, 90, 0.4));
-  border: 1px solid rgba(255, 214, 170, 0.5);
+  background: radial-gradient(circle, var(--brass-light) 0%, var(--brass-mid) 60%, var(--brass-dark) 100%);
+  border: 1px solid var(--brass-light);
   border-radius: 50%;
   box-shadow:
     inset 0 1px 2px rgba(255, 255, 255, 0.3),
@@ -473,6 +488,119 @@ img {
   gap: var(--space-sm);
   align-items: stretch;
   width: 12.5rem;
+}
+
+/* ==========================================================================
+   Start Screen - Main menu with hero background
+   ========================================================================== */
+
+.start-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.start-screen > .hero {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: top center;
+}
+
+.start-screen > .overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(14, 11, 9, 0.7) 70%, rgba(14, 11, 9, 0.95));
+}
+
+.start-screen > main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  padding-bottom: var(--space-xl);
+  gap: var(--space-xl);
+}
+
+.start-screen header {
+  text-align: center;
+}
+
+.start-screen h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(220, 170, 90, 0.5), 0 4px 8px rgba(0, 0, 0, 0.8);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.start-screen p {
+  font-size: clamp(0.875rem, 2vw, 1.25rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.start-screen nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+  max-width: 40rem;
+  padding: 0 var(--space-md);
+}
+
+/* Brass buttons - metallic steampunk style for menus */
+.brass-button {
+  min-width: 10rem;
+  padding: var(--space-sm) var(--space-lg);
+  font: inherit;
+  font-size: var(--font-md);
+  letter-spacing: 0.05em;
+  border: 2px solid;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+
+.brass-button.primary {
+  color: var(--text-main);
+  background: var(--gradient-brass);
+  border-color: var(--brass-light);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-brass);
+}
+
+.brass-button.primary:hover:not(:disabled) {
+  background: var(--gradient-brass-hover);
+  border-color: #e0b860;
+}
+
+.brass-button.secondary {
+  color: var(--text-muted);
+  background: var(--gradient-copper);
+  border-color: var(--copper-light);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-copper);
+}
+
+.brass-button.secondary:hover:not(:disabled) {
+  color: var(--text-main);
+  background: var(--gradient-copper-hover);
+  border-color: var(--copper-light);
+}
+
+.brass-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .button-base {
@@ -1296,26 +1424,27 @@ img {
   justify-content: center;
   gap: 0.125rem;
   padding: var(--space-xs);
-  background: var(--bg-panel-soft);
-  border: 2px solid var(--border-subtle);
+  background: var(--gradient-copper);
+  border: 1px solid var(--brass-mid);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-copper);
 }
 
 .screen-btn:hover:not(.active) {
-  background: var(--bg-panel-soft);
+  background: var(--gradient-copper-hover);
   color: var(--text-main);
-  border-color: var(--text-main);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-color: var(--brass-light);
 }
 
 .screen-btn.active {
-  background: var(--bg-panel);
+  background: var(--gradient-brass);
   color: var(--text-main);
-  border-color: var(--border-main);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 8px rgba(220, 170, 90, 0.3);
+  border-color: var(--brass-light);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-brass), 0 0 8px rgba(220, 170, 90, 0.3);
 }
 
 .screen-btn-icon {

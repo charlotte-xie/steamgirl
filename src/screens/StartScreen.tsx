@@ -1,7 +1,7 @@
-import { Button } from '../components/Button'
-import { CenteredContent } from '../components/CenteredContent'
+import { BrassButton } from '../components/BrassButton'
 import { useGameLoader } from '../context/GameLoaderContext'
 import { useNavigate } from 'react-router-dom'
+import { assetUrl } from '../utils/assetUrl'
 
 export function StartScreen() {
   const { newGame, loadGame, continueGame, hasGame } = useGameLoader()
@@ -16,25 +16,23 @@ export function StartScreen() {
   }
 
   return (
-    <CenteredContent>
-      <div className="button-column">
-        <Button color="#f97316" disabled={!hasGame} onClick={() => continueGame()}>
-          Continue
-        </Button>
-        <Button color="#22c55e" onClick={newGame}>
-          New Game
-        </Button>
-        <Button color="#3b82f6" onClick={() => loadGame()}>
-          Load Game
-        </Button>
-        <Button color="#a855f7" onClick={handleSettings}>
-          Settings
-        </Button>
-        <Button color="#eab308" onClick={handleDemo}>
-          Demo
-        </Button>
-      </div>
-    </CenteredContent>
+    <div className="start-screen">
+      <div className="hero" style={{ backgroundImage: `url(${assetUrl('/steamgirl-hero.jpg')})` }} />
+      <div className="overlay" />
+      <main>
+        <header>
+          <h1>SteamGirl</h1>
+          <p>Steampunk Life Simulator</p>
+        </header>
+        <nav>
+          <BrassButton variant="primary" disabled={!hasGame} onClick={() => continueGame()}>Continue</BrassButton>
+          <BrassButton variant="primary" onClick={newGame}>New Game</BrassButton>
+          <BrassButton onClick={() => loadGame()}>Load Game</BrassButton>
+          <BrassButton onClick={handleSettings}>Settings</BrassButton>
+          <BrassButton onClick={handleDemo}>Demo</BrassButton>
+        </nav>
+      </main>
+    </div>
   )
 }
 

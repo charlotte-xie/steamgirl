@@ -237,9 +237,6 @@ export const startScripts = {
     g.getNPC('tour-guide')
     g.getNPC('commuter')
 
-    // Update npcsPresent after generating NPCs
-    g.updateNPCsPresent()
-
     
     // Move on to start script
     g.run('start', {})
@@ -248,7 +245,7 @@ export const startScripts = {
   start: (g: Game) => {
     g.add('The train exhales a long, wet hiss as it comes to a halt at the platform.')
       .add(p('You have travelled across the whole continent, and are finally here, in the city of ', highlight('Aetheria', '#fbbf24', 'Aetheria: The great steam-powered city of brass and gears, where mechanical marvels and Victorian elegance meet in a symphony of innovation and tradition.'), '.'))
-      .addOption('startPlatform', {}, 'Step onto Platform')
+      .addOption('startPlatform', {}, 'Continue')
       .addOption('skipIntro', {}, 'Skip Intro')
   },
 
@@ -270,8 +267,8 @@ export const startScripts = {
     g
     .add('You step onto the platform of Ironspark Terminus.')
     .add('Coal smoke curls around your ankles like fingers. The station cathedral looms above: brass vertebrae, glass skin revealing grinding intestines of gear and piston. Somewhere a valve releases steam that tastes faintly of iron and skin.')
-    .add(p('You are here. Alone. The ', highlight('acceptance letter', '#fbbf24', 'You managed to get accepted by the most prestigious University in Aetheria! A remarkable achievement for a country girl like you.'), ' pressed against your is your only connection to this place.'))
-    .addOption('whatNow', {}, 'What Now?')
+    .add(p('You are here. Alone. The ', highlight('acceptance letter', '#fbbf24', 'You managed to get accepted by the most prestigious University in Aetheria! A remarkable achievement for a country girl like you.'), ' pressed against your chest is your only connection to this place.'))
+    .addOption('whatNow', {}, 'Continue')
     g.addQuest('attend-university')
 
   },

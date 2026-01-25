@@ -91,7 +91,7 @@ export function SteamGauge({ value, label, color, description }: SteamGaugeProps
     fontWeight: 600,
     color: 'var(--text-main)',
     background: 'rgba(14, 11, 9, 0.9)',
-    border: '1px solid rgba(220, 170, 90, 0.5)',
+    border: '1px solid var(--brass-light)',
     borderRadius: '4px',
     padding: '0 4px',
   }
@@ -112,7 +112,7 @@ export function SteamGauge({ value, label, color, description }: SteamGaugeProps
             <path
               d={bgPath}
               fill="none"
-              stroke="rgba(220, 170, 90, 0.3)"
+              stroke="var(--brass-mid)"
               strokeWidth={strokeWidth + 4}
               strokeLinecap="round"
             />
@@ -142,7 +142,7 @@ export function SteamGauge({ value, label, color, description }: SteamGaugeProps
                   y1={y1}
                   x2={x2}
                   y2={y2}
-                  stroke="rgba(255, 200, 120, 0.5)"
+                  stroke="var(--brass-light)"
                   strokeWidth={1}
                 />
               )
@@ -167,9 +167,10 @@ export function SteamGauge({ value, label, color, description }: SteamGaugeProps
               cx={center}
               cy={center}
               r={4}
-              fill="rgba(220, 170, 90, 0.6)"
-              stroke="rgba(255, 200, 120, 0.8)"
+              fill="var(--brass-mid)"
+              stroke="var(--brass-light)"
               strokeWidth={1}
+              opacity={0.8}
             />
 
             {/* Needle */}
@@ -178,7 +179,7 @@ export function SteamGauge({ value, label, color, description }: SteamGaugeProps
               y1={center}
               x2={needleEndX}
               y2={needleEndY}
-              stroke="rgba(255, 200, 120, 0.9)"
+              stroke="var(--brass-mid)"
               strokeWidth={2}
               strokeLinecap="round"
               style={{
