@@ -48,24 +48,24 @@ describe('Clothing', () => {
       expect(getItem('blouse-silk')!.positions).toEqual(['chest', 'belly', 'arms'])
       expect(getItem('blouse-silk')!.layer).toBe('inner')
 
-      // Corset covers chest, belly, and waist
-      expect(getItem('corset-leather')!.positions).toEqual(['chest', 'belly', 'waist'])
+      // Corset covers chest and belly
+      expect(getItem('corset-leather')!.positions).toEqual(['chest', 'belly'])
       expect(getItem('corset-leather')!.layer).toBe('outer')
 
       // Vest covers chest and belly (no arms)
       expect(getItem('vest-brocade')!.positions).toEqual(['chest', 'belly'])
       expect(getItem('vest-brocade')!.layer).toBe('inner')
 
-      // Legs layers
-      expect(getItem('panties-cotton')!.positions).toEqual(['legs'])
+      // Hips layers - panties cover hips
+      expect(getItem('panties-cotton')!.positions).toEqual(['hips'])
       expect(getItem('panties-cotton')!.layer).toBe('under')
 
-      // Skirt covers waist and legs
-      expect(getItem('skirt-bustle')!.positions).toEqual(['waist', 'legs'])
+      // Skirt covers hips and legs
+      expect(getItem('skirt-bustle')!.positions).toEqual(['hips', 'legs'])
       expect(getItem('skirt-bustle')!.layer).toBe('inner')
 
-      // Dresses cover chest, belly, arms, waist, and legs
-      expect(getItem('dress-evening')!.positions).toEqual(['chest', 'belly', 'arms', 'waist', 'legs'])
+      // Dresses cover chest, belly, arms, hips, and legs
+      expect(getItem('dress-evening')!.positions).toEqual(['chest', 'belly', 'arms', 'hips', 'legs'])
       expect(getItem('dress-evening')!.layer).toBe('inner')
 
       // Feet
@@ -145,11 +145,11 @@ describe('Clothing', () => {
       player.addItem('dress-evening')
       player.wearItem('dress-evening')
 
-      // Dress covers chest, belly, arms, waist, and legs at inner layer
+      // Dress covers chest, belly, arms, hips, and legs at inner layer
       expect(player.getWorn('chest:inner')?.id).toBe('dress-evening')
       expect(player.getWorn('belly:inner')?.id).toBe('dress-evening')
       expect(player.getWorn('arms:inner')?.id).toBe('dress-evening')
-      expect(player.getWorn('waist:inner')?.id).toBe('dress-evening')
+      expect(player.getWorn('hips:inner')?.id).toBe('dress-evening')
       expect(player.getWorn('legs:inner')?.id).toBe('dress-evening')
     })
 
@@ -348,7 +348,7 @@ describe('Clothing', () => {
       expect(restored.getWorn('chest:inner')?.id).toBe('dress-evening')
       expect(restored.getWorn('belly:inner')?.id).toBe('dress-evening')
       expect(restored.getWorn('arms:inner')?.id).toBe('dress-evening')
-      expect(restored.getWorn('waist:inner')?.id).toBe('dress-evening')
+      expect(restored.getWorn('hips:inner')?.id).toBe('dress-evening')
       expect(restored.getWorn('legs:inner')?.id).toBe('dress-evening')
     })
   })

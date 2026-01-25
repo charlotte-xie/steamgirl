@@ -5,8 +5,12 @@
  * stat modifiers and affecting appearance.
  *
  * Clothing uses a position + layer system:
- * - Position: where on the body (head, chest, legs, feet, hands, neck, waist)
+ * - Position: where on the body (head, chest, legs, feet, hands, neck, hips, waist)
  * - Layer: what order worn (body, under, inner, outer, accessory)
+ *
+ * Position notes:
+ * - hips: panties, skirts, trousers (garments that go around the hips)
+ * - waist: belts, sashes (cinching accessories)
  *
  * Multiple items can occupy the same position at different layers.
  * E.g., bra (chest:under) + blouse (chest:inner) + corset (chest:outer)
@@ -23,7 +27,7 @@ registerItemDefinition('base-hat', {
   name: 'hat',
   category: 'Clothes',
   positions: ['head'],
-  layer: 'accessory',
+  layer: 'outer',
 })
 
 // Face
@@ -31,7 +35,7 @@ registerItemDefinition('base-mask', {
   name: 'mask',
   category: 'Clothes',
   positions: ['face'],
-  layer: 'accessory',
+  layer: 'outer',
 })
 
 registerItemDefinition('base-eyewear', {
@@ -111,30 +115,37 @@ registerItemDefinition('base-outerwear', {
 registerItemDefinition('base-corset', {
   name: 'corset',
   category: 'Clothes',
-  positions: ['chest', 'belly', 'waist'],  // Corset covers torso and cinches waist
+  positions: ['chest', 'belly'],  // Corset covers torso (waist for cinching belts, not corsets)
   layer: 'outer',
 })
 
-// Legs layers
+// Hips/legs layers
 registerItemDefinition('base-panties', {
   name: 'panties',
   category: 'Clothes',
-  positions: ['legs'],
+  positions: ['hips'],
   layer: 'under',
 })
 
 registerItemDefinition('base-bottom', {
   name: 'bottom',
   category: 'Clothes',
-  positions: ['waist', 'legs'],  // Skirts/trousers cover waist and legs
+  positions: ['hips', 'legs'],  // Long skirts/trousers cover hips and legs
   layer: 'inner',
 })
 
-// Full body (dress covers chest, belly, arms, waist, legs)
+registerItemDefinition('base-shorts', {
+  name: 'shorts',
+  category: 'Clothes',
+  positions: ['hips'],  // Shorts/short skirts cover only hips
+  layer: 'inner',
+})
+
+// Full body (dress covers chest, belly, arms, hips, legs)
 registerItemDefinition('base-dress', {
   name: 'dress',
   category: 'Clothes',
-  positions: ['chest', 'belly', 'arms', 'waist', 'legs'],
+  positions: ['chest', 'belly', 'arms', 'hips', 'legs'],
   layer: 'inner',
 })
 

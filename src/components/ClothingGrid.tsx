@@ -7,11 +7,11 @@ import { ItemIcon } from './ItemIcon'
 
 // Grid layout: rows = positions (top to bottom of body), columns = layers (outermost to innermost)
 // Arms/hands/wrists before chest so that connected items (chest+belly+waist, chest+arms) are adjacent
-const POSITIONS: ClothingPosition[] = ['head', 'face', 'neck', 'hands', 'wrists', 'arms', 'chest', 'belly', 'waist', 'legs', 'feet']
+const POSITIONS: ClothingPosition[] = ['head', 'face', 'neck', 'hands', 'wrists', 'arms', 'chest', 'belly', 'waist', 'hips', 'legs', 'feet']
 const LAYERS: ClothingLayer[] = ['accessory', 'outer', 'inner', 'under', 'body']
 
 // Always show these positions even if empty
-const ALWAYS_SHOW: ClothingPosition[] = ['head', 'chest', 'belly', 'legs', 'feet']
+const ALWAYS_SHOW: ClothingPosition[] = ['head', 'chest', 'belly', 'hips', 'legs', 'feet']
 
 // Short labels for header
 const LAYER_LABELS: Record<ClothingLayer, string> = {
@@ -33,6 +33,7 @@ const POSITION_LABELS: Record<ClothingPosition, string> = {
   wrists: 'Wrists',
   hands: 'Hands',
   waist: 'Waist',
+  hips: 'Hips',
   legs: 'Legs',
   feet: 'Feet',
 }

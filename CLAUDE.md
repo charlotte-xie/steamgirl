@@ -137,6 +137,8 @@ All story modules must be imported in `src/story/World.ts` in dependency order.
 - **Functions/Properties**: camelCase (`onApproach`, `speechColor`)
 - **Script names**: camelCase (`talkToMerchant`, `enterTavern`)
 
+Text and names should be in British / International English to maintain Victorian vibe
+
 ## Testing
 
 Tests live alongside source files as `*.test.ts`:

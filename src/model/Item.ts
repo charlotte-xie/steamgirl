@@ -20,7 +20,8 @@ export type ClothingPosition =
   | 'arms'
   | 'wrists'
   | 'hands'
-  | 'waist'
+  | 'waist'  // Belts, sashes
+  | 'hips'   // Panties, skirts, trousers
   | 'legs'
   | 'feet'
 
