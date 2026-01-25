@@ -172,3 +172,50 @@ Tests import `story/World` to load all registered content.
 - Production builds target GitHub Pages at `/steamgirl/`
 - Dev server runs at `localhost:3000`
 - Strict TypeScript with no unused locals/parameters allowed
+
+## UI Architecture
+
+### Screen System
+
+The game uses a screen switcher pattern for different views:
+- `GameScreen` manages the current screen via `useState<ScreenId>`
+- `ScreenSwitcher` component provides navigation buttons
+- Available screens: `game`, `character`, `inventory`, `quests`, `info`, `settings`
+- Most screens wrap content in a `Frame` component for consistent steampunk styling
+
+### Component Patterns
+
+- **Frame**: Reusable steampunk panel with brass borders and corner rivets
+- **Card**: Playing card style display for quests and effects (8rem × 10rem)
+- **Thumbnail**: Clickable image tiles for locations, NPCs, activities
+- **EffectTag**: Compact status effect indicator on avatar overlay
+
+### Styling Conventions
+
+- **CSS custom properties** for theming (colors, spacing, radii) in `:root`
+- **Responsive sizing**: Base font uses `clamp()` for viewport scaling
+- **Use rem units** for sizes that should scale with base font (not px)
+- **CSS class naming**: Semantic layout classes (`.game-screen`) plus visual utility classes (`.panel-elevated`)
+- **Steampunk theme**: Brass/copper gradients, parchment text colors, shadow effects
+
+### Key CSS Variables
+
+```css
+/* Spacing */
+--space-xs: 0.375rem;
+--space-sm: 0.75rem;
+--space-md: 1.25rem;
+--space-lg: 1.875rem;
+
+/* Colors */
+--bg-panel: rgba(34, 24, 16);
+--border-subtle: rgba(220, 170, 90, 0.4);
+--text-main: #f4e4c4;
+--text-muted: #d0b691;
+```
+
+### Cards and Effects
+
+- Effect cards have a `color` property in their definition
+- Card titles display in the effect's color for Effect type cards
+- Effects display as tags on avatar overlay (compact) and as cards on Character screen (detailed)
