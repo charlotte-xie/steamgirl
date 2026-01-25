@@ -1,9 +1,5 @@
-import { Button } from './Button'
-import { useGame } from '../context/GameContext'
-import { useGameLoader } from '../context/GameLoaderContext'
 import { Clock } from './Clock'
 import { WaitPanel } from './WaitPanel'
-import { Game } from '../model/Game'
 import { StatsPanel } from './StatsPanel'
 import { AvatarPanel } from './AvatarPanel'
 import { ScreenSwitcher, type ScreenId } from './ScreenSwitcher'
@@ -14,9 +10,6 @@ interface PlayerPanelProps {
 }
 
 export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps) {
-  const { game, setGame } = useGame()
-  const { quickRestart, saveGame, loadGameSave, hasManualSave } = useGameLoader()
-
   return (
     <div className="player-panel panel-elevated" style={{ height: '100%' }}>
       <AvatarPanel />
@@ -31,27 +24,6 @@ export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps)
       </div>
 
       <ScreenSwitcher currentScreen={currentScreen} onScreenChange={onScreenChange} />
-
-      <div className="dev-controls">
-        <Button onClick={() => quickRestart({ replace: true })}>
-          Restart
-        </Button>
-        <Button onClick={() => saveGame(game)}>
-          Save
-        </Button>
-        <Button
-          disabled={!hasManualSave}
-          onClick={() => {
-            const g = loadGameSave()
-            if (g) setGame(g)
-          }}
-        >
-          Load
-        </Button>
-        <Button onClick={() => setGame(Game.fromJSON(JSON.stringify(game.toJSON())))}>
-          Reload
-        </Button>
-      </div>
     </div>
   )
 }

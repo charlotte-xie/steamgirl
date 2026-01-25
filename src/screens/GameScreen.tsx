@@ -3,6 +3,7 @@ import { PlayerPanel } from '../components/PlayerPanel'
 import { LocationView } from '../components/LocationView'
 import { InventoryView } from '../components/InventoryView'
 import { Frame } from '../components/Frame'
+import { DevControls } from '../components/DevControls'
 import { useGame } from '../context/GameContext'
 import { useGameLoader } from '../context/GameLoaderContext'
 import { NewCharacterScreen, type Specialty } from './NewCharacterScreen'
@@ -58,6 +59,7 @@ export function GameScreen() {
       <main style={{ flex: 1, height: '100%' }}>
         {renderMainContent()}
       </main>
+      <DevControls />
     </div>
   )
 }

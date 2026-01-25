@@ -137,8 +137,8 @@ img {
 
 .frame-rivet {
   position: absolute;
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 8px;
+  height: 8px;
   background: radial-gradient(circle, rgba(255, 200, 120, 0.6), rgba(220, 170, 90, 0.4));
   border: 1px solid rgba(255, 214, 170, 0.5);
   border-radius: 50%;
@@ -148,10 +148,10 @@ img {
   z-index: 1;
 }
 
-.frame-rivet[data-corner="tl"] { top: 0.375rem; left: 0.375rem; }
-.frame-rivet[data-corner="tr"] { top: 0.375rem; right: 0.375rem; }
-.frame-rivet[data-corner="bl"] { bottom: 0.375rem; left: 0.375rem; }
-.frame-rivet[data-corner="br"] { bottom: 0.375rem; right: 0.375rem; }
+.frame-rivet[data-corner="tl"] { top: 6px; left: 6px; }
+.frame-rivet[data-corner="tr"] { top: 6px; right: 6px; }
+.frame-rivet[data-corner="bl"] { bottom: 6px; left: 6px; }
+.frame-rivet[data-corner="br"] { bottom: 6px; right: 6px; }
 
 /* ==========================================================================
    Layout & structure (semantic / logical layout)
@@ -307,12 +307,55 @@ img {
   max-width: 25em;
 }
 
-.dev-controls {
+/* Dev controls overlay - fixed position, top right */
+.dev-controls-overlay {
+  position: fixed;
+  top: var(--space-sm);
+  right: var(--space-sm);
   display: flex;
-  flex-wrap: wrap;
-  max-width: 25em;
-  justify-content: center;
-  gap: var(--space-xs);
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 1000;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.dev-controls-overlay:hover {
+  opacity: 1;
+}
+
+.dev-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.65rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.dev-btn-icon {
+  font-size: 0.75rem;
+}
+
+.dev-btn-label {
+  font-size: 0.6rem;
+}
+
+.dev-btn:hover:not(:disabled) {
+  background: var(--bg-panel-soft);
+  border-color: var(--border-main);
+}
+
+.dev-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Overlays for the location view */
