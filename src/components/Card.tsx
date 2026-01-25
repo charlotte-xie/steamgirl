@@ -24,6 +24,9 @@ export function Card({ card }: CardProps) {
     }
   }
 
+  // Get effect color for title (matches EffectTag overlay color)
+  const effectColor = cardDef.type === 'Effect' ? (cardDef as any).color : undefined
+
   return (
     <div className="card-component">
       {cardDef.image && (
@@ -32,7 +35,7 @@ export function Card({ card }: CardProps) {
         </div>
       )}
       <div className="card-content">
-        <h4 className="card-title">{cardDef.name}</h4>
+        <h4 className="card-title" style={effectColor ? { color: effectColor } : undefined}>{cardDef.name}</h4>
         {cardDef.description && (
           <p className="card-description">{cardDef.description}</p>
         )}

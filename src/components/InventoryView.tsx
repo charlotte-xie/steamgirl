@@ -9,7 +9,11 @@ type FilterOption = 'All' | ItemCategory
 
 const FILTER_OPTIONS: FilterOption[] = ['All', 'Consumables', 'Clothes', 'Components', 'Valuables', 'Special']
 
-export function InventoryView() {
+interface InventoryViewProps {
+  onUseItem?: () => void
+}
+
+export function InventoryView({ onUseItem }: InventoryViewProps) {
   const { game, runScript } = useGame()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [filter, setFilter] = useState<FilterOption>('All')
@@ -105,7 +109,10 @@ export function InventoryView() {
                 <Button
                   disabled={inScene}
                   title={sceneTooltip}
-                  onClick={() => runScript('consumeItem', { item: selectedItem.id })}
+                  onClick={() => {
+                    runScript('consumeItem', { item: selectedItem.id })
+                    onUseItem?.()
+                  }}
                 >
                   Use
                 </Button>

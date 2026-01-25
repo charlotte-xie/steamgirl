@@ -234,7 +234,7 @@ img {
 }
 
 .effect-tag {
-  font-size: 1rem;
+  font-size: 0.875rem;
   padding: 0.2rem;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
@@ -243,7 +243,7 @@ img {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
-  font-weight: 500;
+  font-weight: 600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   pointer-events: auto; /* Enable tooltips even when parent has pointer-events: none */
   cursor: help; /* Indicate that tooltip is available */
@@ -988,7 +988,7 @@ img {
 
 .card-title {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--text-main);
   font-weight: 600;
   text-align: center;
@@ -1137,6 +1137,17 @@ img {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.character-columns {
+  display: flex;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.character-columns .info-section {
+  flex: 1;
+  min-width: 200px;
 }
 
 .skill-item {

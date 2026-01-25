@@ -38,7 +38,7 @@ export function GameScreen() {
       case 'inventory':
         return (
           <Frame className="screen-frame">
-            <InventoryView />
+            <InventoryView onUseItem={() => setCurrentScreen('game')} />
           </Frame>
         )
       case 'quests':

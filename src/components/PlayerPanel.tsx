@@ -5,7 +5,6 @@ import { Clock } from './Clock'
 import { WaitPanel } from './WaitPanel'
 import { Game } from '../model/Game'
 import { StatsPanel } from './StatsPanel'
-import { EffectTag } from './EffectTag'
 import { AvatarPanel } from './AvatarPanel'
 import { ScreenSwitcher, type ScreenId } from './ScreenSwitcher'
 
@@ -18,8 +17,6 @@ export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps)
   const { game, setGame } = useGame()
   const { quickRestart, saveGame, loadGameSave, hasManualSave } = useGameLoader()
 
-  const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
-
   return (
     <div className="player-panel panel-elevated" style={{ height: '100%' }}>
       <AvatarPanel />
@@ -31,17 +28,6 @@ export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps)
 
       <div className="status-panel">
         <StatsPanel />
-
-        {effectCards.length > 0 && (
-          <div className="effects-section">
-            <h4>Effects</h4>
-            <div className="effects-list">
-              {effectCards.map((card, index) => (
-                <EffectTag key={`${card.id}-${index}`} card={card} />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <ScreenSwitcher currentScreen={currentScreen} onScreenChange={onScreenChange} />
