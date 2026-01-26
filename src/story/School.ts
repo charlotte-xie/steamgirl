@@ -14,6 +14,7 @@ import {
   addStat,
   eatFood,
   random,
+  run,
   registerDslScript,
   execAll,
 } from '../model/ScriptDSL'
@@ -197,6 +198,7 @@ const inductionComplete: Instruction[] = [
   text('With that, she hands you a small brass key and departs, leaving you to explore the university on your own.'),
   timeLapseUntil(10.25),
   completeQuest('attend-university'),
+  run('enrollLessons'),
 ]
 
 // ============================================================================

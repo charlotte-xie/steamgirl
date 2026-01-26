@@ -2,7 +2,7 @@ import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
 import { getScript, isInstruction, isScriptFn, type Script } from './Scripts'
-import { Card, type CardType } from './Card'
+import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 
 // Re-export Content types for convenience
@@ -113,6 +113,16 @@ export class Game {
   get hourOfDay(): number {
     const date = this.date
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600
+  }
+
+  /** Collects transient reminders from all player cards that define a reminders hook. */
+  get reminders(): Reminder[] {
+    const result: Reminder[] = []
+    for (const card of this.player.cards) {
+      const hook = card.template.reminders
+      if (hook) result.push(...hook(this, card))
+    }
+    return result
   }
 
   /** Gets a location from the game's locations map, creating it if needed. Returns the Location instance. Throws if location definition doesn't exist. */

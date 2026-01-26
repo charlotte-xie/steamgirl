@@ -1,5 +1,6 @@
 import { Clock } from './Clock'
 import { StatsPanel } from './StatsPanel'
+import { RemindersPanel } from './RemindersPanel'
 import { AvatarPanel } from './AvatarPanel'
 import { ScreenSwitcher, type ScreenId } from './ScreenSwitcher'
 
@@ -19,6 +20,7 @@ export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps)
 
       <div className="status-panel">
         <StatsPanel />
+        <RemindersPanel />
       </div>
 
       <ScreenSwitcher currentScreen={currentScreen} onScreenChange={onScreenChange} />

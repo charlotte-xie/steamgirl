@@ -32,6 +32,7 @@ import './Lodgings' // Register lodgings locations and scripts
 import './Lowtown' // Register lowtown location and NPCs
 import './Tavern' // Register tavern locations and NPCs
 import './School' // Register university interior locations
+import './school/Lessons' // Register lesson quest cards
 import './Pier' // Register pier location
 import './Industrial' // Register industrial district locations
 

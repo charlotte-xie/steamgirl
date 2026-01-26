@@ -290,6 +290,8 @@ export const startScripts = {
     // Skip the attend-university quest entirely
     g.addQuest('attend-university', { silent: true })
     g.completeQuest('attend-university')
+    // Enrol in lessons (same as induction would do)
+    g.run('enrollLessons', {})
     // Give room key and mark bedroom visited
     g.run('gainItem', { item: 'room-key', number: 1 })
     const bedroom = g.getLocation('bedroom')
@@ -298,6 +300,7 @@ export const startScripts = {
     // Move to school hallways
     g.run('move', { location: 'hallway' })
     g.scene.hideNpcImage = true
+    g.clearScene()
     g.add('You skip ahead to the university on Monday morning, ready to start your studies.')
   },
 
