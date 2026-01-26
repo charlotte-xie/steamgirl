@@ -112,9 +112,8 @@ onTime: (game: Game, card: Card, seconds: number) => {
   card.alcohol = Math.max(0, card.alcohol - ticks * 10)
 
   if (card.alcohol <= 0) {
-    // Self-remove the effect
-    const index = game.player.cards.findIndex(c => c.id === card.id)
-    game.player.cards.splice(index, 1)
+    game.removeCard(card.id)
+  } else {
     game.run('calcStats', {})
   }
 }
@@ -220,14 +219,11 @@ cardCompleted('quest-id')  // True if card exists and completed === true
 
 ### Removal
 
-Effects typically remove themselves in their `onTime` hook when their condition expires. There is no dedicated `removeCard` API -- effects splice themselves out of `game.player.cards` directly:
+Effects typically remove themselves in their `onTime` hook when their condition expires, by calling `game.removeCard(card.id)`. The `removeCard` method handles cleanup, stat recalculation, and calling the card's `onRemoved` hook (if defined). If the card being removed is subsumed (a card listed in its `subsumedBy` is still present), `onRemoved` is skipped -- the card is being upgraded, not truly removed.
 
 ```typescript
-const index = game.player.cards.findIndex(c => c.id === card.id && c.type === 'Effect')
-if (index !== -1) {
-  game.player.cards.splice(index, 1)
-  game.run('calcStats', {})  // Recalculate stats after removal
-}
+game.removeCard('intoxicated')       // Remove by ID, triggers onRemoved
+game.removeCard('peckish', true)     // Silent removal (no messages or hooks)
 ```
 
 Quest cards are not removed when completed -- they remain with `completed: true` (or `failed: true`) so they continue to display on the quests screen.
@@ -286,11 +282,10 @@ const intoxicatedEffect: CardDefinition = {
     if (reduction > 0) {
       card.alcohol = Math.max(0, (card.alcohol as number) - reduction)
       if (card.alcohol <= 0) {
-        // Self-remove
-        const i = game.player.cards.findIndex(c => c.id === card.id)
-        if (i !== -1) game.player.cards.splice(i, 1)
+        game.removeCard(card.id)
+      } else {
+        game.run('calcStats', {})
       }
-      game.run('calcStats', {})
     }
   },
 
@@ -325,7 +320,14 @@ function consumeAlcohol(game: Game, amount: number) {
 | `src/model/Player.ts` | `player.cards` array, `calcStats()` integration |
 | `src/model/Scripts.ts` | `timeLapse` (calls `onTime`), card predicates |
 | `src/model/ScriptDSL.ts` | DSL helpers (`addQuest`, `addEffect`, `hasCard`, etc.) |
-| `src/story/Effects.ts` | Effect definitions (Intoxicated, Sleepy, Peckish, Hungry, Starving) |
+| `src/story/Effects.ts` | Effect definitions (Intoxicated, Sleepy, Fresh, Peckish, Hungry, Starving) |
 | `src/story/Start.ts` | Quest definitions (Find Lodgings, Attend University) |
 | `src/components/Card.tsx` | Card display component |
 | `src/components/EffectTag.tsx` | Compact effect tag for avatar overlay |
+
+## Card-Based Subsystems
+
+Several game mechanics are built on the card system. Each has its own detailed documentation:
+
+- **[HUNGER.md](./HUNGER.md)** -- Time-based hunger with an escalating Peckish/Hungry/Starving chain.
+- **[WASHING.md](./WASHING.md)** -- Hygiene mechanic granting the temporary Fresh effect after bathing.
