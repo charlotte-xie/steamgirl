@@ -100,6 +100,10 @@ export const option = (label: string, script?: string, params?: object): Instruc
 export const npcLeaveOption = (text?: string, reply?: string, label = 'Leave'): Instruction =>
   run('npcLeaveOption', { text, reply, label })
 
+/** Run a named script on the current scene NPC (calls the 'interact' script). */
+export const npcInteract = (script: string, params?: object): Instruction =>
+  run('interact', { script, params: params ?? {} })
+
 // --- Control Flow ---
 
 /** Execute a sequence of instructions */

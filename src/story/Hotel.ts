@@ -5,6 +5,7 @@ import type { CardDefinition } from '../model/Card'
 import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
+import { script, text, when, npcStat } from '../model/ScriptDSL'
 import { freshenUp, takeWash } from './Effects'
 
 // ============================================================================
@@ -135,6 +136,12 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'nice-bathroom', time: 1, label: 'En-Suite Bathroom' },
       { dest: 'hotel', time: 1, label: 'Exit to Lobby' },
     ],
+    onFirstArrive: script(
+      text('You unlock the door and step inside. The room is small but immaculate — polished brass fixtures, crisp sheets, a writing desk by the window. You could get used to this.'),
+      when(npcStat('tour-guide', 'affection', 1),
+        text('You wonder if Rob the tour guide would like to see it.'),
+      ),
+    ),
   },
   'nice-bathroom': {
     name: 'En-Suite Bathroom',

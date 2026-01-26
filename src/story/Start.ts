@@ -5,7 +5,7 @@ import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
-import { text, say, npcLeaveOption, seq, when, random, skillCheck, addStat, addNpcStat, moveNpc, discoverLocation, option, scenes, move, timeLapse, hideNpcImage, showNpcImage, hasCard, inLocation, cond, run } from '../model/ScriptDSL'
+import { text, npcInteract, say, npcLeaveOption, seq, when, random, skillCheck, addStat, addNpcStat, moveNpc, discoverLocation, option, scenes, move, timeLapse, hideNpcImage, showNpcImage, hasCard, inLocation, cond, run } from '../model/ScriptDSL'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
 
@@ -164,6 +164,7 @@ registerNPC('tour-guide', {
         showNpcImage(),
         text('Rob shows you around the backstreets for a while.'),
         say('I hope this helps you find your feet. Enjoy Aetheria!'),
+        addNpcStat('affection', 1, 'tour-guide', true),
         npcLeaveOption('You thank Rob and he leaves you in the backstreets.'),
       ],
     ),
@@ -201,9 +202,9 @@ registerNPC('tour-guide', {
         ),
         addNpcStat('affection', 10, 'tour-guide'),
         text('Rob is clearly impressed by your accommodation.'),
-        option('Chat', 'interact', { script: 'roomChat' }),
-        option('Head out', 'interact', { script: 'leaveRoom' }),
-        npcLeaveOption(),
+      ],
+      [ /** final phase just into normal conversation */
+        npcInteract('roomChat'),    
       ],
     ),
     // Random chat while Rob is in the hotel room
@@ -216,7 +217,7 @@ registerNPC('tour-guide', {
         say('"My flat has a window that looks onto a brick wall. This is... rather different."'),
       ),
       option('Chat', 'interact', { script: 'roomChat' }),
-      option('Head out', 'interact', { script: 'leaveRoom' }),
+      option('Depart Room', 'interact', { script: 'leaveRoom' }),
       npcLeaveOption()
     ),
     // Leave the hotel room together
