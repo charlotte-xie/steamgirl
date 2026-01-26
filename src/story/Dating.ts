@@ -92,7 +92,7 @@ export interface DatePlan {
 export function standardGreeting(greeting?: string): Script {
   return (game: Game) => {
     const npc = game.npc
-    npc.say(greeting ?? '"You came! Shall we go?"')
+    npc.say(greeting ?? 'You came! Shall we go?')
     game.addOption('dateCancel', { npc: game.scene.npc }, 'Cancel the date')
     game.addOption('dateStart', { npc: game.scene.npc }, 'Go with him')
   }
@@ -107,7 +107,7 @@ export function standardCancel(response?: string, penalty = 20): Script {
     const npcId = game.scene.npc
     if (!npcId) return
     const npc = game.getNPC(npcId)
-    npc.say(response ?? '"Oh. Right. Maybe some other time, then."')
+    npc.say(response ?? 'Oh. Right. Maybe some other time, then.')
     npc.stats.set('affection', Math.max(0, npc.affection - penalty))
     game.add({ type: 'text', text: `Affection -${penalty}`, color: '#ef4444' })
     game.removeCard('date', true)

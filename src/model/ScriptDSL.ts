@@ -188,6 +188,35 @@ export const scenes = (...sceneArrays: Instruction[][]): Instruction => {
 }
 
 /**
+ * Create a player-choice option that continues the current scenes() sequence.
+ * Use inside a scene array to offer branching paths.
+ *
+ * The simplest form takes a label and inline instructions for a single branch scene:
+ *   branch('Kiss him', text('You kiss.'), addNpcStat('affection', 5))
+ *
+ * For multi-scene branches, pass an array of scene arrays as the second argument:
+ *   branch('Go to the garden', [
+ *     [move('garden'), text('You arrive at the garden.')],
+ *     [text('The roses are beautiful.'), endDate()],
+ *   ])
+ *
+ * @param label - Button label shown to the player
+ * @param rest - Either inline instructions (variadic) or a single Instruction[][] array
+ */
+export function branch(label: string, ...rest: Instruction[]): Instruction
+export function branch(label: string, scenes: Instruction[][]): Instruction
+export function branch(label: string, ...rest: (Instruction | Instruction[][])[]): Instruction {
+  // If the first (and only non-label) argument is an array of arrays, it's multi-scene
+  if (rest.length === 1 && Array.isArray(rest[0]) && Array.isArray((rest[0] as unknown[])[0])) {
+    return option(label, 'global:continueScenes', { remaining: rest[0] })
+  }
+  // Otherwise, all args are inline instructions for a single scene
+  return option(label, 'global:continueScenes', {
+    remaining: [rest as Instruction[]],
+  })
+}
+
+/**
  * Perform a skill test. Can be used as:
  * - Predicate: skillCheck('Flirtation', 10) - returns boolean
  * - With callbacks: skillCheck('Flirtation', 10, [text('Success!')], [text('Failure!')])

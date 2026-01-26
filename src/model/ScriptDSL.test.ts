@@ -43,6 +43,8 @@ import {
   completeQuest,
   addEffect,
   recordTime,
+  scenes,
+  branch,
   // Execution
   exec,
   execAll,
@@ -116,6 +118,37 @@ describe('ScriptDSL', () => {
       it('option() produces option instruction', () => {
         expect(option('Click me', 'nextScript', { x: 1 })).toEqual(['option', { label: 'Click me', script: 'nextScript', params: { x: 1 } }])
         expect(option('Next')).toEqual(['option', { label: 'Next', script: undefined, params: {} }])
+      })
+
+      it('branch() with inline instructions wraps in single-scene remaining', () => {
+        const result = branch('Kiss him', text('You kiss.'), addStat('Charm', 5))
+        expect(result).toEqual(['option', {
+          label: 'Kiss him',
+          script: 'global:continueScenes',
+          params: {
+            remaining: [[
+              ['text', { parts: ['You kiss.'] }],
+              ['addStat', { stat: 'Charm', change: 5 }],
+            ]],
+          },
+        }])
+      })
+
+      it('branch() with Instruction[][] uses multi-scene remaining', () => {
+        const result = branch('Go to garden', [
+          [text('Scene 1')],
+          [text('Scene 2')],
+        ])
+        expect(result).toEqual(['option', {
+          label: 'Go to garden',
+          script: 'global:continueScenes',
+          params: {
+            remaining: [
+              [['text', { parts: ['Scene 1'] }]],
+              [['text', { parts: ['Scene 2'] }]],
+            ],
+          },
+        }])
       })
 
       it('npcLeaveOption() produces npcLeaveOption instruction', () => {
@@ -661,6 +694,344 @@ describe('ScriptDSL', () => {
 
         expect(game.scene.content.length).toBe(2) // text + "You are rich!"
         expect(game.scene.options.length).toBe(2) // "Spend money" + "Leave"
+      })
+    })
+
+    describe('scenes() and continueScenes', () => {
+      it('scenes with single scene runs immediately with no Continue button', () => {
+        game.clearScene()
+        execAll(game, [scenes([text('Only scene')])])
+        expect(game.scene.content.length).toBe(1)
+        expect(game.scene.options.length).toBe(0)
+      })
+
+      it('scenes with multiple scenes adds Continue button for the rest', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          [text('Scene 2')],
+          [text('Scene 3')],
+        )])
+        // Scene 1 content shown
+        expect(game.scene.content.length).toBe(1)
+        // Continue button carries scenes 2 and 3
+        expect(game.scene.options.length).toBe(1)
+        expect(game.scene.options[0].label).toBe('Continue')
+      })
+
+      it('Continue button advances through all scenes', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          [text('Scene 2')],
+          [text('Scene 3')],
+        )])
+
+        // Click Continue → Scene 2
+        const continueBtn1 = game.scene.options[0]
+        game.clearScene()
+        game.run(continueBtn1.script)
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 2')
+        expect(game.scene.options.length).toBe(1) // Continue to Scene 3
+
+        // Click Continue → Scene 3
+        const continueBtn2 = game.scene.options[0]
+        game.clearScene()
+        game.run(continueBtn2.script)
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3')
+        expect(game.scene.options.length).toBe(0) // No more scenes
+      })
+
+      it('branching options thread outer continuation automatically', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          // Scene 2: branching with player choices
+          [
+            text('Choose a path'),
+            option('Path A', 'global:continueScenes', {
+              remaining: [[text('Branch A content')]],
+            }),
+            option('Path B', 'global:continueScenes', {
+              remaining: [[text('Branch B content')]],
+            }),
+          ],
+          // Scene 3: should be reached after either branch
+          [text('Scene 3 — after branch')],
+          // Scene 4: final scene
+          [text('Scene 4 — finale')],
+        )])
+
+        // Click Continue → Scene 2 (the branching scene)
+        const continueBtn = game.scene.options[0]
+        game.clearScene()
+        game.run(continueBtn.script)
+
+        // Scene 2 shows its content and two branch options
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Choose a path')
+        expect(game.scene.options.length).toBe(2)
+        expect(game.scene.options[0].label).toBe('Path A')
+        expect(game.scene.options[1].label).toBe('Path B')
+
+        // Click Path A → should show branch content
+        const pathA = game.scene.options[0]
+        game.clearScene()
+        game.run(pathA.script)
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Branch A content')
+        // Should have a Continue button to Scene 3 (outer continuation threaded in)
+        expect(game.scene.options.length).toBe(1)
+        expect(game.scene.options[0].label).toBe('Continue')
+
+        // Click Continue → Scene 3
+        const cont3 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont3.script)
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
+        expect(game.scene.options.length).toBe(1) // Continue to Scene 4
+
+        // Click Continue → Scene 4
+        const cont4 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont4.script)
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 4 — finale')
+        expect(game.scene.options.length).toBe(0) // End
+      })
+
+      it('Path B also reaches outer continuation', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          // Scene 2: branching
+          [
+            option('Path A', 'global:continueScenes', {
+              remaining: [[text('Branch A')]],
+            }),
+            option('Path B', 'global:continueScenes', {
+              remaining: [[text('Branch B')]],
+            }),
+          ],
+          // Scene 3: after branch
+          [text('After branch')],
+        )])
+
+        // Click Continue → Scene 2
+        const continueBtn = game.scene.options[0]
+        game.clearScene()
+        game.run(continueBtn.script)
+
+        // Scene 2 has two branch options
+        expect(game.scene.options.length).toBe(2)
+
+        // Click Path B
+        const pathB = game.scene.options[1]
+        game.clearScene()
+        game.run(pathB.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Branch B')
+        // Continue to "After branch"
+        expect(game.scene.options.length).toBe(1)
+
+        const cont = game.scene.options[0]
+        game.clearScene()
+        game.run(cont.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('After branch')
+        expect(game.scene.options.length).toBe(0)
+      })
+
+      it('non-continueScenes options are not modified', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          // Scene 2: has a non-continueScenes option
+          [
+            option('Custom action', 'someOtherScript', { foo: 'bar' }),
+          ],
+          [text('Scene 3')],
+        )])
+
+        // Click Continue → Scene 2
+        const continueBtn = game.scene.options[0]
+        game.clearScene()
+        game.run(continueBtn.script)
+
+        // Scene 2 has only the custom option
+        expect(game.scene.options.length).toBe(1)
+        const opt = game.scene.options[0]
+        // The custom option should be untouched — no remaining appended
+        expect(opt.script).toEqual(['someOtherScript', { foo: 'bar' }])
+      })
+
+      it('branch with no remaining still gets outer continuation', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          [
+            // Option with empty remaining — just a choice point
+            option('Go', 'global:continueScenes', { remaining: [] }),
+          ],
+          [text('After choice')],
+        )])
+
+        // Click Continue → Scene 2
+        const continueBtn = game.scene.options[0]
+        game.clearScene()
+        game.run(continueBtn.script)
+
+        // Scene 2 has the Go option
+        const goBtn = game.scene.options[0]
+        game.clearScene()
+        game.run(goBtn.script)
+        // Should show "After choice" since outer rest was threaded in
+        expect((game.scene.content[0] as any).content[0].text).toBe('After choice')
+        expect(game.scene.options.length).toBe(0)
+      })
+
+      it('does not mutate shared DSL objects across playthroughs', () => {
+        // Build scenes once (simulating module-load-time registration)
+        const dateScene = scenes(
+          [text('Scene 1')],
+          [
+            text('Choose'),
+            option('Path A', 'global:continueScenes', {
+              remaining: [[text('Branch A')]],
+            }),
+          ],
+          [text('Scene 3 — after branch')],
+        )
+
+        // First playthrough
+        game.clearScene()
+        execAll(game, [dateScene])
+        const cont1 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont1.script) // Scene 2
+        const pathA1 = game.scene.options[0]
+        game.clearScene()
+        game.run(pathA1.script) // Branch A + threaded Scene 3
+        expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
+        expect(game.scene.options.length).toBe(1) // Continue to Scene 3
+
+        // Second playthrough — should produce identical results
+        game.clearScene()
+        execAll(game, [dateScene])
+        const cont2 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont2.script) // Scene 2
+        const pathA2 = game.scene.options[0]
+        game.clearScene()
+        game.run(pathA2.script) // Branch A + threaded Scene 3
+        expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
+        // CRITICAL: still exactly 1 Continue, not 2 (which would happen if
+        // the first playthrough mutated the shared remaining array)
+        expect(game.scene.options.length).toBe(1)
+
+        const finalCont = game.scene.options[0]
+        game.clearScene()
+        game.run(finalCont.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
+        expect(game.scene.options.length).toBe(0) // No loop back
+      })
+
+      it('no outer rest means branch options unchanged', () => {
+        game.clearScene()
+        // Only one scene — no outer continuation
+        execAll(game, [scenes(
+          [
+            option('Path A', 'global:continueScenes', {
+              remaining: [[text('Branch A')]],
+            }),
+          ],
+        )])
+
+        const pathA = game.scene.options[0]
+        game.clearScene()
+        game.run(pathA.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
+        // No more scenes — branch's own remaining was all there was
+        expect(game.scene.options.length).toBe(0)
+      })
+
+      it('branch() helper works with inline instructions', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          [
+            text('Choose'),
+            branch('Path A', text('Branch A content'), text('More A')),
+            branch('Path B', text('Branch B content')),
+          ],
+          [text('Scene 3 — after branch')],
+        )])
+
+        // Click Continue → Scene 2
+        const cont = game.scene.options[0]
+        game.clearScene()
+        game.run(cont.script)
+        expect(game.scene.options.length).toBe(2)
+        expect(game.scene.options[0].label).toBe('Path A')
+
+        // Click Path A
+        const pathA = game.scene.options[0]
+        game.clearScene()
+        game.run(pathA.script)
+        // Two content items from inline branch
+        expect(game.scene.content.length).toBe(2)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Branch A content')
+        expect((game.scene.content[1] as any).content[0].text).toBe('More A')
+        // Continue to Scene 3
+        expect(game.scene.options.length).toBe(1)
+
+        const cont3 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont3.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
+      })
+
+      it('branch() helper works with multi-scene Instruction[][]', () => {
+        game.clearScene()
+        execAll(game, [scenes(
+          [text('Scene 1')],
+          [
+            branch('Garden path', [
+              [text('Garden scene 1')],
+              [text('Garden scene 2')],
+            ]),
+          ],
+          [text('After garden')],
+        )])
+
+        // Click Continue → Scene 2
+        const cont = game.scene.options[0]
+        game.clearScene()
+        game.run(cont.script)
+        expect(game.scene.options.length).toBe(1)
+        expect(game.scene.options[0].label).toBe('Garden path')
+
+        // Click Garden path → Garden scene 1
+        const garden = game.scene.options[0]
+        game.clearScene()
+        game.run(garden.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Garden scene 1')
+        expect(game.scene.options.length).toBe(1) // Continue
+
+        // Continue → Garden scene 2
+        const cont2 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont2.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('Garden scene 2')
+        expect(game.scene.options.length).toBe(1) // Continue to After garden
+
+        // Continue → After garden
+        const cont3 = game.scene.options[0]
+        game.clearScene()
+        game.run(cont3.script)
+        expect((game.scene.content[0] as any).content[0].text).toBe('After garden')
+        expect(game.scene.options.length).toBe(0)
       })
     })
 

@@ -31,7 +31,7 @@ import {
   text, say, npcLeaveOption, npcInteract,
   seq, when, random, cond,
   addNpcStat, moveNpc,
-  discoverLocation, option, scenes,
+  discoverLocation, option, branch, scenes,
   move, timeLapse,
   hideNpcImage, showNpcImage,
   hasStat, npcStat, skillCheck,
@@ -143,7 +143,7 @@ registerNPC('tour-guide', {
 
     // Default: station approach
     const npc = game.npc
-    npc.say('"Back again? The tour offer still stands if you\'re interested."')
+    npc.say('Back again? The tour offer still stands if you\'re interested.')
     game.addOption('interact', { script: 'tour' }, 'Accept the tour')
     if (game.player.hasCard('hotel-booking')) {
       game.addOption('interact', { script: 'inviteToRoom' }, 'Invite to see your hotel room')
@@ -220,21 +220,21 @@ registerNPC('tour-guide', {
     inviteToRoom: scenes(
       // Set off from the station
       [
-        say('"You\'ve got a room at the Imperial? Blimey! I\'d love to see it. Lead the way!"'),
+        say('You\'ve got a room at the Imperial? Blimey! I\'d love to see it. Lead the way!'),
         hideNpcImage(),
         text('You set off together through the busy streets.'),
       ],
       // City Centre — passing through
       [
         move('default', 10),
-        say('"Straight through the centre, is it? I know a shortcut past the fountain."'),
+        say('Straight through the centre, is it? I know a shortcut past the fountain.'),
         text('Rob walks briskly, pointing out landmarks as you go. He clearly knows every cobblestone.'),
       ],
       // Hotel Lobby — arriving at the Imperial
       [
         move('hotel', 5),
         text('You push through the revolving brass doors into the lobby. Rob stops in his tracks.'),
-        say('"Blimey. I\'ve walked past this place a hundred times but never been inside. Look at those chandeliers!"'),
+        say('Blimey. I\'ve walked past this place a hundred times but never been inside. Look at those chandeliers!'),
         text('The concierge glances up, gives Rob a slightly disapproving look, then returns to his ledger.'),
       ],
       // Room 101 — the big reveal
@@ -242,11 +242,11 @@ registerNPC('tour-guide', {
         move('dorm-suite', 1),
         moveNpc('tour-guide', 'dorm-suite'),
         showNpcImage(),
-        say('"Would you look at this! A proper bed, a writing desk, a view of the rooftops..."'),
+        say('Would you look at this! A proper bed, a writing desk, a view of the rooftops...'),
         random(
-          say('"I could live like this! Beats my little flat by a country mile."'),
-          say('"This is how the other half lives, eh? Polished brass everywhere!"'),
-          say('"Steam radiator and everything! You\'ve done well for yourself."'),
+          say('I could live like this! Beats my little flat by a country mile.'),
+          say('This is how the other half lives, eh? Polished brass everywhere!'),
+          say('Steam radiator and everything! You\'ve done well for yourself.'),
         ),
         addNpcStat('affection', 10, 'tour-guide'),
         text('Rob is clearly impressed by your accommodation.'),
@@ -260,11 +260,11 @@ registerNPC('tour-guide', {
     // Random chat while Rob is in the hotel room
     roomChat: seq(
       random(
-        say('"I could get used to this. The sheets look like actual cotton — not that scratchy stuff."'),
-        say('"Have you seen the bathroom? Claw-footed tub! I\'ve only ever read about those."'),
-        say('"The view from up here — you can see right across the rooftops. Magnificent."'),
-        say('"I wonder what the kitchens are like. Bet they do a proper breakfast."'),
-        say('"My flat has a window that looks onto a brick wall. This is... rather different."'),
+        say('I could get used to this. The sheets look like actual cotton — not that scratchy stuff.'),
+        say('Have you seen the bathroom? Claw-footed tub! I\'ve only ever read about those.'),
+        say('The view from up here — you can see right across the rooftops. Magnificent.'),
+        say('I wonder what the kitchens are like. Bet they do a proper breakfast.'),
+        say('My flat has a window that looks onto a brick wall. This is... rather different.'),
       ),
       option('Chat', 'interact', { script: 'roomChat' }),
       when(hasStat('Flirtation', 1),
@@ -277,7 +277,7 @@ registerNPC('tour-guide', {
     // Leave the hotel room together
     leaveRoom: seq(
       text('You suggest heading back downstairs.'),
-      say('"Right you are. Thanks for the visit — quite the treat!"'),
+      say('Right you are. Thanks for the visit — quite the treat!'),
       moveNpc('tour-guide', null),
       move('hotel', 1),
     ),
@@ -296,27 +296,27 @@ registerNPC('tour-guide', {
       const flirtScenes = [
         [
           text('You lean a little closer and compliment his knowledge of the city.'),
-          say('"Oh! Well, I — thank you. I do try to keep up with things. You\'re very kind to say so."'),
+          say('Oh! Well, I — thank you. I do try to keep up with things. You\'re very kind to say so.'),
           text('His ears go pink.'),
         ],
         [
           text('You brush his arm and tell him he\'s got a lovely smile.'),
-          say('"I — what? Me? I mean — that\'s — blimey."'),
+          say('I — what? Me? I mean — that\'s — blimey.'),
           text('He fumbles with his guidebook, grinning like an idiot.'),
         ],
         [
           text('You catch his eye and hold it just a beat longer than necessary.'),
-          say('"I, erm. Right. Yes. Where were we? I\'ve completely lost my train of thought."'),
+          say('I, erm. Right. Yes. Where were we? I\'ve completely lost my train of thought.'),
           text('He scratches the back of his neck, flustered but clearly pleased.'),
         ],
         [
           text('You tell him you feel safe with him around.'),
-          say('"Really? That\'s — well, that means a lot, actually. I\'ll always look out for you."'),
+          say('Really? That\'s — well, that means a lot, actually. I\'ll always look out for you.'),
           text('He straightens up a little, trying not to beam.'),
         ],
         [
           text('You tuck a stray bit of hair behind your ear and ask if he\'d like to show you around again sometime — just the two of you.'),
-          say('"Just us? I — yes. Yes, I\'d like that very much."'),
+          say('Just us? I — yes. Yes, I\'d like that very much.'),
           text('He clutches his guidebook to his chest as though it might escape.'),
         ],
       ]
@@ -330,7 +330,7 @@ registerNPC('tour-guide', {
 
       if (canInvite) {
         // Rob asks the player on a date
-        npc.say('"I was thinking... would you fancy going for a walk tomorrow evening? Just the two of us. I know a lovely spot by the lake."')
+        npc.say('I was thinking... would you fancy going for a walk tomorrow evening? Just the two of us. I know a lovely spot by the lake.')
         game.add('He looks at you hopefully, his ears going pink again.')
         game.addOption('interact', { script: 'dateAccept' }, 'Accept the date')
         game.addOption('interact', { script: 'dateDecline' }, 'Decline')
@@ -365,7 +365,7 @@ registerNPC('tour-guide', {
       tomorrow.setHours(18, 0, 0, 0)
       const meetTime = Math.floor(tomorrow.getTime() / 1000)
 
-      npc.say('"Really? Brilliant! I\'ll meet you in the City Centre at six o\'clock tomorrow evening. Don\'t be late!"')
+      npc.say('Really? Brilliant! I\'ll meet you in the City Centre at six o\'clock tomorrow evening. Don\'t be late!')
       game.add('He beams, practically bouncing on his heels.')
 
       game.addCard('date', 'Date', {
@@ -378,7 +378,7 @@ registerNPC('tour-guide', {
 
     dateDecline: (game: Game) => {
       const npc = game.getNPC('tour-guide')
-      npc.say('"Oh. No, that\'s — of course. Maybe some other time, then."')
+      npc.say('Oh. No, that\'s — of course. Maybe some other time, then.')
       game.add('He tries to smile, but his disappointment is obvious.')
       npc.leaveOption()
     },
@@ -402,30 +402,26 @@ function robPierPath(): Instruction[][] {
     // Pier: The gift
     [
       showNpcImage(),
-      say('"I brought you something. It\'s not much — just a little thing I spotted at the market."'),
+      say('I brought you something. It\'s not much — just a little thing I spotted at the market.'),
       text('He produces a small brass compass from his pocket, its face engraved with a tiny star.'),
-      say('"So you\'ll always find your way. In Aetheria, I mean. Or... wherever."'),
+      say('So you\'ll always find your way. In Aetheria, I mean. Or... wherever.'),
       text('He goes pink and looks away, scratching the back of his neck.'),
     ],
     // Pier: Stargazing — intimacy choice
     [
       text('You sit on the edge of the pier, feet dangling over the dark water. The city\'s mechanical hum is distant here, almost peaceful.'),
-      say('"That bright one there — that\'s the Engineer\'s Star. Sailors used to navigate by it. Or so my granddad said."'),
+      say('That bright one there — that\'s the Engineer\'s Star. Sailors used to navigate by it. Or so my granddad said.'),
       text('Rob points upward, his arm almost but not quite touching yours.'),
-      option('Take his hand', 'global:continueScenes', {
-        remaining: [[
-          text('You reach over and lace your fingers through his. He freezes — then holds on as though you might vanish.'),
-          addNpcStat('affection', 5, 'tour-guide'),
-          say('"I... wasn\'t expecting that."'),
-          text('His thumb traces a small circle on the back of your hand. Neither of you speaks for a while, and neither of you needs to.'),
-        ]],
-      }),
-      option('Enjoy the view', 'global:continueScenes', {
-        remaining: [[
-          text('You gaze up at the stars together, the lantern-light warm on your faces.'),
-          say('"My granddad said the Engineer\'s Star watches over anyone brave enough to follow their curiosity. I always liked that."'),
-        ]],
-      }),
+      branch('Take his hand',
+        text('You reach over and lace your fingers through his. He freezes — then holds on as though you might vanish.'),
+        addNpcStat('affection', 5, 'tour-guide'),
+        say('I... wasn\'t expecting that.'),
+        text('His thumb traces a small circle on the back of your hand. Neither of you speaks for a while, and neither of you needs to.'),
+      ),
+      branch('Enjoy the view',
+        text('You gaze up at the stars together, the lantern-light warm on your faces.'),
+        say('My granddad said the Engineer\'s Star watches over anyone brave enough to follow their curiosity. I always liked that.'),
+      ),
     ],
     // Walk home
     ...robWalkHome(),
@@ -446,9 +442,9 @@ function robGardenPath(): Instruction[][] {
     [
       showNpcImage(),
       text('You step into a hidden garden. Moonlight catches on a small fountain at its centre — long dry, but beautiful. Ivy cascades over crumbling stonework and wild roses climb a trellis that must be a hundred years old.'),
-      say('"I found this place years ago. Nobody comes here. I think people have forgotten it exists."'),
+      say('I found this place years ago. Nobody comes here. I think people have forgotten it exists.'),
       text('His voice is soft, almost reverent.'),
-      say('"I\'ve never shown anyone before. But I thought... I thought you\'d understand why I love it."'),
+      say('I\'ve never shown anyone before. But I thought... I thought you\'d understand why I love it.'),
       addNpcStat('affection', 5, 'tour-guide'),
     ],
     // Garden: Conversation — skill check for a special moment
@@ -457,12 +453,12 @@ function robGardenPath(): Instruction[][] {
       skillCheck('Charm', 12,
         [
           text('You tell him it\'s the most beautiful place you\'ve seen in Aetheria. He beams — really beams — as though you\'ve given him a gift worth more than gold.'),
-          say('"You mean that? It\'s just a forgotten garden, but — that means a lot. Coming from you."'),
+          say('You mean that? It\'s just a forgotten garden, but — that means a lot. Coming from you.'),
           addNpcStat('affection', 3, 'tour-guide'),
         ],
         [
           text('You try to find the right words, but the beauty of the place has left you a bit lost for speech.'),
-          say('"It\'s a lot to take in, isn\'t it? I was the same the first time."'),
+          say('It\'s a lot to take in, isn\'t it? I was the same the first time.'),
           text('He smiles, understanding.'),
         ],
       ),
@@ -470,24 +466,20 @@ function robGardenPath(): Instruction[][] {
     // Garden: Intimacy choice
     [
       text('Rob sits on the edge of the old fountain. The moonlight catches the angles of his face. He looks up at you.'),
-      say('"Thank you. For coming tonight. For... for being here."'),
+      say('Thank you. For coming tonight. For... for being here.'),
       text('His voice catches slightly. He looks down at his hands.'),
-      option('Sit close beside him', 'global:continueScenes', {
-        remaining: [[
-          text('You sit next to him, close enough that your shoulders press together. He exhales — a long, shaky breath — and you feel some tension leave him.'),
-          addNpcStat('affection', 3, 'tour-guide'),
-          say('"I don\'t really know what I\'m doing,"'),
-          text('he admits quietly.'),
-          say('"But I\'m glad I\'m doing it with you."'),
-        ]],
-      }),
-      option('Sit across from him', 'global:continueScenes', {
-        remaining: [[
-          text('You take a seat on the stone bench opposite. The fountain stands between you like a gentle chaperone.'),
-          say('"It\'s funny. I feel like I can actually talk to you. Not many people I can say that about."'),
-          text('He gives a lopsided smile.'),
-        ]],
-      }),
+      branch('Sit close beside him',
+        text('You sit next to him, close enough that your shoulders press together. He exhales — a long, shaky breath — and you feel some tension leave him.'),
+        addNpcStat('affection', 3, 'tour-guide'),
+        say('I don\'t really know what I\'m doing,'),
+        text('he admits quietly.'),
+        say('But I\'m glad I\'m doing it with you.'),
+      ),
+      branch('Sit across from him',
+        text('You take a seat on the stone bench opposite. The fountain stands between you like a gentle chaperone.'),
+        say('It\'s funny. I feel like I can actually talk to you. Not many people I can say that about.'),
+        text('He gives a lopsided smile.'),
+      ),
     ],
     // Walk home
     ...robWalkHome(),
@@ -507,39 +499,35 @@ function robWalkHome(): Instruction[][] {
     // Farewell — affection-gated kiss
     [
       showNpcImage(),
-      say('"I had a really lovely time tonight. Thank you for coming."'),
+      say('I had a really lovely time tonight. Thank you for coming.'),
       // High affection: Rob asks to kiss you
       cond(
         npcStat('tour-guide', 'affection', 40),
         seq(
           text('He stops under a streetlamp, its amber glow soft on his face. He turns to you, and for once he doesn\'t look away.'),
-          say('"I... would it be all right if I kissed you?"'),
+          say('I... would it be all right if I kissed you?'),
           text('His voice is barely a whisper. His ears are crimson.'),
-          option('Kiss him', 'global:continueScenes', {
-            remaining: [[
-              text('You close the distance between you. The kiss is gentle, a little clumsy, and over too soon. When you pull apart his eyes are shining.'),
-              addNpcStat('affection', 5, 'tour-guide'),
-              say('"I\'ll remember this. Always."'),
-              text('He touches his lips as though he can\'t quite believe it happened. Then he smiles — the widest, most unguarded smile you\'ve seen from him.'),
-              say('"Get home safe. Please."'),
-              text('He backs away slowly, still smiling, then turns and disappears into the steam.'),
-              endDate(),
-            ]],
-          }),
-          option('Not tonight', 'global:continueScenes', {
-            remaining: [[
-              say('"Of course. No — of course. I\'m sorry, I shouldn\'t have—"'),
-              text('You tell him there\'s nothing to apologise for. He nods, manages a smile.'),
-              say('"Get home safe. And... I hope we can do this again sometime."'),
-              text('He gives a small wave, then turns and walks into the steam.'),
-              endDate(),
-            ]],
-          }),
+          branch('Kiss him',
+            text('You close the distance between you. The kiss is gentle, a little clumsy, and over too soon. When you pull apart his eyes are shining.'),
+            addNpcStat('affection', 5, 'tour-guide'),
+            say('I\'ll remember this. Always.'),
+            text('He touches his lips as though he can\'t quite believe it happened. Then he smiles — the widest, most unguarded smile you\'ve seen from him.'),
+            say('Get home safe. Please.'),
+            text('He backs away slowly, still smiling, then turns and disappears into the steam.'),
+            endDate(),
+          ),
+          branch('Not tonight',
+            say('Of course. No — of course. I\'m sorry, I shouldn\'t have—'),
+            text('You tell him there\'s nothing to apologise for. He nods, manages a smile.'),
+            say('Get home safe. And... I hope we can do this again sometime.'),
+            text('He gives a small wave, then turns and walks into the steam.'),
+            endDate(),
+          ),
         ),
         // Below threshold: standard farewell, no kiss
         seq(
           text('He hesitates, opens his mouth, closes it again, then settles for a warm smile.'),
-          say('"Get home safe. And... I hope we can do this again sometime."'),
+          say('Get home safe. And... I hope we can do this again sometime.'),
           text('He gives a small, almost bashful wave, then turns and disappears into the steam.'),
           endDate(),
         ),
@@ -559,8 +547,8 @@ registerDatePlan({
   meetLocationName: 'the City Centre',
   waitMinutes: 120,
 
-  onGreeting: standardGreeting('"You came! I was starting to worry. You look wonderful. Shall we?"'),
-  onCancel: standardCancel('"Oh. Right. No, that\'s... that\'s fine. Maybe another time." He smiles, but it doesn\'t reach his eyes.', 20),
+  onGreeting: standardGreeting('You came! I was starting to worry. You look wonderful. Shall we?'),
+  onCancel: standardCancel('Oh. Right. No, that\'s... that\'s fine. Maybe another time.', 20),
   onNoShow: standardNoShow('Rob', 'Rob waited in the City Centre for two hours, but you never showed.', 15),
   onComplete: standardComplete(15),
 
@@ -577,32 +565,28 @@ registerDatePlan({
     [
       text('Steam rises from the lake in languid spirals, catching the last amber light. The surface is mirror-still.'),
       showNpcImage(),
-      say('"I come here sometimes after work. It\'s the one place in Aetheria where you can actually hear yourself think."'),
+      say('I come here sometimes after work. It\'s the one place in Aetheria where you can actually hear yourself think.'),
       text('He gazes out across the water, the steam wreathing around you both like something from a dream.'),
     ],
 
     // ── Scene 3: Lakeside conversation — intimacy choice ──
     [
-      say('"You know, when I first came to the city I was terrified. Couldn\'t tell a steam valve from a kettle. But there\'s something about this place that gets under your skin."'),
+      say('You know, when I first came to the city I was terrified. Couldn\'t tell a steam valve from a kettle. But there\'s something about this place that gets under your skin.'),
       text('He glances at you, his expression earnest.'),
-      say('"I\'m glad you came tonight. Really glad."'),
+      say('I\'m glad you came tonight. Really glad.'),
       text('He moves a little closer on the bench. His arm rests along the back, not quite touching your shoulder.'),
       // Player choice: show intimacy or hold back
-      option('Lean against him', 'global:continueScenes', {
-        remaining: [[
-          text('You lean against his shoulder. He tenses for a moment, then relaxes, letting out a slow breath.'),
-          addNpcStat('affection', 3, 'tour-guide'),
-          say('"This is... really nice."'),
-          text('His voice is barely above a whisper. You feel the warmth of him through his coat.'),
-        ]],
-      }),
-      option('Stay where you are', 'global:continueScenes', {
-        remaining: [[
-          text('You keep a comfortable distance, watching the steam curl over the water.'),
-          say('"It\'s peaceful here, isn\'t it? Away from all the noise."'),
-          text('He smiles — a little wistful, but genuine.'),
-        ]],
-      }),
+      branch('Lean against him',
+        text('You lean against his shoulder. He tenses for a moment, then relaxes, letting out a slow breath.'),
+        addNpcStat('affection', 3, 'tour-guide'),
+        say('This is... really nice.'),
+        text('His voice is barely above a whisper. You feel the warmth of him through his coat.'),
+      ),
+      branch('Stay where you are',
+        text('You keep a comfortable distance, watching the steam curl over the water.'),
+        say('It\'s peaceful here, isn\'t it? Away from all the noise.'),
+        text('He smiles — a little wistful, but genuine.'),
+      ),
     ],
 
     // ── Scene 4: Skill check — Perception reveals something special ──
@@ -611,42 +595,36 @@ registerDatePlan({
       skillCheck('Perception', 10,
         [
           text('Something catches your eye — a streak of light arcing across the sky, trailing sparks like a tiny clockwork firework.'),
-          say('"A shooting star! Did you see that? Quick — make a wish!"'),
+          say('A shooting star! Did you see that? Quick — make a wish!'),
           text('Rob closes his eyes tight, grinning like a child. When he opens them, he catches you watching and goes pink.'),
-          say('"I\'m not telling you what I wished for. That\'s the rule."'),
+          say('I\'m not telling you what I wished for. That\'s the rule.'),
           addNpcStat('affection', 2, 'tour-guide'),
         ],
         [
           text('The stars are beginning to appear, faint pinpricks in the deepening sky.'),
-          say('"Beautiful night for it. Couldn\'t have asked for better weather."'),
+          say('Beautiful night for it. Couldn\'t have asked for better weather.'),
         ],
       ),
     ],
 
     // ── Scene 5: Route choice — Pier (default) or secret garden (high affection) ──
     [
-      say('"Shall we walk a bit further? I know a few spots around here."'),
+      say('Shall we walk a bit further? I know a few spots around here.'),
       // High-affection path: Rob knows a secret garden
       cond(
         npcStat('tour-guide', 'affection', 35),
         seq(
           text('He hesitates, then lowers his voice.'),
-          say('"Actually... there\'s a place I\'ve never shown anyone. A garden, hidden behind the old waterworks. It\'s a bit of a scramble to get to, but it\'s worth it. If you trust me."'),
+          say('Actually... there\'s a place I\'ve never shown anyone. A garden, hidden behind the old waterworks. It\'s a bit of a scramble to get to, but it\'s worth it. If you trust me.'),
           text('His eyes are bright with a mix of nerves and excitement.'),
-          option('Go to the hidden garden', 'global:continueScenes', {
-            remaining: robGardenPath(),
-          }),
-          option('Stick to the pier', 'global:continueScenes', {
-            remaining: robPierPath(),
-          }),
+          branch('Go to the hidden garden', robGardenPath()),
+          branch('Stick to the pier', robPierPath()),
         ),
         // Default: just the pier
         seq(
           text('He gestures along the lakeside path where lanterns glow like a string of earthbound stars.'),
-          say('"The pier\'s lovely at night. Come on."'),
-          option('Walk to the pier', 'global:continueScenes', {
-            remaining: robPierPath(),
-          }),
+          say('The pier\'s lovely at night. Come on.'),
+          branch('Walk to the pier', robPierPath()),
         ),
       ),
     ],

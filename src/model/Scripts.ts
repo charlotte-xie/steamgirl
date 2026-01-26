@@ -1014,11 +1014,37 @@ const coreScripts: Record<string, ScriptFn> = {
       game.run(instruction)
     }
 
-    // Add continue button if more scenes remain AND no options were added by the scene
-    if (rest.length > 0 && game.scene.options.length === 0) {
+    if (game.scene.options.length > 0) {
+      // Scene added its own options — thread outer continuation into any
+      // options that target continueScenes so the sequence resumes after
+      // the branch finishes. We replace the script tuple with a new one
+      // to avoid mutating shared DSL objects (which would accumulate
+      // across multiple playthroughs).
+      if (rest.length > 0) {
+        for (let i = 0; i < game.scene.options.length; i++) {
+          const opt = game.scene.options[i]
+          if (opt.type === 'button') {
+            const [scriptName, scriptParams] = opt.script
+            if (scriptName === 'continueScenes' || scriptName === 'global:continueScenes') {
+              const innerRemaining = (scriptParams as Record<string, unknown>).remaining as Instruction[][] | undefined
+              game.scene.options[i] = {
+                ...opt,
+                script: [scriptName, {
+                  ...scriptParams,
+                  remaining: [
+                    ...(innerRemaining || []),
+                    ...rest,
+                  ],
+                }],
+              }
+            }
+          }
+        }
+      }
+    } else if (rest.length > 0) {
+      // No options added — add automatic Continue button
       game.addOption('continueScenes', { remaining: rest }, 'Continue')
     }
-    // Otherwise scene ends naturally or was interrupted with custom options
   },
 }
 

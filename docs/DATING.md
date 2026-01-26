@@ -49,6 +49,8 @@ All behaviour fields are `Script` -- they can be imperative functions, DSL instr
 | `standardNoShow(name, narration?, penalty?)` | No-show narration, affection penalty | NPC name, narration text, penalty (default 15) |
 | `standardComplete(bonus?)` | Affection bonus, card removed | Bonus amount (default 15) |
 | `endDate()` | DSL instruction to end the date successfully | *(none -- NPC auto-detected from card)* |
+| `branch(label, ...instructions)` | Player choice that continues the scene sequence | Label + inline instructions for a single branch scene |
+| `branch(label, scenes)` | Multi-scene player choice | Label + `Instruction[][]` for multi-scene branches |
 
 `endDate()` is a convenience DSL builder that produces the `dateComplete` instruction. It automatically resolves the NPC from the active date card, so date scenes can be NPC-independent. Use it as the last instruction in a date scene.
 
@@ -133,23 +135,19 @@ scenes(
   [say('"Shall we go to the lake or the pier?"')],
   // Scene 2: Player chooses
   [
-    option('The lake', 'global:continueScenes', {
-      remaining: [
-        [move('lake', 10), say('"The lake is beautiful tonight."')],
-        [say('"Glad we came here."'), endDate()],
-      ]
-    }),
-    option('The pier', 'global:continueScenes', {
-      remaining: [
-        [move('pier', 10), say('"I love the pier at night."')],
-        [say('"What a view."'), endDate()],
-      ]
-    }),
+    branch('The lake', [
+      [move('lake', 10), say('"The lake is beautiful tonight."')],
+      [say('"Glad we came here."'), endDate()],
+    ]),
+    branch('The pier', [
+      [move('pier', 10), say('"I love the pier at night."')],
+      [say('"What a view."'), endDate()],
+    ]),
   ],
 )
 ```
 
-The `option('Label', 'global:continueScenes', { remaining: [...] })` pattern hands control to the scenes engine with a different sequence of scenes depending on the player's choice.
+`branch(label, scenes)` hands control to the scenes engine with a different sequence of scenes depending on the player's choice. If there are scenes after the branching scene, the engine automatically continues to them after the branch finishes.
 
 ### Branching with Conditions
 
@@ -164,12 +162,8 @@ scenes(
       npcStat('my-npc', 'affection', 40),
       seq(
         say('"May I... may I kiss you?"'),
-        option('Kiss him', 'global:continueScenes', {
-          remaining: [[text('You share a gentle kiss.'), addNpcStat('affection', 5, 'my-npc')]]
-        }),
-        option('Not yet', 'global:continueScenes', {
-          remaining: [[say('"Of course. No rush."')]]
-        }),
+        branch('Kiss him', text('You share a gentle kiss.'), addNpcStat('affection', 5, 'my-npc')),
+        branch('Not yet', say('"Of course. No rush."')),
       ),
       // Default: too early for a kiss
       say('"I had a really lovely time tonight."'),
@@ -207,19 +201,15 @@ A common pattern is offering the player a choice between showing more intimacy o
 ```typescript
 [
   text('He moves a little closer on the bench.'),
-  option('Lean against him', 'global:continueScenes', {
-    remaining: [[
-      text('You lean against his shoulder. He tenses for a moment, then relaxes.'),
-      addNpcStat('affection', 3, 'my-npc'),
-      say('"This is nice."'),
-    ]]
-  }),
-  option('Stay where you are', 'global:continueScenes', {
-    remaining: [[
-      text('You keep a comfortable distance. He glances at you and smiles.'),
-      say('"It\'s peaceful here, isn\'t it?"'),
-    ]]
-  }),
+  branch('Lean against him',
+    text('You lean against his shoulder. He tenses for a moment, then relaxes.'),
+    addNpcStat('affection', 3, 'my-npc'),
+    say('"This is nice."'),
+  ),
+  branch('Stay where you are',
+    text('You keep a comfortable distance. He glances at you and smiles.'),
+    say('"It\'s peaceful here, isn\'t it?"'),
+  ),
 ]
 ```
 
@@ -232,7 +222,7 @@ A date scene can break out to any common script -- NPC interact scripts, shared 
 [
   say('"Want to grab a drink from that stall?"'),
   option('Sure', 'interact', { script: 'buyDrink' }),
-  option('No thanks', 'global:continueScenes', { remaining: [...] }),
+  branch('No thanks', text('You politely decline.')),
 ]
 
 // Call any global script
