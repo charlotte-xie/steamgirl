@@ -28,18 +28,55 @@ interface LessonTiming {
 }
 ```
 
+Each lesson lasts **1 hour 40 minutes** (100 minutes), computed from `LESSON_DURATION`. End hours are derived: `startHour + LESSON_DURATION / 60`. This leaves a 20-minute gap between back-to-back lessons on the same day.
+
 Current timetable:
 
 | Lesson | Monday | Tuesday | Wednesday | Thursday | Friday |
 |--------|--------|---------|-----------|----------|--------|
-| Basic Aetherics | 11--13 | | 9--11 | | 14--16 |
-| Basic Mechanics | 14--16 | 9--11 | | 11--13 | |
+| Basic Aetherics | 11:00--12:40 | | 9:00--10:40 | | 14:00--15:40 |
+| Basic Mechanics | 14:00--15:40 | 9:00--10:40 | | 11:00--12:40 | |
+
+## Attending a Lesson
+
+The `attendLesson` script is the entry point. It finds the next attendable lesson via `getNextLesson`, moves the player to the classroom, then branches:
+
+### Early Arrival
+
+If the player arrives before the lesson's `startHour`, they see a flavour paragraph and three choices:
+
+- **Wait quietly** -- time advances to start, neutral flavour
+- **Study your notes** -- time advances to start, study flavour
+- **Chat with classmates** -- time advances to start, social flavour
+
+All three advance time to the lesson start via `timeLapseUntil`, then call `lessonStart`.
+
+### Lesson Phases
+
+The lesson runs in **4 phases** of 25 minutes each (`PHASE_DURATION`). Each phase advances game time by 25 minutes and displays a random flavour paragraph from `LESSON_FLAVOUR`. The player clicks **Continue** to advance between phases.
+
+1. **Introduction** (`lessonStart`) -- the lecturer arrives and sets the tone
+2. **Theory** (`lessonPhase2`) -- explanations, diagrams, demonstrations
+3. **Practice** (`lessonPhase3`) -- hands-on work, exercises, experiments
+4. **Conclusion** (`lessonPhase4`) -- wrap-up, attendance incremented
+
+Phase scripts pass a `{ lessonId, lessonName, startHour }` params object through the chain. Each phase looks up `LESSON_FLAVOUR[lessonId]` for lesson-specific text; unknown lessons get generic fallback text.
+
+### Flavour Text
+
+`LESSON_FLAVOUR` is a `Record<string, LessonFlavour>` keyed by lesson card ID. Each entry has:
+
+- `intro: string[]` -- random pick for phase 1
+- `middle: string[][]` -- `middle[0]` for phase 2, `middle[1]` for phase 3
+- `conclusion: string[]` -- random pick for phase 4
+
+Adding flavour for a new lesson is optional; phases fall back to generic text.
 
 ## Attendance and Completion
 
 Each lesson quest card tracks an `attended` counter (custom card instance property). The `afterUpdate` hook checks whether `attended >= LESSONS_REQUIRED` (currently 3) and completes the quest if so.
 
-Attendance is incremented by activity scripts (e.g. "Attend lecture" activity at the classroom) -- not yet implemented.
+Attendance is incremented at the end of phase 4 (`lessonPhase4`).
 
 ## Reminders
 
@@ -65,14 +102,14 @@ The `reminders` hook is generic -- any card type can implement it for meetings, 
 
 ## Adding a New Lesson
 
-1. Add a timetable entry to `TIMETABLE`:
+1. Add a timetable entry to `TIMETABLE`. Use `LESSON_DURATION / 60` for endHour:
 
 ```typescript
 'lesson-advanced-aetherics': {
   name: 'Advanced Aetherics',
   slots: [
-    { day: 2, startHour: 14, endHour: 16 }, // Tuesday
-    { day: 4, startHour: 9, endHour: 11 },  // Thursday
+    { day: 2, startHour: 14, endHour: 14 + LESSON_DURATION / 60 }, // Tuesday 14:00--15:40
+    { day: 4, startHour: 9, endHour: 9 + LESSON_DURATION / 60 },   // Thursday 9:00--10:40
   ],
 },
 ```
@@ -91,7 +128,20 @@ const advancedAethericsLesson: CardDefinition = {
 registerCardDefinition('lesson-advanced-aetherics', advancedAethericsLesson)
 ```
 
-The `enrollLessons` script iterates `Object.keys(TIMETABLE)`, so new entries are picked up automatically.
+3. (Optional) Add flavour text to `LESSON_FLAVOUR`:
+
+```typescript
+'lesson-advanced-aetherics': {
+  intro: ['...', '...', '...'],
+  middle: [
+    ['...', '...', '...'],  // phase 2
+    ['...', '...', '...'],  // phase 3
+  ],
+  conclusion: ['...', '...', '...'],
+},
+```
+
+The `enrollLessons` script iterates `Object.keys(TIMETABLE)`, so new entries are picked up automatically. Lessons without flavour text entries fall back to generic phase descriptions.
 
 ## Enrolment
 

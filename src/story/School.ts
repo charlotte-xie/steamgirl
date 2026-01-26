@@ -19,6 +19,7 @@ import {
   execAll,
 } from '../model/ScriptDSL'
 import { freshenUp } from './Effects'
+import { getNextLesson } from './school/Lessons'
 
 // ============================================================================
 // LOCATION DEFINITIONS
@@ -36,6 +37,15 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'classroom', time: 2 },
       { dest: 'courtyard', time: 2 },
       { dest: 'university-toilets', time: 1, label: 'Toilets' },
+    ],
+    activities: [
+      {
+        name: 'Attend Lesson',
+        symbol: '📖',
+        label: 'Attend Lesson',
+        script: (g: Game) => g.run('attendLesson', {}),
+        condition: (g: Game) => !!getNextLesson(g),
+      },
     ],
   },
   'great-hall': {
@@ -75,9 +85,11 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ],
     activities: [
       {
-        name: 'Study in classroom',
+        name: 'Attend Lesson',
         symbol: '📖',
-        script: (g: Game) => execAll(g, studyClassroom),
+        label: 'Attend Lesson',
+        script: (g: Game) => g.run('attendLesson', {}),
+        condition: (g: Game) => !!getNextLesson(g),
       },
     ],
   },
@@ -87,12 +99,28 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/courtyard.jpg',
     links: [
       { dest: 'hallway', time: 2 },
+      { dest: 'library', time: 2 },
     ],
     activities: [
       {
         name: 'Socialise in Courtyard',
         symbol: '♣',
         script: (g: Game) => execAll(g, socialiseCourtyard),
+      },
+    ],
+  },
+  library: {
+    name: 'Library',
+    description: 'A quiet, high-ceilinged room lined with shelves of leather-bound volumes and brass reading lamps.',
+    image: '/images/classroom.jpg',
+    links: [
+      { dest: 'courtyard', time: 2 },
+    ],
+    activities: [
+      {
+        name: 'Study in the Library',
+        symbol: '📖',
+        script: (g: Game) => execAll(g, studyLibrary),
       },
     ],
   },
@@ -134,9 +162,9 @@ const lunchGreatHall: Instruction[] = [
   eatFood(100),
 ]
 
-const studyClassroom: Instruction[] = [
+const studyLibrary: Instruction[] = [
   timeLapse(60),
-  text('You spend an hour studying in the classroom.'),
+  text('You spend an hour studying in the library.'),
   random(
     addStat('Aetherics', 1),
     addStat('Mechanics', 1),
