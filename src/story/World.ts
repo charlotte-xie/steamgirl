@@ -19,6 +19,9 @@ import './Utility'
 // Register start scripts (depends on Effects and Lodgings)
 import './Start'
 
+// Register NPC definitions
+import './npc/Rob' // Rob Hayes - tour guide
+
 // Register test NPC (for testing)
 import './TestNPC'
 

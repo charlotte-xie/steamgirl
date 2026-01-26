@@ -275,8 +275,14 @@ export const timeLapseUntil = (untilTime: number): Instruction =>
   run('timeLapse', { untilTime })
 
 /** Modify an NPC stat (e.g. affection). Uses scene NPC if npc omitted. */
-export const addNpcStat = (stat: string, change: number, npc?: string, hidden?: boolean): Instruction =>
-  run('addNpcStat', { stat, change, npc, hidden })
+export const addNpcStat = (
+  stat: string, change: number, npc?: string,
+  options?: boolean | { hidden?: boolean; max?: number; min?: number }
+): Instruction => {
+  // Support legacy boolean (hidden) or options object
+  const opts = typeof options === 'boolean' ? { hidden: options } : (options ?? {})
+  return run('addNpcStat', { stat, change, npc, ...opts })
+}
 
 /** Move an NPC to a location (or null to clear). Uses scene NPC if npc omitted. */
 export const moveNpc = (npc: string, location: string | null): Instruction =>

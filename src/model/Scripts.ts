@@ -353,11 +353,13 @@ const coreScripts: Record<string, ScriptFn> = {
     game.player.setTimer(params.timer as TimerName, game.time)
   },
 
-  /** Modify an NPC stat (e.g. affection) with optional display text */
+  /** Modify an NPC stat (e.g. affection) with optional display text and clamping */
   addNpcStat: (game: Game, params: {
     npc?: string
     stat?: string
     change?: number
+    max?: number
+    min?: number
     hidden?: boolean
   }) => {
     const npcId = params.npc ?? game.scene.npc
@@ -371,12 +373,18 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!npc) throw new Error(`addNpcStat: NPC not found '${npcId}'`)
 
     const current = npc.stats.get(stat) ?? 0
-    npc.stats.set(stat, current + change)
+    let newValue = current + change
+    if (params.max !== undefined) newValue = Math.min(newValue, params.max)
+    if (params.min !== undefined) newValue = Math.max(newValue, params.min)
+    const actualChange = newValue - current
+    if (actualChange === 0) return
+
+    npc.stats.set(stat, newValue)
 
     if (!params.hidden) {
-      const sign = change > 0 ? '+' : ''
-      const color = change > 0 ? '#10b981' : '#ef4444'
-      game.add(colour(`${capitalise(stat)} ${sign}${change}`, color))
+      const sign = actualChange > 0 ? '+' : ''
+      const color = actualChange > 0 ? '#10b981' : '#ef4444'
+      game.add(colour(`${capitalise(stat)} ${sign}${actualChange}`, color))
     }
   },
 
