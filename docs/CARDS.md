@@ -5,7 +5,7 @@ Cards are the primary mechanism for applying ongoing effects to the player. Ever
 ## Card Types
 
 ```typescript
-type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task'
+type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task' | 'Access'
 ```
 
 | Type | Purpose | Typical Lifespan |
@@ -14,8 +14,9 @@ type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task'
 | **Effect** | Status effects that modify stats or behaviour | Short to medium -- often time-limited, self-removing |
 | **Trait** | Fundamental character attributes or perks | Permanent -- set at game start or earned, last the whole game |
 | **Task** | Tracked activities or assignments | Variable |
+| **Access** | Keys, passes, and bookings that gate location access | Variable -- often time-limited, checked via `hasCard` in `checkAccess` |
 
-Trait and Task types are defined in the type system but not yet widely used in content. The architecture supports them for future expansion.
+Trait, Task, and Access types are not shown in the character or avatar UI. Access cards are invisible to the player but participate in lifecycle hooks (`onTime` for expiry, `onRemoved` for cleanup).
 
 ## Card Definition
 

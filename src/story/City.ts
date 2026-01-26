@@ -75,7 +75,9 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'station', time: 8 },
       { dest: 'backstreets', time: 8 },
       { dest: 'school', time: 8 },
-      { dest: 'market', time: 5 }], // 10 minutes back to station, 5 minutes to backstreets, 5 minutes to school, 3 minutes to market
+      { dest: 'market', time: 5 },
+      { dest: 'hotel', time: 3 },
+    ],
     activities: [
       {
         name: 'Explore',
@@ -91,6 +93,9 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             // Discover the Backstreets
             and(not(locationDiscovered('backstreets')), skillCheck('Perception', 0)),
             discoverLocation('backstreets', 'You notice a narrow alley branching off from the main street. The air grows thick with coal smoke and the smell of oil. This must be the way to the backstreets.', '#3b82f6'),
+            // Discover the Hotel
+            and(not(locationDiscovered('hotel')), skillCheck('Perception', 0)),
+            discoverLocation('hotel', 'Turning a corner on the main boulevard, you spot a grand brass-and-marble facade: the Grand Meridian Hotel. Its revolving doors gleam invitingly.', '#3b82f6'),
             // Morning (6am–12pm)
             hourBetween(6, 12),
             random(
