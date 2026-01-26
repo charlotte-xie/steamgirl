@@ -19,6 +19,9 @@ import './Utility'
 // Register start scripts (depends on Effects and Lodgings)
 import './Start'
 
+// Register dating mechanic (before NPC imports that register date plans)
+import './Dating'
+
 // Register NPC definitions
 import './npc/Rob' // Rob Hayes - tour guide
 

@@ -10,25 +10,36 @@
  * - Affection starts at 0. Taking the city tour gives a hidden +1.
  * - Inviting him to see the hotel room gives +10 (he's very impressed).
  * - Flirting gives +3 each time, capped at 50 (requires Flirtation > 0).
+ * - If the player flirts, passes a Flirtation check, and affection > 20,
+ *   Rob invites the player on a date the following evening. The player can
+ *   accept or decline.
+ * - Date: Rob meets the player at 6pm in the City Centre, walks to the
+ *   Lake, then the Pier, and walks the player home. +15 affection on
+ *   completion.
  * - At higher affection levels (future): he starts bringing the player
  *   small gifts, suggests outings, and becomes a possible romance option.
  *
  * Schedule: Station 9am–6pm daily. Can be moved to dorm-suite via the
  * invite-to-room interaction; returns to schedule when the player leaves.
+ * During an active date window, moves to the meeting location instead.
  */
 
 import { Game } from '../../model/Game'
 import { NPC, registerNPC } from '../../model/NPC'
 import {
   text, say, npcLeaveOption, npcInteract,
-  seq, when, random, cond,
+  seq, when, random,
   addNpcStat, moveNpc,
   discoverLocation, option, scenes,
   move, timeLapse,
   hideNpcImage, showNpcImage,
-  hasCard, hasStat, inLocation,
-  run,
+  hasStat,
+  run, exec, execAll,
 } from '../../model/ScriptDSL'
+import {
+  registerDatePlan, getDateCard,
+  standardGreeting, standardCancel, standardNoShow, standardComplete,
+} from '../Dating'
 
 registerNPC('tour-guide', {
   name: 'Rob Hayes',
@@ -48,21 +59,50 @@ registerNPC('tour-guide', {
 
   onMove: (game: Game) => {
     const npc = game.getNPC('tour-guide')
+
     // If Rob is visiting the hotel room, keep him there until the player leaves
     if (npc.location === 'dorm-suite') {
       if (game.currentLocation === 'dorm-suite') {
-        return // Don't override with schedule while visiting
+        return
       }
-      // Player left the room — Rob heads home
     }
+
+    // If there's an active date, move to meeting location during the date window
+    const dateCard = getDateCard(game)
+    if (dateCard && dateCard.npc === 'tour-guide' && !dateCard.dateStarted) {
+      const meetTime = dateCard.meetTime as number
+      const waitMinutes = 120
+      const deadline = meetTime + waitMinutes * 60
+
+      if (game.time >= meetTime && game.time < deadline) {
+        npc.location = (dateCard.meetLocation as string) ?? 'default'
+        return
+      }
+    }
+
+    // Normal schedule
     npc.followSchedule(game, [
       [9, 18, 'station'],
     ])
   },
 
-  // If you wait at the station and haven't met Rob yet, he approaches you
   onWait: (game: Game) => {
     const npc = game.getNPC('tour-guide')
+
+    // If Rob is waiting for a date and the player is at the meeting location
+    const dateCard = getDateCard(game)
+    if (dateCard && dateCard.npc === 'tour-guide' && !dateCard.dateStarted) {
+      const meetTime = dateCard.meetTime as number
+      const meetLocation = (dateCard.meetLocation as string) ?? 'default'
+      const deadline = meetTime + 120 * 60
+
+      if (game.time >= meetTime && game.time < deadline && game.currentLocation === meetLocation) {
+        game.run('dateApproach', { npc: 'tour-guide' })
+        return
+      }
+    }
+
+    // If you wait at the station and haven't met Rob yet, he approaches you
     if (npc.nameKnown === 0) {
       game.run('approach', { npc: 'tour-guide' })
     }
@@ -81,24 +121,37 @@ registerNPC('tour-guide', {
     )
   },
 
-  onApproach: cond(
+  onApproach: (game: Game) => {
+    // If there's an active date and we're at the meeting point, trigger date approach
+    const dateCard = getDateCard(game)
+    if (dateCard && dateCard.npc === 'tour-guide' && !dateCard.dateStarted) {
+      const meetLocation = (dateCard.meetLocation as string) ?? 'default'
+      const meetTime = dateCard.meetTime as number
+      const deadline = meetTime + 120 * 60
+      if (game.currentLocation === meetLocation && game.time >= meetTime && game.time < deadline) {
+        game.run('dateApproach', { npc: 'tour-guide' })
+        return
+      }
+    }
+
     // In the hotel room — random impressed comments
-    inLocation('dorm-suite'),
-    run('interact', { script: 'roomChat' }),
+    if (game.currentLocation === 'dorm-suite') {
+      exec(game, run('interact', { script: 'roomChat' }))
+      return
+    }
 
     // Default: station approach
-    seq(
-      say('"Back again? The tour offer still stands if you\'re interested."'),
-      option('Accept the tour', 'interact', { script: 'tour' }),
-      when(hasCard('hotel-booking'),
-        option('Invite to see your hotel room', 'interact', { script: 'inviteToRoom' }),
-      ),
-      when(hasStat('Flirtation', 1),
-        option('Flirt', 'interact', { script: 'flirt' }),
-      ),
-      npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
-    ),
-  ),
+    const npc = game.npc
+    npc.say('"Back again? The tour offer still stands if you\'re interested."')
+    game.addOption('interact', { script: 'tour' }, 'Accept the tour')
+    if (game.player.hasCard('hotel-booking')) {
+      game.addOption('interact', { script: 'inviteToRoom' }, 'Invite to see your hotel room')
+    }
+    if ((game.player.stats.get('Flirtation') ?? 0) >= 1) {
+      game.addOption('interact', { script: 'flirt' }, 'Flirt')
+    }
+    npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
+  },
 
   scripts: {
     // ----------------------------------------------------------------
@@ -230,54 +283,180 @@ registerNPC('tour-guide', {
 
     // ----------------------------------------------------------------
     // FLIRTING — requires Flirtation > 0, +3 affection capped at 50
+    // May trigger a date invitation if conditions are met.
     // ----------------------------------------------------------------
-    flirt: seq(
-      addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
-      random(
-        seq(
+    flirt: (game: Game) => {
+      const npc = game.getNPC('tour-guide')
+
+      // +3 affection, capped at 50
+      exec(game, addNpcStat('affection', 3, 'tour-guide', { max: 50 }))
+
+      // Random flirt text
+      const flirtScenes = [
+        [
           text('You lean a little closer and compliment his knowledge of the city.'),
           say('"Oh! Well, I — thank you. I do try to keep up with things. You\'re very kind to say so."'),
           text('His ears go pink.'),
-        ),
-        seq(
+        ],
+        [
           text('You brush his arm and tell him he\'s got a lovely smile.'),
           say('"I — what? Me? I mean — that\'s — blimey."'),
           text('He fumbles with his guidebook, grinning like an idiot.'),
-        ),
-        seq(
+        ],
+        [
           text('You catch his eye and hold it just a beat longer than necessary.'),
           say('"I, erm. Right. Yes. Where were we? I\'ve completely lost my train of thought."'),
           text('He scratches the back of his neck, flustered but clearly pleased.'),
-        ),
-        seq(
+        ],
+        [
           text('You tell him you feel safe with him around.'),
           say('"Really? That\'s — well, that means a lot, actually. I\'ll always look out for you."'),
           text('He straightens up a little, trying not to beam.'),
-        ),
-        seq(
+        ],
+        [
           text('You tuck a stray bit of hair behind your ear and ask if he\'d like to show you around again sometime — just the two of you.'),
           say('"Just us? I — yes. Yes, I\'d like that very much."'),
           text('He clutches his guidebook to his chest as though it might escape.'),
-        ),
-      ),
-      // Re-show appropriate options depending on location
-      cond(
-        inLocation('dorm-suite'),
-        seq(
-          option('Chat', 'interact', { script: 'roomChat' }),
-          option('Flirt', 'interact', { script: 'flirt' }),
-          option('Depart Room', 'interact', { script: 'leaveRoom' }),
-          npcLeaveOption(),
-        ),
-        seq(
-          option('Accept the tour', 'interact', { script: 'tour' }),
-          when(hasCard('hotel-booking'),
-            option('Invite to see your hotel room', 'interact', { script: 'inviteToRoom' }),
-          ),
-          option('Flirt', 'interact', { script: 'flirt' }),
-          npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
-        ),
-      ),
-    ),
+        ],
+      ]
+      const chosen = flirtScenes[Math.floor(Math.random() * flirtScenes.length)]
+      execAll(game, chosen)
+
+      // Check date invitation conditions
+      const canInvite = game.player.skillTest('Flirtation', 10)
+        && npc.affection > 20
+        && !game.player.hasCard('date')
+
+      if (canInvite) {
+        // Rob asks the player on a date
+        npc.say('"I was thinking... would you fancy going for a walk tomorrow evening? Just the two of us. I know a lovely spot by the lake."')
+        game.add('He looks at you hopefully, his ears going pink again.')
+        game.addOption('interact', { script: 'dateAccept' }, 'Accept the date')
+        game.addOption('interact', { script: 'dateDecline' }, 'Decline')
+        npc.leaveOption()
+      } else {
+        // Re-show normal options depending on location
+        if (game.currentLocation === 'dorm-suite') {
+          game.addOption('interact', { script: 'roomChat' }, 'Chat')
+          game.addOption('interact', { script: 'flirt' }, 'Flirt')
+          game.addOption('interact', { script: 'leaveRoom' }, 'Depart Room')
+          npc.leaveOption()
+        } else {
+          game.addOption('interact', { script: 'tour' }, 'Accept the tour')
+          if (game.player.hasCard('hotel-booking')) {
+            game.addOption('interact', { script: 'inviteToRoom' }, 'Invite to see your hotel room')
+          }
+          game.addOption('interact', { script: 'flirt' }, 'Flirt')
+          npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
+        }
+      }
+    },
+
+    // ----------------------------------------------------------------
+    // DATE INVITATION — accept or decline
+    // ----------------------------------------------------------------
+    dateAccept: (game: Game) => {
+      const npc = game.getNPC('tour-guide')
+
+      // Calculate meetTime: 6pm tomorrow
+      const tomorrow = new Date(game.date)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(18, 0, 0, 0)
+      const meetTime = Math.floor(tomorrow.getTime() / 1000)
+
+      npc.say('"Really? Brilliant! I\'ll meet you in the City Centre at six o\'clock tomorrow evening. Don\'t be late!"')
+      game.add('He beams, practically bouncing on his heels.')
+
+      game.addCard('date', 'Date', {
+        npc: 'tour-guide',
+        meetTime,
+        meetLocation: 'default',
+        dateStarted: false,
+      })
+    },
+
+    dateDecline: (game: Game) => {
+      const npc = game.getNPC('tour-guide')
+      npc.say('"Oh. No, that\'s — of course. Maybe some other time, then."')
+      game.add('He tries to smile, but his disappointment is obvious.')
+      npc.leaveOption()
+    },
   },
+})
+
+// ============================================================================
+// ROB'S DATE PLAN
+// ============================================================================
+
+registerDatePlan({
+  npcId: 'tour-guide',
+  npcDisplayName: 'Rob',
+  meetLocation: 'default',
+  meetLocationName: 'the City Centre',
+  waitMinutes: 120,
+
+  onGreeting: standardGreeting('"You came! I was starting to worry. You look wonderful. Shall we?"'),
+  onCancel: standardCancel('"Oh. Right. No, that\'s... that\'s fine. Maybe another time." He smiles, but it doesn\'t reach his eyes.', 20),
+  onNoShow: standardNoShow('Rob', 'Rob waited in the City Centre for two hours, but you never showed.', 15),
+  onComplete: standardComplete(15),
+
+  dateScene: scenes(
+    // Scene 1: Setting off from City Centre
+    [
+      hideNpcImage(),
+      text('Rob offers you his arm, and together you set off through the lamplit streets.'),
+      move('lake', 15),
+      text('The city fades behind you as you approach the lake. The evening air is cool and fragrant with coal smoke and distant flowers.'),
+    ],
+    // Scene 2: Arriving at the Lake
+    [
+      text('Steam rises from the lake in languid spirals, catching the last amber light. The surface is mirror-still.'),
+      showNpcImage(),
+      say('"I come here sometimes after work. It\'s the one place in Aetheria where you can actually hear yourself think."'),
+      text('He gazes out across the water, the steam wreathing around you both like something from a dream.'),
+    ],
+    // Scene 3: Conversation at the Lake
+    [
+      say('"You know, when I first came to the city I was terrified. Couldn\'t tell a steam valve from a kettle. But there\'s something about this place that gets under your skin."'),
+      text('He glances at you, his expression earnest.'),
+      say('"I\'m glad you came tonight. Really glad."'),
+    ],
+    // Scene 4: Walking to the Pier
+    [
+      hideNpcImage(),
+      text('Rob suggests a walk along the pier. You follow the lakeside path as the stars begin to emerge.'),
+      move('pier', 10),
+      text('The wooden boards creak underfoot. Lanterns hang from the pilings, casting pools of warm light across the dark water.'),
+    ],
+    // Scene 5: On the Pier
+    [
+      showNpcImage(),
+      say('"I brought you something. It\'s not much — just a little thing I spotted at the market."'),
+      text('He produces a small brass compass from his pocket, its face engraved with a tiny star.'),
+      say('"So you\'ll always find your way. In Aetheria, I mean. Or... wherever."'),
+      text('He goes pink and looks away, scratching the back of his neck.'),
+    ],
+    // Scene 6: Stargazing
+    [
+      text('You sit on the edge of the pier, feet dangling over the dark water. The city\'s mechanical hum is distant here, almost peaceful.'),
+      say('"That bright one there — that\'s the Engineer\'s Star. Sailors used to navigate by it. Or so my granddad said. He was full of stories."'),
+      text('Rob points upward, his arm almost but not quite touching yours.'),
+    ],
+    // Scene 7: The walk home
+    [
+      hideNpcImage(),
+      text('The evening has grown late. Rob walks you back through the quiet streets, taking the long way round.'),
+      move('backstreets', 20),
+      text('The backstreets are hushed, the gas lamps flickering. Your footsteps echo in companionable rhythm.'),
+    ],
+    // Scene 8: Farewell
+    [
+      showNpcImage(),
+      say('"I had a really lovely time tonight. Thank you for coming."'),
+      text('He hesitates, opens his mouth, closes it again, then settles for a warm smile.'),
+      say('"Get home safe. And... I hope we can do this again sometime."'),
+      text('He gives a small, almost bashful wave, then turns and disappears into the steam.'),
+      run('dateComplete', { npc: 'tour-guide' }),
+    ],
+  ),
 })

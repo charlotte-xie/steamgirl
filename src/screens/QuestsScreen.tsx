@@ -5,7 +5,7 @@ import { Card } from '../components/Card'
 export function QuestsScreen() {
   const { game } = useGame()
 
-  const questCards = game.player.cards.filter(card => card && card.type === 'Quest') || []
+  const questCards = game.player.cards.filter(card => card && (card.type === 'Quest' || card.type === 'Date')) || []
 
   return (
     <Frame className="screen-frame">
