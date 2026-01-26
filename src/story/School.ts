@@ -19,7 +19,13 @@ import {
   execAll,
 } from '../model/ScriptDSL'
 import { freshenUp } from './Effects'
-import { getNextLesson } from './school/Lessons'
+import { getNextLesson, getLessonInProgress, TIMETABLE } from './school/Lessons'
+
+/** Collect unique professor NPC IDs from the timetable. */
+const PROFESSOR_NPCS = [...new Set(Object.values(TIMETABLE).map(t => t.npc))]
+
+/** Professors without timetable classes who appear on campus. */
+const CAMPUS_NPCS = ['prof-nicholas-denver', 'prof-eleanor-hurst']
 
 // ============================================================================
 // LOCATION DEFINITIONS
@@ -83,6 +89,33 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hallway', time: 2 },
     ],
+    onArrive: (g: Game) => {
+      for (const id of PROFESSOR_NPCS) g.getNPC(id)
+      // If the player walks into the classroom during a lesson, force late start
+      const inProgress = getLessonInProgress(g)
+      if (inProgress) {
+        const timing = TIMETABLE[inProgress.id]
+        g.run('lessonLateStart', {
+          lessonId: inProgress.id,
+          lessonName: inProgress.name,
+          startHour: inProgress.slot.startHour,
+          npcId: timing?.npc,
+        })
+      }
+    },
+    onWait: (g: Game) => {
+      // If a lesson starts while the player is waiting in the classroom, auto-start
+      const inProgress = getLessonInProgress(g)
+      if (inProgress) {
+        const timing = TIMETABLE[inProgress.id]
+        g.run('lessonAutoStart', {
+          lessonId: inProgress.id,
+          lessonName: inProgress.name,
+          startHour: inProgress.slot.startHour,
+          npcId: timing?.npc,
+        })
+      }
+    },
     activities: [
       {
         name: 'Attend Lesson',
@@ -101,6 +134,10 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'hallway', time: 2 },
       { dest: 'library', time: 2 },
     ],
+    onArrive: (g: Game) => {
+      for (const id of PROFESSOR_NPCS) g.getNPC(id)
+      for (const id of CAMPUS_NPCS) g.getNPC(id)
+    },
     activities: [
       {
         name: 'Socialise in Courtyard',
@@ -116,6 +153,9 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'courtyard', time: 2 },
     ],
+    onArrive: (g: Game) => {
+      for (const id of CAMPUS_NPCS) g.getNPC(id)
+    },
     activities: [
       {
         name: 'Study in the Library',

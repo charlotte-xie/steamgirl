@@ -33,6 +33,7 @@ import './Lowtown' // Register lowtown location and NPCs
 import './Tavern' // Register tavern locations and NPCs
 import './School' // Register university interior locations
 import './school/Lessons' // Register lesson quest cards
+import './school/Professors' // Register professor NPCs (depends on Lessons for TIMETABLE)
 import './Pier' // Register pier location
 import './Industrial' // Register industrial district locations
 

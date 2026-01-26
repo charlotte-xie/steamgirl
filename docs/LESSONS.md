@@ -22,6 +22,7 @@ interface LessonSlot {
 
 interface LessonTiming {
   name: string        // Display name for reminders
+  npc: string         // NPC ID of the professor who teaches this lesson
   slots: LessonSlot[]
   startDate?: number  // Unix timestamp -- lesson not active before this
   endDate?: number    // Unix timestamp -- lesson not active after this
@@ -32,10 +33,10 @@ Each lesson lasts **1 hour 40 minutes** (100 minutes), computed from `LESSON_DUR
 
 Current timetable:
 
-| Lesson | Monday | Tuesday | Wednesday | Thursday | Friday |
-|--------|--------|---------|-----------|----------|--------|
-| Basic Aetherics | 11:00--12:40 | | 9:00--10:40 | | 14:00--15:40 |
-| Basic Mechanics | 14:00--15:40 | 9:00--10:40 | | 11:00--12:40 | |
+| Lesson | Professor | Monday | Tuesday | Wednesday | Thursday | Friday |
+|--------|-----------|--------|---------|-----------|----------|--------|
+| Basic Aetherics | Prof. Vael | 11:00--12:40 | | 9:00--10:40 | | 14:00--15:40 |
+| Basic Mechanics | Prof. Greaves | 14:00--15:40 | 9:00--10:40 | | 11:00--12:40 | |
 
 ## Attending a Lesson
 
@@ -60,7 +61,7 @@ The lesson runs in **4 phases** of 25 minutes each (`PHASE_DURATION`). Each phas
 3. **Practice** (`lessonPhase3`) -- hands-on work, exercises, experiments
 4. **Conclusion** (`lessonPhase4`) -- wrap-up, attendance incremented
 
-Phase scripts pass a `{ lessonId, lessonName, startHour }` params object through the chain. Each phase looks up `LESSON_FLAVOUR[lessonId]` for lesson-specific text; unknown lessons get generic fallback text.
+Phase scripts pass a `{ lessonId, lessonName, startHour, npcId }` params object through the chain. Each phase looks up `LESSON_FLAVOUR[lessonId]` for lesson-specific text; unknown lessons get generic fallback text.
 
 ### Flavour Text
 
@@ -71,6 +72,17 @@ Phase scripts pass a `{ lessonId, lessonName, startHour }` params object through
 - `conclusion: string[]` -- random pick for phase 4
 
 Adding flavour for a new lesson is optional; phases fall back to generic text.
+
+### Professors
+
+Each lesson has a `npc` field on its `LessonTiming` entry pointing to the professor NPC who teaches it. Professor definitions live in `src/story/school/Professors.ts`.
+
+- **`lessonStart`** moves the professor to `'classroom'` when the lesson begins.
+- **`endLesson`** runs the professor's `onMove` hook to release them back to their normal schedule.
+
+Between lessons the professors follow a `followSchedule`-based `onMove` hook. By default they spend non-teaching weekday hours in the `'courtyard'` and are offscreen at weekends. This means the player might encounter them in the courtyard after a lesson ends and talk to them.
+
+Classroom and courtyard `onArrive` hooks call `getNPC()` for all professors listed in `TIMETABLE` to ensure they are instantiated.
 
 ## Attendance and Completion
 
@@ -107,6 +119,7 @@ The `reminders` hook is generic -- any card type can implement it for meetings, 
 ```typescript
 'lesson-advanced-aetherics': {
   name: 'Advanced Aetherics',
+  npc: 'prof-lucienne-vael',
   slots: [
     { day: 2, startHour: 14, endHour: 14 + LESSON_DURATION / 60 }, // Tuesday 14:00--15:40
     { day: 4, startHour: 9, endHour: 9 + LESSON_DURATION / 60 },   // Thursday 9:00--10:40
@@ -140,6 +153,8 @@ registerCardDefinition('lesson-advanced-aetherics', advancedAethericsLesson)
   conclusion: ['...', '...', '...'],
 },
 ```
+
+4. Register the professor NPC in `src/story/school/Professors.ts` (or reuse an existing one). The professor's `onMove` should use `buildProfessorSchedule()` to derive their classroom schedule from `TIMETABLE`. Import the module in `World.ts`.
 
 The `enrollLessons` script iterates `Object.keys(TIMETABLE)`, so new entries are picked up automatically. Lessons without flavour text entries fall back to generic phase descriptions.
 
