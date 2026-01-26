@@ -1,7 +1,7 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
 import { p, highlight} from '../model/Format'
-import type { CardDefinition } from '../model/Card'
+import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
@@ -334,6 +334,10 @@ export const findLodgingsQuest: CardDefinition = {
       game.completeQuest('find-lodgings')
     }
   },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    if (card.completed || card.failed) return []
+    return [{ text: 'Find your lodgings in the backstreets', urgency: 'info', cardId: card.id }]
+  },
 }
 
 // Register the find-lodgings quest definition
@@ -349,11 +353,11 @@ export const attendUniversityQuest: CardDefinition = {
     if (!quest || quest.completed || quest.failed) {
       return // Already completed or failed
     }
-    
+
     // Check if it's past 10am on Jan 6th, 1902
     const currentDate = game.date
     const inductionDate = new Date(1902, 0, 6, 10, 0, 0) // Jan 6, 1902, 10:00am
-    
+
     if (currentDate >= inductionDate) {
       // Time has passed - check if quest was completed
       const hallwayLocation = game.getLocation('hallway')
@@ -363,6 +367,25 @@ export const attendUniversityQuest: CardDefinition = {
         game.add({ type: 'text', text: 'You failed to attend University induction.... this could be bad....', color: '#ef4444' })
       }
     }
+  },
+  reminders: (game: Game, card: Card): Reminder[] => {
+    if (card.completed || card.failed) return []
+    const d = game.date
+    const day = d.getDate()
+    const month = d.getMonth() // 0 = January
+    const hour = game.hourOfDay
+    // Only relevant in January
+    if (month !== 0) return []
+    // On induction day (Jan 6)
+    if (day === 6) {
+      if (hour < 8) return [{ text: 'University induction at 8am today!', urgency: 'warning', cardId: card.id }]
+      if (hour < 10) return [{ text: 'University induction now!', urgency: 'urgent', cardId: card.id }]
+      return [] // past 10am — afterUpdate handles failure
+    }
+    // Day before (Jan 5)
+    if (day === 5) return [{ text: 'University induction tomorrow at 8am', urgency: 'info', cardId: card.id }]
+    // Earlier than Jan 5
+    return [{ text: 'University induction on 6th Jan', urgency: 'info', cardId: card.id }]
   },
 }
 

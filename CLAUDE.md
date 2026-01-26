@@ -74,7 +74,11 @@ Two-layer scripting: imperative TypeScript functions for complex logic, and a de
 
 ### [CARDS.md](./docs/CARDS.md) -- Card System
 
-Cards are the primary mechanism for ongoing player effects. Quests, status effects, traits, and tasks are all cards with lifecycle hooks: `afterUpdate` (post-action checks), `onTime` (time-based decay/expiry), and `calcStats` (transient stat modifiers). Card instances carry arbitrary custom properties that serialise automatically, enabling per-instance state like alcohol level or completion flags.
+Cards are the primary mechanism for ongoing player effects. Quests, status effects, traits, and tasks are all cards with lifecycle hooks: `afterUpdate` (post-action checks), `onTime` (time-based decay/expiry), `calcStats` (transient stat modifiers), and `reminders` (time-sensitive notifications). Card instances carry arbitrary custom properties that serialise automatically, enabling per-instance state like alcohol level or completion flags.
+
+### [QUESTS.md](./docs/QUESTS.md) -- Quest System
+
+Quests are cards with `type: 'Quest'` representing player objectives. They track progress via `afterUpdate`, display reminders with escalating urgency, and resolve into completed or failed states. Covers quest lifecycle, reminder patterns (static, time-sensitive, conditional suppression), and failure handling.
 
 ### [CLOTHING.md](./docs/CLOTHING.md) -- Clothing System
 

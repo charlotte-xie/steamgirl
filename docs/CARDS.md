@@ -33,6 +33,7 @@ interface CardDefinition {
   calcStats?: (player: Player, card: Card, stats: Map<StatName, number>) => void
   afterUpdate?: Script      // Runs after each player action
   onTime?: (game: Game, card: Card, seconds: number) => void
+  reminders?: (game: Game, card: Card) => Reminder[]  // Time-sensitive notifications
 
   // Activation
   script?: Script           // Optional activation script
@@ -141,6 +142,30 @@ Modifiers are **transient** -- recalculated from scratch each time. The full cal
 2. Apply `calcStats` from worn clothing items
 3. Apply `calcStats` from active cards
 4. Clamp all stats to 0--100
+
+### `reminders` -- Time-Sensitive Notifications
+
+Returns an array of `Reminder` objects displayed in the reminders panel. Called on every render for each card that defines the hook. Any card type can provide reminders -- quests, effects, traits, or tasks.
+
+```typescript
+interface Reminder {
+  text: string
+  urgency: 'info' | 'warning' | 'urgent'
+  cardId?: string
+}
+```
+
+```typescript
+reminders: (game: Game, card: Card): Reminder[] => {
+  if (card.completed || card.failed) return []
+  const hour = game.hourOfDay
+  if (hour < 8) return [{ text: 'Induction at 8am', urgency: 'warning', cardId: card.id }]
+  if (hour < 10) return [{ text: 'Induction now!', urgency: 'urgent', cardId: card.id }]
+  return []
+},
+```
+
+Urgency levels: `info` (general awareness), `warning` (upcoming deadline), `urgent` (immediate action needed). The `Game.reminders` getter collects reminders from all player cards each frame.
 
 ## Card Relationships
 
@@ -329,5 +354,7 @@ function consumeAlcohol(game: Game, amount: number) {
 
 Several game mechanics are built on the card system. Each has its own detailed documentation:
 
+- **[QUESTS.md](./QUESTS.md)** -- Quest lifecycle, reminders, completion and failure patterns.
+- **[LESSONS.md](./LESSONS.md)** -- University lesson quests with timetables, attendance, and phased scenes.
 - **[HUNGER.md](./HUNGER.md)** -- Time-based hunger with an escalating Peckish/Hungry/Starving chain.
 - **[WASHING.md](./WASHING.md)** -- Hygiene mechanic granting the temporary Fresh effect after bathing.

@@ -408,6 +408,7 @@ const lessonScripts = {
     if (npcId) {
       const prof = g.getNPC(npcId)
       prof.location = 'classroom'
+      g.scene.npc = npcId
     }
 
     // Scolding
@@ -475,6 +476,7 @@ const lessonScripts = {
     if (npcId) {
       const prof = g.getNPC(npcId)
       prof.location = 'classroom'
+      g.scene.npc = npcId
     }
 
     // Phase 1: Introduction
@@ -558,6 +560,7 @@ const lessonScripts = {
       const prof = g.getNPC(npcId)
       const profDef = prof.template
       if (profDef.onMove) g.run(profDef.onMove)
+      g.scene.npc = undefined
     }
 
     g.add({ type: 'text', text: `(${attended}/${LESSONS_REQUIRED} sessions attended)`, color: '#d0b691' })
