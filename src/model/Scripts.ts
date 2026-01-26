@@ -670,12 +670,12 @@ const coreScripts: Record<string, ScriptFn> = {
       game.add(params.text)
     }
 
-    // Process in chunks so events can interrupt long waits
+    // Process in 10min chunks so events can interrupt long waits
     const CHUNK = 10
     let remaining = totalMinutes
     while (remaining > 0) {
       const chunk = Math.min(remaining, CHUNK)
-      game.timeLapse(chunk)
+      game.timeLapse(chunk) /* Should never trigger scenes */
       remaining -= chunk
 
       // NPC onWait hooks — present NPCs may approach, react, or trigger encounters
