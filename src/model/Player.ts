@@ -139,6 +139,11 @@ export class Player {
     return this.cards.some(c => c.id === cardId)
   }
 
+  /** Set a timer to the current game time. */
+  setTimer(timerName: TimerName, time: number): void {
+    this.timers.set(timerName, time)
+  }
+
   /**
    * Get a timer value, initialising it to lastAction time if not yet set.
    * Returns the timer value (existing or newly initialised).

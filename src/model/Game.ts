@@ -242,7 +242,7 @@ export class Game {
    */
   takeAction(scriptName: string, params: {} = {}): void {
     // Record the time of this action
-    this.player.timers.set('lastAction', this.time)
+    this.player.setTimer('lastAction', this.time)
 
     // Clear the scene before running a new script
     this.clearScene()

@@ -147,12 +147,44 @@ export const starvingEffect: CardDefinition = {
   },
 }
 
+export const freshEffect: CardDefinition = {
+  name: 'Fresh',
+  description: 'You feel clean and refreshed after a good wash. Your confidence is lifted.',
+  type: 'Effect',
+  color: '#38bdf8', // Sky blue
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+    game.add({ type: 'text', text: 'You feel wonderfully fresh and clean.', color: '#38bdf8' })
+  },
+  calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
+    player.modifyStat('Mood', 10)
+    player.modifyStat('Charm', 5)
+  },
+  onTime: (game: Game, card: Card, seconds: number) => {
+    // Grace period of 30 minutes after last wash, then 1% chance per minute of wearing off
+    const lastWash = game.player.getTimer('lastWash')
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - Math.max(lastWash, addedAt)
+    const gracePeriod = 30 * 60 // 30 minutes in seconds
+    if (elapsed <= gracePeriod) return
+
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.01, minutes)
+      if (Math.random() > chanceNone) {
+        game.removeCard(card.id)
+      }
+    }
+  },
+}
+
 // Register the effect definitions
 registerCardDefinition('intoxicated', intoxicatedEffect)
 registerCardDefinition('sleepy', sleepyEffect)
 registerCardDefinition('peckish', peckishEffect)
 registerCardDefinition('hungry', hungryEffect)
 registerCardDefinition('starving', starvingEffect)
+registerCardDefinition('fresh', freshEffect)
 
 // Register the timeEffects script so timeLapse can call it
 makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
@@ -204,6 +236,12 @@ export function accumulateHunger(game: Game, seconds: number): void {
       game.addEffect('peckish')
     }
   }
+}
+
+/** Common logic for washing (shower, bath, etc.). Records the timer and applies the Fresh effect. */
+export function takeWash(game: Game): void {
+  game.player.setTimer('lastWash', game.time)
+  game.addEffect('fresh')
 }
 
 /**

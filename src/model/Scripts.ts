@@ -347,7 +347,7 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!params.timer || typeof params.timer !== 'string') {
       throw new Error('recordTime requires a timer parameter (string name)')
     }
-    game.player.timers.set(params.timer as TimerName, game.time)
+    game.player.setTimer(params.timer as TimerName, game.time)
   },
 
   // -------------------------------------------------------------------------
