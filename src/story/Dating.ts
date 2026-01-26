@@ -26,6 +26,7 @@ import { Game } from '../model/Game'
 import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts, type Script } from '../model/Scripts'
+import { type Instruction, run } from '../model/ScriptDSL'
 
 // ============================================================================
 // DATE PLAN INTERFACE
@@ -148,6 +149,15 @@ export function standardComplete(bonus = 15): Script {
     if (npc.template.onMove) game.run(npc.template.onMove)
   }
 }
+
+// ============================================================================
+// DSL HELPERS
+// ============================================================================
+
+/** DSL instruction to end a date successfully. Use as the last instruction in a date scene.
+ *  The NPC is resolved automatically from the active date card. */
+export const endDate = (): Instruction =>
+  run('dateComplete', {})
 
 // ============================================================================
 // DATE PLAN REGISTRY
