@@ -464,7 +464,7 @@ const coreScripts: Record<string, ScriptFn> = {
   /** Check if player has a card */
   hasCard: (game: Game, params: { cardId?: string }): boolean => {
     if (!params.cardId) return false
-    return game.player.cards.some(c => c.id === params.cardId)
+    return game.player.hasCard(params.cardId)
   },
 
   /** Check if a card is completed */

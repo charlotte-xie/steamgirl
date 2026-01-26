@@ -44,6 +44,18 @@ export function DevControls() {
         <span className="dev-btn-icon">💰</span>
         <span className="dev-btn-label">+1k Kr</span>
       </button>
+      <button
+        className="dev-btn"
+        onClick={() => {
+          game.player.cards = game.player.cards.filter(c => c.type !== 'Effect')
+          game.player.calcStats()
+          refresh()
+        }}
+        title="Remove all effects"
+      >
+        <span className="dev-btn-icon">✕</span>
+        <span className="dev-btn-label">-Effects</span>
+      </button>
     </div>
   )
 }

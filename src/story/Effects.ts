@@ -22,14 +22,7 @@ export const intoxicatedEffect: CardDefinition = {
       card.alcohol = newAlcohol
       
       if (newAlcohol <= 0) {
-        // Remove the effect
-        const index = game.player.cards.findIndex(c => c.id === card.id && c.type === 'Effect')
-        if (index !== -1) {
-          game.player.cards.splice(index, 1)
-          game.add({ type: 'text', text: 'You are no longer intoxicated' })
-          // Recalculate stats after removing the effect
-          game.run('calcStats', {})
-        }
+        game.removeCard(card.id)
       } else {
         // Recalculate stats when alcohol changes (in case we want dynamic modifiers)
         game.run('calcStats', {})
@@ -86,6 +79,9 @@ export const peckishEffect: CardDefinition = {
   type: 'Effect',
   color: '#f59e0b', // Amber
   subsumedBy: ['hungry', 'starving'],
+  onAdded: (game: Game) => {
+    game.add({ type: 'text', text: 'You are starting to feel peckish. Your stomach gives a quiet rumble.', color: '#f59e0b' })
+  },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Willpower', -5)
   },
@@ -108,6 +104,9 @@ export const hungryEffect: CardDefinition = {
   color: '#f97316', // Orange
   replaces: ['peckish'],
   subsumedBy: ['starving'],
+  onAdded: (game: Game) => {
+    game.add({ type: 'text', text: 'Your stomach growls insistently. You really need to eat something.', color: '#f97316' })
+  },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Perception', -5)
     player.modifyStat('Wits', -5)
@@ -132,6 +131,9 @@ export const starvingEffect: CardDefinition = {
   type: 'Effect',
   color: '#ef4444', // Red
   replaces: ['peckish', 'hungry'],
+  onAdded: (game: Game) => {
+    game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: '#ef4444' })
+  },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Strength', -10)
     player.modifyStat('Agility', -10)
@@ -178,13 +180,11 @@ export function timeEffects(game: Game, seconds: number): void {
  */
 export function accumulateHunger(game: Game, seconds: number): void {
   // Skip if player already has any hunger effect
-  if (game.player.cards.some(c => c.id === 'peckish' || c.id === 'hungry' || c.id === 'starving')) {
+  if (game.player.hasCard('peckish') || game.player.hasCard('hungry') || game.player.hasCard('starving')) {
     return
   }
 
-  const lastEat = game.player.timers.get('lastEat')
-  if (lastEat === undefined) return // No record of eating — skip (init should set this)
-
+  const lastEat = game.player.getTimer('lastEat')
   const gracePeriod = 240 * 60 // 240 minutes in seconds
   const timeSinceEat = game.time - lastEat
 

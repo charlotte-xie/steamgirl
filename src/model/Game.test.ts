@@ -971,13 +971,16 @@ describe('Game', () => {
       }
     })
 
-    it('should not add peckish when no lastEat timer is set', () => {
-      for (let i = 0; i < 200; i++) {
-        const game = bareGame()
-        // No lastEat timer
-        game.timeLapse(300)
-        expect(hasHungerEffect(game)).toBe(false)
-      }
+    it('should initialise lastEat on first call and not add peckish', () => {
+      const game = bareGame()
+      // No lastEat timer yet
+      expect(game.player.timers.has('lastEat')).toBe(false)
+
+      game.timeLapse(10)
+
+      // Timer should now be set, but no hunger effect (clock just started)
+      expect(game.player.timers.has('lastEat')).toBe(true)
+      expect(hasHungerEffect(game)).toBe(false)
     })
 
     it('should eventually add peckish after the grace period', () => {

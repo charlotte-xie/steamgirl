@@ -241,6 +241,9 @@ export class Game {
    * - Catches errors and displays them gracefully to the player
    */
   takeAction(scriptName: string, params: {} = {}): void {
+    // Record the time of this action
+    this.player.timers.set('lastAction', this.time)
+
     // Clear the scene before running a new script
     this.clearScene()
 
@@ -328,16 +331,11 @@ export class Game {
 
   /** Add a quest card to the player. Returns this for fluent chaining. */
   addQuest(questId: string, args: Record<string, unknown> = {}): this {
-    const silent = args.silent
+    const silent = !!args.silent
     const cardArgs = { ...args }
     delete cardArgs.silent
 
-    if (this.addCard(questId, 'Quest', cardArgs)) {
-      if (!silent) {
-        const cardDef = this.player.cards.find(c => c.id === questId)!.template
-        this.add({ type: 'text', text: `Quest received: ${cardDef.name}`, color: '#3b82f6' })
-      }
-    }
+    this.addCard(questId, 'Quest', cardArgs, silent)
 
     return this
   }
@@ -359,30 +357,33 @@ export class Game {
    * - If the card is already present, it is not added (no-op).
    * - If any card listed in the definition's `subsumedBy` is present, the card is not added.
    * - Any cards listed in the definition's `replaces` are removed before adding.
+   * Calls the card's onAdded hook, or shows a default message.
+   * Pass silent=true to suppress all messages.
    * Returns true if the card was added, false if skipped.
    */
-  addCard(cardId: string, type: CardType, args: Record<string, unknown> = {}): boolean {
+  addCard(cardId: string, type: CardType, args: Record<string, unknown> = {}, silent: boolean = false): boolean {
     // Create the card to access its definition
     const card = new Card(cardId, type)
     const cardDef = card.template
 
     // Block duplicates unless allowMultiple is set
-    if (!cardDef.allowMultiple && this.player.cards.some(c => c.id === cardId)) {
+    if (!cardDef.allowMultiple && this.player.hasCard(cardId)) {
       return false
     }
 
     // Check subsumedBy: skip if a stronger card is already present
     if (cardDef.subsumedBy) {
-      const subsumed = cardDef.subsumedBy.some(id => this.player.cards.some(c => c.id === id))
+      const subsumed = cardDef.subsumedBy.some(id => this.player.hasCard(id))
       if (subsumed) {
         return false
       }
     }
 
-    // Remove cards listed in replaces
+    // Remove cards listed in replaces (silently — the new card's onAdded is the relevant message)
     if (cardDef.replaces) {
-      const replaceSet = new Set(cardDef.replaces)
-      this.player.cards = this.player.cards.filter(c => !replaceSet.has(c.id))
+      for (const replaceId of cardDef.replaces) {
+        this.removeCard(replaceId, true)
+      }
     }
 
     // Apply additional args to the card instance
@@ -391,14 +392,55 @@ export class Game {
     })
 
     this.player.cards.push(card)
+
+    // Call onAdded hook or show default message (unless silent)
+    if (!silent) {
+      if (typeof cardDef.onAdded === 'function') {
+        (cardDef.onAdded as (game: Game, card: Card) => void)(this, card)
+      } else {
+        const color = typeof cardDef.color === 'string' ? cardDef.color : undefined
+        this.add({ type: 'text', text: `${type}: ${cardDef.name}`, color })
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Remove a card from the player by ID.
+   * Calls the card's onRemoved hook, or shows a default message.
+   * If the card is subsumed (a card listed in its subsumedBy is present), onRemoved is skipped.
+   * Recalculates stats after removal.
+   * Pass silent=true to suppress all messages.
+   * Returns true if the card was found and removed.
+   */
+  removeCard(cardId: string, silent: boolean = false): boolean {
+    const index = this.player.cards.findIndex(c => c.id === cardId)
+    if (index === -1) return false
+
+    const card = this.player.cards[index]
+    const cardDef = card.template
+    this.player.cards.splice(index, 1)
+
+    // If the card is subsumed (a stronger card is present), skip onRemoved entirely —
+    // the card is being transformed/upgraded, not truly removed.
+    const subsumed = cardDef.subsumedBy?.some(id => this.player.hasCard(id)) ?? false
+
+    if (!silent && !subsumed) {
+      if (typeof cardDef.onRemoved === 'function') {
+        (cardDef.onRemoved as (game: Game, card: Card) => void)(this, card)
+      } else {
+        this.add({ type: 'text', text: `No longer ${cardDef.name.toLowerCase()}`, color: '#6fbf8a' })
+      }
+    }
+
+    this.player.calcStats()
     return true
   }
 
   /** Add an effect card to the player. Returns this for fluent chaining. */
   addEffect(effectId: string, args: Record<string, unknown> = {}): this {
     if (this.addCard(effectId, 'Effect', args)) {
-      const cardDef = this.player.cards.find(c => c.id === effectId)!.template
-      this.add({ type: 'text', text: `Effect: ${cardDef.name}`, color: '#a855f7' })
       // Recalculate stats after adding an effect
       this.player.calcStats()
     }

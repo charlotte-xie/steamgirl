@@ -186,7 +186,7 @@ export const startScripts = {
 
     // Recalculate stats after setting base stats
     g.run('calcStats', {})
-    
+
     // Add initial items
     g.run('gainItem', { item: 'crown', number: 120 })
     g.run('gainItem', { item: 'pocket-watch', number: 1 })

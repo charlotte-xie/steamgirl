@@ -1773,7 +1773,14 @@ img {
   flex-wrap: wrap;
 }
 
-.character-columns .info-section {
+.character-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 12.5rem;
+}
+
+.character-right {
   flex: 1;
   min-width: 12.5rem;
 }
@@ -1796,6 +1803,29 @@ img {
 .skill-value {
   color: var(--text-muted);
   font-size: var(--font-md);
+}
+
+.timer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-panel-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  gap: var(--space-sm);
+}
+
+.timer-label {
+  font-weight: 500;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.timer-value {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  text-align: right;
 }
 
 /* ==========================================================================

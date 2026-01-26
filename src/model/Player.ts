@@ -5,7 +5,8 @@ import { type OutfitData, saveOutfit, deleteOutfit } from './Outfits'
 
 export type ItemSpec = string | Item
 
-export type TimerName = 
+export type TimerName =
+  | 'lastAction'
   | 'lastSleep'
   | 'lastNap'
   | 'lastWash'
@@ -131,6 +132,24 @@ export class Player {
     }
 
     return player
+  }
+
+  /** Check if the player has a card with the given ID. */
+  hasCard(cardId: string): boolean {
+    return this.cards.some(c => c.id === cardId)
+  }
+
+  /**
+   * Get a timer value, initialising it to lastAction time if not yet set.
+   * Returns the timer value (existing or newly initialised).
+   */
+  getTimer(timerName: TimerName): number {
+    let value = this.timers.get(timerName)
+    if (value === undefined) {
+      value = this.timers.get('lastAction') ?? 0
+      this.timers.set(timerName, value)
+    }
+    return value
   }
 
   /**
