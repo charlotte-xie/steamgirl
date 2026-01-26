@@ -174,6 +174,12 @@ const coreScripts: Record<string, ScriptFn> = {
       }
     }
 
+    // Run standard time-based effect accumulation (hunger, etc.)
+    // This runs after onTime so newly added cards don't get onTime in the same tick
+    if (totalSeconds > 0) {
+      game.run('timeEffects', { seconds: totalSeconds })
+    }
+
     // If hour changed, call onMove for all NPCs
     if (hourChanged) {
       game.npcs.forEach((npc) => {

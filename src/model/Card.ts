@@ -23,6 +23,12 @@ export interface CardDefinition {
   condition?: Script
   afterUpdate?: Script
   calcStats?: (player: Player, card: Card, stats: Map<StatName, number>) => void
+  /** Card IDs that this card replaces (removed when this card is added). */
+  replaces?: CardId[]
+  /** Card IDs that subsume this card (this card is not added if any are present). */
+  subsumedBy?: CardId[]
+  /** When true, multiple instances of this card can coexist. Default is false (self-subsuming). */
+  allowMultiple?: boolean
   // Additional definition properties can be added here
   [key: string]: unknown
 }

@@ -2,6 +2,7 @@ import { Game } from '../model/Game'
 import type { CardDefinition } from '../model/Card'
 import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
+import { makeScript } from '../model/Scripts'
 import type { StatName } from '../model/Stats'
 import type { Player } from '../model/Player'
 
@@ -77,11 +78,135 @@ export const sleepyEffect: CardDefinition = {
   color: '#3b82f6', // Blue
 }
 
+// --- Hunger effects (escalating severity) ---
+
+export const peckishEffect: CardDefinition = {
+  name: 'Peckish',
+  description: 'Your stomach grumbles. You could do with something to eat.',
+  type: 'Effect',
+  color: '#f59e0b', // Amber
+  subsumedBy: ['hungry', 'starving'],
+  calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
+    player.modifyStat('Willpower', -5)
+  },
+  onTime: (game: Game, _card: Card, seconds: number) => {
+    // Chance-based escalation to Hungry: 0.3% per minute
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.003, minutes)
+      if (Math.random() > chanceNone) {
+        game.addEffect('hungry')
+      }
+    }
+  },
+}
+
+export const hungryEffect: CardDefinition = {
+  name: 'Hungry',
+  description: 'You are properly hungry now. It is hard to concentrate.',
+  type: 'Effect',
+  color: '#f97316', // Orange
+  replaces: ['peckish'],
+  subsumedBy: ['starving'],
+  calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
+    player.modifyStat('Perception', -5)
+    player.modifyStat('Wits', -5)
+    player.modifyStat('Charm', -5)
+    player.modifyStat('Willpower', -10)
+  },
+  onTime: (game: Game, _card: Card, seconds: number) => {
+    // Chance-based escalation to Starving: 0.3% per minute
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.003, minutes)
+      if (Math.random() > chanceNone) {
+        game.addEffect('starving')
+      }
+    }
+  },
+}
+
+export const starvingEffect: CardDefinition = {
+  name: 'Starving',
+  description: 'You are weak with hunger. Everything is a struggle.',
+  type: 'Effect',
+  color: '#ef4444', // Red
+  replaces: ['peckish', 'hungry'],
+  calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
+    player.modifyStat('Strength', -10)
+    player.modifyStat('Agility', -10)
+    player.modifyStat('Perception', -20)
+    player.modifyStat('Wits', -20)
+    player.modifyStat('Charm', -20)
+    player.modifyStat('Willpower', -20)
+  },
+  onTime: (_game: Game, _card: Card, _seconds: number) => {
+    // TODO: Add negative effect chains (e.g. health loss, fainting)
+  },
+}
+
 // Register the effect definitions
 registerCardDefinition('intoxicated', intoxicatedEffect)
 registerCardDefinition('sleepy', sleepyEffect)
+registerCardDefinition('peckish', peckishEffect)
+registerCardDefinition('hungry', hungryEffect)
+registerCardDefinition('starving', starvingEffect)
 
-/** 
+// Register the timeEffects script so timeLapse can call it
+makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
+  const seconds = params.seconds ?? 0
+  if (seconds > 0) {
+    timeEffects(game, seconds)
+  }
+})
+
+/**
+ * Run standard time-based effect processing. Called from timeLapse.
+ * This is the general entry point for systems that accumulate over time.
+ */
+export function timeEffects(game: Game, seconds: number): void {
+  accumulateHunger(game, seconds)
+  // Future: accumulateFatigue, etc.
+}
+
+/**
+ * Accumulate hunger over time. Checks minutes since last eaten:
+ * - First 240 minutes (4 hours) are a grace period with no effects.
+ * - After that, each minute has a 0.3% chance of adding Peckish.
+ * The chance is calculated over the elapsed seconds in this tick,
+ * but only counting minutes that fall after the 240-minute grace.
+ */
+export function accumulateHunger(game: Game, seconds: number): void {
+  // Skip if player already has any hunger effect
+  if (game.player.cards.some(c => c.id === 'peckish' || c.id === 'hungry' || c.id === 'starving')) {
+    return
+  }
+
+  const lastEat = game.player.timers.get('lastEat')
+  if (lastEat === undefined) return // No record of eating — skip (init should set this)
+
+  const gracePeriod = 240 * 60 // 240 minutes in seconds
+  const timeSinceEat = game.time - lastEat
+
+  // Not past grace period yet
+  if (timeSinceEat <= gracePeriod) return
+
+  // Calculate how many of this tick's seconds fall after the grace period
+  const timeBeforeTick = timeSinceEat - seconds
+  const effectiveStart = Math.max(0, timeBeforeTick - gracePeriod)
+  const effectiveEnd = timeSinceEat - gracePeriod
+  const effectiveSeconds = effectiveEnd - effectiveStart
+  const effectiveMinutes = Math.floor(effectiveSeconds / 60)
+
+  if (effectiveMinutes > 0) {
+    const chanceNone = Math.pow(1 - 0.003, effectiveMinutes)
+    if (Math.random() > chanceNone) {
+      game.addEffect('peckish')
+    }
+  }
+}
+
+/**
  * Consume alcohol script - adds alcohol amount to the player's intoxicated effect.
  * Adds the intoxicated effect if the player doesn't have it.
  * Adds to existing alcohol value if the player already has the effect.

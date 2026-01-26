@@ -38,6 +38,10 @@ interface CardDefinition {
   script?: Script           // Optional activation script
   condition?: Script        // Conditional check
 
+  // Card relationships
+  replaces?: CardId[]       // Cards removed when this card is added
+  subsumedBy?: CardId[]     // This card is not added if any of these are present
+
   [key: string]: unknown    // Custom definition properties
 }
 ```
@@ -139,24 +143,62 @@ Modifiers are **transient** -- recalculated from scratch each time. The full cal
 3. Apply `calcStats` from active cards
 4. Clamp all stats to 0--100
 
+## Card Relationships
+
+Card definitions can declare relationships that control how cards interact when added:
+
+### `replaces` -- Automatic Removal
+
+When a card with `replaces` is added, any listed cards are removed from the player first. Use this for escalating severity chains where a stronger effect supersedes a weaker one.
+
+### `subsumedBy` -- Preventing Redundant Adds
+
+When a card with `subsumedBy` is added, it is silently skipped if the player already has any of the listed cards. Use this to prevent weaker effects from being added when a stronger one is already active.
+
+Together these two properties create clean escalation chains. For example, the hunger effects form:
+
+```
+Peckish → Hungry → Starving
+```
+
+- **Peckish**: `subsumedBy: ['hungry', 'starving']`
+- **Hungry**: `replaces: ['peckish']`, `subsumedBy: ['starving']`
+- **Starving**: `replaces: ['peckish', 'hungry']`
+
+This means:
+- Adding Hungry automatically removes Peckish
+- Adding Starving automatically removes Peckish or Hungry
+- Adding Peckish while Hungry or Starving is active does nothing
+
+### `allowMultiple` -- Stacking Instances
+
+By default, cards are self-subsuming: adding a card that the player already has is a no-op. Set `allowMultiple: true` to allow multiple instances of the same card definition to coexist on the player.
+
+### `addCard` -- Underlying Mechanism
+
+Both `addQuest` and `addEffect` delegate to `game.addCard(cardId, type, args)`, which handles duplicate detection (respecting `allowMultiple`), `subsumedBy` checks, and `replaces` removal. It returns `true` if the card was added, `false` if skipped.
+
 ## Adding and Removing Cards
 
 ### Game API
 
 ```typescript
-// Quests
-game.addQuest('find-lodgings')                    // Adds quest, shows message
-game.addQuest('quest-id', { silent: true })        // Adds without message
-game.addQuest('quest-id', { customProp: value })   // Adds with custom properties
-game.completeQuest('find-lodgings')                // Sets completed = true
+// Low-level (handles replaces/subsumedBy)
+game.addCard('hungry', 'Effect', { ... })          // Returns true/false
 
-// Effects
-game.addEffect('intoxicated', { alcohol: 60 })     // Adds effect with properties
+// Quests (delegates to addCard, shows message)
+game.addQuest('find-lodgings')                     // Adds quest, shows message
+game.addQuest('quest-id', { silent: true })         // Adds without message
+game.addQuest('quest-id', { customProp: value })    // Adds with custom properties
+game.completeQuest('find-lodgings')                 // Sets completed = true
+
+// Effects (delegates to addCard, shows message, recalculates stats)
+game.addEffect('intoxicated', { alcohol: 60 })      // Adds effect with properties
 ```
 
-Both methods prevent duplicates -- calling `addQuest` for an existing quest ID is a no-op. `addEffect` recalculates stats immediately after adding.
+All methods prevent duplicates -- calling `addQuest` for an existing quest ID is a no-op. `addEffect` recalculates stats immediately after adding.
 
-All methods return `this` for fluent chaining.
+All methods return `this` for fluent chaining (except `addCard` which returns a boolean).
 
 ### DSL Helpers
 
@@ -279,11 +321,11 @@ function consumeAlcohol(game: Game, amount: number) {
 | File | Contents |
 |------|----------|
 | `src/model/Card.ts` | `Card` class, `CardDefinition`, registry |
-| `src/model/Game.ts` | `addQuest()`, `completeQuest()`, `addEffect()`, `afterAction()` |
+| `src/model/Game.ts` | `addCard()`, `addQuest()`, `completeQuest()`, `addEffect()`, `afterAction()` |
 | `src/model/Player.ts` | `player.cards` array, `calcStats()` integration |
 | `src/model/Scripts.ts` | `timeLapse` (calls `onTime`), card predicates |
 | `src/model/ScriptDSL.ts` | DSL helpers (`addQuest`, `addEffect`, `hasCard`, etc.) |
-| `src/story/Effects.ts` | Effect definitions (Intoxicated, Sleepy) |
+| `src/story/Effects.ts` | Effect definitions (Intoxicated, Sleepy, Peckish, Hungry, Starving) |
 | `src/story/Start.ts` | Quest definitions (Find Lodgings, Attend University) |
 | `src/components/Card.tsx` | Card display component |
 | `src/components/EffectTag.tsx` | Compact effect tag for avatar overlay |

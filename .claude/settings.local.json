@@ -9,7 +9,10 @@
       "Bash(dir \"C:\\\\Users\\\\petet\\\\git\\\\steamgirl\\\\public\\\\images\\\\industrial\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\petet\\\\git\\\\steamgirl\\\\public\\\\images\" -Filter \"industrial*\" -Recurse -ErrorAction SilentlyContinue)",
       "Bash(Select-Object FullName)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

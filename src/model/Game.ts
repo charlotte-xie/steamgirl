@@ -2,7 +2,7 @@ import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
 import { getScript, isInstruction, isScriptFn, type Script } from './Scripts'
-import { Card } from './Card'
+import { Card, type CardType } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 
 // Re-export Content types for convenience
@@ -328,24 +328,17 @@ export class Game {
 
   /** Add a quest card to the player. Returns this for fluent chaining. */
   addQuest(questId: string, args: Record<string, unknown> = {}): this {
-    // Check if player already has this quest
-    const hasQuest = this.player.cards.some(card => card.id === questId)
-    if (!hasQuest) {
-      // Get card definition (will throw if not found)
-      const quest = new Card(questId, 'Quest')
-      const cardDef = quest.template
-      
-      // Apply any additional args to the card instance
-      Object.keys(args).forEach(key => {
-        quest[key] = args[key]
-      })
-      
-      this.player.cards.push(quest)
-      if (!args.silent) {
+    const silent = args.silent
+    const cardArgs = { ...args }
+    delete cardArgs.silent
+
+    if (this.addCard(questId, 'Quest', cardArgs)) {
+      if (!silent) {
+        const cardDef = this.player.cards.find(c => c.id === questId)!.template
         this.add({ type: 'text', text: `Quest received: ${cardDef.name}`, color: '#3b82f6' })
       }
     }
-    
+
     return this
   }
 
@@ -361,26 +354,55 @@ export class Game {
     return this
   }
 
+  /**
+   * Add a card to the player. Handles replaces/subsumedBy logic from the card definition.
+   * - If the card is already present, it is not added (no-op).
+   * - If any card listed in the definition's `subsumedBy` is present, the card is not added.
+   * - Any cards listed in the definition's `replaces` are removed before adding.
+   * Returns true if the card was added, false if skipped.
+   */
+  addCard(cardId: string, type: CardType, args: Record<string, unknown> = {}): boolean {
+    // Create the card to access its definition
+    const card = new Card(cardId, type)
+    const cardDef = card.template
+
+    // Block duplicates unless allowMultiple is set
+    if (!cardDef.allowMultiple && this.player.cards.some(c => c.id === cardId)) {
+      return false
+    }
+
+    // Check subsumedBy: skip if a stronger card is already present
+    if (cardDef.subsumedBy) {
+      const subsumed = cardDef.subsumedBy.some(id => this.player.cards.some(c => c.id === id))
+      if (subsumed) {
+        return false
+      }
+    }
+
+    // Remove cards listed in replaces
+    if (cardDef.replaces) {
+      const replaceSet = new Set(cardDef.replaces)
+      this.player.cards = this.player.cards.filter(c => !replaceSet.has(c.id))
+    }
+
+    // Apply additional args to the card instance
+    Object.keys(args).forEach(key => {
+      card[key] = args[key]
+    })
+
+    this.player.cards.push(card)
+    return true
+  }
+
   /** Add an effect card to the player. Returns this for fluent chaining. */
   addEffect(effectId: string, args: Record<string, unknown> = {}): this {
-    // Check if player already has this effect
-    const hasEffect = this.player.cards.some(card => card.id === effectId && card.type === 'Effect')
-    if (!hasEffect) {
-      // Get card definition (will throw if not found)
-      const effect = new Card(effectId, 'Effect')
-      const cardDef = effect.template
-      
-      // Apply any additional args to the card instance
-      Object.keys(args).forEach(key => {
-        effect[key] = args[key]
-      })
-      
-      this.player.cards.push(effect)
+    if (this.addCard(effectId, 'Effect', args)) {
+      const cardDef = this.player.cards.find(c => c.id === effectId)!.template
       this.add({ type: 'text', text: `Effect: ${cardDef.name}`, color: '#a855f7' })
       // Recalculate stats after adding an effect
       this.player.calcStats()
     }
-    
+
     return this
   }
 

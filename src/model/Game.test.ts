@@ -808,6 +808,234 @@ describe('Game', () => {
     })
   })
 
+  describe('addCard replaces/subsumedBy', () => {
+    it('should add a card normally when no replaces or subsumedBy', () => {
+      const game = new Game()
+      game.addEffect('sleepy')
+      expect(game.player.cards.some(c => c.id === 'sleepy')).toBe(true)
+    })
+
+    it('should not add a duplicate card', () => {
+      const game = new Game()
+      game.addEffect('peckish')
+      game.addEffect('peckish')
+      expect(game.player.cards.filter(c => c.id === 'peckish').length).toBe(1)
+    })
+
+    it('should not add peckish when hungry is present (subsumedBy)', () => {
+      const game = new Game()
+      game.addEffect('hungry')
+      expect(game.player.cards.some(c => c.id === 'hungry')).toBe(true)
+
+      game.addEffect('peckish')
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(false)
+    })
+
+    it('should not add peckish when starving is present (subsumedBy)', () => {
+      const game = new Game()
+      game.addEffect('starving')
+      game.addEffect('peckish')
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(false)
+    })
+
+    it('should not add hungry when starving is present (subsumedBy)', () => {
+      const game = new Game()
+      game.addEffect('starving')
+      game.addEffect('hungry')
+      expect(game.player.cards.some(c => c.id === 'hungry')).toBe(false)
+    })
+
+    it('should replace peckish when hungry is added (replaces)', () => {
+      const game = new Game()
+      game.addEffect('peckish')
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(true)
+
+      game.addEffect('hungry')
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(false)
+      expect(game.player.cards.some(c => c.id === 'hungry')).toBe(true)
+    })
+
+    it('should replace hungry when starving is added (replaces)', () => {
+      const game = new Game()
+      game.addEffect('hungry')
+      game.addEffect('starving')
+      expect(game.player.cards.some(c => c.id === 'hungry')).toBe(false)
+      expect(game.player.cards.some(c => c.id === 'starving')).toBe(true)
+    })
+
+    it('should replace peckish when starving is added (replaces)', () => {
+      const game = new Game()
+      game.addEffect('peckish')
+      game.addEffect('starving')
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(false)
+      expect(game.player.cards.some(c => c.id === 'starving')).toBe(true)
+    })
+
+    it('should preserve other cards when replacing', () => {
+      const game = new Game()
+      game.addEffect('sleepy')
+      game.addEffect('peckish')
+      game.addEffect('hungry')
+
+      expect(game.player.cards.some(c => c.id === 'sleepy')).toBe(true)
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(false)
+      expect(game.player.cards.some(c => c.id === 'hungry')).toBe(true)
+    })
+
+    it('addCard should return true when card is added', () => {
+      const game = new Game()
+      expect(game.addCard('peckish', 'Effect')).toBe(true)
+    })
+
+    it('addCard should return false when card is subsumed', () => {
+      const game = new Game()
+      game.addEffect('hungry')
+      expect(game.addCard('peckish', 'Effect')).toBe(false)
+    })
+
+    it('addCard should return false for duplicate', () => {
+      const game = new Game()
+      game.addEffect('peckish')
+      expect(game.addCard('peckish', 'Effect')).toBe(false)
+    })
+  })
+
+  describe('hunger effects stat modifiers', () => {
+    /** Create a game with uniform base stats (50) and no items/clothing. */
+    function bareGame(baseStatValue = 50): Game {
+      const game = new Game()
+      game.player.basestats.forEach((_v, k) => game.player.basestats.set(k, baseStatValue))
+      game.player.calcStats()
+      return game
+    }
+
+    it('peckish should apply -5 Willpower', () => {
+      const game = bareGame()
+      game.addEffect('peckish')
+      expect(game.player.stats.get('Willpower')).toBe(45)
+    })
+
+    it('hungry should apply -5 Pe/Wi/Ch and -10 Wp', () => {
+      const game = bareGame()
+      game.addEffect('hungry')
+      expect(game.player.stats.get('Perception')).toBe(45)
+      expect(game.player.stats.get('Wits')).toBe(45)
+      expect(game.player.stats.get('Charm')).toBe(45)
+      expect(game.player.stats.get('Willpower')).toBe(40)
+    })
+
+    it('starving should apply -10 St/Ag and -20 Pe/Wi/Ch/Wp', () => {
+      const game = bareGame()
+      game.addEffect('starving')
+      expect(game.player.stats.get('Strength')).toBe(40)
+      expect(game.player.stats.get('Agility')).toBe(40)
+      expect(game.player.stats.get('Perception')).toBe(30)
+      expect(game.player.stats.get('Wits')).toBe(30)
+      expect(game.player.stats.get('Charm')).toBe(30)
+      expect(game.player.stats.get('Willpower')).toBe(30)
+    })
+
+    it('upgrading from peckish to hungry should only apply hungry penalties', () => {
+      const game = bareGame()
+      game.addEffect('peckish')
+      expect(game.player.stats.get('Willpower')).toBe(45)
+
+      game.addEffect('hungry')
+      expect(game.player.cards.some(c => c.id === 'peckish')).toBe(false)
+      expect(game.player.stats.get('Willpower')).toBe(40)
+    })
+  })
+
+  describe('hunger accumulation via timeLapse', () => {
+    /** Create a game with uniform base stats and no items/clothing. */
+    function bareGame(baseStatValue = 50): Game {
+      const game = new Game()
+      game.player.basestats.forEach((_v, k) => game.player.basestats.set(k, baseStatValue))
+      game.player.calcStats()
+      return game
+    }
+
+    /** Check if the player has any hunger-related effect. */
+    function hasHungerEffect(game: Game): boolean {
+      return game.player.cards.some(c => c.id === 'peckish' || c.id === 'hungry' || c.id === 'starving')
+    }
+
+    it('should not add peckish within the 240-minute grace period (even over many attempts)', () => {
+      // Run many iterations — none should trigger because we stay within the grace period
+      for (let i = 0; i < 200; i++) {
+        const game = bareGame()
+        game.player.timers.set('lastEat', game.time)
+        // Advance 200 minutes (within 240-minute grace)
+        game.timeLapse(200)
+        expect(hasHungerEffect(game)).toBe(false)
+      }
+    })
+
+    it('should not add peckish when no lastEat timer is set', () => {
+      for (let i = 0; i < 200; i++) {
+        const game = bareGame()
+        // No lastEat timer
+        game.timeLapse(300)
+        expect(hasHungerEffect(game)).toBe(false)
+      }
+    })
+
+    it('should eventually add peckish after the grace period', () => {
+      // With lastEat 300 min ago and 60-min ticks, effective minutes = 60.
+      // Chance of NOT triggering in one attempt: (1-0.003)^60 ≈ 0.835
+      // Over 100 fresh attempts the chance of never triggering is vanishingly small.
+      let triggered = false
+      for (let i = 0; i < 100 && !triggered; i++) {
+        const game = bareGame()
+        game.player.timers.set('lastEat', game.time - 300 * 60)
+        game.timeLapse(60)
+        if (game.player.cards.some(c => c.id === 'peckish')) {
+          triggered = true
+        }
+      }
+      expect(triggered).toBe(true)
+    })
+
+    it('should eventually escalate peckish to hungry via onTime', () => {
+      let triggered = false
+      for (let i = 0; i < 100 && !triggered; i++) {
+        const game = bareGame()
+        game.addEffect('peckish')
+        // Advance 60 minutes — peckish onTime fires with 0.3% per minute
+        game.timeLapse(60)
+        if (game.player.cards.some(c => c.id === 'hungry')) {
+          triggered = true
+        }
+      }
+      expect(triggered).toBe(true)
+    })
+
+    it('should eventually escalate hungry to starving via onTime', () => {
+      let triggered = false
+      for (let i = 0; i < 100 && !triggered; i++) {
+        const game = bareGame()
+        game.addEffect('hungry')
+        game.timeLapse(60)
+        if (game.player.cards.some(c => c.id === 'starving')) {
+          triggered = true
+        }
+      }
+      expect(triggered).toBe(true)
+    })
+
+    it('should not have both peckish and hungry at the same time', () => {
+      // hungry replaces peckish — run many escalation attempts and verify
+      for (let i = 0; i < 100; i++) {
+        const game = bareGame()
+        game.addEffect('peckish')
+        game.timeLapse(60)
+        const hasPeckish = game.player.cards.some(c => c.id === 'peckish')
+        const hasHungry = game.player.cards.some(c => c.id === 'hungry')
+        expect(hasPeckish && hasHungry).toBe(false)
+      }
+    })
+  })
+
   describe('isStarted', () => {
     it('should return false for a new uninitialized game', () => {
       const game = new Game()
