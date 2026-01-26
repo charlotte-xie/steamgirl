@@ -30,6 +30,12 @@ export interface LocationDefinition {
   onFirstArrive?: Script
   onArrive?: Script
   onRelax?: Script
+  /**
+   * Called each 10-minute chunk when the player waits at this location.
+   * Receives { minutes: number }. May create a scene to interrupt the wait.
+   * Fires after NPC onWait hooks (so NPC interactions take priority over ambient events).
+   */
+  onWait?: Script
   secret?: boolean // If true, location starts as undiscovered (discovered = false)
   /** If true, this is a main area for travel (e.g. City Centre, Station). Links between two mainLocation sites appear under Travel. */
   mainLocation?: boolean

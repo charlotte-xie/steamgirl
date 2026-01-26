@@ -115,6 +115,10 @@ All story modules must be imported in `src/story/World.ts` in dependency order.
 2. `takeAction(scriptName, params)` - Execute player action
 3. `afterAction()` - Run side effects (card effects, NPC movement)
 
+### Wait and Event Hooks
+
+The `wait` script advances time in 10-minute chunks. After each chunk, it fires `onWait` hooks on present NPCs (first) then the location. Either can create a scene to interrupt the wait. See [SCRIPTING.md](./SCRIPTING.md#wait-system-and-event-hooks) for details.
+
 ### State Persistence
 
 - Game state serializes via `Game.toJSON()` / `Game.fromJSON()`

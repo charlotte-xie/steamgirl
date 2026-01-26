@@ -98,6 +98,60 @@ game.addOption('scriptName', { params }, 'Button Label')
 // Internally: { script: ['scriptName', { params }], label: 'Button Label' }
 ```
 
+## Wait System and Event Hooks
+
+The `wait` script advances time in 10-minute chunks. After each chunk, it fires event hooks that can interrupt the wait by creating a scene.
+
+### Wait Execution Order
+
+For each 10-minute chunk:
+
+1. **`timeLapse(chunk)`** — advance time, fire card `onTime` callbacks, move NPCs if hour changed
+2. **NPC `onWait` hooks** — for each NPC present at the location, call `onWait` with `{ npc, minutes }`. If any creates a scene, stop.
+3. **Location `onWait` hook** — call the location's `onWait` with `{ minutes }`. If it creates a scene, stop.
+4. If no scene was created, repeat for the next chunk.
+
+After all chunks complete (or if a scene was created), the optional `then` script runs only if no scene exists.
+
+### NPCDefinition.onWait
+
+Called when the player waits at a location where this NPC is present. Receives `{ npc: string, minutes: number }`. Can create a scene to interrupt the wait.
+
+```typescript
+registerNPC('tour-guide', {
+  // ...
+  onWait: (game: Game) => {
+    const npc = game.getNPC('tour-guide')
+    if (npc.nameKnown === 0) {
+      game.run('approach', { npc: 'tour-guide' })
+    }
+  },
+})
+```
+
+### LocationDefinition.onWait
+
+Called when the player waits at this location. Receives `{ minutes: number }`. Fires after all NPC hooks (if none created a scene).
+
+```typescript
+registerLocation('market', {
+  // ...
+  onWait: (game: Game, params: { minutes?: number }) => {
+    const chance = Math.min(0.5, (params.minutes ?? 10) / 60)
+    if (Math.random() > chance) return
+    game.add('A street urchin tugs at your sleeve.')
+    game.addOption('talkToUrchin', {}, 'Talk to them')
+  },
+})
+```
+
+### Design Notes
+
+- **NPC hooks fire before location hooks** — character interactions take priority over ambient events
+- **10-minute chunks** — longer waits get multiple chances for events. A 30-minute wait = 3 rolls.
+- **Guard with `game.inScene`** — the wait loop checks `inScene` after each hook and returns immediately if a scene was created
+- **One-shot events** — use NPC/card state to prevent repeats (e.g. check `nameKnown` before approaching)
+
 ## Imperative Scripts
 
 Scripts are registered globally using `makeScript` or `makeScripts`:

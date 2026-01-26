@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import { Item } from './Item'
 import { registerNPC } from './NPC'
+import { registerLocation } from './Location'
 import '../story/World' // Register all story content (locations, NPCs, cards, scripts)
 
 describe('Game', () => {
@@ -631,6 +632,179 @@ describe('Game', () => {
       if (speechItem && speechItem.type === 'speech') {
         expect(speechItem.color).toBeUndefined()
       }
+    })
+  })
+
+  describe('wait onWait hooks', () => {
+    // Register aggressive test fixtures (always create a scene)
+    const aggressiveNpcId = 'wait-test-aggressive-npc'
+    let npcWaitCount = 0
+    registerNPC(aggressiveNpcId, {
+      name: 'Aggressive NPC',
+      description: 'An NPC that always interrupts your wait.',
+      onWait: (game: Game) => {
+        npcWaitCount++
+        game.add('The aggressive NPC accosts you!')
+        game.addOption('endConversation', {}, 'Back off')
+      },
+    })
+
+    const passiveNpcId = 'wait-test-passive-npc'
+    let passiveWaitCount = 0
+    registerNPC(passiveNpcId, {
+      name: 'Passive NPC',
+      description: 'An NPC that never interrupts.',
+      onWait: (_game: Game) => {
+        passiveWaitCount++
+        // No scene created — just counting
+      },
+    })
+
+    let locationWaitCount = 0
+    registerLocation('wait-test-location', {
+      name: 'Aggressive Location',
+      description: 'A location that always triggers events.',
+      onWait: (game: Game) => {
+        locationWaitCount++
+        game.add('Something happens here!')
+        game.addOption('endScene', {}, 'Carry on')
+      },
+    })
+
+    registerLocation('wait-test-quiet', {
+      name: 'Quiet Location',
+      description: 'A peaceful location with no events.',
+    })
+
+    function setupGame(locationId: string, npcIds: string[] = []): Game {
+      const game = new Game()
+      game.currentLocation = locationId
+      // Place NPCs at this location and ensure they exist in game.npcs
+      for (const npcId of npcIds) {
+        const npc = game.getNPC(npcId)
+        npc.location = locationId
+      }
+      game.updateNPCsPresent()
+      return game
+    }
+
+    // Reset counters before each test
+    function resetCounters() {
+      npcWaitCount = 0
+      passiveWaitCount = 0
+      locationWaitCount = 0
+    }
+
+    it('should call NPC onWait and create a scene, stopping the wait', () => {
+      resetCounters()
+      const game = setupGame('wait-test-quiet', [aggressiveNpcId])
+
+      const timeBefore = game.time
+      game.run('wait', { minutes: 30 })
+
+      // NPC onWait should have been called once (first chunk triggers scene)
+      expect(npcWaitCount).toBe(1)
+      // Should be in a scene (NPC created options)
+      expect(game.inScene).toBe(true)
+      // Time should have advanced by only one chunk (10 min = 600s)
+      expect(game.time - timeBefore).toBe(600)
+    })
+
+    it('should call location onWait and create a scene, stopping the wait', () => {
+      resetCounters()
+      const game = setupGame('wait-test-location')
+
+      const timeBefore = game.time
+      game.run('wait', { minutes: 30 })
+
+      // Location onWait should have been called once (first chunk triggers scene)
+      expect(locationWaitCount).toBe(1)
+      expect(game.inScene).toBe(true)
+      expect(game.time - timeBefore).toBe(600)
+    })
+
+    it('should call NPC onWait before location onWait', () => {
+      resetCounters()
+      // Both aggressive NPC and aggressive location present
+      const game = setupGame('wait-test-location', [aggressiveNpcId])
+
+      game.run('wait', { minutes: 30 })
+
+      // NPC fires first and creates a scene — location should not fire
+      expect(npcWaitCount).toBe(1)
+      expect(locationWaitCount).toBe(0)
+      expect(game.inScene).toBe(true)
+    })
+
+    it('should call location onWait when NPC does not create a scene', () => {
+      resetCounters()
+      // Passive NPC (no scene) + aggressive location
+      const game = setupGame('wait-test-location', [passiveNpcId])
+
+      game.run('wait', { minutes: 30 })
+
+      // Passive NPC fires but doesn't create scene, location fires and does
+      expect(passiveWaitCount).toBe(1)
+      expect(locationWaitCount).toBe(1)
+      expect(game.inScene).toBe(true)
+    })
+
+    it('should loop through all chunks when nothing creates a scene', () => {
+      resetCounters()
+      // Passive NPC at quiet location — no scenes
+      const game = setupGame('wait-test-quiet', [passiveNpcId])
+
+      const timeBefore = game.time
+      game.run('wait', { minutes: 30 })
+
+      // 30 minutes = 3 chunks of 10
+      expect(passiveWaitCount).toBe(3)
+      expect(game.inScene).toBe(false)
+      expect(game.time - timeBefore).toBe(1800)
+    })
+
+    it('should handle partial last chunk correctly', () => {
+      resetCounters()
+      const game = setupGame('wait-test-quiet', [passiveNpcId])
+
+      const timeBefore = game.time
+      game.run('wait', { minutes: 25 })
+
+      // 25 minutes = chunks of 10, 10, 5
+      expect(passiveWaitCount).toBe(3)
+      expect(game.time - timeBefore).toBe(1500)
+    })
+
+    it('should run then script when no scene is created', () => {
+      resetCounters()
+      const game = setupGame('wait-test-quiet')
+
+      game.run('wait', { minutes: 10, then: { script: 'text', params: { parts: ['All done waiting.'] } } })
+
+      expect(game.inScene).toBe(false)
+      // The then script should have added text
+      const hasText = game.scene.content.some(item =>
+        item.type === 'paragraph' && item.content.some(
+          (c: { type: string; text?: string }) => c.type === 'text' && c.text?.includes('All done waiting.')
+        )
+      )
+      expect(hasText).toBe(true)
+    })
+
+    it('should not run then script when a scene is created', () => {
+      resetCounters()
+      const game = setupGame('wait-test-quiet', [aggressiveNpcId])
+
+      game.run('wait', { minutes: 30, then: { script: 'text', params: { parts: ['Should not appear.'] } } })
+
+      // Scene was created by NPC — then script should NOT have run
+      expect(game.inScene).toBe(true)
+      const hasText = game.scene.content.some(item =>
+        item.type === 'paragraph' && item.content.some(
+          (c: { type: string; text?: string }) => c.type === 'text' && c.text?.includes('Should not appear.')
+        )
+      )
+      expect(hasText).toBe(false)
     })
   })
 

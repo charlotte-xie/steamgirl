@@ -40,6 +40,12 @@ export interface NPCDefinition {
   onApproach?: Script
   // Script to run when the hour changes (for NPC movement)
   onMove?: Script
+  /**
+   * Called each 10-minute chunk when the player waits at a location where this NPC is present.
+   * Receives { npc: string, minutes: number }. May create a scene to interrupt the wait.
+   * Fires before the location's onWait. Use NPC state (e.g. nameKnown) to gate one-shot events.
+   */
+  onWait?: Script
   /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */
   scripts?: Record<string, Script>
 }

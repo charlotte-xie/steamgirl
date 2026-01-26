@@ -647,21 +647,55 @@ const coreScripts: Record<string, ScriptFn> = {
   // PLAYER ACTIONS
   // -------------------------------------------------------------------------
 
-  /** Conscious wait at current location: timeLapse, optional narrative, then optionally run another script if not in a scene. */
+  /**
+   * Conscious wait at current location.
+   *
+   * Time advances in 10-minute chunks. After each chunk, event hooks fire:
+   *   1. NPC onWait — for each NPC present, receives { npc, minutes }
+   *   2. Location onWait — receives { minutes }
+   *
+   * If any hook creates a scene (adds options), the wait stops immediately.
+   * The optional `then` script only runs if no scene was created.
+   *
+   * @param minutes - Total wait duration (default 15)
+   * @param text - Narrative text displayed at the start of the wait
+   * @param then - Script to run after the wait completes (skipped if a scene interrupts)
+   */
   wait: (game: Game, params: { minutes?: number; text?: string; then?: { script: string; params?: Record<string, unknown> } } = {}) => {
-    const minutes = params.minutes ?? 15
-    if (typeof minutes !== 'number' || minutes < 0) {
+    const totalMinutes = params.minutes ?? 15
+    if (typeof totalMinutes !== 'number' || totalMinutes < 0) {
       throw new Error('wait script requires minutes (non-negative number)')
     }
-    game.timeLapse(minutes)
     if (params.text) {
       game.add(params.text)
     }
 
-    if (game.inScene) {
-      return
+    // Process in chunks so events can interrupt long waits
+    const CHUNK = 10
+    let remaining = totalMinutes
+    while (remaining > 0) {
+      const chunk = Math.min(remaining, CHUNK)
+      game.timeLapse(chunk)
+      remaining -= chunk
+
+      // NPC onWait hooks — present NPCs may approach, react, or trigger encounters
+      for (const npcId of game.npcsPresent) {
+        const npc = game.getNPC(npcId)
+        if (npc.template.onWait) {
+          game.run(npc.template.onWait, { npc: npcId, minutes: chunk })
+        }
+        if (game.inScene) return // NPC created a scene — stop waiting
+      }
+
+      // Location onWait hook — ambient events, random encounters
+      const onWait = game.location.template.onWait
+      if (onWait) {
+        game.run(onWait, { minutes: chunk })
+      }
+      if (game.inScene) return // Location created a scene — stop waiting
     }
 
+    // All chunks completed without interruption — run follow-up script
     const t = params.then
     if (t?.script) {
       game.run(t.script, t.params ?? {})

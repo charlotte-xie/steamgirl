@@ -73,6 +73,14 @@ registerNPC('tour-guide', {
       [9, 18, 'station'],
     ])
   },
+  // If you wait at the station and haven't met Rob yet, he approaches you.
+  // This only fires once — after onFirstApproach sets nameKnown, the guard prevents repeats.
+  onWait: (game: Game) => {
+    const npc = game.getNPC('tour-guide')
+    if (npc.nameKnown === 0) {
+      game.run('approach', { npc: 'tour-guide' })
+    }
+  },
   onFirstApproach: (game: Game) => {
     const npc = game.npc
     game.add('A man with a well-worn guidebook catches your eye and steps over with a warm smile.')
