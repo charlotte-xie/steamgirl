@@ -11,6 +11,8 @@ export interface Reminder {
   text: string
   urgency: 'info' | 'warning' | 'urgent'
   cardId?: CardId
+  /** Optional tooltip detail shown on hover. */
+  detail?: string
 }
 
 // Mutable data for a card, used for serialization

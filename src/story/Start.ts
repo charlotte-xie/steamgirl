@@ -273,9 +273,12 @@ export const startScripts = {
     g.add('You skip ahead to your room in the backstreets. Your key is in your hand; your goals, ahead.')
     g.run('gainItem', { item: 'room-key', number: 1, text: 'You have your room key.' })
     g.addQuest('attend-university', { silent: true })
+    // Discover the lodgings and route out to the city
     const bedroom = g.getLocation('bedroom')
     bedroom.numVisits++
     bedroom.discovered = true
+    g.getLocation('stairwell').discovered = true
+    g.getLocation('backstreets').discovered = true
   },
 
   /** Debug: skip to school at 9:30am Monday, attend-university quest already done. */
@@ -336,7 +339,7 @@ export const findLodgingsQuest: CardDefinition = {
   },
   reminders: (_game: Game, card: Card): Reminder[] => {
     if (card.completed || card.failed) return []
-    return [{ text: 'Find your lodgings in the backstreets', urgency: 'info', cardId: card.id }]
+    return [{ text: 'Find your lodgings in the backstreets', urgency: 'info', cardId: card.id, detail: 'Your lodgings are somewhere in the backstreets of Lowtown.' }]
   },
 }
 
@@ -378,14 +381,14 @@ export const attendUniversityQuest: CardDefinition = {
     if (month !== 0) return []
     // On induction day (Jan 6)
     if (day === 6) {
-      if (hour < 8) return [{ text: 'University induction at 8am today!', urgency: 'warning', cardId: card.id }]
-      if (hour < 10) return [{ text: 'University induction now!', urgency: 'urgent', cardId: card.id }]
+      if (hour < 8) return [{ text: 'University induction at 8am today!', urgency: 'warning', cardId: card.id, detail: 'Head to the university for your induction. Starts at 8am.' }]
+      if (hour < 10) return [{ text: 'University induction now!', urgency: 'urgent', cardId: card.id, detail: 'The induction is happening right now at the university!' }]
       return [] // past 10am — afterUpdate handles failure
     }
     // Day before (Jan 5)
-    if (day === 5) return [{ text: 'University induction tomorrow at 8am', urgency: 'info', cardId: card.id }]
+    if (day === 5) return [{ text: 'University induction tomorrow at 8am', urgency: 'info', cardId: card.id, detail: 'Report to the university for induction at 8am on the 6th.' }]
     // Earlier than Jan 5
-    return [{ text: 'University induction on 6th Jan', urgency: 'info', cardId: card.id }]
+    return [{ text: 'University induction on 6th Jan', urgency: 'info', cardId: card.id, detail: 'Report to the university for induction at 8am on the 6th.' }]
   },
 }
 

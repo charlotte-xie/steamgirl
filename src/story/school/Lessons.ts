@@ -94,9 +94,9 @@ function lessonReminders(game: Game, card: Card): Reminder[] {
   for (const slot of timing.slots) {
     if (slot.day !== dayOfWeek) continue
     if (hour <= slot.startHour) {
-      reminders.push({ text: `${timing.name} at ${formatHour(slot.startHour)}`, urgency: 'info', cardId: card.id })
+      reminders.push({ text: `${timing.name} at ${formatHour(slot.startHour)}`, urgency: 'info', cardId: card.id, detail: `Head to the classroom for ${timing.name}.` })
     } else if (hour < slot.endHour) {
-      reminders.push({ text: `Late for ${timing.name}!`, urgency: 'urgent', cardId: card.id })
+      reminders.push({ text: `Late for ${timing.name}!`, urgency: 'urgent', cardId: card.id, detail: `${timing.name} has already started in the classroom!` })
     }
     // After endHour: no reminder
   }

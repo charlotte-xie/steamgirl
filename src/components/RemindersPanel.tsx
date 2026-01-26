@@ -9,8 +9,9 @@ export function RemindersPanel() {
   return (
     <div className="reminders-panel">
       {reminders.map((r, i) => (
-        <div key={i} className={`reminder-item reminder-${r.urgency}`}>
-          {r.text}
+        <div key={i} className={`reminder-item reminder-${r.urgency}`} title={r.detail}>
+          <span className="reminder-bullet" />
+          <span className="reminder-text">{r.text}</span>
         </div>
       ))}
     </div>

@@ -72,8 +72,11 @@ interface Reminder {
   text: string
   urgency: 'info' | 'warning' | 'urgent'
   cardId?: string
+  detail?: string   // tooltip shown on hover
 }
 ```
+
+The `detail` field is optional. When provided, hovering the reminder shows the detail as a tooltip -- useful for giving context without cluttering the list.
 
 Urgency levels control visual styling:
 

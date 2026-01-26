@@ -1,5 +1,5 @@
 import { Game } from '../model/Game'
-import type { CardDefinition } from '../model/Card'
+import type { CardDefinition, Reminder } from '../model/Card'
 import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScript } from '../model/Scripts'
@@ -144,6 +144,9 @@ export const starvingEffect: CardDefinition = {
     player.modifyStat('Wits', -20)
     player.modifyStat('Charm', -20)
     player.modifyStat('Willpower', -20)
+  },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    return [{ text: 'You really need food!', urgency: 'urgent', cardId: card.id, detail: 'Starvation is sapping your strength, agility, and concentration.' }]
   },
   onTime: (_game: Game, _card: Card, _seconds: number) => {
     // TODO: Add negative effect chains (e.g. health loss, fainting)

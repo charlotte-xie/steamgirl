@@ -152,6 +152,7 @@ interface Reminder {
   text: string
   urgency: 'info' | 'warning' | 'urgent'
   cardId?: string
+  detail?: string   // tooltip shown on hover
 }
 ```
 
