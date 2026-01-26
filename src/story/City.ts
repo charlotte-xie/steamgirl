@@ -95,7 +95,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             discoverLocation('backstreets', 'You notice a narrow alley branching off from the main street. The air grows thick with coal smoke and the smell of oil. This must be the way to the backstreets.', '#3b82f6'),
             // Discover the Hotel
             and(not(locationDiscovered('hotel')), skillCheck('Perception', 0)),
-            discoverLocation('hotel', 'Turning a corner on the main boulevard, you spot a grand brass-and-marble facade: the Grand Meridian Hotel. Its revolving doors gleam invitingly.', '#3b82f6'),
+            discoverLocation('hotel', 'Turning a corner on the main boulevard, you spot a grand brass-and-marble facade: the Imperial Hotel. Its revolving doors gleam invitingly.', '#3b82f6'),
             // Morning (6am–12pm)
             hourBetween(6, 12),
             random(

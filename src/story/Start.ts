@@ -5,7 +5,7 @@ import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
-import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option, scenes, move, timeLapse, hideNpcImage, showNpcImage } from '../model/ScriptDSL'
+import { text, say, npcLeaveOption, seq, when, random, skillCheck, addStat, addNpcStat, moveNpc, discoverLocation, option, scenes, move, timeLapse, hideNpcImage, showNpcImage, hasCard, inLocation, cond, run } from '../model/ScriptDSL'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
 
@@ -69,6 +69,13 @@ registerNPC('tour-guide', {
   },
   onMove: (game: Game) => {
     const npc = game.getNPC('tour-guide')
+    // If the guide is visiting the hotel room, keep him there until the player leaves
+    if (npc.location === 'dorm-suite') {
+      if (game.currentLocation == 'dorm-suite') {
+        return // Don't override with schedule while visiting
+      }
+      
+    }
     npc.followSchedule(game, [
       [9, 18, 'station'],
     ])
@@ -89,15 +96,24 @@ registerNPC('tour-guide', {
     game.addOption('interact', { script: 'tour' }, 'Accept')
     npc.leaveOption('You politely decline the invitation.', "Whenever you're ready. I'm usually here at the station.", 'Decline')
   },
-  onApproach: (game: Game) => {
-    const npc = game.npc
-    npc.say("Back again? The tour offer still stands if you're interested.")
-    game.addOption('interact', { script: 'tour' }, 'Accept the tour')
-    npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
-  },
+  onApproach: cond(
+    // In the hotel room — random impressed comments
+    inLocation('dorm-suite'),
+    run('interact', { script: 'roomChat' }),
+
+    // Default: station approach
+    seq(
+      say('"Back again? The tour offer still stands if you\'re interested."'),
+      option('Accept the tour', 'interact', { script: 'tour' }),
+      when(hasCard('hotel-booking'),
+        option('Invite to see your hotel room', 'interact', { script: 'inviteToRoom' }),
+      ),
+      npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
+    ),
+  ),
   scripts: {
     tour: scenes(
-      // Scene 1: City centre
+      // City centre
       [
         hideNpcImage(),
         text('You set off with Rob.'),
@@ -105,7 +121,14 @@ registerNPC('tour-guide', {
         say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?'),
         text('Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city.'),
       ],
-      // Scene 2: University
+      // Imperial Hotel
+         [
+          discoverLocation('hotel'),
+          move('hotel'), timeLapse(5),
+          text('Rob takes you to an imposing brass-and-marble facade with gilt lettering above its revolving doors. You take a peek inside.'),
+          say('The Imperial Hotel. Very grand, very expensive — too expensive for most folks. But worth knowing about if you ever come into money.'),
+        ],
+      // SUniversity
       [
         discoverLocation('school'),
         move('school'), timeLapse(15),
@@ -114,34 +137,94 @@ registerNPC('tour-guide', {
         discoverLocation('subway-university'),
         say('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...'),
       ],
-      // Scene 3: Lake
+      // Lake
       [
         discoverLocation('lake'),
         move('lake'), timeLapse(18),
         say('The Lake. A peaceful spot when the city gets too much. Steam off the water—rather lovely.'),
         text('Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.'),
       ],
-      // Scene 4: Market
+      // Market
       [
         discoverLocation('market'),
         move('market'), timeLapse(15),
         say('The Market. Best place for oddities and curios. Keep your wits about you.'),
         text('Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam. The market throbs. Fingers brush you as you pass—accidental, deliberate, promising.'),
       ],
-      // Scene 5: Backstreets
+   
+      // Backstreets
       [
         discoverLocation('backstreets'),
         move('backstreets'), timeLapse(15),
         text('The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.'),
         say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.'),
       ],
-      // Scene 6: Tour ends - farewell
+      // Scene 7: Tour ends - farewell
       [
         showNpcImage(),
         text('Rob shows you around the backstreets for a while.'),
         say('I hope this helps you find your feet. Enjoy Aetheria!'),
         npcLeaveOption('You thank Rob and he leaves you in the backstreets.'),
       ],
+    ),
+    // Invite Rob to see your hotel room — multi-step journey via scenes()
+    inviteToRoom: scenes(
+      // Scene 1: Set off from the station
+      [
+        say('"You\'ve got a room at the Imperial? Blimey! I\'d love to see it. Lead the way!"'),
+        hideNpcImage(),
+        text('You set off together through the busy streets.'),
+      ],
+      // Scene 2: City Centre — passing through
+      [
+        move('default', 10),
+        say('"Straight through the centre, is it? I know a shortcut past the fountain."'),
+        text('Rob walks briskly, pointing out landmarks as you go. He clearly knows every cobblestone.'),
+      ],
+      // Scene 3: Hotel Lobby — arriving at the Imperial
+      [
+        move('hotel', 5),
+        text('You push through the revolving brass doors into the lobby. Rob stops in his tracks.'),
+        say('"Blimey. I\'ve walked past this place a hundred times but never been inside. Look at those chandeliers!"'),
+        text('The concierge glances up, gives Rob a slightly disapproving look, then returns to his ledger.'),
+      ],
+      // Scene 4: Room 101 — the big reveal
+      [
+        move('dorm-suite', 1),
+        moveNpc('tour-guide', 'dorm-suite'),
+        showNpcImage(),
+        say('"Would you look at this! A proper bed, a writing desk, a view of the rooftops..."'),
+        random(
+          say('"I could live like this! Beats my little flat by a country mile."'),
+          say('"This is how the other half lives, eh? Polished brass everywhere!"'),
+          say('"Steam radiator and everything! You\'ve done well for yourself."'),
+        ),
+        addNpcStat('affection', 10, 'tour-guide'),
+        text('Rob is clearly impressed by your accommodation.'),
+        option('Chat', 'interact', { script: 'roomChat' }),
+        option('Head out', 'interact', { script: 'leaveRoom' }),
+        npcLeaveOption(),
+      ],
+    ),
+    // Random chat while Rob is in the hotel room
+    roomChat: seq(
+      random(
+        say('"I could get used to this. The sheets look like actual cotton — not that scratchy stuff."'),
+        say('"Have you seen the bathroom? Claw-footed tub! I\'ve only ever read about those."'),
+        say('"The view from up here — you can see right across the rooftops. Magnificent."'),
+        say('"I wonder what the kitchens are like. Bet they do a proper breakfast."'),
+        say('"My flat has a window that looks onto a brick wall. This is... rather different."'),
+      ),
+      option('Chat', 'interact', { script: 'roomChat' }),
+      option('Head out', 'interact', { script: 'leaveRoom' }),
+      npcLeaveOption()
+    ),
+    // Leave the hotel room together
+    leaveRoom: seq(
+      text('You suggest heading back downstairs.'),
+      say('"Right you are. Thanks for the visit — quite the treat!"'),
+      moveNpc('tour-guide', null),
+      move('hotel', 1),
     ),
   },
 })

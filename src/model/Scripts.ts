@@ -6,7 +6,7 @@
  * 2. Core scripts - generic, reusable scripts that are part of the scripting system itself
  *
  * Core scripts are:
- * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats
+ * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats, addNpcStat, setNpcLocation
  * - Control flow: seq, when, cond
  * - Predicates: hasItem, hasStat, inLocation, inScene, hasCard, cardCompleted, npcStat, debug, not, and, or
  * - Content: text, paragraph, say, option, npcLeaveOption
@@ -189,14 +189,17 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /** Unconditionally move the player to a location (instant teleport) */
-  move: (game: Game, params: { location?: string } = {}) => {
+  /** Unconditionally move the player to a location (instant teleport). Optionally advance time after moving. */
+  move: (game: Game, params: { location?: string; minutes?: number } = {}) => {
     const locationId = params.location
     if (!locationId || typeof locationId !== 'string') {
       throw new Error('move script requires a location parameter')
     }
     game.getLocation(locationId)
     game.moveToLocation(locationId)
+    if (params.minutes && params.minutes > 0) {
+      game.timeLapse(params.minutes)
+    }
   },
 
   /** Set the current scene's NPC */
@@ -348,6 +351,42 @@ const coreScripts: Record<string, ScriptFn> = {
       throw new Error('recordTime requires a timer parameter (string name)')
     }
     game.player.setTimer(params.timer as TimerName, game.time)
+  },
+
+  /** Modify an NPC stat (e.g. affection) with optional display text */
+  addNpcStat: (game: Game, params: {
+    npc?: string
+    stat?: string
+    change?: number
+    hidden?: boolean
+  }) => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) throw new Error('addNpcStat requires an npc parameter or active scene NPC')
+    const stat = params.stat
+    if (!stat) throw new Error('addNpcStat requires a stat parameter')
+    const change = params.change
+    if (typeof change !== 'number') throw new Error('addNpcStat requires a change parameter')
+
+    const npc = game.npcs.get(npcId)
+    if (!npc) throw new Error(`addNpcStat: NPC not found '${npcId}'`)
+
+    const current = npc.stats.get(stat) ?? 0
+    npc.stats.set(stat, current + change)
+
+    if (!params.hidden) {
+      const sign = change > 0 ? '+' : ''
+      const color = change > 0 ? '#10b981' : '#ef4444'
+      game.add(colour(`${capitalise(stat)} ${sign}${change}`, color))
+    }
+  },
+
+  /** Set an NPC's location directly */
+  setNpcLocation: (game: Game, params: { npc?: string; location?: string | null }) => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) throw new Error('setNpcLocation requires an npc parameter or active scene NPC')
+    const npc = game.npcs.get(npcId)
+    if (!npc) throw new Error(`setNpcLocation: NPC not found '${npcId}'`)
+    npc.location = params.location ?? null
   },
 
   // -------------------------------------------------------------------------

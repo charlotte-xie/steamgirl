@@ -206,9 +206,9 @@ export const addItem = (item: string, number = 1): Instruction =>
 export const removeItem = (item: string, number = 1): Instruction =>
   run('loseItem', { item, number })
 
-/** Move player to location */
-export const move = (location: string): Instruction =>
-  run('move', { location })
+/** Move player to location (instant teleport). Optionally advance time after moving. */
+export const move = (location: string, minutes?: number): Instruction =>
+  run('move', { location, minutes })
 
 /** Move player to location and advance time (combines move + timeLapse) */
 export const go = (location: string, minutes?: number): Instruction =>
@@ -269,6 +269,14 @@ export const discoverLocation = (location: string, text?: string, colour?: strin
 /** Advance time until a specific hour of day (e.g., 10.25 for 10:15am) */
 export const timeLapseUntil = (untilTime: number): Instruction =>
   run('timeLapse', { untilTime })
+
+/** Modify an NPC stat (e.g. affection). Uses scene NPC if npc omitted. */
+export const addNpcStat = (stat: string, change: number, npc?: string, hidden?: boolean): Instruction =>
+  run('addNpcStat', { stat, change, npc, hidden })
+
+/** Move an NPC to a location (or null to clear). Uses scene NPC if npc omitted. */
+export const moveNpc = (npc: string, location: string | null): Instruction =>
+  run('setNpcLocation', { npc, location })
 
 // --- Predicates (return boolean) ---
 

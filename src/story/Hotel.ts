@@ -15,7 +15,7 @@ const ROOM_PRICE = 400
 
 const hotelBookingCard: CardDefinition = {
   name: 'Hotel Booking',
-  description: 'You have a room booked at the Grand Meridian Hotel until 11am tomorrow.',
+  description: 'You have a room booked at the Imperial Hotel until 11am tomorrow.',
   type: 'Access',
   color: '#d4af37', // Gold
   onTime: (game: Game, card: Card) => {
@@ -54,7 +54,7 @@ const receptionScripts = {
       g.add('The concierge looks up and smiles. "Welcome back. Your room is ready, of course — Room 101, just through there."')
     } else {
       g.add('You approach the polished brass counter. The concierge straightens his waistcoat and offers a practised smile.')
-      g.add('"Good day. Welcome to the Grand Meridian. How may I be of service?"')
+      g.add('"Good day. Welcome to the Imperial. How may I be of service?"')
     }
     addReceptionOptions(g)
   },
@@ -95,8 +95,8 @@ makeScripts(receptionScripts)
 
 const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   hotel: {
-    name: 'Grand Meridian Hotel',
-    description: 'An imposing brass-and-marble edifice on the city\'s main boulevard. Crystal chandeliers hang from vaulted ceilings, and uniformed bellhops with mechanical enhancements glide between guests. The air smells of polished wood and expensive cologne.',
+    name: 'Imperial Hotel',
+    description: 'An imposing brass-and-marble edifice on the city\'s main boulevard, bearing the name "Imperial" in gilt lettering above its revolving doors. Crystal chandeliers hang from vaulted ceilings, and uniformed bellhops with mechanical enhancements glide between guests. The air smells of polished wood and expensive cologne.',
     image: '/images/hotel.jpg',
     secret: true,
     links: [
@@ -138,7 +138,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   },
   'nice-bathroom': {
     name: 'En-Suite Bathroom',
-    description: 'A small but immaculate bathroom with gleaming brass taps, a claw-footed tub, and fluffy towels monogrammed with the hotel crest. The mirror is framed in ornate copper scrollwork.',
+    description: 'A small but immaculate bathroom with gleaming brass taps, a claw-footed tub, and fluffy towels monogrammed with the Imperial crest. The mirror is framed in ornate copper scrollwork.',
     image: '/images/nice-bathroom.jpg',
     links: [
       { dest: 'dorm-suite', time: 1, label: 'Back to Room' },
