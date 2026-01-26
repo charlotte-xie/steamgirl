@@ -78,6 +78,7 @@ export const peckishEffect: CardDefinition = {
   description: 'Your stomach grumbles. You could do with something to eat.',
   type: 'Effect',
   color: '#f59e0b', // Amber
+  hungerLevel: 50,
   subsumedBy: ['hungry', 'starving'],
   onAdded: (game: Game) => {
     game.add({ type: 'text', text: 'You are starting to feel peckish. Your stomach gives a quiet rumble.', color: '#f59e0b' })
@@ -102,6 +103,7 @@ export const hungryEffect: CardDefinition = {
   description: 'You are properly hungry now. It is hard to concentrate.',
   type: 'Effect',
   color: '#f97316', // Orange
+  hungerLevel: 100,
   replaces: ['peckish'],
   subsumedBy: ['starving'],
   onAdded: (game: Game) => {
@@ -130,6 +132,7 @@ export const starvingEffect: CardDefinition = {
   description: 'You are weak with hunger. Everything is a struggle.',
   type: 'Effect',
   color: '#ef4444', // Red
+  hungerLevel: 150,
   replaces: ['peckish', 'hungry'],
   onAdded: (game: Game) => {
     game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: '#ef4444' })
@@ -186,12 +189,16 @@ registerCardDefinition('hungry', hungryEffect)
 registerCardDefinition('starving', starvingEffect)
 registerCardDefinition('fresh', freshEffect)
 
-// Register the timeEffects script so timeLapse can call it
+// Register scripts
 makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
   const seconds = params.seconds ?? 0
   if (seconds > 0) {
     timeEffects(game, seconds)
   }
+})
+
+makeScript('eatFood', (game: Game, params: { quantity?: number }) => {
+  eatFood(game, params.quantity ?? 100)
 })
 
 /**
@@ -238,6 +245,44 @@ export function accumulateHunger(game: Game, seconds: number): void {
   }
 }
 
+/** Hunger card IDs in descending severity order, with the downgrade target for each. */
+const HUNGER_CHAIN: { id: string; downgrade?: string }[] = [
+  { id: 'starving', downgrade: 'hungry' },
+  { id: 'hungry', downgrade: 'peckish' },
+  { id: 'peckish' },
+]
+
+/**
+ * Remove hunger based on food quantity. Each 50 units removes one hunger level
+ * (e.g. Starving->Hungry, Hungry->Peckish, Peckish->None).
+ * A remainder below 50 has a quantity/50 chance of removing one further level.
+ */
+export function removeHunger(game: Game, quantity: number): void {
+  let remaining = quantity
+
+  for (const { id, downgrade } of HUNGER_CHAIN) {
+    if (remaining <= 0) break
+    if (!game.player.hasCard(id)) continue
+
+    let remove = false
+    if (remaining >= 50) {
+      remove = true
+      remaining -= 50
+    } else {
+      remove = Math.random() < remaining / 50
+      remaining = 0
+    }
+
+    if (remove) {
+      game.removeCard(id, true)
+      if (downgrade) {
+        // Silently add the downgraded effect — no "you are starting to feel peckish" after a meal
+        game.addEffect(downgrade, {}, true)
+      }
+    }
+  }
+}
+
 /** Common logic for washing (shower, bath, etc.). Records the timer and applies the Fresh effect. */
 export function takeWash(game: Game): void {
   game.player.setTimer('lastWash', game.time)
@@ -250,6 +295,15 @@ export function freshenUp(game: Game): void {
   game.removeCard('sweaty', true)
   game.player.setTimer('lastWash', game.time)
   game.run('wait', { minutes: 5 })
+}
+
+/**
+ * Eat food. Records the lastEat timer, removes hunger effects based on quantity.
+ * Typical quantities: 20 = small snack, 50 = large snack, 100 = full meal, 200 = huge meal.
+ */
+export function eatFood(game: Game, quantity: number): void {
+  game.player.setTimer('lastEat', game.time)
+  removeHunger(game, quantity)
 }
 
 /**

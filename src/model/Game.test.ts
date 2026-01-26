@@ -1039,6 +1039,94 @@ describe('Game', () => {
     })
   })
 
+  describe('removeHunger / eatFood', () => {
+    function bareGame(baseStatValue = 50): Game {
+      const game = new Game()
+      game.player.basestats.forEach((_v, k) => game.player.basestats.set(k, baseStatValue))
+      game.player.calcStats()
+      return game
+    }
+
+    it('should remove peckish with quantity 50', () => {
+      const game = bareGame()
+      game.addEffect('peckish')
+      expect(game.player.hasCard('peckish')).toBe(true)
+      game.run('eatFood', { quantity: 50 })
+      expect(game.player.hasCard('peckish')).toBe(false)
+    })
+
+    it('should remove hungry with quantity 100 (two levels)', () => {
+      const game = bareGame()
+      game.addEffect('hungry')
+      expect(game.player.hasCard('hungry')).toBe(true)
+      game.run('eatFood', { quantity: 100 })
+      expect(game.player.hasCard('hungry')).toBe(false)
+      expect(game.player.hasCard('peckish')).toBe(false)
+    })
+
+    it('should downgrade hungry to peckish with quantity 50', () => {
+      const game = bareGame()
+      game.addEffect('hungry')
+      expect(game.player.hasCard('hungry')).toBe(true)
+      game.run('eatFood', { quantity: 50 })
+      expect(game.player.hasCard('hungry')).toBe(false)
+      expect(game.player.hasCard('peckish')).toBe(true)
+    })
+
+    it('should remove starving with quantity 150 (three levels)', () => {
+      const game = bareGame()
+      game.addEffect('starving')
+      expect(game.player.hasCard('starving')).toBe(true)
+      game.run('eatFood', { quantity: 150 })
+      expect(game.player.hasCard('starving')).toBe(false)
+      expect(game.player.hasCard('hungry')).toBe(false)
+      expect(game.player.hasCard('peckish')).toBe(false)
+    })
+
+    it('should downgrade starving to hungry with quantity 50', () => {
+      const game = bareGame()
+      game.addEffect('starving')
+      game.run('eatFood', { quantity: 50 })
+      expect(game.player.hasCard('starving')).toBe(false)
+      expect(game.player.hasCard('hungry')).toBe(true)
+      expect(game.player.hasCard('peckish')).toBe(false)
+    })
+
+    it('should downgrade starving to peckish with quantity 100', () => {
+      const game = bareGame()
+      game.addEffect('starving')
+      game.run('eatFood', { quantity: 100 })
+      expect(game.player.hasCard('starving')).toBe(false)
+      expect(game.player.hasCard('hungry')).toBe(false)
+      expect(game.player.hasCard('peckish')).toBe(true)
+    })
+
+    it('should set lastEat timer when eating', () => {
+      const game = bareGame()
+      const timeBefore = game.time
+      game.run('eatFood', { quantity: 100 })
+      expect(game.player.getTimer('lastEat')).toBe(timeBefore)
+    })
+
+    it('should do nothing if no hunger effects present', () => {
+      const game = bareGame()
+      game.run('eatFood', { quantity: 200 })
+      expect(game.player.hasCard('peckish')).toBe(false)
+      expect(game.player.hasCard('hungry')).toBe(false)
+      expect(game.player.hasCard('starving')).toBe(false)
+    })
+
+    it('should remove peckish deterministically with exact quantity 50', () => {
+      // Run 50 times to ensure it always works (no randomness at quantity=50)
+      for (let i = 0; i < 50; i++) {
+        const game = bareGame()
+        game.addEffect('peckish')
+        game.run('eatFood', { quantity: 50 })
+        expect(game.player.hasCard('peckish')).toBe(false)
+      }
+    })
+  })
+
   describe('isStarted', () => {
     it('should return false for a new uninitialized game', () => {
       const game = new Game()

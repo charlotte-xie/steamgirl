@@ -258,6 +258,10 @@ export const addEffect = (effectId: string, args?: object): Instruction =>
 export const recordTime = (timer: string): Instruction =>
   run('recordTime', { timer })
 
+/** Eat food. Sets lastEat timer and removes hunger based on quantity. */
+export const eatFood = (quantity: number): Instruction =>
+  run('eatFood', { quantity })
+
 /** Discover a location (sets discovered flag) */
 export const discoverLocation = (location: string): Instruction =>
   run('discoverLocation', { location })

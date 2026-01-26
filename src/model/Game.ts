@@ -438,10 +438,9 @@ export class Game {
     return true
   }
 
-  /** Add an effect card to the player. Returns this for fluent chaining. */
-  addEffect(effectId: string, args: Record<string, unknown> = {}): this {
-    if (this.addCard(effectId, 'Effect', args)) {
-      // Recalculate stats after adding an effect
+  /** Add an effect card to the player. Pass silent=true to suppress onAdded messages. Returns this for fluent chaining. */
+  addEffect(effectId: string, args: Record<string, unknown> = {}, silent: boolean = false): this {
+    if (this.addCard(effectId, 'Effect', args, silent)) {
       this.player.calcStats()
     }
 

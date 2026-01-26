@@ -14,11 +14,34 @@ Hunger uses the card system's `replaces`/`subsumedBy` relationships to form a cl
 Peckish --> Hungry --> Starving
 ```
 
-- **Peckish** -- mild hunger. Applies a small Willpower penalty. Each minute has a 0.3% chance of escalating to Hungry.
-- **Hungry** -- replaces Peckish. Applies penalties to Perception, Wits, Charm, and Willpower. Each minute has a 0.3% chance of escalating to Starving.
-- **Starving** -- replaces Peckish and Hungry. Applies severe penalties across all stats.
+| Level | Hunger Level | Stat Penalties | Escalation |
+|-------|-------------|----------------|------------|
+| **Peckish** | 50 | Willpower -5 | 0.3%/min to Hungry |
+| **Hungry** | 100 | Perception -5, Wits -5, Charm -5, Willpower -10 | 0.3%/min to Starving |
+| **Starving** | 150 | Strength -10, Agility -10, Perception -20, Wits -20, Charm -20, Willpower -20 | -- |
 
-Eating a meal resets the `lastEat` timer and removes any active hunger effects. The grace period then starts fresh.
+Each level's `hungerLevel` value represents the total food quantity needed to go from that state to no hunger.
+
+## Eating and Hunger Removal
+
+Eating food calls `eatFood(game, quantity)` which resets the `lastEat` timer and calls `removeHunger(game, quantity)`. Typical food quantities:
+
+| Quantity | Example |
+|----------|---------|
+| 20 | Small snack |
+| 50 | Large snack |
+| 100 | Full meal |
+| 200 | Huge meal |
+
+Each **50 units** of food removes one hunger level, downgrading to the next lower severity:
+
+- **Starving** + 50 food --> **Hungry**
+- **Hungry** + 50 food --> **Peckish**
+- **Peckish** + 50 food --> no hunger
+
+If the remaining quantity is less than 50, there is a proportional chance of removing one further level (e.g. 20 remaining = 40% chance).
+
+A full meal (100) eaten while Starving downgrades to Peckish. A huge meal (200) clears Starving entirely with food to spare.
 
 ## Probability Model
 

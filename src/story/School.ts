@@ -12,7 +12,7 @@ import {
   completeQuest,
   timeLapse,
   addStat,
-  recordTime,
+  eatFood,
   random,
   registerDslScript,
   execAll,
@@ -124,13 +124,13 @@ const socialiseGreatHall: Instruction[] = [
 const breakfastGreatHall: Instruction[] = [
   timeLapse(15),
   text('You have breakfast in the Great Hall.'),
-  recordTime('lastEat'),
+  eatFood(100),
 ]
 
 const lunchGreatHall: Instruction[] = [
   timeLapse(30),
   text('You have lunch in the Great Hall.'),
-  recordTime('lastEat'),
+  eatFood(100),
 ]
 
 const studyClassroom: Instruction[] = [

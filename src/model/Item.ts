@@ -1,6 +1,6 @@
 import { Game } from './Game'
 import type { Script } from './Scripts'
-import { consumeAlcohol } from '../story/Effects'
+import { consumeAlcohol, eatFood } from '../story/Effects'
 import { capitalise } from './Text'
 import type { StatName } from './Stats'
 import type { Player } from './Player'
@@ -105,6 +105,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     category: 'Consumables',
     onConsume: (game: Game, _params: {}) => {
       consumeAlcohol(game, 60)
+      eatFood(game, 20)
     },
   },
   'acceptance-letter': {
