@@ -33,16 +33,21 @@ export function ActivityOverlay() {
     <div className="overlay-group">
       <div className="overlay-group-title">Activities</div>
       <div className="overlay-group-content">
-      {visibleActivities.map((activity, index) => (
-        <Thumbnail
-          key={index}
-          image={activity.image}
-          name={activity.name}
-          symbol={activity.symbol}
-          onClick={() => handleActivityClick(activity)}
-          title={activity.name}
-        />
-      ))}
+      {visibleActivities.map((activity, index) => {
+        const accessReason = activity.checkAccess?.(game) ?? null
+        return (
+          <Thumbnail
+            key={index}
+            image={activity.image}
+            name={activity.name}
+            symbol={activity.symbol}
+            onClick={() => handleActivityClick(activity)}
+            title={activity.name}
+            disabled={accessReason != null}
+            disabledReason={accessReason ?? undefined}
+          />
+        )
+      })}
       </div>
     </div>
   )

@@ -62,6 +62,7 @@ export interface LocationActivity {
   symbol?: string
   script: Script
   condition?: Script
+  checkAccess?: (game: Game) => string | null | undefined
   label?: string
 }
 

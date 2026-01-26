@@ -1,8 +1,6 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { makeScripts } from '../model/Scripts'
-import { Item } from '../model/Item'
 import { maybeDiscoverLocation } from './Utility'
 
 // Location definitions for the city of Aetheria
@@ -269,127 +267,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       },
     ],
   },
-  market: {
-    name: 'Market',
-    image: '/images/market.jpg',
-    description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
-    mainLocation: true,
-    links: [
-      { dest: 'lake', time: 8 }, 
-      { dest: 'backstreets', time: 8 }, 
-      { dest: 'default', time: 5 }], 
-    activities: [
-      {
-        name: 'Explore',
-        script: (g: Game, _params: {}) => {
-          // Advance time by 10 minutes (600 seconds)
-          g.timeLapse(10)
-          
-          // Attempt to discover the Lake - if discovered, stop exploration
-          if (maybeDiscoverLocation(
-            g,
-            'lake',
-            0,
-            'While exploring the market, you overhear a conversation about a peaceful lake nearby. Someone mentions the path that leads to it, and you commit the directions to memory.'
-          )) {
-            return // Stop exploration if location is discovered
-          }
-          
-          // Random encounters for the Market
-          const encounters = [
-            'You browse through stalls filled with brass trinkets and mechanical curiosities. Vendors call out their wares, their voices competing with the whir of clockwork displays.',
-            'A vendor demonstrates a steam-powered music box, its delicate gears producing a beautiful melody. The intricate mechanism catches your eye.',
-            'You notice a stall selling exotic mechanical components from distant lands. The vendor explains the unique properties of each piece with enthusiasm.',
-            'A food vendor serves hot meals from a steam-powered cart. The aroma of spiced dishes mingles with the scent of oil and brass.',
-            'You explore the textile section, where mechanical looms create intricate patterns. The rhythmic clicking of the machines is almost hypnotic.',
-            'A fortune teller with a mechanical crystal ball offers readings. The device glows with an inner light, its gears spinning mysteriously.',
-            'You watch as a craftsman repairs a broken automaton. His skilled hands work with precision, adjusting gears and tightening springs.',
-            'A stall selling maps and navigational devices catches your attention. The mechanical compasses and brass astrolabes are beautifully crafted.',
-            'You discover a hidden corner where rare mechanical books are sold. The vendor speaks in hushed tones about the knowledge contained within.',
-            'A group of performers entertains the crowd with mechanical puppets. The intricate movements and synchronized actions are captivating.',
-          ]
-          
-          const randomEncounter = encounters[Math.floor(Math.random() * encounters.length)]
-          g.add(randomEncounter)
-        },
-      },
-      {
-        name: 'Shopping',
-        symbol: 'S',
-        condition: (g: Game) => {
-          const h = g.hourOfDay
-          return h >= 8 && h < 18
-        },
-        script: (g: Game) => {
-          g.run('enterMarketShopping')
-        },
-      },
-      {
-        name: 'Lucky Dip',
-        script: (g: Game, _params: {}) => {
-          // Check if player has at least 5 crowns
-          const crownItem = g.player.inventory.find(item => item.id === 'crown')
-          const crownCount = crownItem?.number || 0
-          
-          g.add('A vendor at a colourful stall beckons you over.')
-          g.add('"Try your luck at the Lucky Dip!" she calls, gesturing to a large brass barrel filled with mysterious items. "Just 5 Krona for a chance at something special!"')
-          
-          if (crownCount >= 5) {
-            g.addOption('luckyDipPay', {}, 'Pay 5 Krona')
-            g.addOption('luckyDipQuit', {}, 'Walk Away')
-          } else {
-            g.add('Sadly, you don\'t have the coins to play this game. The vendor looks disappointed but smiles understandingly.')
-            g.addOption('luckyDipQuit', {}, 'Walk Away')
-          }
-        },
-      },
-    ],
-  },
 }
-
-// Market scripts
-export const marketScripts = {
-  luckyDipPay: (g: Game, _params: {}) => {
-    // Check if player still has enough crowns (in case they spent some
-    if (g.player.removeItem('crown', 5)) {
-      g.add('You check your pockets, but you don\'t have enough Krona. The vendor looks disappointed.')
-      return
-    }
-
-    
-    // List of possible items from the lucky dip
-    const luckyDipItems: Array<{ id: string; number?: number }> = [
-      { id: 'brass-trinket' },
-      { id: 'clockwork-toy' },
-      { id: 'steam-whistle' },
-      { id: 'sweet-wine' },
-      { id: 'lucky-charm' },
-      { id: 'mysterious-gear' },
-      { id: 'glowing-crystal' }
-    ]
-    
-    // Select a random item
-    const selectedItemData = luckyDipItems[Math.floor(Math.random() * luckyDipItems.length)]
-    const quantity = selectedItemData.number ?? 1
-    
-    // Create Item object to get the proper display name
-    const item = new Item(selectedItemData.id, quantity)
-    const displayName = item.getAName()
-    
-    // Display the result
-    g.add('You hand over 5 Krona to the vendor, who smiles and reaches into the brass barrel.')
-    g.add('After a moment of rummaging, she pulls out a wrapped item and hands it to you.')
-    g.run('gainItem', { text: `You received: ${displayName}!`, item: selectedItemData.id, number: quantity })
-    g.run('addStat', { stat: 'Mood', change: 1, max: 60 })
-  },
-  
-  luckyDipQuit: (g: Game, _params: {}) => {
-    g.add('You politely decline and walk away from the stall. The vendor waves cheerfully as you leave.')
-  },
-}
-
-// Register market scripts when module loads
-makeScripts(marketScripts)
 
 // Register all location definitions when module loads
 Object.entries(LOCATION_DEFINITIONS).forEach(([id, definition]) => {
