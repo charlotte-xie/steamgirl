@@ -244,6 +244,14 @@ export function takeWash(game: Game): void {
   game.addEffect('fresh')
 }
 
+/** Freshen up at a basin or sink. Resets the wash timer but does not grant Fresh (that requires a full wash). */
+export function freshenUp(game: Game): void {
+  game.add('You freshen up as best you can.')
+  game.removeCard('sweaty', true)
+  game.player.setTimer('lastWash', game.time)
+  game.run('wait', { minutes: 5 })
+}
+
 /**
  * Consume alcohol script - adds alcohol amount to the player's intoxicated effect.
  * Adds the intoxicated effect if the player doesn't have it.

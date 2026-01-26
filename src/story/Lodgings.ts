@@ -4,7 +4,7 @@ import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
 import { text, say, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
-import { takeWash } from './Effects'
+import { takeWash, freshenUp } from './Effects'
 
 registerNPC('landlord', {
   name: 'Gerald Moss',
@@ -109,6 +109,10 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'stairwell', time: 1 },
     ],
     activities: [
+      {
+        name: 'Freshen Up',
+        script: (g: Game) => freshenUp(g),
+      },
       {
         name: 'Take Shower',
         script: (g: Game, _params: {}) => {

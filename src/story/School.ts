@@ -17,6 +17,7 @@ import {
   registerDslScript,
   execAll,
 } from '../model/ScriptDSL'
+import { freshenUp } from './Effects'
 
 // ============================================================================
 // LOCATION DEFINITIONS
@@ -33,6 +34,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'great-hall', time: 2 },
       { dest: 'classroom', time: 2 },
       { dest: 'courtyard', time: 2 },
+      { dest: 'university-toilets', time: 1, label: 'Toilets' },
     ],
   },
   'great-hall': {
@@ -90,6 +92,20 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Socialise in Courtyard',
         symbol: '♣',
         script: (g: Game) => execAll(g, socialiseCourtyard),
+      },
+    ],
+  },
+  'university-toilets': {
+    name: 'Toilets',
+    description: 'A clean, tiled washroom with brass taps and a row of porcelain basins.',
+    image: '/images/lowtown/ladies.jpg',
+    links: [
+      { dest: 'hallway', time: 1 },
+    ],
+    activities: [
+      {
+        name: 'Freshen Up',
+        script: (g: Game) => freshenUp(g),
       },
     ],
   },

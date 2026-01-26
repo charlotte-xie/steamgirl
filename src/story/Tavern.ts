@@ -2,7 +2,7 @@ import { Game } from '../model/Game'
 import { registerNPC } from '../model/NPC'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { consumeAlcohol } from './Effects'
+import { consumeAlcohol, freshenUp } from './Effects'
 import { makeScripts } from '../model/Scripts'
 
 // Location definitions for the Copper Pot Tavern
@@ -62,12 +62,24 @@ const TAVERN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'A small, private restroom.',
     image: '/images/lowtown/ladies.jpg',
     links: [{ dest: 'copper-pot-tavern', time: 1 }],
+    activities: [
+      {
+        name: 'Freshen Up',
+        script: (g: Game) => freshenUp(g),
+      },
+    ],
   },
   'tavern-gents-bathroom': {
     name: 'Gents Bathroom',
     description: 'The men\'s restroom.',
     image: '/images/lowtown/gents.jpg',
     links: [{ dest: 'copper-pot-tavern', time: 1 }],
+    activities: [
+      {
+        name: 'Freshen Up',
+        script: (g: Game) => freshenUp(g),
+      },
+    ],
   },
   'tavern-cellars': {
     name: 'Cellars',
