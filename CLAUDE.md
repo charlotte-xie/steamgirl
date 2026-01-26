@@ -33,6 +33,7 @@ pnpm preview      # Preview production build
 ## Project Structure
 
 ```
+docs/              # Design documentation for game systems
 src/
 ├── components/     # React UI components (PlayerPanel, LocationView, etc.)
 ├── context/        # React context providers (GameContext, GameLoaderContext)
@@ -55,84 +56,33 @@ src/
 └── utils/          # Utility functions
 ```
 
-## Core Architecture
+## Design Documentation
 
-### Object model
+Detailed documentation for each system lives in `docs/`. Each doc below includes a brief summary of the key ideas.
 
-Key model objects:
-- Game describes the full game state (can be serialised for snapshot)
-- Player represents the player (stats, cards, invetory etc.)
-- NPC
-- Item
-- Location
+### [GAME.md](./docs/GAME.md) -- Game Model Architecture
 
-NPCs, Items, Locations etc. Have template definitions that contain static data. This *can* contain functions as they are recreated on game load / reload, which enables scripts / behaviour to be modified without invalidating saved data.
+The architecture is built on a **template/instance** pattern: every entity (Location, NPC, Item, Card) has an immutable **definition** in a global registry and a mutable **instance** per game. Only instance data is serialised -- definitions are rebuilt on load, so content can change without breaking saves. The `Game` class is the central state container with a fluent scene API, a three-phase action loop (`beforeAction` → `takeAction` → `afterAction`), and lazy loading of locations and NPCs.
 
+### [AUTHORING.md](./docs/AUTHORING.md) -- Content Authoring
 
-### Script-Based Narrative System
+All game content (locations, NPCs, items, quests) is defined in `src/story/` modules that register themselves at import time via `src/story/World.ts`. Content can be gated on stats, items, time, quest state, or NPC relationships. The DSL provides 40+ helpers for composing scenes, dialogue, branching, and skill checks. New areas follow a simple pattern: register locations/NPCs/scripts, import in World.ts in dependency order.
 
-**See [SCRIPTING.md](./SCRIPTING.md) for complete scripting documentation.**
+### [SCRIPTING.md](./docs/SCRIPTING.md) -- Script System
 
-The game uses a two-layer scripting system:
-1. **Imperative Scripts** - TypeScript functions for complex logic
-2. **Declarative DSL** - JSON-serializable instructions for narrative content
+Two-layer scripting: imperative TypeScript functions for complex logic, and a declarative DSL that compiles to JSON-serialisable `[scriptName, params]` tuples. This enables save/load, hot-reloading, and data-driven content. Core scripts handle time, movement, inventory, stats, and the wait system with interruptible event hooks.
 
-Key principle: The DSL produces `[scriptName, params]` tuples that are fully JSON-serializable. This enables save/load, hot-reloading, and data-driven content.
+### [CARDS.md](./docs/CARDS.md) -- Card System
 
-```typescript
-// Imperative (for complex logic)
-makeScript('scriptName', (game, params) => {
-  game.add('Story text')
-  game.addOption('nextScript', {}, 'Button Label')
-})
+Cards are the primary mechanism for ongoing player effects. Quests, status effects, traits, and tasks are all cards with lifecycle hooks: `afterUpdate` (post-action checks), `onTime` (time-based decay/expiry), and `calcStats` (transient stat modifiers). Card instances carry arbitrary custom properties that serialise automatically, enabling per-instance state like alcohol level or completion flags.
 
-// Declarative DSL (for narrative content)
-const scene: Instruction[] = [
-  text('You enter the room.'),
-  when(hasItem('key'), text('The door unlocks!')),
-  option('leave', {}, 'Leave')
-]
-```
+### [CLOTHING.md](./docs/CLOTHING.md) -- Clothing System
 
-Script processing may be conditional:
-- Many things shouldn't happen if already in a scene (i.e. scene options available)
-- Many things may be gated on stats or item possession
+Clothing uses a position + layer grid (12 body positions x 5 layers). Items can span multiple positions at one layer (e.g. a dress covers chest through legs). Only one item per slot; wearing a new item swaps the old one. Worn items modify stats via `calcStats` callbacks. Items extend base templates to inherit slot configuration. Players can save/load named outfits.
 
-### Content Registration Pattern
+### [USER_INTERFACE.md](./docs/USER_INTERFACE.md) -- UI Conventions
 
-Game content registers via these functions:
-- `registerLocation(id, definition)` - Locations
-- `registerNPC(id, definition)` - NPCs
-- `registerCardDefinition(id, definition)` - Cards (quests, effects, traits)
-- `registerItemDefinition(id, definition)` - Items
-- `makeScript(name, script)` or `makeScripts({...})` - Scripts
-
-All story modules must be imported in `src/story/World.ts` in dependency order.
-
-### Game Loop
-
-1. `beforeAction()` - Prepare transient state
-2. `takeAction(scriptName, params)` - Execute player action
-3. `afterAction()` - Run side effects (card effects, NPC movement)
-
-### Wait and Event Hooks
-
-The `wait` script advances time in 10-minute chunks. After each chunk, it fires `onWait` hooks on present NPCs (first) then the location. Either can create a scene to interrupt the wait. See [SCRIPTING.md](./SCRIPTING.md#wait-system-and-event-hooks) for details.
-
-### State Persistence
-
-- Game state serializes via `Game.toJSON()` / `Game.fromJSON()`
-- Auto-saves to localStorage after each action
-- Save keys defined in `src/constants/storage.ts`
-- State includes options for next action so exact position can be restored, but this means that all choosable actions must be pure JSON
-
-## Adding Content
-
-### New Story Module
-
-1. Create file in `src/story/` (e.g., `NewArea.ts`)
-2. Register locations, NPCs, cards, and scripts
-3. Import in `src/story/World.ts` (respect dependency order)
+Single stylesheet with CSS custom properties for all theming. Steampunk visual identity: brass/copper metallics, dark backgrounds, parchment text. Fluid layout via `clamp()` and flex/grid -- no media queries. Screen switcher pattern for game, character, inventory, quests, info, and settings views. All image paths go through `assetUrl()` for GitHub Pages compatibility.
 
 ## Naming Conventions
 
@@ -152,77 +102,8 @@ Tests live alongside source files as `*.test.ts`:
 
 Tests import `story/World` to load all registered content.
 
-## Key Classes
-
-- **Game**: Central state container with fluent API (`game.add().addOption()`)
-- **Player**: Character stats, inventory, cards, skill tests
-- **Location**: Places with descriptions, links, activities
-- **NPC**: Characters with dialogue, schedules, relationship stats
-- **Card**: Generic container for quests/effects/traits/tasks
-
-## Time System
-
-- Game time in Unix timestamps (seconds)
-- Setting: January 1902 (steampunk era)
-- Time advances via `timeLapse(minutes)` script
-- By default, NPCs move when the hour changes
-
-## Stats
-
-- **Main Stats** (0-100): Agility, Perception, Wits, Charm, Willpower, Strength
-- **Skills**: Aetherics, Dancing, Fitness, Etiquette, Mechanics, Flirtation, Haggling
-- **Meters** (dynamic): Energy, Arousal, Composure, Stress, Pain, Mood
-
 ## Build Notes
 
 - Production builds target GitHub Pages at `/steamgirl/`
 - Dev server runs at `localhost:3000`
 - Strict TypeScript with no unused locals/parameters allowed
-
-## UI Architecture
-
-### Screen System
-
-The game uses a screen switcher pattern for different views:
-- `GameScreen` manages the current screen via `useState<ScreenId>`
-- `ScreenSwitcher` component provides navigation buttons
-- Available screens: `game`, `character`, `inventory`, `quests`, `info`, `settings`
-- Most screens wrap content in a `Frame` component for consistent steampunk styling
-
-### Component Patterns
-
-- **Frame**: Reusable steampunk panel with brass borders and corner rivets
-- **Card**: Playing card style display for quests and effects (8rem × 10rem)
-- **Thumbnail**: Clickable image tiles for locations, NPCs, activities
-- **EffectTag**: Compact status effect indicator on avatar overlay
-
-### Styling Conventions
-
-- **CSS custom properties** for theming (colors, spacing, radii) in `:root`
-- **Responsive sizing**: Base font uses `clamp()` for viewport scaling
-- **Use rem units** for sizes that should scale with base font (not px)
-- **CSS class naming**: Semantic layout classes (`.game-screen`) plus visual utility classes (`.panel-elevated`)
-- **CSS structure**: prefer to re-use common CSS styles as far as possible. keep minimal
-- **Steampunk theme**: Brass/copper gradients, parchment text colors, shadow effects
-
-### Key CSS Variables
-
-```css
-/* Spacing */
---space-xs: 0.375rem;
---space-sm: 0.75rem;
---space-md: 1.25rem;
---space-lg: 1.875rem;
-
-/* Colors */
---bg-panel: rgba(34, 24, 16);
---border-subtle: rgba(220, 170, 90, 0.4);
---text-main: #f4e4c4;
---text-muted: #d0b691;
-```
-
-### Cards and Effects
-
-- Effect cards have a `color` property in their definition
-- Card titles display in the effect's color for Effect type cards
-- Effects display as tags on avatar overlay (compact) and as cards on Character screen (detailed)

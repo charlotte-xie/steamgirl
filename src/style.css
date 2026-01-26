@@ -691,6 +691,58 @@ img {
   padding: 0 var(--space-md);
 }
 
+/* ==========================================================================
+   Not Found (404) Screen
+   ========================================================================== */
+
+.not-found-screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.not-found-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(14, 11, 9, 0.6) 0%, rgba(14, 11, 9, 0.95) 80%);
+}
+
+.not-found-screen > main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.not-found-screen h1 {
+  font-size: clamp(4rem, 12vw, 8rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 20px rgba(220, 170, 90, 0.5), 0 4px 8px rgba(0, 0, 0, 0.8);
+  margin: 0;
+  color: var(--brass-light);
+}
+
+.not-found-screen p {
+  font-size: clamp(0.875rem, 2vw, 1.25rem);
+  font-weight: 300;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.not-found-path {
+  font-family: monospace;
+  color: var(--iron-light);
+  font-size: var(--font-sm);
+}
+
 /* Brass buttons - metallic steampunk style for menus */
 .brass-button {
   min-width: 10rem;

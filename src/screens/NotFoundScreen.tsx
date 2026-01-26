@@ -1,20 +1,20 @@
-import { Link } from 'react-router-dom'
-import { Button } from '../components/Button'
+import { Link, useLocation } from 'react-router-dom'
+import { BrassButton } from '../components/BrassButton'
 
 export function NotFoundScreen() {
+  const { pathname } = useLocation()
+
   return (
-    <div className="not-found-screen" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100vw' }}>
-      <div className="panel-elevated" style={{ textAlign: 'center', padding: '2rem' }}>
+    <div className="not-found-screen">
+      <div className="not-found-overlay" />
+      <main>
         <h1>404</h1>
-        <p className="text-muted" style={{ marginBottom: '1.5rem' }}>
-          Page not found
-        </p>
+        <p className="not-found-path">{pathname}</p>
+        <p>This route does not exist.</p>
         <Link to="/">
-          <Button color="#3b82f6">
-            Go Home
-          </Button>
+          <BrassButton variant="primary">Return to Main Menu</BrassButton>
         </Link>
-      </div>
+      </main>
     </div>
   )
 }

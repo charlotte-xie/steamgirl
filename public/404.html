@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>SteamGirl</title>
+    <script>
+      // GitHub Pages SPA redirect.
+      // When GH Pages can't find a route (e.g. /steamgirl/game), it serves this
+      // 404.html. We store the full path in sessionStorage and redirect to the
+      // deploy root where index.html restores the URL via history.replaceState.
+      sessionStorage.setItem('spa-redirect',
+        location.pathname + location.search + location.hash
+      );
+      // Redirect to the deploy root. This 404.html sits at the deploy root
+      // (e.g. /steamgirl/404.html), so navigating to './' from any sub-path
+      // (e.g. /steamgirl/game) reaches /steamgirl/ where index.html lives.
+      // For deeper paths we need the absolute base, so we strip to the first
+      // path segment (the repo name on GH Pages).
+      var base = '/' + location.pathname.split('/').filter(Boolean)[0] + '/';
+      location.replace(base);
+    </script>
+  </head>
+  <body></body>
+</html>
