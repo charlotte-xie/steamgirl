@@ -474,6 +474,25 @@ const coreScripts: Record<string, ScriptFn> = {
     return card?.completed === true
   },
 
+  /** Check if a location has been discovered */
+  locationDiscovered: (game: Game, params: { location?: string }): boolean => {
+    if (!params.location) return false
+    const loc = game.locations.get(params.location)
+    return loc ? loc.discovered : false
+  },
+
+  /** Check if the current hour is within a range (supports wrap-around, e.g. 22 to 6) */
+  hourBetween: (game: Game, params: { from?: number; to?: number }): boolean => {
+    const from = params.from ?? 0
+    const to = params.to ?? 24
+    const hour = game.hourOfDay
+    if (from < to) {
+      return hour >= from && hour < to
+    }
+    // Wrap-around (e.g. 22 to 6 means 10pm-6am)
+    return hour >= from || hour < to
+  },
+
   /** Negate a predicate */
   not: (game: Game, params: { predicate?: Instruction }): boolean => {
     if (!params.predicate) return true

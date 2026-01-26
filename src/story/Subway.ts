@@ -31,6 +31,11 @@ const subwayOnFollow = (g: Game, destId: LocationId, fare: number) => {
     g.player.removeItem('crown', fare)
     const destName = getLocation(destId)?.name ?? destId
     g.add('You travel to ' + destName + '.')
+    // Arriving by subway means you know the destination's subway station
+    const destSubway = MAIN_TO_SUBWAY.get(destId)
+    if (destSubway) {
+      g.run('discoverLocation', { location: destSubway })
+    }
   }
 }
 
@@ -45,6 +50,9 @@ const SUBWAY_LINE_ORDER: [LocationId, string, LocationId][] = [
 
 const SUBWAY_INDEX = new Map(SUBWAY_LINE_ORDER.map(([id], i) => [id, i]))
 
+/** Reverse map: main location → its subway station (e.g. 'school' → 'subway-university') */
+const MAIN_TO_SUBWAY = new Map(SUBWAY_LINE_ORDER.map(([subwayId, , mainLoc]) => [mainLoc, subwayId]))
+
 /** Stops between two subway stations along the line (absolute positions). */
 const stopsBetween = (from: LocationId, to: LocationId): number => {
   const i = SUBWAY_INDEX.get(from)
@@ -53,13 +61,14 @@ const stopsBetween = (from: LocationId, to: LocationId): number => {
   return Math.abs(j - i)
 }
 
-/** Builds a subway travel link (fare, onFollow, etc.). */
+/** Builds a subway travel link (fare, onFollow, etc.). alwaysShow so destinations appear even if undiscovered. */
 export const subwayLink = (dest: LocationId, label: string, time: number, fare: number) => ({
   dest,
   time,
   label,
   cost: fare,
   travel: true as const,
+  alwaysShow: true as const,
   checkAccess: checkSubwayFare(fare),
   onFollow: (g: Game, _p: {}) => subwayOnFollow(g, dest, fare),
 })
@@ -78,6 +87,7 @@ const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'Steam and brass; the underground platform under the university grounds.',
     image: '/images/subway.jpg',
     nightImage: '/images/subway-night.jpg',
+    secret: true,
     links: [
       ...subwayLinksFrom('subway-university'),
       { dest: 'school', time: 2, label: 'Exit to University' },
@@ -107,6 +117,7 @@ const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Terminus Underground',
     description: 'The underground stop beneath Ironspark Terminus. Crowds and steam.',
     image: '/images/subway.jpg',
+    secret: true,
     links: [
       ...subwayLinksFrom('subway-terminus'),
       { dest: 'station', time: 2, label: 'Exit to Terminus' },

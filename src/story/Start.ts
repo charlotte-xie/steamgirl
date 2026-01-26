@@ -107,25 +107,30 @@ registerNPC('tour-guide', {
       ],
       // Scene 2: University
       [
+        discoverLocation('school'),
         move('school'), timeLapse(15),
         say('The University - you\'ll be studying there you say? A fine institution.'),
         text('Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.'),
+        discoverLocation('subway-university'),
         say('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...'),
       ],
       // Scene 3: Lake
       [
+        discoverLocation('lake'),
         move('lake'), timeLapse(18),
         say('The Lake. A peaceful spot when the city gets too much. Steam off the water—rather lovely.'),
         text('Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.'),
       ],
       // Scene 4: Market
       [
+        discoverLocation('market'),
         move('market'), timeLapse(15),
         say('The Market. Best place for oddities and curios. Keep your wits about you.'),
         text('Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam. The market throbs. Fingers brush you as you pass—accidental, deliberate, promising.'),
       ],
       // Scene 5: Backstreets
       [
+        discoverLocation('backstreets'),
         move('backstreets'), timeLapse(15),
         text('The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.'),
         say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.'),
@@ -285,7 +290,8 @@ export const startScripts = {
     g.add(p('You have a room booked in the ', highlight('backstreets', '#fbbf24', 'Not the most prestigious part of the city, but its the best we could afford.')," area. Might be a good idea to check it out first."))
     // add find-lodgings tutorial quest
     g.addQuest('find-lodgings', {})
-    g.add("You could explore yourself and find your way to your room. Or the tour guide offers city tours that end in the backstreets - you could ask him?")
+    g.add("There are signposts to the City Centre. Could be fun to explore and find your own way there.")
+    g.add("Or the tour guide offers city tours that end in the backstreets - you could ask him?")
   },
 }
 

@@ -84,6 +84,10 @@ Clothing uses a position + layer grid (12 body positions x 5 layers). Items can 
 
 Single stylesheet with CSS custom properties for all theming. Steampunk visual identity: brass/copper metallics, dark backgrounds, parchment text. Fluid layout via `clamp()` and flex/grid -- no media queries. Screen switcher pattern for game, character, inventory, quests, info, and settings views. All image paths go through `assetUrl()` for GitHub Pages compatibility.
 
+### [TRAVEL.md](./docs/TRAVEL.md) -- Travel & Navigation
+
+Location links connect areas and split into Travel (main-to-main) and Places. The `go` script handles the full travel flow: access check, `onFollow` hook (can interrupt), time passage, move, auto-discover, and arrival hooks. Secret locations start undiscovered and must be found through exploration (`discoverLocation`) or the city tour. The subway uses fare-gated `onFollow` hooks with interruptible waits. Links with `alwaysShow` bypass discovery filtering (e.g. subway entrances).
+
 ## Naming Conventions
 
 - **IDs**: kebab-case (`npc-merchant`, `location-tavern`)

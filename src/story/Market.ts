@@ -10,9 +10,8 @@ import { Item } from '../model/Item'
 import { registerItemDefinition } from '../model/Item'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, option, seq } from '../model/ScriptDSL'
+import { text, option, seq, random, timeLapse, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, script, run } from '../model/ScriptDSL'
 import { eatFood, consumeAlcohol } from './Effects'
-import { maybeDiscoverLocation } from './Utility'
 
 // ============================================================================
 // Clothing shop inventory
@@ -296,6 +295,7 @@ const marketLocation: LocationDefinition = {
   image: '/images/market.jpg',
   description: 'A bustling marketplace filled with exotic goods and mechanical wonders.',
   mainLocation: true,
+  secret: true,
   links: [
     { dest: 'lake', time: 8 },
     { dest: 'backstreets', time: 8 },
@@ -304,33 +304,47 @@ const marketLocation: LocationDefinition = {
   activities: [
     {
       name: 'Explore',
-      script: (g: Game) => {
-        g.timeLapse(10)
-
-        if (maybeDiscoverLocation(
-          g,
-          'lake',
-          0,
-          'While exploring the market, you overhear a conversation about a peaceful lake nearby. Someone mentions the path that leads to it, and you commit the directions to memory.'
-        )) {
-          return
-        }
-
-        const encounters = [
-          'You browse through stalls filled with brass trinkets and mechanical curiosities. Vendors call out their wares, their voices competing with the whir of clockwork displays.',
-          'A vendor demonstrates a steam-powered music box, its delicate gears producing a beautiful melody. The intricate mechanism catches your eye.',
-          'You notice a stall selling exotic mechanical components from distant lands. The vendor explains the unique properties of each piece with enthusiasm.',
-          'A food vendor serves hot meals from a steam-powered cart. The aroma of spiced dishes mingles with the scent of oil and brass.',
-          'You explore the textile section, where mechanical looms create intricate patterns. The rhythmic clicking of the machines is almost hypnotic.',
-          'A fortune teller with a mechanical crystal ball offers readings. The device glows with an inner light, its gears spinning mysteriously.',
-          'You watch as a craftsman repairs a broken automaton. His skilled hands work with precision, adjusting gears and tightening springs.',
-          'A stall selling maps and navigational devices catches your attention. The mechanical compasses and brass astrolabes are beautifully crafted.',
-          'You discover a hidden corner where rare mechanical books are sold. The vendor speaks in hushed tones about the knowledge contained within.',
-          'A group of performers entertains the crowd with mechanical puppets. The intricate movements and synchronized actions are captivating.',
-        ]
-
-        g.add(encounters[Math.floor(Math.random() * encounters.length)])
-      },
+      script: script(
+        timeLapse(10),
+        cond(
+          // Discover the Lake
+          and(not(locationDiscovered('lake')), skillCheck('Perception', 0)),
+          discoverLocation('lake', 'While exploring the market, you overhear a conversation about a peaceful lake nearby. Someone mentions the path that leads to it, and you commit the directions to memory.', '#3b82f6'),
+          // Morning (6am–12pm)
+          hourBetween(6, 12),
+          random(
+            text('The morning market is alive with vendors setting up their stalls, polishing brass trinkets and winding clockwork displays. The scent of fresh bread mingles with machine oil.'),
+            text('A vendor demonstrates a steam-powered music box, its delicate gears producing a beautiful melody. The intricate mechanism catches your eye.'),
+            text('You notice a stall selling exotic mechanical components from distant lands. The vendor explains the unique properties of each piece with enthusiasm.'),
+            text('A food vendor serves hot meals from a steam-powered cart. The aroma of spiced dishes mingles with the scent of oil and brass.'),
+          ),
+          // Afternoon (12pm–6pm)
+          hourBetween(12, 18),
+          random(
+            text('You browse through stalls filled with brass trinkets and mechanical curiosities. Vendors call out their wares, their voices competing with the whir of clockwork displays.'),
+            text('You explore the textile section, where mechanical looms create intricate patterns. The rhythmic clicking of the machines is almost hypnotic.'),
+            text('You watch as a craftsman repairs a broken automaton. His skilled hands work with precision, adjusting gears and tightening springs.'),
+            text('A stall selling maps and navigational devices catches your attention. The mechanical compasses and brass astrolabes are beautifully crafted.'),
+          ),
+          // Evening (6pm–10pm)
+          hourBetween(18, 23),
+          random(
+            text('A fortune teller with a mechanical crystal ball offers readings. The device glows with an inner light, its gears spinning mysteriously.'),
+            text('You discover a hidden corner where rare mechanical books are sold. The vendor speaks in hushed tones about the knowledge contained within.'),
+            text('A group of performers entertains the crowd with mechanical puppets. The intricate movements and synchronised actions are captivating.'),
+            text('The market takes on a different character as evening falls. Lanterns flicker to life along the stalls, casting warm pools of light over the remaining wares.'),
+          ),
+          // Night (10pm–6am)
+          seq(
+            random(
+              text('The market is shuttered and still. Tarpaulins cover the stalls like shrouds, and the only movement is the occasional wisp of steam from an unattended pipe.'),
+              text('Your footsteps echo off the cobblestones of the empty market square. A stray clockwork toy twitches in the gutter, its spring nearly spent.'),
+              text('Without the bustle of trade, the market feels like a ghost of itself. The brass fixtures gleam coldly in the moonlight, and somewhere a loose shutter bangs in the wind.'),
+            ),
+          ),
+        ),
+        run('wait', { minutes: 10 }), /* Possibly get an encounter */
+      ),
     },
     {
       name: 'Shopping',

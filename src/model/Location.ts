@@ -54,6 +54,8 @@ export interface LocationLink {
   cost?: number
   /** If set, the nav uses this location's image for the thumbnail instead of dest (e.g. for subway links, the main area you're travelling toward). */
   imageLocation?: LocationId
+  /** If true, show this link even when the destination is undiscovered. Following the link will discover the location. */
+  alwaysShow?: boolean
 }
 
 export interface LocationActivity {

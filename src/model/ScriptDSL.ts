@@ -262,9 +262,9 @@ export const recordTime = (timer: string): Instruction =>
 export const eatFood = (quantity: number): Instruction =>
   run('eatFood', { quantity })
 
-/** Discover a location (sets discovered flag) */
-export const discoverLocation = (location: string): Instruction =>
-  run('discoverLocation', { location })
+/** Discover a location (sets discovered flag, optionally with announcement text) */
+export const discoverLocation = (location: string, text?: string, colour?: string): Instruction =>
+  run('discoverLocation', { location, text, colour })
 
 /** Advance time until a specific hour of day (e.g., 10.25 for 10:15am) */
 export const timeLapseUntil = (untilTime: number): Instruction =>
@@ -299,6 +299,14 @@ export const hasCard = (cardId: string): Instruction =>
 /** Check if a card is completed */
 export const cardCompleted = (cardId: string): Instruction =>
   run('cardCompleted', { cardId })
+
+/** Check if a location has been discovered */
+export const locationDiscovered = (location: string): Instruction =>
+  run('locationDiscovered', { location })
+
+/** Check if the current hour is within a range (supports wrap-around, e.g. hourBetween(22, 6) for night) */
+export const hourBetween = (from: number, to: number): Instruction =>
+  run('hourBetween', { from, to })
 
 /** Check if at least `minutes` have elapsed since a recorded timer */
 export const timeElapsed = (timer: string, minutes: number): Instruction =>
@@ -344,14 +352,28 @@ export function registerDslScript(name: string, instructions: Instruction[]): vo
 }
 
 /**
- * Convert DSL instruction(s) to a ScriptFn for use in makeScripts.
- * Allows mixing DSL and imperative scripts in the same makeScripts call.
+ * Convert a sequence of DSL instructions into a ScriptFn.
+ * This is the bridge between declarative DSL and imperative script entry points
+ * (activity scripts, makeScripts, etc.).
+ *
+ * With a single instruction, executes it directly.
+ * With multiple instructions, executes them in sequence (like seq).
  *
  * @example
+ * // Activity script
+ * { script: script(timeLapse(10), random(text('A'), text('B'))) }
+ *
+ * // In makeScripts
  * makeScripts({
  *   myImperativeScript: (g) => { g.add('Hello') },
- *   myDslScript: script(scenes([...], [...]))
+ *   myDslScript: script(text('Welcome'), option('Start'))
  * })
  */
-export const script = (instruction: Instruction): ((game: Game) => void) =>
-  (game: Game) => exec(game, instruction)
+export const script = (...instructions: Instruction[]): ((game: Game) => void) =>
+  (game: Game) => {
+    if (instructions.length === 1) {
+      exec(game, instructions[0])
+    } else {
+      execAll(game, instructions)
+    }
+  }

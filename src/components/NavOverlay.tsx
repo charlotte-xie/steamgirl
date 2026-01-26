@@ -23,8 +23,8 @@ export function NavOverlay() {
     runScript('go', { location: link.dest, minutes: link.time })
   }
 
-  // Filter to discovered only, then split into Travel (both main) vs Places (rest)
-  const discovered = links.filter((link) => game.getLocation(link.dest).discovered)
+  // Filter to discovered or alwaysShow, then split into Travel (both main) vs Places (rest)
+  const discovered = links.filter((link) => game.getLocation(link.dest).discovered || link.alwaysShow)
 
   const travelLinks: LocationLink[] = []
   const placeLinks: LocationLink[] = []

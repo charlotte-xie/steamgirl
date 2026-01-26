@@ -398,7 +398,8 @@ export class Game {
       if (typeof cardDef.onAdded === 'function') {
         (cardDef.onAdded as (game: Game, card: Card) => void)(this, card)
       } else {
-        const color = typeof cardDef.color === 'string' ? cardDef.color : undefined
+        const defaultColors: Record<string, string> = { Quest: '#f0c060', Effect: '#a78bfa' }
+        const color = typeof cardDef.color === 'string' ? cardDef.color : defaultColors[type]
         this.add({ type: 'text', text: `${type}: ${cardDef.name}`, color })
       }
     }
