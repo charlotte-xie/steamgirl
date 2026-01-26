@@ -4,6 +4,10 @@ import { speech } from "./Format"
 
 export type NPCId = string
 
+/** A single schedule entry: [startHour, endHour, locationId, days?]. Days is an optional
+ *  array of day-of-week numbers (0 and 7 both mean Sunday, 1=Mon ... 6=Sat). */
+export type ScheduleEntry = [number, number, string, number[]?]
+
 /**
  * Known NPC stat names. These are the standard stats tracked for NPCs.
  * Additional custom stats can be added as string literals.
@@ -99,16 +103,24 @@ export class NPC {
   }
 
   /**
-   * Follow a schedule to determine NPC location based on current hour.
-   * Schedule format: [[startHour, endHour, locationId], ...]
+   * Follow a schedule to determine NPC location based on current hour and day.
+   * Schedule entries: [startHour, endHour, locationId, days?]
    * Hours are 0-23. If current hour falls within a range, NPC moves to that location.
+   * Optional `days` array restricts the entry to specific days of the week
+   * (0 and 7 both mean Sunday, 1=Monday ... 6=Saturday).
    * If no schedule matches, NPC location is set to null.
    */
-  followSchedule(game: Game, schedule: [number, number, string][]): void {
+  followSchedule(game: Game, schedule: ScheduleEntry[]): void {
     const currentHour = Math.floor(game.hourOfDay)
-    
+    const currentDay = game.date.getDay() // 0=Sunday
+
     // Find matching schedule entry
-    for (const [startHour, endHour, locationId] of schedule) {
+    for (const entry of schedule) {
+      const [startHour, endHour, locationId, days] = entry
+
+      // Day filter: skip if days are specified and today isn't one of them
+      if (days && !days.some(d => d % 7 === currentDay)) continue
+
       // Handle wrap-around (e.g., 22-2 means 22:00 to 02:00 next day)
       let matches = false
       if (startHour <= endHour) {
@@ -118,13 +130,13 @@ export class NPC {
         // Wrap-around case: e.g., 22 to 2 means 22:00-23:59 and 00:00-01:59
         matches = currentHour >= startHour || currentHour < endHour
       }
-      
+
       if (matches) {
         this.location = locationId
         return
       }
     }
-    
+
     // No schedule matches, set location to null
     this.location = null
   }

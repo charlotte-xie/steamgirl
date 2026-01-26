@@ -1,5 +1,6 @@
 import { Game } from '../model/Game'
 import { registerNPC } from '../model/NPC'
+import type { ScheduleEntry } from '../model/NPC'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 
@@ -112,11 +113,12 @@ registerNPC('spice-dealer', {
   },
   onMove: (game: Game) => {
     const npc = game.getNPC('spice-dealer')
-    // Update location based on schedule when hour changes
-    const schedule: [number, number, string][] = [
-      [15, 2, 'lowtown'], // 3pm-2am in lowtown (wrap-around)
-      [2, 3, 'backstreets'],
-      [4, 7, 'docks']
+    const schedule: ScheduleEntry[] = [
+      [10, 13, 'market', [3]],        // Wednesday: sourcing supplies at the market
+      [14, 18, 'docks', [5]],         // Friday: collecting a shipment at the docks
+      [15, 2, 'lowtown'],             // default: dealing in Lowtown evenings
+      [2, 3, 'backstreets'],          // late night: slipping through the backstreets
+      [4, 7, 'docks'],               // early morning: checking the docks
     ]
     npc.followSchedule(game, schedule)
   },
@@ -130,14 +132,17 @@ registerNPC('jonny-elric', {
   speechColor: '#6b5b6b',
   onMove: (game: Game) => {
     const npc = game.getNPC('jonny-elric')
-    const schedule: [number, number, string][] = [
-      [6, 10, 'docks'],           
-      [10, 11, 'backstreets'],      
-      [11, 13, 'market'],          
-      [13, 14, 'backstreets'],      
-      [14, 16, 'lowtown'],    
-      [16, 19, 'subway-lowtown'],   
-      [20, 24, 'copper-pot-tavern'], 
+    const schedule: ScheduleEntry[] = [
+      [6, 10, 'docks', [1]],            // Monday: early morning dockside intimidation
+      [10, 14, 'market', [2]],          // Tuesday: collecting protection money at the market
+      [14, 19, 'back-alley', [4]],      // Thursday: back-alley business
+      [6, 10, 'docks'],                 // default: morning at the docks
+      [10, 11, 'backstreets'],           // cutting through backstreets
+      [11, 13, 'market'],               // browsing the market (and keeping an eye on things)
+      [13, 14, 'backstreets'],           // returning through the backstreets
+      [14, 16, 'lowtown'],              // afternoon patrol in Lowtown
+      [16, 19, 'subway-lowtown'],        // watching the subway crowd
+      [20, 24, 'copper-pot-tavern'],     // evening drinks at the Copper Pot
     ]
     npc.followSchedule(game, schedule)
   },
@@ -193,11 +198,14 @@ registerNPC('elvis-crowe', {
   speechColor: '#8b7355',
   onMove: (game: Game) => {
     const npc = game.getNPC('elvis-crowe')
-    const schedule: [number, number, string][] = [
-      [10, 12, 'lowtown'],           // 10am–12pm in Lowtown streets
-      [12, 13, 'backstreets'],       // 12pm–1pm in backstreets
-      [17, 19, 'lowtown'],           // 5–7pm in Lowtown streets
-      [19, 23, 'copper-pot-tavern'], // 7–11pm in the tavern
+    const schedule: ScheduleEntry[] = [
+      [11, 14, 'docks', [1]],           // Monday: overseeing dock operations
+      [14, 17, 'lake', [3]],            // Wednesday: a quiet stroll — even bosses need air
+      [10, 13, 'market', [5]],          // Friday: collecting his cut from the stallholders
+      [10, 12, 'lowtown'],              // default: morning rounds in Lowtown
+      [12, 13, 'backstreets'],           // checking the backstreets
+      [17, 19, 'lowtown'],              // evening presence in Lowtown
+      [19, 23, 'copper-pot-tavern'],     // holding court at the Copper Pot
     ]
     npc.followSchedule(game, schedule)
   },
