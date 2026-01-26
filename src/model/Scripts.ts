@@ -8,7 +8,7 @@
  * Core scripts are:
  * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats
  * - Control flow: seq, when, cond
- * - Predicates: hasItem, hasStat, inLocation, inScene, hasCard, cardCompleted, npcStat, not, and, or
+ * - Predicates: hasItem, hasStat, inLocation, inScene, hasCard, cardCompleted, npcStat, debug, not, and, or
  * - Content: text, paragraph, say, option, npcLeaveOption
  * - Cards: addQuest, completeQuest, addEffect
  *
@@ -509,6 +509,11 @@ const coreScripts: Record<string, ScriptFn> = {
   or: (game: Game, params: { predicates?: Instruction[] }): boolean => {
     if (!params.predicates) return false
     return params.predicates.some(p => exec(game, p))
+  },
+
+  /** True when debug mode is enabled */
+  debug: (game: Game): boolean => {
+    return game.isDebug
   },
 
   /** Check if at least `minutes` have elapsed since a recorded timer */

@@ -2,7 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Game } from '../model/Game'
 import { getScript } from '../model/Scripts'
-import { GAME_SAVE, GAME_SAVE_AUTO } from '../constants/storage'
+import { GAME_SAVE, GAME_SAVE_AUTO, DEBUG_MODE } from '../constants/storage'
 
 type GameLoaderContextType = {
   newGame: (opts?: { replace?: boolean }) => void
@@ -34,6 +34,13 @@ const GameLoaderContext = createContext<GameLoaderContextType>({
   clearGame: throwMissingProvider,
 })
 
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+function initDebugFlag(game: Game) {
+  const stored = localStorage.getItem(DEBUG_MODE)
+  game.isDebug = stored !== null ? stored === 'true' : isLocalhost
+}
+
 export function GameLoaderProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
 
@@ -41,6 +48,7 @@ export function GameLoaderProvider({ children }: { children: ReactNode }) {
     // Create a new uninitialized game - the GameScreen will show the character
     // creation screen, and init will be run after the user creates their character
     const g = new Game()
+    initDebugFlag(g)
     localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(g.toJSON()))
     const state = opts?.replace ? { source: 'newGame' as const, _t: Date.now() } : { source: 'newGame' as const }
     navigate('/game', { state, replace: opts?.replace })
@@ -50,6 +58,7 @@ export function GameLoaderProvider({ children }: { children: ReactNode }) {
     // Create and initialize a game immediately, skipping character creation
     // Useful for quick testing during development
     const g = new Game()
+    initDebugFlag(g)
     const init = getScript('init')
     if (init) init(g, {})
     localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(g.toJSON()))

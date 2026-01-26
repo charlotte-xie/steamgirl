@@ -12,7 +12,8 @@
       "Bash(dir:*)",
       "Bash(npx vitest:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(node:*)"
     ]
   }
 }

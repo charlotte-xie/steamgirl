@@ -312,6 +312,10 @@ export const hourBetween = (from: number, to: number): Instruction =>
 export const timeElapsed = (timer: string, minutes: number): Instruction =>
   run('timeElapsed', { timer, minutes })
 
+/** True when debug mode is enabled */
+export const debug = (): Instruction =>
+  run('debug', {})
+
 /** Negate a predicate */
 export const not = (predicate: Instruction): Instruction =>
   run('not', { predicate })

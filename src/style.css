@@ -1753,6 +1753,86 @@ img {
   font-size: var(--font-md);
 }
 
+/* Settings screen */
+.settings-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-panel-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.setting-label {
+  color: var(--text-main);
+  font-size: var(--font-md);
+}
+
+.setting-desc {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+/* Steampunk toggle switch */
+.steam-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.steam-toggle-track {
+  display: block;
+  position: relative;
+  width: 3rem;
+  height: 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--copper-dark);
+  border: 2px solid var(--brass-dark);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.steam-toggle.on .steam-toggle-track {
+  background: var(--brass-mid);
+  border-color: var(--brass-light);
+}
+
+.steam-toggle-knob {
+  display: block;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: calc(1.5rem - 6px);
+  height: calc(1.5rem - 6px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ddd 0%, #888 60%, #555 100%);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: transform 0.25s ease;
+}
+
+.steam-toggle.on .steam-toggle-knob {
+  transform: translateX(1.5rem);
+  background: radial-gradient(circle at 35% 35%, #f4e4c4 0%, var(--brass-light) 60%, var(--brass-mid) 100%);
+  border-color: var(--brass-dark);
+  box-shadow: 0 0 6px rgba(212, 168, 83, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
 /* Quests screen */
 .quests-screen h3 {
   margin: 0 0 var(--space-sm);

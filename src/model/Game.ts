@@ -74,6 +74,7 @@ export class Game {
 
   // Transient UI state (not serialized, survives HMR)
   uiScreen: string = 'game'
+  isDebug: boolean = false
 
   constructor() {
     this.version = 1

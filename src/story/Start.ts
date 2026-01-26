@@ -260,12 +260,14 @@ export const startScripts = {
       .add(p('You have travelled across the whole continent, and are finally here, in the city of ', highlight('Aetheria', '#fbbf24', 'Aetheria: The great steam-powered city of brass and gears, where mechanical marvels and Victorian elegance meet in a symphony of innovation and tradition.'), '.'))
       .addOption('startPlatform', {}, 'Continue')
       .addOption('skipIntro', {}, 'Skip Intro')
+    if (g.isDebug) {
+      g.addOption('schoolStart', {}, 'School Start')
+    }
   },
 
-  /** Skip intro: discover all locations for debug access, then jump to bedroom with key and goals. */
+  /** Skip intro: jump to bedroom at 2pm with key and goals. */
   skipIntro: (g: Game) => {
-    discoverAllLocations(g)
-    g.timeLapse(3)
+    g.timeLapse(2*60)
     g.run('move', { location: 'bedroom' })
     g.scene.hideNpcImage = true
     g.add('You skip ahead to your room in the backstreets. Your key is in your hand; your goals, ahead.')
@@ -274,6 +276,29 @@ export const startScripts = {
     const bedroom = g.getLocation('bedroom')
     bedroom.numVisits++
     bedroom.discovered = true
+  },
+
+  /** Debug: skip to school at 9:30am Monday, attend-university quest already done. */
+  schoolStart: (g: Game) => {
+    discoverAllLocations(g) /* In debug mode so discover everything to make testing easier */
+    // Set time to 9:30am on Monday Jan 6 (21h 30m from noon Jan 5)
+    g.timeLapse(21.5*60)
+    // Clear any effects (hunger, etc.)
+    for (const card of [...g.player.cards]) {
+      if (card.type === 'Effect') g.removeCard(card.id, true)
+    }
+    // Skip the attend-university quest entirely
+    g.addQuest('attend-university', { silent: true })
+    g.completeQuest('attend-university')
+    // Give room key and mark bedroom visited
+    g.run('gainItem', { item: 'room-key', number: 1 })
+    const bedroom = g.getLocation('bedroom')
+    bedroom.numVisits++
+    bedroom.discovered = true
+    // Move to school hallways
+    g.run('move', { location: 'hallway' })
+    g.scene.hideNpcImage = true
+    g.add('You skip ahead to the university on Monday morning, ready to start your studies.')
   },
 
   startPlatform: (g: Game) => {

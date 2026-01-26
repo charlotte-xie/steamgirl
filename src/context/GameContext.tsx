@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Game } from '../model/Game'
 import { getScript } from '../model/Scripts'
-import { GAME_SAVE, GAME_SAVE_AUTO } from '../constants/storage'
+import { GAME_SAVE, GAME_SAVE_AUTO, DEBUG_MODE } from '../constants/storage'
 import type { Specialty } from '../screens/NewCharacterScreen'
 
 export type CharacterOptions = {
@@ -32,6 +32,14 @@ const GameContext = createContext<GameContextType>({
   refresh: throwMissing,
 })
 
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+function getDebugFromStorage(): boolean {
+  const stored = localStorage.getItem(DEBUG_MODE)
+  if (stored !== null) return stored === 'true'
+  return isLocalhost
+}
+
 function loadFromStorage(source: unknown): Game | null {
   try {
     let json: string | null = null
@@ -42,7 +50,9 @@ function loadFromStorage(source: unknown): Game | null {
     } else {
       json = localStorage.getItem(GAME_SAVE) ?? localStorage.getItem(GAME_SAVE_AUTO)
     }
-    return json ? Game.fromJSON(json) : null
+    const game = json ? Game.fromJSON(json) : null
+    if (game) game.isDebug = getDebugFromStorage()
+    return game
   } catch (e) {
     console.error('Failed to load game from storage:', e)
     return null

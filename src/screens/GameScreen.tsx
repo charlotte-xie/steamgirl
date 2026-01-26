@@ -9,6 +9,7 @@ import { NewCharacterScreen, type Specialty } from './NewCharacterScreen'
 import { InfoScreen } from './InfoScreen'
 import { QuestsScreen } from './QuestsScreen'
 import { CharacterScreen } from './CharacterScreen'
+import { SettingsScreen, useDebugMode } from './SettingsScreen'
 import type { ScreenId } from '../components/ScreenSwitcher'
 
 export function GameScreen() {
@@ -52,11 +53,13 @@ export function GameScreen() {
       case 'info':
         return <InfoScreen />
       case 'settings':
-        return <div className="placeholder">Settings screen</div>
+        return <SettingsScreen />
       default:
         return <LocationView location={game.location} />
     }
   }
+
+  const debugMode = useDebugMode()
 
   return (
     <div className="game-screen">
@@ -64,7 +67,7 @@ export function GameScreen() {
       <main style={{ flex: 1, height: '100%' }}>
         {renderMainContent()}
       </main>
-      <DevControls />
+      {debugMode && <DevControls />}
     </div>
   )
 }
