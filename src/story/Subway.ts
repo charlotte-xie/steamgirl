@@ -3,7 +3,10 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { getLocation, registerLocation } from '../model/Location'
 import { makeScripts } from '../model/Scripts'
 
-const SUBWAY_FARE = 3
+const SUBWAY_BASE_COST = 1
+const SUBWAY_COST_PER_STOP = 1
+const SUBWAY_BASE_TIME = 2
+const SUBWAY_MIN_PER_STOP = 4
 const SLOT_PLAY_COST = 2
 
 // 50% nothing; 40% 1 kr; 8% 5 kr; 2% 30 kr : Average = 1.5
@@ -15,17 +18,17 @@ const slotMachineRoll = (): number => {
   return 30
 }
 
-const checkSubwayFare = (g: Game): string | null => {
+const checkSubwayFare = (fare: number) => (g: Game): string | null => {
   const n = g.player.inventory.find((i) => i.id === 'crown')?.number ?? 0
-  return n < SUBWAY_FARE ? 'You need 3 Krona for the subway.' : null
+  return n < fare ? `You need ${fare} Krona for the subway.` : null
 }
 
 /** Common onFollow for all subway travel links: wait 0–8 min for the train; only if no scene triggered, pay fare and "You travel to X". Go script continues with timeLapse + move. */
-const subwayOnFollow = (g: Game, destId: LocationId) => {
+const subwayOnFollow = (g: Game, destId: LocationId, fare: number) => {
   const waitMin = Math.floor(Math.random() * 9) // 0–8 minutes
   g.run('wait', { minutes: waitMin, text: 'You wait for the underground train.' })
   if (!g.inScene) {
-    g.player.removeItem('crown', SUBWAY_FARE)
+    g.player.removeItem('crown', fare)
     const destName = getLocation(destId)?.name ?? destId
     g.add('You travel to ' + destName + '.')
   }
@@ -41,7 +44,6 @@ const SUBWAY_LINE_ORDER: [LocationId, string, LocationId][] = [
 ]
 
 const SUBWAY_INDEX = new Map(SUBWAY_LINE_ORDER.map(([id], i) => [id, i]))
-const SUBWAY_MIN_PER_STOP = 4
 
 /** Stops between two subway stations along the line (absolute positions). */
 const stopsBetween = (from: LocationId, to: LocationId): number => {
@@ -51,23 +53,23 @@ const stopsBetween = (from: LocationId, to: LocationId): number => {
   return Math.abs(j - i)
 }
 
-/** Builds a subway travel link (fare, onFollow, etc.). imageLocation = main area for nav thumbnail. */
-export const subwayLink = (dest: LocationId, label: string, time: number, imageLocation?: LocationId) => ({
+/** Builds a subway travel link (fare, onFollow, etc.). */
+export const subwayLink = (dest: LocationId, label: string, time: number, fare: number) => ({
   dest,
   time,
   label,
-  cost: SUBWAY_FARE,
+  cost: fare,
   travel: true as const,
-  checkAccess: checkSubwayFare,
-  onFollow: (g: Game, _p: {}) => subwayOnFollow(g, dest),
-  ...(imageLocation != null && { imageLocation }),
+  checkAccess: checkSubwayFare(fare),
+  onFollow: (g: Game, _p: {}) => subwayOnFollow(g, dest, fare),
 })
 
-/** Subway travel links in line order, excluding the given station. Time = 4 min × stops between. */
+/** Subway travel links in line order, excluding the given station. Time = 4 min × stops. Fare = 1 kr × stops. Destination is the main location. */
 const subwayLinksFrom = (fromId: LocationId) =>
-  SUBWAY_LINE_ORDER.filter(([id]) => id !== fromId).map(([dest, label, imageLoc]) =>
-    subwayLink(dest, label, SUBWAY_MIN_PER_STOP * stopsBetween(fromId, dest), imageLoc)
-  )
+  SUBWAY_LINE_ORDER.filter(([id]) => id !== fromId).map(([subwayId, label, mainLoc]) => {
+    const stops = stopsBetween(fromId, subwayId)
+    return subwayLink(mainLoc, label, SUBWAY_BASE_TIME + SUBWAY_MIN_PER_STOP * stops, SUBWAY_BASE_COST + SUBWAY_COST_PER_STOP * stops)
+  })
 
 // Subway platforms: not mainLocation; appear as Places from main areas; travel between them as Travel
 const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
