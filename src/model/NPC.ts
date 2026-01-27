@@ -55,6 +55,8 @@ export interface NPCDefinition {
   speechColor?: string
   /** NPC pronouns — defaults to they/them/their. Use PRONOUNS.he, PRONOUNS.she, etc. */
   pronouns?: Pronouns
+  /** Faction this NPC belongs to (e.g. 'school', 'lowtown'). Informational — gating uses hasReputation(). */
+  faction?: string
   // Optional generate function that initializes the NPC instance (NPC is already constructed)
   generate?: (game: Game, npc: NPC) => void
   // Script to run when player approaches this NPC for the first time

@@ -40,6 +40,8 @@ import './MyArea'  // After modules it depends on
 | `registerNPC(id, definition)` | NPCs with dialogue, schedules, scripts |
 | `registerCardDefinition(id, definition)` | Quests, effects, traits, tasks |
 | `registerItemDefinition(id, definition)` | Inventory items and clothing |
+| `registerFaction(id, definition)` | Factions with name, description, reputation list |
+| `registerReputation(id, definition)` | Reputation tracks with faction, colours |
 | `makeScript(name, fn)` | Single named script |
 | `makeScripts({ name: fn, ... })` | Multiple scripts at once |
 

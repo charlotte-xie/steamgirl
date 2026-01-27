@@ -6,10 +6,10 @@
  * 2. Core scripts - generic, reusable scripts that are part of the scripting system itself
  *
  * Core scripts are:
- * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats, addNpcStat, setNpcLocation
+ * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats, addNpcStat, setNpcLocation, addReputation
  * - Control flow: seq, when, cond
  * - Scene stack: pushScenePages, advanceScene
- * - Predicates: hasItem, hasStat, inLocation, inScene, hasCard, cardCompleted, npcStat, debug, not, and, or
+ * - Predicates: hasItem, hasStat, hasReputation, inLocation, inScene, hasCard, cardCompleted, npcStat, debug, not, and, or
  * - Content: text, paragraph, say, option, npcLeaveOption
  * - Cards: addQuest, completeQuest, addEffect
  *
@@ -24,6 +24,7 @@ import { type TimerName } from './Player'
 import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
+import { getReputation, type ReputationId } from './Faction'
 
 // ============================================================================
 // SCRIPT TYPES
@@ -398,6 +399,53 @@ const coreScripts: Record<string, ScriptFn> = {
     npc.location = params.location ?? null
   },
 
+  /** Modify a faction reputation score (0-100) with optional display and clamping */
+  addReputation: (game: Game, params: {
+    reputation?: string
+    change?: number
+    min?: number
+    max?: number
+    hidden?: boolean
+    chance?: number
+  }) => {
+    const repName = params.reputation
+    if (!repName || typeof repName !== 'string') {
+      throw new Error('addReputation requires a reputation parameter')
+    }
+    const repDef = getReputation(repName as ReputationId)
+    if (!repDef) {
+      throw new Error(`addReputation: unknown reputation '${repName}'`)
+    }
+
+    const change = params.change
+    if (typeof change !== 'number') {
+      throw new Error('addReputation requires a change parameter')
+    }
+
+    const chance = params.chance ?? 1.0
+    if (typeof chance !== 'number' || chance < 0 || chance > 1) {
+      throw new Error('addReputation chance must be a number between 0 and 1')
+    }
+    if (Math.random() > chance) return
+
+    const current = game.player.reputation.get(repName) ?? 0
+    let newValue = current + change
+    const min = params.min ?? 0
+    const max = params.max ?? 100
+    newValue = Math.max(min, Math.min(max, newValue))
+    const actualChange = newValue - current
+
+    if (actualChange === 0 || Math.sign(actualChange) !== Math.sign(change)) return
+
+    game.player.reputation.set(repName, newValue)
+
+    if (!params.hidden) {
+      const displayColor = change > 0 ? repDef.gainColor : repDef.lossColor
+      const sign = change > 0 ? '+' : ''
+      game.add(colour(`${repDef.name} ${sign}${change}`, displayColor))
+    }
+  },
+
   // -------------------------------------------------------------------------
   // CONTROL FLOW
   // -------------------------------------------------------------------------
@@ -434,11 +482,38 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /** Execute a random child instruction from the provided array */
-  random: (game: Game, params: { children?: Instruction[] }) => {
+  /**
+   * Pick one entry at random from an eligible pool and execute it.
+   *
+   * Supports conditional entries via `when()`: if a child is a `when` instruction,
+   * its condition is evaluated first — only passing entries join the pool.
+   * Non-`when` children are always eligible.
+   *
+   * Example: random(when(hasReputation('gangster', { min: 40 }), 'Feared text'), 'Default text')
+   */
+  random: (game: Game, params: { children?: (Instruction | null | undefined | false | 0)[] }) => {
     if (!params.children || params.children.length === 0) return
-    const index = Math.floor(Math.random() * params.children.length)
-    return exec(game, params.children[index])
+
+    // Build the eligible pool: when-gated entries are conditional, others always eligible
+    // Falsy entries are silently skipped (supports && patterns and manual construction)
+    const pool: Instruction[][] = []
+    for (const child of params.children) {
+      if (!child) continue
+      if (Array.isArray(child) && child[0] === 'when') {
+        const whenParams = child[1] as { condition?: Instruction; then?: Instruction[] }
+        if (whenParams.condition && whenParams.then) {
+          if (exec(game, whenParams.condition)) {
+            pool.push(whenParams.then)
+          }
+        }
+      } else {
+        pool.push([child])
+      }
+    }
+
+    if (pool.length === 0) return
+    const chosen = pool[Math.floor(Math.random() * pool.length)]
+    execAll(game, chosen)
   },
 
   /** Perform a skill test. Returns boolean if no callbacks provided, otherwise executes callbacks. */
@@ -485,6 +560,16 @@ const coreScripts: Record<string, ScriptFn> = {
     const value = game.player.stats.get(params.stat as StatName) ?? 0
     if (params.min !== undefined && value < params.min) return false
     if (params.max !== undefined && value > params.max) return false
+    return true
+  },
+
+  /** Check a faction reputation score. Defaults to rep > 0 if no min/max specified. */
+  hasReputation: (game: Game, params: { reputation?: string; min?: number; max?: number }): boolean => {
+    if (!params.reputation) return false
+    const value = game.player.reputation.get(params.reputation) ?? 0
+    if (params.min !== undefined && value < params.min) return false
+    if (params.max !== undefined && value > params.max) return false
+    if (params.min === undefined && params.max === undefined) return value > 0
     return true
   },
 

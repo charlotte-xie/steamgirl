@@ -13,6 +13,20 @@
  *     (Jonny Elric and Elvis Crowe). Timmy is a bottom-feeder in the
  *     Lowtown hierarchy and is keenly aware of who has connections.
  *
+ * Reputation integration (faction: lowtown):
+ *
+ *   JUNKIE — earned by buying spice (+2 per purchase, +1 for free
+ *     samples, max 30). Higher junkie rep makes Timmy warmer — he sees
+ *     you as a fellow user and gives hidden affection bonuses.
+ *
+ *   GANGSTER — checked but not earned here. High gangster rep makes
+ *     Timmy more deferential (greeting changes, hidden respect bonuses
+ *     on purchases) and stops spice pushing entirely at >= 40.
+ *
+ *   Both reputations modify approach greetings and buy interactions.
+ *   The onWait hook uses random() + when() for ambient reputation-
+ *   flavoured text.
+ *
  * Interaction model:
  *
  *   FIRST APPROACH (nameKnown = 0):
@@ -27,11 +41,11 @@
  *     Truthful brag: +5 respect. Lie + Charm DC 12: +3 respect on
  *     success, -5 respect and -5 affection on failure.
  *
- *   SPICE PUSHING (respect < 40):
+ *   SPICE PUSHING (respect < 40 AND gangster rep < 40):
  *   - When the player waits near Timmy, he may offer a free sample.
  *   - Escalates: friendly -> insistent -> guilt trip (tracked by pushCount).
- *   - Stops entirely when respect >= 40 (too scared of the player's
- *     connections to risk pushing product on them uninvited).
+ *   - Stops entirely when respect >= 40 OR gangster rep >= 40 (too
+ *     scared of the player's connections to push uninvited).
  *
  *   DATING (affection > respect + 10 AND affection > 30):
  *   - Timmy nervously asks the player out. He's surprised and flustered.
@@ -79,6 +93,10 @@ import {
   type Instruction,
   say, scene, scenes,
   addNpcStat,
+  addReputation,
+  hasReputation,
+  random,
+  when,
   branch,
   move,
   hideNpcImage, showNpcImage,
@@ -97,6 +115,7 @@ import {
 registerNPC('spice-dealer', {
   name: 'Timmy Bug',
   uname: 'spice dealer',
+  faction: 'lowtown',
   description: 'A wiry figure with a mechanical hand that clicks and whirs with every movement. His eyes dart constantly, assessing every passerby for potential customers or threats. The faint scent of exotic compounds clings to his worn coat, and he moves with the practiced caution of someone who knows the value of discretion in Lowtown\'s shadowy economy.',
   image: '/images/npcs/dealer.jpg',
   speechColor: '#7a8b6b',
@@ -125,10 +144,29 @@ registerNPC('spice-dealer', {
     if (npc.location !== game.currentLocation) return
     if (npc.nameKnown <= 0) return
 
+    // Reputation-flavoured ambient text (random + when pattern)
+    if (Math.random() < 0.15) {
+      game.run(random(
+        when(hasReputation('gangster', { min: 30 }),
+          'Timmy glances your way and quickly looks elsewhere. He knows who you run with.',
+        ),
+        when(hasReputation('gangster', { min: 30 }),
+          'Timmy straightens his coat when he notices you. Word travels fast in Lowtown.',
+        ),
+        when(hasReputation('junkie', { min: 15 }),
+          'Timmy catches your eye and taps his coat pocket with a knowing look.',
+        ),
+        when(hasReputation('junkie', { min: 15 }),
+          'Timmy gives you a conspiratorial nod as you pass. Fellow travellers.',
+        ),
+      ))
+    }
+
     const respect = npc.stats.get('respect') ?? 0
 
-    // Spice pushing: only when respect < 40 and cooldown elapsed
-    if (respect < 40) {
+    // Spice pushing: only when not too respected/feared
+    // Stops at respect >= 40 OR gangster reputation >= 40
+    if (respect < 40 && !game.run(hasReputation('gangster', { min: 40 }))) {
       const lastPush = npc.stats.get('lastPush') ?? 0
       const hoursSincePush = (game.time - lastPush) / 3600
       if (hoursSincePush >= 24 && Math.random() < 0.2) {
@@ -165,10 +203,16 @@ registerNPC('spice-dealer', {
       return
     }
 
-    // Respect-based greeting variation
+    // Reputation- and respect-based greeting variation
     if (respect >= 40) {
       game.add('Timmy straightens up when he sees you, his mechanical hand still for once. There\'s a wary deference in his eyes.')
       npc.say('Hey. You need anything? Anything at all.')
+    } else if (game.run(hasReputation('gangster', { min: 20 }))) {
+      game.add('Timmy clocks you from across the street. He stands a little straighter — he\'s heard things.')
+      npc.say('Hey. You, uh... you need anything?')
+    } else if (game.run(hasReputation('junkie', { min: 15 }))) {
+      game.add('Timmy\'s eyes light up when he sees you. A fellow connoisseur.')
+      npc.say('There she is. I was hoping you\'d swing by. Got some good stuff today.')
     } else if (npc.nameKnown > 0) {
       game.add('The spice dealer eyes you warily, his mechanical hand twitching.')
       npc.say('What do you want?')
@@ -222,6 +266,19 @@ registerNPC('spice-dealer', {
 
       // Buying spice builds early affection easily
       g.run('addNpcStat', { stat: 'affection', change: 3, max: 15, hidden: true })
+
+      // Buying spice builds junkie reputation
+      g.run(addReputation('junkie', 2, { max: 30 }))
+
+      // Gangster rep: Timmy respects your connections
+      if (g.run(hasReputation('gangster', { min: 20 }))) {
+        g.run('addNpcStat', { stat: 'respect', change: 2, max: 40, hidden: true })
+      }
+
+      // Junkie rep: Timmy warms to a fellow user
+      if (g.run(hasReputation('junkie', { min: 10 }))) {
+        g.run('addNpcStat', { stat: 'affection', change: 2, max: 25, hidden: true })
+      }
 
       // Introduce on first purchase
       if (npc.nameKnown <= 0) {
@@ -295,6 +352,10 @@ registerNPC('spice-dealer', {
       g.run('gainItem', { item: 'spice', number: 1, text: 'You pocket the free spice.' })
       npc.stats.set('pushCount', (npc.stats.get('pushCount') ?? 0) + 1)
       g.run('addNpcStat', { stat: 'affection', change: 2, max: 20, hidden: true })
+
+      // Accepting free spice builds junkie reputation (smaller gain)
+      g.run(addReputation('junkie', 1, { max: 30 }))
+
       npc.say('There you go. You won\'t regret it.')
       g.add('His mechanical hand clicks with satisfaction.')
     },

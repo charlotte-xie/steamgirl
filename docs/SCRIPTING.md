@@ -201,6 +201,7 @@ Common scripts are already defined in `Scripts.ts`:
 | `timeLapse` | `{ minutes }` or `{ untilTime }` | Advance game time |
 | `addStat` | `{ stat, change, max?, min?, chance?, hidden? }` | Modify a player stat |
 | `addNpcStat` | `{ npc?, stat, change, max?, min?, hidden? }` | Modify an NPC stat |
+| `addReputation` | `{ reputation, change, max?, min?, chance?, hidden? }` | Modify a faction reputation score (0--100) |
 | `setNpcLocation` | `{ npc?, location }` | Move an NPC to a location |
 | `discoverLocation` | `{ location, text?, colour? }` | Reveal a hidden location |
 
@@ -255,7 +256,7 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 | `when(cond, ...then)` | Conditional (if true). Then elements can be strings |
 | `unless(cond, ...then)` | Conditional (if false) |
 | `cond(c1, e1, c2, e2, ..., default?)` | Multi-branch conditional (Lisp-style) |
-| `random(...children)` | Execute one random child. Strings become `text()` |
+| `random(...children)` | Pick one random child. Supports `when()` conditional entries; falsy entries ignored |
 | `skillCheck(skill, diff?, onSuccess?, onFailure?)` | Skill test. Callbacks are single elements (use `seq()` to group) |
 
 #### Scene Composition
@@ -280,6 +281,7 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 | `removeItem(item, count?)` | Remove from inventory |
 | `addStat(stat, change, options?)` | Modify player stat (options: `max`, `min`, `chance`, `hidden`) |
 | `addNpcStat(stat, change, options?)` | Modify NPC stat (options: `npc`, `max`, `min`, `hidden`). Uses scene NPC if `npc` omitted |
+| `addReputation(reputation, change, options?)` | Modify faction reputation (options: `max`, `min`, `chance`, `hidden`). Clamped 0--100 |
 | `moveNpc(npc, location)` | Move an NPC (pass `null` to clear location) |
 | `setNpc(npcId)` | Set scene NPC for speech colour |
 | `hideNpcImage()` | Hide NPC portrait (e.g. during travel) |
@@ -303,6 +305,7 @@ Predicates are instructions that return boolean values:
 | `inLocation(location)` | Check current location |
 | `inScene()` | Check if scene has options |
 | `npcStat(stat, options?)` | Check NPC stat (options: `npc`, `min`, `max`). Defaults to scene NPC, stat > 0 |
+| `hasReputation(reputation, options?)` | Check faction reputation (options: `min`, `max`). Defaults to rep > 0 |
 | `hasCard(cardId)` | Check if player has card |
 | `cardCompleted(cardId)` | Check if card is completed |
 | `locationDiscovered(location)` | Check if location is discovered |
@@ -502,7 +505,7 @@ seq(
 
 ### random
 
-`random` executes one randomly selected child. Strings become `text()`:
+`random` picks one entry at random and executes it. Strings become `text()`. Falsy entries are silently ignored (supports `&&` patterns).
 
 ```typescript
 // Random NPC speech
@@ -519,6 +522,24 @@ random(
   'A clockwork bird chirps on a lamppost.',
 )
 ```
+
+**Conditional entries** — use `when()` inside `random()` to gate entries on conditions. Only entries whose conditions pass join the eligible pool:
+
+```typescript
+random(
+  when(hasReputation('gangster', { min: 40 }),
+    'A woman crosses the street to avoid you.',
+  ),
+  when(hasReputation('socialite', { min: 30 }),
+    'A woman in furs gives you a knowing nod.',
+  ),
+  npc.affection > 10 && say('He smiles warmly.'),
+  'The street is quiet.',
+  'Nothing catches your eye.',
+)
+```
+
+If no conditions pass and no defaults exist, nothing happens.
 
 ### skillCheck
 

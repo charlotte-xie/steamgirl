@@ -13,6 +13,9 @@ import './Effects'
 // Register item definitions (used by other modules)
 import './items'
 
+// Register faction definitions (used by NPC and location modules)
+import './Factions'
+
 // Register utility scripts (used by other modules)
 import './Utility'
 

@@ -92,6 +92,10 @@ Single stylesheet with CSS custom properties for all theming. Steampunk visual i
 
 Location links connect areas and split into Travel (main-to-main) and Places. The `go` script handles the full travel flow: access check, `onFollow` hook (can interrupt), time passage, move, auto-discover, and arrival hooks. Secret locations start undiscovered and must be found through exploration (`discoverLocation`) or the city tour. The subway uses fare-gated `onFollow` hooks with interruptible waits. Links with `alwaysShow` bypass discovery filtering (e.g. subway entrances).
 
+### [FACTIONS.md](./docs/FACTIONS.md) -- Factions & Reputation
+
+Three factions (School, Lowtown, High Society) each with multiple independent reputation tracks (0--100). Used for gating flavour text and scene branches, adjusting how NPCs treat the player, modifying NPC stat gain rates, and triggering random world events. DSL helpers `addReputation` and `hasReputation` mirror the existing stat/NPC stat patterns. Faction definitions are registered at import time; new factions can be added by story modules.
+
 ## Naming Conventions
 
 - **IDs**: kebab-case (`npc-merchant`, `location-tavern`)

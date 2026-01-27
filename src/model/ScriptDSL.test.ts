@@ -10,6 +10,7 @@ import {
   // Predicates
   hasItem,
   hasStat,
+  hasReputation,
   inLocation,
   inScene,
   hasCard,
@@ -224,6 +225,16 @@ describe('ScriptDSL', () => {
             ['text', { parts: ['A'] }],
             ['text', { parts: ['B'] }],
             ['text', { parts: ['C'] }]
+          ]
+        }])
+      })
+
+      it('random() filters out falsy entries', () => {
+        const result = random(text('A'), false, null, undefined, 0, text('B'))
+        expect(result).toEqual(['random', {
+          children: [
+            ['text', { parts: ['A'] }],
+            ['text', { parts: ['B'] }],
           ]
         }])
       })
@@ -750,6 +761,60 @@ describe('ScriptDSL', () => {
           const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
           expect(['A', 'B', 'C']).toContain(txt)
         }
+      })
+
+      it('random with when() only includes entries whose condition passes', () => {
+        // Set up: player has gangster rep but not socialite
+        game.player.reputation.set('gangster', 50)
+
+        vi.spyOn(Math, 'random').mockReturnValue(0) // always pick first eligible
+        try {
+          game.run(random(
+            when(hasReputation('gangster', { min: 40 }), text('Feared')),
+            when(hasReputation('socialite', { min: 30 }), text('Posh')),
+            text('Default'),
+          ))
+          // Pool: [Feared, Default] (socialite condition fails). Index 0 → Feared
+          expect(game.scene.content.length).toBe(1)
+          const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
+          expect(txt).toBe('Feared')
+        } finally {
+          vi.restoreAllMocks()
+        }
+      })
+
+      it('random falls back to defaults when no when() conditions pass', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        try {
+          game.run(random(
+            when(hasReputation('gangster', { min: 99 }), text('Feared')),
+            text('Quiet street'),
+          ))
+          // Pool: [Quiet street] only. Feared condition fails (gangster = 0)
+          expect(game.scene.content.length).toBe(1)
+          const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
+          expect(txt).toBe('Quiet street')
+        } finally {
+          vi.restoreAllMocks()
+        }
+      })
+
+      it('random does nothing when pool is empty', () => {
+        game.run(random(
+          when(hasReputation('gangster', { min: 99 }), text('Feared')),
+        ))
+        expect(game.scene.content.length).toBe(0)
+      })
+
+      it('random skips falsy entries at execution time', () => {
+        // Simulate falsy entries in the children array (as if built manually)
+        const instr: [string, Record<string, unknown>] = ['random', {
+          children: [null, false, 0, undefined, ['text', { parts: ['Survived'] }]]
+        }]
+        game.run(instr)
+        expect(game.scene.content.length).toBe(1)
+        const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
+        expect(txt).toBe('Survived')
       })
 
       it('skillCheck as predicate returns boolean', () => {

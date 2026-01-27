@@ -17,6 +17,7 @@ export interface PlayerData {
   name: string
   basestats?: Record<string, number>
   timers?: Record<string, number>
+  reputation?: Record<string, number>
   inventory: ItemData[]
   cards: CardData[]
   outfits?: OutfitData
@@ -28,6 +29,7 @@ export class Player {
   stats: Map<StatName, number>
   basestats: Map<StatName, number>
   timers: Map<TimerName, number>
+  reputation: Map<string, number>
   inventory: Item[]
   cards: Card[]
   outfits: OutfitData
@@ -37,6 +39,7 @@ export class Player {
     this.basestats = new Map<StatName, number>()
     this.stats = new Map<StatName, number>()
     this.timers = new Map<TimerName, number>()
+    this.reputation = new Map<string, number>()
     // Initialize all stats to 0
     STAT_NAMES.forEach(statName => {
       this.basestats.set(statName, 0)
@@ -66,10 +69,19 @@ export class Player {
       timersRecord[timerName] = value
     })
 
+    // Convert reputation Map to Record (only non-zero entries)
+    const reputationRecord: Record<string, number> = {}
+    this.reputation.forEach((value, repName) => {
+      if (value !== 0) {
+        reputationRecord[repName] = value
+      }
+    })
+
     return {
       name: this.name,
       basestats: basestatsRecord,
       timers: timersRecord,
+      reputation: Object.keys(reputationRecord).length > 0 ? reputationRecord : undefined,
       inventory: this.inventory.map(item => item.toJSON()),
       cards: this.cards.map(card => card.toJSON()),
       outfits: this.outfits,
@@ -100,6 +112,15 @@ export class Player {
         }
       })
     }
+    // Deserialize reputation
+    if (data.reputation) {
+      Object.entries(data.reputation).forEach(([repName, value]) => {
+        if (typeof value === 'number') {
+          player.reputation.set(repName, value)
+        }
+      })
+    }
+
     // Note: calcStats will be called from Game.fromJSON after the game instance is available
     // Meters are now part of basestats, so they're deserialized with basestats above
     

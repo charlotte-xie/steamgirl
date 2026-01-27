@@ -170,9 +170,26 @@ export function cond(...args: Instruction[]): Instruction {
   return run('cond', { branches, default: defaultExpr })
 }
 
-/** Execute a random instruction from the provided children. Plain strings become text() calls. */
-export const random = (...children: SceneElement[]): Instruction =>
-  run('random', { children: children.map(toInstruction) })
+/**
+ * Pick one entry at random and execute it.
+ *
+ * Supports conditional entries via `when()` — only entries whose condition
+ * passes are eligible. Non-`when` children are always in the pool.
+ * Falsy entries (null, undefined, false, 0) are silently ignored, enabling
+ * `&&` patterns for static filtering.
+ *
+ * ```typescript
+ * random(
+ *   when(hasReputation('gangster', { min: 40 }), 'People step aside as you pass.'),
+ *   when(hasReputation('socialite', { min: 30 }), 'A woman in furs gives you a knowing nod.'),
+ *   npc.affection > 10 && 'He gives you a warm smile.',
+ *   'The street is quiet.',
+ *   'Nothing catches your eye.',
+ * )
+ * ```
+ */
+export const random = (...children: (SceneElement | null | undefined | false | 0)[]): Instruction =>
+  run('random', { children: children.filter((c): c is SceneElement => !!c).map(toInstruction) })
 
 /**
  * Create a linear sequence of scenes with automatic "Continue" buttons.
@@ -444,6 +461,13 @@ export const addNpcStat = (
 export const moveNpc = (npc: string, location: string | null): Instruction =>
   run('setNpcLocation', { npc, location })
 
+/** Modify a faction reputation score (0-100). Shows coloured feedback unless hidden. */
+export const addReputation = (
+  reputation: string, change: number,
+  options?: { hidden?: boolean; max?: number; min?: number; chance?: number }
+): Instruction =>
+  run('addReputation', { reputation, change, ...(options ?? {}) })
+
 // --- Predicates (return boolean) ---
 
 /** Check if player has item */
@@ -465,6 +489,10 @@ export const inScene = (): Instruction =>
 /** Check NPC stat value. Defaults to stat > 0 if no min/max specified. Uses scene NPC if npc omitted. */
 export const npcStat = (stat: string, options?: { npc?: string; min?: number; max?: number }): Instruction =>
   run('npcStat', { stat, ...(options ?? {}) })
+
+/** Check a faction reputation score. Defaults to rep > 0 if no min/max specified. */
+export const hasReputation = (reputation: string, options?: { min?: number; max?: number }): Instruction =>
+  run('hasReputation', { reputation, ...(options ?? {}) })
 
 /** Check if player has a card */
 export const hasCard = (cardId: string): Instruction =>
