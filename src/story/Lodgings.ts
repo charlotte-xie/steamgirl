@@ -3,7 +3,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, say, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
+import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
 import { takeWash, freshenUp } from './Effects'
 
 registerNPC('landlord', {
@@ -15,37 +15,37 @@ registerNPC('landlord', {
   scripts: {
     showAround: scenes(
       // Scene 1: Landlord greets on backstreet and introduces himself
-      [
+      scene(
         text('A weathered figure steps out from a doorway.'),
         say(playerName(), ", I presume? Gerald Moss—I'm your landlord. Pleasure to meet you. You're all paid up for two weeks. Let me show you around."),
         learnNpcName(),
         timeLapse(5),
-      ],
+      ),
       // Scene 2: Landlord leads you into the building
-      [
+      scene(
         hideNpcImage(),
         timeLapse(1),
         move('stairwell'),
         discoverLocation('stairwell'),
         text('He leads you through a narrow doorway and into the building. The stairwell is dimly lit by gas lamps, the walls lined with faded wallpaper. The smell of coal smoke and old wood fills the air.'),
         say("Mind your step on these stairs. The third one creaks something awful."),
-      ],
+      ),
       // Scene 3: Landlord shows bathroom
-      [
+      scene(
         timeLapse(2),
         text('He leads you down the hallway on the first floor.'),
         say("This is the bathroom - it's shared with the other tenants. Keep it clean, won't you?"),
         move('bathroom'),
-      ],
+      ),
       // Scene 4: Landlord shows bedroom and hands over key
-      [
+      scene(
         timeLapse(3),
         move('bedroom'),
         text("You follow your landlord to your room. It's a small room, but nice enough and all you need right now. He produces a brass key from his pocket and hands it to you."),
         say("Here's your key. Enjoy your stay."),
         addItem('room-key'),
         addQuest('attend-university', { silent: true }),
-      ],
+      ),
     ),
   },
 })

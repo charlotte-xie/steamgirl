@@ -32,8 +32,8 @@ export type SceneData = {
   hideNpcImage?: boolean
   /** When set, the scene renders as a shop interface. */
   shop?: ActiveShop
-  /** Pending scene pages (LIFO stack of FIFO frames). Managed by pushScenePages/advanceScene scripts. */
-  stack: Instruction[][][]
+  /** Pending scene pages. Each entry is a single Instruction (e.g. seq). Consumed front-to-back; branches prepend. */
+  stack: Instruction[]
 }
 
 export interface GameData {

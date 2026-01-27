@@ -49,8 +49,6 @@ import {
   choice,
   gatedBranch,
   // Execution
-  exec,
-  execAll,
   registerDslScript,
 } from './ScriptDSL'
 
@@ -123,32 +121,29 @@ describe('ScriptDSL', () => {
         expect(option('Next')).toEqual(['option', { label: 'Next', script: undefined, params: {} }])
       })
 
-      it('branch() with inline instructions wraps in single-scene push', () => {
+      it('branch() with inline instructions wraps in seq push', () => {
         const result = branch('Kiss him', text('You kiss.'), addStat('Charm', 5))
         expect(result).toEqual(['option', {
           label: 'Kiss him',
           script: 'global:advanceScene',
           params: {
-            push: [[
-              ['text', { parts: ['You kiss.'] }],
-              ['addStat', { stat: 'Charm', change: 5 }],
-            ]],
+            push: [seq(text('You kiss.'), addStat('Charm', 5))],
           },
         }])
       })
 
-      it('branch() with Instruction[][] uses multi-scene push', () => {
+      it('branch() with Instruction[] uses multi-scene push', () => {
         const result = branch('Go to garden', [
-          [text('Scene 1')],
-          [text('Scene 2')],
+          scene(text('Scene 1')),
+          scene(text('Scene 2')),
         ])
         expect(result).toEqual(['option', {
           label: 'Go to garden',
           script: 'global:advanceScene',
           params: {
             push: [
-              [['text', { parts: ['Scene 1'] }]],
-              [['text', { parts: ['Scene 2'] }]],
+              seq(text('Scene 1')),
+              seq(text('Scene 2')),
             ],
           },
         }])
@@ -350,24 +345,35 @@ describe('ScriptDSL', () => {
     })
 
     describe('scene(), choice(), gatedBranch() builders', () => {
-      it('scene() returns instructions array, discarding name', () => {
-        const result = scene('My scene', text('A'), text('B'))
-        expect(result).toEqual([
-          ['text', { parts: ['A'] }],
-          ['text', { parts: ['B'] }],
-        ])
+      it('scene() wraps elements in seq', () => {
+        const result = scene(text('A'), text('B'))
+        expect(result).toEqual(seq(text('A'), text('B')))
+      })
+
+      it('scene() converts strings to text()', () => {
+        const result = scene('Hello', text('B'))
+        expect(result).toEqual(seq(text('Hello'), text('B')))
       })
 
       it('scene() works inside scenes()', () => {
         const withScene = scenes(
-          scene('Page 1', text('A')),
-          scene('Page 2', text('B')),
+          scene(text('A')),
+          scene(text('B')),
         )
         const withoutScene = scenes(
-          [text('A')],
-          [text('B')],
+          seq(text('A')),
+          seq(text('B')),
         )
         expect(withScene).toEqual(withoutScene)
+      })
+
+      it('scenes() accepts strings as pages', () => {
+        // Plain strings are auto-wrapped in text()
+        const result = scenes('Page A', 'Page B')
+        expect(result).toEqual(seq(
+          text('Page A'),
+          run('pushScenePages', { pages: [text('Page B')] }),
+        ))
       })
 
       it('choice() with branches only returns seq of branches unchanged', () => {
@@ -383,32 +389,30 @@ describe('ScriptDSL', () => {
           addStat('Charm', 5),
         )
 
-        // Both branches should have the epilogue merged into their single scene page
+        // Both branches should have the epilogue merged via seq wrapping
         const [, params] = result
         const instructions = (params as { instructions: Instruction[] }).instructions
 
-        // First branch (Kiss): push = [[text('You kiss.'), addStat(...)]]
+        // First branch (Kiss): push = [seq(seq(text('You kiss.')), addStat(...))]
         const [, kissParams] = instructions[0]
         const kissPush = (kissParams as any).params.push
-        expect(kissPush).toEqual([[
-          text('You kiss.'),
-          addStat('Charm', 5),
-        ]])
+        expect(kissPush).toEqual([
+          seq(seq(text('You kiss.')), addStat('Charm', 5)),
+        ])
 
-        // Second branch (Leave): push = [[text('You leave.'), addStat(...)]]
+        // Second branch (Leave): push = [seq(seq(text('You leave.')), addStat(...))]
         const [, leaveParams] = instructions[1]
         const leavePush = (leaveParams as any).params.push
-        expect(leavePush).toEqual([[
-          text('You leave.'),
-          addStat('Charm', 5),
-        ]])
+        expect(leavePush).toEqual([
+          seq(seq(text('You leave.')), addStat('Charm', 5)),
+        ])
       })
 
       it('choice() with multi-scene branch appends epilogue to last page only', () => {
         const result = choice(
           branch('Garden', [
-            [text('Scene 1')],
-            [text('Scene 2')],
+            scene(text('Scene 1')),
+            scene(text('Scene 2')),
           ]),
           text('Epilogue text'),
         )
@@ -419,9 +423,9 @@ describe('ScriptDSL', () => {
         const push = (branchParams as any).params.push
 
         // Scene 1 unchanged
-        expect(push[0]).toEqual([text('Scene 1')])
-        // Scene 2 has epilogue appended
-        expect(push[1]).toEqual([text('Scene 2'), text('Epilogue text')])
+        expect(push[0]).toEqual(seq(text('Scene 1')))
+        // Scene 2 has epilogue appended via seq wrapping
+        expect(push[1]).toEqual(seq(seq(text('Scene 2')), text('Epilogue text')))
       })
 
       it('gatedBranch() produces when(condition, branch(...))', () => {
@@ -436,17 +440,17 @@ describe('ScriptDSL', () => {
       })
 
       it('gatedBranch() with multi-scene produces when(condition, branch(scenes))', () => {
-        const sceneArrays: Instruction[][] = [
-          [text('Scene 1')],
-          [text('Scene 2')],
+        const scenePages: Instruction[] = [
+          scene(text('Scene 1')),
+          scene(text('Scene 2')),
         ]
         const result = gatedBranch(
           npcStat('npc', 'affection', 35),
           'Hidden path',
-          sceneArrays,
+          scenePages,
         )
         expect(result).toEqual(
-          when(npcStat('npc', 'affection', 35), branch('Hidden path', sceneArrays))
+          when(npcStat('npc', 'affection', 35), branch('Hidden path', scenePages))
         )
       })
 
@@ -466,12 +470,12 @@ describe('ScriptDSL', () => {
         // Inside the when, the branch should have epilogue merged
         const innerBranch = (whenParams as { then: Instruction[] }).then[0]
         const innerPush = (innerBranch as any)[1].params.push
-        expect(innerPush).toEqual([[text('Gold!'), addStat('Charm', 1)]])
+        expect(innerPush).toEqual([seq(seq(text('Gold!')), addStat('Charm', 1))])
 
         // Second instruction is the plain branch
         const [, defaultParams] = instructions[1]
         const defaultPush = (defaultParams as any).params.push
-        expect(defaultPush).toEqual([[text('Normal.'), addStat('Charm', 1)]])
+        expect(defaultPush).toEqual([seq(seq(text('Normal.')), addStat('Charm', 1))])
       })
 
       it('choice() is JSON-serializable', () => {
@@ -536,54 +540,54 @@ describe('ScriptDSL', () => {
     describe('Predicates', () => {
       it('hasItem checks inventory', () => {
         // Player starts with crown (120 from init)
-        expect(exec(game, hasItem('crown'))).toBe(true)
-        expect(exec(game, hasItem('crown', 100))).toBe(true)
-        expect(exec(game, hasItem('crown', 200))).toBe(false)
-        expect(exec(game, hasItem('nonexistent'))).toBe(false)
+        expect(game.run(hasItem('crown'))).toBe(true)
+        expect(game.run(hasItem('crown', 100))).toBe(true)
+        expect(game.run(hasItem('crown', 200))).toBe(false)
+        expect(game.run(hasItem('nonexistent'))).toBe(false)
       })
 
       it('hasStat checks player stats', () => {
         // Player starts with Agility 30
-        expect(exec(game, hasStat('Agility', 30))).toBe(true)
-        expect(exec(game, hasStat('Agility', 50))).toBe(false)
-        expect(exec(game, hasStat('Agility', 0, 50))).toBe(true)
-        expect(exec(game, hasStat('Agility', 0, 20))).toBe(false)
+        expect(game.run(hasStat('Agility', 30))).toBe(true)
+        expect(game.run(hasStat('Agility', 50))).toBe(false)
+        expect(game.run(hasStat('Agility', 0, 50))).toBe(true)
+        expect(game.run(hasStat('Agility', 0, 20))).toBe(false)
       })
 
       it('inLocation checks current location', () => {
-        expect(exec(game, inLocation('station'))).toBe(true)
-        expect(exec(game, inLocation('tavern'))).toBe(false)
+        expect(game.run(inLocation('station'))).toBe(true)
+        expect(game.run(inLocation('tavern'))).toBe(false)
       })
 
       it('inScene checks if scene has options', () => {
         // After init, scene has options
-        expect(exec(game, inScene())).toBe(true)
+        expect(game.run(inScene())).toBe(true)
         game.clearScene()
-        expect(exec(game, inScene())).toBe(false)
+        expect(game.run(inScene())).toBe(false)
         game.addOption('test', {}, 'Test')
-        expect(exec(game, inScene())).toBe(true)
+        expect(game.run(inScene())).toBe(true)
       })
 
       it('hasCard checks player cards', () => {
         // Add a quest manually for testing
         game.addQuest('find-lodgings', { silent: true })
-        expect(exec(game, hasCard('find-lodgings'))).toBe(true)
-        expect(exec(game, hasCard('nonexistent'))).toBe(false)
+        expect(game.run(hasCard('find-lodgings'))).toBe(true)
+        expect(game.run(hasCard('nonexistent'))).toBe(false)
       })
 
       it('not inverts predicates', () => {
-        expect(exec(game, not(hasItem('crown')))).toBe(false)
-        expect(exec(game, not(hasItem('nonexistent')))).toBe(true)
+        expect(game.run(not(hasItem('crown')))).toBe(false)
+        expect(game.run(not(hasItem('nonexistent')))).toBe(true)
       })
 
       it('and combines predicates', () => {
-        expect(exec(game, and(hasItem('crown'), inLocation('station')))).toBe(true)
-        expect(exec(game, and(hasItem('crown'), inLocation('tavern')))).toBe(false)
+        expect(game.run(and(hasItem('crown'), inLocation('station')))).toBe(true)
+        expect(game.run(and(hasItem('crown'), inLocation('tavern')))).toBe(false)
       })
 
       it('or combines predicates', () => {
-        expect(exec(game, or(hasItem('nonexistent'), inLocation('station')))).toBe(true)
-        expect(exec(game, or(hasItem('nonexistent'), inLocation('tavern')))).toBe(false)
+        expect(game.run(or(hasItem('nonexistent'), inLocation('station')))).toBe(true)
+        expect(game.run(or(hasItem('nonexistent'), inLocation('tavern')))).toBe(false)
       })
     })
 
@@ -593,7 +597,7 @@ describe('ScriptDSL', () => {
       })
 
       it('text adds to scene content', () => {
-        execAll(game, [text('Hello world')])
+        game.run(text('Hello world'))
         expect(game.scene.content.length).toBe(1)
         expect(game.scene.content[0]).toEqual({
           type: 'paragraph',
@@ -602,16 +606,16 @@ describe('ScriptDSL', () => {
       })
 
       it('paragraph adds formatted paragraph', () => {
-        execAll(game, [
+        game.run(
           paragraph('Hello ', hl('world', '#ff0000', 'Earth'), '!')
-        ])
+        )
         expect(game.scene.content.length).toBe(1)
         const para = game.scene.content[0]
         expect(para.type).toBe('paragraph')
       })
 
       it('say adds speech content', () => {
-        execAll(game, [say('Welcome!')])
+        game.run(say('Welcome!'))
         expect(game.scene.content.length).toBe(1)
         expect(game.scene.content[0]).toEqual({
           type: 'speech',
@@ -621,7 +625,7 @@ describe('ScriptDSL', () => {
       })
 
       it('option adds scene option', () => {
-        execAll(game, [option('Click me', 'testScript', { foo: 'bar' })])
+        game.run(option('Click me', 'testScript', { foo: 'bar' }))
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0]).toEqual({
           type: 'button',
@@ -631,100 +635,100 @@ describe('ScriptDSL', () => {
       })
 
       it('when executes conditionally - true', () => {
-        execAll(game, [
+        game.run(
           when(hasItem('crown'), text('You have gold!'))
-        ])
+        )
         expect(game.scene.content.length).toBe(1)
       })
 
       it('when executes conditionally - false', () => {
-        execAll(game, [
+        game.run(
           when(hasItem('nonexistent'), text('You have something'))
-        ])
+        )
         expect(game.scene.content.length).toBe(0)
       })
 
       it('when with multiple expressions (variadic)', () => {
-        execAll(game, [
+        game.run(
           when(hasItem('crown'),
             text('Line 1'),
             text('Line 2'),
             text('Line 3')
           )
-        ])
+        )
         expect(game.scene.content.length).toBe(3)
       })
 
       it('unless executes when condition is false', () => {
-        execAll(game, [
+        game.run(
           unless(hasItem('nonexistent'), text('You do not have it'))
-        ])
+        )
         expect(game.scene.content.length).toBe(1)
 
         game.clearScene()
 
-        execAll(game, [
+        game.run(
           unless(hasItem('crown'), text('Missing crown'))
-        ])
+        )
         expect(game.scene.content.length).toBe(0)
       })
 
       it('unless with multiple expressions', () => {
-        execAll(game, [
+        game.run(
           unless(hasItem('nonexistent'),
             text('Line 1'),
             text('Line 2')
           )
-        ])
+        )
         expect(game.scene.content.length).toBe(2)
       })
 
       it('cond with 3 args is if/else', () => {
         // True branch
-        execAll(game, [
+        game.run(
           cond(hasItem('crown'), text('Rich!'), text('Poor!'))
-        ])
+        )
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Rich!')
 
         game.clearScene()
 
         // False branch
-        execAll(game, [
+        game.run(
           cond(hasItem('nonexistent'), text('Rich!'), text('Poor!'))
-        ])
+        )
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Poor!')
       })
 
       it('cond with multiple branches', () => {
         // First branch matches
-        execAll(game, [
+        game.run(
           cond(
             hasItem('crown'), text('Has crown'),
             hasItem('sword'), text('Has sword'),
             text('Has nothing')
           )
-        ])
+        )
         expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Has crown')
 
         game.clearScene()
 
         // No branch matches, uses default
-        execAll(game, [
+        game.run(
           cond(
             hasItem('nonexistent1'), text('Has 1'),
             hasItem('nonexistent2'), text('Has 2'),
             text('Default')
           )
-        ])
+        )
         expect((game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text).toBe('Default')
       })
 
       it('seq runs instructions in sequence', () => {
-        execAll(game, [
+        game.run(
           seq(text('A'), text('B'), text('C'))
-        ])
+        )
         expect(game.scene.content.length).toBe(3)
       })
 
@@ -732,7 +736,7 @@ describe('ScriptDSL', () => {
         // Run multiple times to verify it picks one
         for (let i = 0; i < 10; i++) {
           game.clearScene()
-          execAll(game, [random(text('A'), text('B'), text('C'))])
+          game.run(random(text('A'), text('B'), text('C')))
           expect(game.scene.content.length).toBe(1)
           const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
           expect(['A', 'B', 'C']).toContain(txt)
@@ -741,7 +745,7 @@ describe('ScriptDSL', () => {
 
       it('skillCheck as predicate returns boolean', () => {
         // With no callbacks, returns boolean
-        const result = exec(game, skillCheck('Flirtation', 0))
+        const result = game.run(skillCheck('Flirtation', 0))
         expect(typeof result).toBe('boolean')
       })
 
@@ -749,9 +753,9 @@ describe('ScriptDSL', () => {
         // Mock Math.random to return a value that results in roll 50 (not 100, which always fails)
         vi.spyOn(Math, 'random').mockReturnValue(0.49)
         try {
-          execAll(game, [
+          game.run(
             skillCheck('Flirtation', -100, [text('Success!')], [text('Failure!')])
-          ])
+          )
           expect(game.scene.content.length).toBe(1)
           // With difficulty -100 and roll 50, should succeed (threshold = stat + skill + 100 > 50)
           const txt = (game.scene.content[0] as { type: string; content: { text: string }[] }).content[0].text
@@ -762,57 +766,57 @@ describe('ScriptDSL', () => {
       })
 
       it('move changes location', () => {
-        execAll(game, [move('default')])
+        game.run(move('default'))
         expect(game.currentLocation).toBe('default')
       })
 
       it('addItem adds to inventory', () => {
         const initialCount = game.player.inventory.find(i => i.id === 'crown')?.number ?? 0
-        execAll(game, [addItem('crown', 10)])
+        game.run(addItem('crown', 10))
         const newCount = game.player.inventory.find(i => i.id === 'crown')?.number ?? 0
         expect(newCount).toBe(initialCount + 10)
       })
 
       it('addStat modifies player stats', () => {
         const initial = game.player.basestats.get('Agility') ?? 0
-        execAll(game, [addStat('Agility', 5)])
+        game.run(addStat('Agility', 5))
         expect(game.player.basestats.get('Agility')).toBe(initial + 5)
       })
 
       it('recordTime records current time to a timer', () => {
         const currentTime = game.time
-        execAll(game, [recordTime('lastEat')])
+        game.run(recordTime('lastEat'))
         expect(game.player.timers.get('lastEat')).toBe(currentTime)
       })
 
       it('timeElapsed returns true when no timer recorded', () => {
         // Unrecorded timer should return true (long enough ago)
-        const result = exec(game, timeElapsed('unrecorded', 60))
+        const result = game.run(timeElapsed('unrecorded', 60))
         expect(result).toBe(true)
       })
 
       it('timeElapsed returns false when not enough time passed', () => {
-        execAll(game, [recordTime('testTimer')])
+        game.run(recordTime('testTimer'))
         // Just recorded, so 60 minutes hasn't passed
-        const result = exec(game, timeElapsed('testTimer', 60))
+        const result = game.run(timeElapsed('testTimer', 60))
         expect(result).toBe(false)
       })
 
       it('timeElapsed returns true when enough time passed', () => {
-        execAll(game, [recordTime('testTimer')])
+        game.run(recordTime('testTimer'))
         // Advance time by 61 minutes (3660 seconds)
         game.time += 3660
-        const result = exec(game, timeElapsed('testTimer', 60))
+        const result = game.run(timeElapsed('testTimer', 60))
         expect(result).toBe(true)
       })
 
       it('recordTime throws on missing timer name', () => {
-        expect(() => exec(game, ['recordTime', {}])).toThrow('recordTime requires a timer parameter')
+        expect(() => game.run(['recordTime', {}])).toThrow('recordTime requires a timer parameter')
       })
 
       it('timeElapsed throws on missing parameters', () => {
-        expect(() => exec(game, ['timeElapsed', {}])).toThrow('timeElapsed requires a timer parameter')
-        expect(() => exec(game, ['timeElapsed', { timer: 'test' }])).toThrow('timeElapsed requires a minutes parameter')
+        expect(() => game.run(['timeElapsed', {}])).toThrow('timeElapsed requires a timer parameter')
+        expect(() => game.run(['timeElapsed', { timer: 'test' }])).toThrow('timeElapsed requires a minutes parameter')
       })
     })
 
@@ -840,7 +844,7 @@ describe('ScriptDSL', () => {
     describe('scenes() and scene stack', () => {
       it('scenes with single scene runs immediately with no Continue button', () => {
         game.clearScene()
-        execAll(game, [scenes([text('Only scene')])])
+        game.run(scenes('Only scene'))
         expect(game.scene.content.length).toBe(1)
         expect(game.scene.options.length).toBe(0)
         expect(game.scene.stack.length).toBe(0)
@@ -848,27 +852,19 @@ describe('ScriptDSL', () => {
 
       it('scenes with multiple scenes pushes remaining onto stack', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [text('Scene 2')],
-          [text('Scene 3')],
-        )])
+        game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
         // Scene 1 content shown
         expect(game.scene.content.length).toBe(1)
         // Continue button (via pushScenePages)
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Continue')
         // Stack has remaining pages
-        expect(game.scene.stack.length).toBe(1) // one frame
+        expect(game.scene.stack.length).toBe(2)
       })
 
       it('Continue button advances through all scenes via stack', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [text('Scene 2')],
-          [text('Scene 3')],
-        )])
+        game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
 
         // Click Continue → Scene 2
         const continueBtn1 = game.scene.options[0]
@@ -890,16 +886,16 @@ describe('ScriptDSL', () => {
 
       it('branch within scenes resumes outer continuation from stack', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [
+        game.run(scenes(
+          'Scene 1',
+          scene(
             text('Choose a path'),
             branch('Path A', text('Branch A content')),
             branch('Path B', text('Branch B content')),
-          ],
-          [text('Scene 3 — after branch')],
-          [text('Scene 4 — finale')],
-        )])
+          ),
+          'Scene 3 — after branch',
+          'Scene 4 — finale',
+        ))
 
         // Click Continue → Scene 2 (the branching scene)
         const continueBtn = game.scene.options[0]
@@ -940,14 +936,14 @@ describe('ScriptDSL', () => {
 
       it('Path B also reaches outer continuation via stack', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [
+        game.run(scenes(
+          'Scene 1',
+          scene(
             branch('Path A', text('Branch A')),
             branch('Path B', text('Branch B')),
-          ],
-          [text('After branch')],
-        )])
+          ),
+          'After branch',
+        ))
 
         // Click Continue → Scene 2
         const continueBtn = game.scene.options[0]
@@ -971,13 +967,11 @@ describe('ScriptDSL', () => {
 
       it('non-advanceScene options are left untouched', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [
-            option('Custom action', 'someOtherScript', { foo: 'bar' }),
-          ],
-          [text('Scene 3')],
-        )])
+        game.run(scenes(
+          'Scene 1',
+          option('Custom action', 'someOtherScript', { foo: 'bar' }),
+          'Scene 3',
+        ))
 
         // Click Continue → Scene 2
         const continueBtn = game.scene.options[0]
@@ -992,10 +986,7 @@ describe('ScriptDSL', () => {
 
       it('non-stack action clears the stack via takeAction', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [text('Scene 2')],
-        )])
+        game.run(scenes('Scene 1', 'Scene 2'))
         expect(game.scene.stack.length).toBe(1) // pages on stack
 
         // takeAction with a non-advanceScene script clears the stack
@@ -1006,17 +997,17 @@ describe('ScriptDSL', () => {
       it('does not mutate shared DSL objects across playthroughs', () => {
         // Build scenes once (simulating module-load-time registration)
         const dateScene = scenes(
-          [text('Scene 1')],
-          [
+          'Scene 1',
+          scene(
             text('Choose'),
             branch('Path A', text('Branch A')),
-          ],
-          [text('Scene 3 — after branch')],
+          ),
+          'Scene 3 — after branch',
         )
 
         // First playthrough
         game.clearScene()
-        execAll(game, [dateScene])
+        game.run(dateScene)
         const cont1 = game.scene.options[0]
         game.clearScene()
         game.run(cont1.script) // Scene 2
@@ -1028,7 +1019,7 @@ describe('ScriptDSL', () => {
 
         // Second playthrough — should produce identical results
         game.dismissScene()
-        execAll(game, [dateScene])
+        game.run(dateScene)
         const cont2 = game.scene.options[0]
         game.clearScene()
         game.run(cont2.script) // Scene 2
@@ -1048,11 +1039,9 @@ describe('ScriptDSL', () => {
 
       it('single scene with branch works without outer continuation', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [
-            branch('Path A', text('Branch A')),
-          ],
-        )])
+        game.run(scenes(
+          branch('Path A', text('Branch A')),
+        ))
 
         const pathA = game.scene.options[0]
         game.clearScene()
@@ -1063,15 +1052,15 @@ describe('ScriptDSL', () => {
 
       it('branch() helper works with inline instructions', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [
+        game.run(scenes(
+          'Scene 1',
+          scene(
             text('Choose'),
             branch('Path A', text('Branch A content'), text('More A')),
             branch('Path B', text('Branch B content')),
-          ],
-          [text('Scene 3 — after branch')],
-        )])
+          ),
+          'Scene 3 — after branch',
+        ))
 
         // Click Continue → Scene 2
         const cont = game.scene.options[0]
@@ -1097,18 +1086,16 @@ describe('ScriptDSL', () => {
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
       })
 
-      it('branch() helper works with multi-scene Instruction[][]', () => {
+      it('branch() helper works with multi-page branch', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [
-            branch('Garden path', [
-              [text('Garden scene 1')],
-              [text('Garden scene 2')],
-            ]),
-          ],
-          [text('After garden')],
-        )])
+        game.run(scenes(
+          'Scene 1',
+          branch('Garden path', [
+            text('Garden scene 1'),
+            text('Garden scene 2'),
+          ]),
+          'After garden',
+        ))
 
         // Click Continue → Scene 2
         const cont = game.scene.options[0]
@@ -1141,19 +1128,15 @@ describe('ScriptDSL', () => {
 
       it('scene stack survives JSON serialization', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [text('Scene 2')],
-          [text('Scene 3')],
-        )])
-        expect(game.scene.stack.length).toBe(1)
+        game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
+        expect(game.scene.stack.length).toBe(2)
 
         // Serialize and deserialize
         const json = game.toJSON()
-        expect(json.scene.stack.length).toBe(1)
+        expect(json.scene.stack.length).toBe(2)
 
         const restored = Game.fromJSON(json)
-        expect(restored.scene.stack.length).toBe(1)
+        expect(restored.scene.stack.length).toBe(2)
 
         // Continue should still work after restore
         const continueBtn = restored.scene.options[0]
@@ -1164,10 +1147,7 @@ describe('ScriptDSL', () => {
 
       it('dismissScene clears the stack', () => {
         game.clearScene()
-        execAll(game, [scenes(
-          [text('Scene 1')],
-          [text('Scene 2')],
-        )])
+        game.run(scenes('Scene 1', 'Scene 2'))
         expect(game.scene.stack.length).toBe(1)
 
         game.dismissScene()
@@ -1183,16 +1163,16 @@ describe('ScriptDSL', () => {
 
       it('choice() with epilogue runs epilogue inline (no extra Continue)', () => {
         const dateScene = scenes(
-          [
+          scene(
             text('Choose'),
             choice(
-              branch('Kiss', text('You kiss.')),
-              branch('Leave', text('You leave.')),
-              text('Shared ending.'),
+              branch('Kiss', 'You kiss.'),
+              branch('Leave', 'You leave.'),
+              'Shared ending.',
             ),
-          ],
+          ),
         )
-        execAll(game, [dateScene])
+        game.run(dateScene)
 
         // Two options shown
         expect(game.scene.options.length).toBe(2)
@@ -1212,18 +1192,18 @@ describe('ScriptDSL', () => {
 
       it('choice() inside scenes() resumes outer continuation via stack', () => {
         const dateScene = scenes(
-          [text('Scene 1')],
-          [
+          'Scene 1',
+          scene(
             text('Choose'),
             choice(
-              branch('Path A', text('Branch A')),
-              branch('Path B', text('Branch B')),
-              text('Shared.'),
+              branch('Path A', 'Branch A'),
+              branch('Path B', 'Branch B'),
+              'Shared.',
             ),
-          ],
-          [text('Scene 3 — after branch')],
+          ),
+          'Scene 3 — after branch',
         )
-        execAll(game, [dateScene])
+        game.run(dateScene)
 
         // Scene 1 + Continue
         expect(game.scene.options.length).toBe(1)
@@ -1255,33 +1235,33 @@ describe('ScriptDSL', () => {
 
       it('gatedBranch with true condition shows option', () => {
         // Player starts with crown
-        execAll(game, [
+        game.run(seq(
           gatedBranch(hasItem('crown'), 'Rich path', text('Gold!')),
           branch('Default', text('Normal.')),
-        ])
+        ))
         expect(game.scene.options.length).toBe(2)
         expect(game.scene.options[0].label).toBe('Rich path')
         expect(game.scene.options[1].label).toBe('Default')
       })
 
       it('gatedBranch with false condition hides option', () => {
-        execAll(game, [
+        game.run(seq(
           gatedBranch(hasItem('nonexistent'), 'Hidden path', text('Secret!')),
           branch('Default', text('Normal.')),
-        ])
+        ))
         // Only the default branch should appear
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Default')
       })
 
       it('choice() with gatedBranch runs epilogue on chosen branch', () => {
-        execAll(game, [
+        game.run(
           choice(
             gatedBranch(hasItem('crown'), 'Rich path', text('Gold!')),
             branch('Default', text('Normal.')),
             text('Epilogue.'),
           ),
-        ])
+        )
 
         // Player has crown, so both options shown
         expect(game.scene.options.length).toBe(2)
@@ -1297,19 +1277,17 @@ describe('ScriptDSL', () => {
 
       it('does not mutate shared choice() objects across playthroughs', () => {
         const dateScene = scenes(
-          [text('Scene 1')],
-          [
-            choice(
-              branch('A', text('Path A')),
-              branch('B', text('Path B')),
-              text('Shared.'),
-            ),
-          ],
-          [text('After')],
+          'Scene 1',
+          choice(
+            branch('A', 'Path A'),
+            branch('B', 'Path B'),
+            'Shared.',
+          ),
+          'After',
         )
 
         // First playthrough
-        execAll(game, [dateScene])
+        game.run(dateScene)
         const cont1 = game.scene.options[0]
         game.clearScene()
         game.run(cont1.script) // Scene 2 — branch options
@@ -1322,7 +1300,7 @@ describe('ScriptDSL', () => {
 
         // Second playthrough — should produce identical results
         game.dismissScene()
-        execAll(game, [dateScene])
+        game.run(dateScene)
         const cont2 = game.scene.options[0]
         game.clearScene()
         game.run(cont2.script)

@@ -75,13 +75,12 @@ import { PRONOUNS, registerNPC } from '../../model/NPC'
 import type { ScheduleEntry } from '../../model/NPC'
 import {
   type Instruction,
-  text, say,
+  say,
   addNpcStat,
-  branch, scenes,
+  branch, scene, scenes,
   move,
   hideNpcImage, showNpcImage,
   skillCheck,
-  exec,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -179,7 +178,7 @@ registerNPC('jonny-elric', {
 
     if (game.player.skillTest('Charm', 15)) {
       // Passed — you held his attention
-      exec(game, addNpcStat('affection', 1, 'jonny-elric', { hidden: true }))
+      game.run(addNpcStat('affection', 1, 'jonny-elric', { hidden: true }))
       npc.say('Hmm.')
       game.add('His eyes linger on you for a moment longer than necessary. Something registers — not warmth, exactly, but a flicker of interest.')
       npc.say('Not bad. But I\'m busy.')
@@ -187,7 +186,7 @@ registerNPC('jonny-elric', {
       // Failed — he's unimpressed
       // Only penalise if there's something to lose
       if (npc.affection > 0) {
-        exec(game, addNpcStat('affection', -1, 'jonny-elric', { min: 0, hidden: true }))
+        game.run(addNpcStat('affection', -1, 'jonny-elric', { min: 0, hidden: true }))
       }
       npc.say('Do I know you?')
       game.add('His gaze slides past you as though you\'ve ceased to exist.')
@@ -209,7 +208,7 @@ registerNPC('jonny-elric', {
 
       // Charm test on each interaction
       if (game.player.skillTest('Charm', 12)) {
-        exec(game, addNpcStat('affection', 1, 'jonny-elric', { max: 5, hidden: true }))
+        game.run(addNpcStat('affection', 1, 'jonny-elric', { max: 5, hidden: true }))
         const lines = [
           'He gives you a measured nod. You\'re holding his attention.',
           'Something shifts behind the monocle — a grudging respect.',
@@ -218,7 +217,7 @@ registerNPC('jonny-elric', {
         game.add(lines[Math.floor(Math.random() * lines.length)])
       } else {
         if (npc.affection > 0) {
-          exec(game, addNpcStat('affection', -1, 'jonny-elric', { min: 0, hidden: true }))
+          game.run(addNpcStat('affection', -1, 'jonny-elric', { min: 0, hidden: true }))
         }
         const lines = [
           'His expression hardens. You\'ve lost him.',
@@ -450,8 +449,8 @@ registerNPC('jonny-elric', {
       game.add('He adjusts his monocle, but his hand is trembling. He didn\'t expect it to go that easily. Maybe it didn\'t.')
       jonny.say('I won\'t forget this.')
 
-      exec(game, addNpcStat('affection', 20, 'jonny-elric'))
-      exec(game, addNpcStat('affection', -40, 'elvis-crowe', { min: 0 }))
+      game.run(addNpcStat('affection', 20, 'jonny-elric'))
+      game.run(addNpcStat('affection', -40, 'elvis-crowe', { min: 0 }))
 
       // Make Elvis know the player's name now — they've met properly
       elvis.nameKnown = 1
@@ -486,8 +485,8 @@ registerNPC('jonny-elric', {
       jonny.say('You made your choice.')
       game.add('He walks out without looking back. The cellar feels very empty.')
 
-      exec(game, addNpcStat('affection', 20, 'elvis-crowe'))
-      exec(game, addNpcStat('affection', -40, 'jonny-elric', { min: 0 }))
+      game.run(addNpcStat('affection', 20, 'elvis-crowe'))
+      game.run(addNpcStat('affection', -40, 'jonny-elric', { min: 0 }))
 
       // Make Elvis know the player's name now
       elvis.nameKnown = 1
@@ -545,8 +544,8 @@ registerNPC('jonny-elric', {
 
         game.add('The door shuts. You\'re alone in the cellar, and the gas lamp flickers as though even it disapproves.')
 
-        exec(game, addNpcStat('affection', -20, 'jonny-elric', { min: 0 }))
-        exec(game, addNpcStat('affection', -20, 'elvis-crowe', { min: 0 }))
+        game.run(addNpcStat('affection', -20, 'jonny-elric', { min: 0 }))
+        game.run(addNpcStat('affection', -20, 'elvis-crowe', { min: 0 }))
 
         // Elvis still learns your name
         elvis.nameKnown = 1
@@ -567,120 +566,120 @@ registerNPC('jonny-elric', {
 // ============================================================================
 
 /** The main tour date: Jonny shows you his patch. */
-function jonnyTourScene(): Instruction[][] {
+function jonnyTourScene(): Instruction[] {
   return [
     // ── Scene 1: Setting off from Lowtown ──
-    [
+    scene(
       hideNpcImage(),
-      text('Jonny nods once — a curt signal to follow — and sets off into the gaslit streets. You fall into step beside him.'),
+      'Jonny nods once — a curt signal to follow — and sets off into the gaslit streets. You fall into step beside him.',
       move('back-alley', 5),
-      text('The back alleys are his territory. He moves through them like a man who owns every shadow.'),
-    ],
+      'The back alleys are his territory. He moves through them like a man who owns every shadow.',
+    ),
     // ── Scene 2: The back alley — showing off ──
-    [
+    scene(
       showNpcImage(),
       say('See that mark on the wall? That\'s mine. Means this stretch is under our protection.'),
-      text('He traces a crude brass star scratched into the brickwork.'),
+      'He traces a crude brass star scratched into the brickwork.',
       say('Anyone causes trouble here, they answer to me. Simple as that.'),
       branch('That must keep people safe.',
-        text('He glances at you — surprised, then pleased.'),
+        'He glances at you — surprised, then pleased.',
         say('That\'s... exactly right. Someone\'s got to do it.'),
         addNpcStat('affection', 2, 'jonny-elric', { max: 12 }),
       ),
       branch('Isn\'t that just intimidation?',
-        text('His jaw tightens.'),
+        'His jaw tightens.',
         say('Call it what you like. People sleep sound because of me. That\'s what matters.'),
       ),
-    ],
+    ),
     // ── Scene 3: The docks — muscle on display ──
-    [
+    scene(
       hideNpcImage(),
-      text('He leads you down to the docks. The air turns salt-sharp and cold.'),
+      'He leads you down to the docks. The air turns salt-sharp and cold.',
       move('docks', 10),
-      text('A pair of dock workers see Jonny and give nervous nods. He returns them with a barely perceptible inclination of his head.'),
+      'A pair of dock workers see Jonny and give nervous nods. He returns them with a barely perceptible inclination of his head.',
       showNpcImage(),
       say('This is where the money comes in. Every crate, every shipment — we get our cut. Elvis set it up. I make sure it stays set up.'),
       branch('You\'re good at what you do.',
         say('Damn right I am.'),
-        text('He straightens his coat, visibly gratified.'),
+        'He straightens his coat, visibly gratified.',
         addNpcStat('affection', 3, 'jonny-elric', { max: 15 }),
       ),
       branch('Doesn\'t anyone push back?',
         say('They try. Once.'),
-        text('He touches the scars on his knuckles. The conversation moves on.'),
+        'He touches the scars on his knuckles. The conversation moves on.',
       ),
-    ],
+    ),
     // ── Scene 4: The Copper Pot — drinks and a Charm check ──
-    [
+    scene(
       hideNpcImage(),
-      text('The tour ends at the Copper Pot Tavern. Jonny pushes through the door like he owns the place. Several heads turn; none meet his eye for long.'),
+      'The tour ends at the Copper Pot Tavern. Jonny pushes through the door like he owns the place. Several heads turn; none meet his eye for long.',
       move('copper-pot-tavern', 10),
       showNpcImage(),
       say('Sit. I\'m buying.'),
-      text('He signals the barkeep, who delivers two glasses of something amber without being asked.'),
+      'He signals the barkeep, who delivers two glasses of something amber without being asked.',
       say('To keeping the peace.'),
-      text('He raises his glass.'),
+      'He raises his glass.',
       skillCheck('Charm', 10,
         [
-          text('You raise yours to match, holding his gaze steadily. The corner of his mouth twitches — the closest thing to warmth you\'ve seen from him.'),
+          'You raise yours to match, holding his gaze steadily. The corner of his mouth twitches — the closest thing to warmth you\'ve seen from him.',
           say('You know what? You\'re alright. Most people can\'t sit across from me without fidgeting.'),
           addNpcStat('affection', 3, 'jonny-elric', { max: 18 }),
         ],
         [
-          text('You raise your glass. Your hand trembles slightly. He notices — he notices everything.'),
+          'You raise your glass. Your hand trembles slightly. He notices — he notices everything.',
           say('Relax. If I wanted to hurt you, you wouldn\'t be sitting here.'),
-          text('Strangely, that is not reassuring.'),
+          'Strangely, that is not reassuring.',
         ],
       ),
-    ],
+    ),
     // ── Scene 5: Tense moment — someone interrupts ──
-    [
-      text('A wiry man stumbles over to your table, face flushed with drink and bravado.'),
+    scene(
+      'A wiry man stumbles over to your table, face flushed with drink and bravado.',
       say('Oi, Elric. Who\'s the girl? Bit pretty for you, isn\'t she—'),
-      text('Jonny doesn\'t raise his voice. He doesn\'t need to.'),
+      'Jonny doesn\'t raise his voice. He doesn\'t need to.',
       say('Walk away. Now.'),
-      text('The man opens his mouth, looks at Jonny\'s face, and closes it again. He retreats to the bar without another word.'),
+      'The man opens his mouth, looks at Jonny\'s face, and closes it again. He retreats to the bar without another word.',
       say('Sorry about that. Some people don\'t know when to shut up.'),
       branch('You handled that well.',
-        text('He looks at you — really looks at you — and for a moment the enforcer mask slips.'),
+        'He looks at you — really looks at you — and for a moment the enforcer mask slips.',
         say('Most people look away when things get tense. You didn\'t.'),
         addNpcStat('affection', 2, 'jonny-elric', { max: 20 }),
       ),
       branch('That was a bit frightening.',
         say('I know. But you stayed. That counts for something.'),
-        text('He studies you with something like curiosity.'),
+        'He studies you with something like curiosity.',
       ),
-    ],
+    ),
     // ── Scene 6: Walk home ──
-    [
+    scene(
       hideNpcImage(),
-      text('Jonny walks you back through the darkened streets. Nobody bothers you — nobody even comes close.'),
+      'Jonny walks you back through the darkened streets. Nobody bothers you — nobody even comes close.',
       move('lowtown', 15),
       showNpcImage(),
       say('You held up well tonight. Better than most.'),
-      text('He adjusts his monocle. Under the gaslight, the scars on his hands look almost elegant.'),
+      'He adjusts his monocle. Under the gaslight, the scars on his hands look almost elegant.',
       say('You know where to find me.'),
-      text('He turns and walks into the dark — unhurried, in no danger, and entirely alone.'),
+      'He turns and walks into the dark — unhurried, in no danger, and entirely alone.',
       endDate(),
-    ],
+    ),
   ]
 }
 
 /** Shorter round date — a patrol with Jonny. */
-function jonnyRoundScene(): Instruction[][] {
+function jonnyRoundScene(): Instruction[] {
   return [
     // ── Scene 1: Setting off ──
-    [
+    scene(
       hideNpcImage(),
-      text('Jonny falls into step beside you, scanning the street with practised ease.'),
+      'Jonny falls into step beside you, scanning the street with practised ease.',
       say('Stay close. I\'m checking in on a few things.'),
       move('back-alley', 5),
-      text('The back alleys at night are a different world — quieter, more watchful.'),
-    ],
+      'The back alleys at night are a different world — quieter, more watchful.',
+    ),
     // ── Scene 2: A quick stop ──
-    [
+    scene(
       showNpcImage(),
-      text('Jonny pauses at a doorway and exchanges a few low words with someone inside. Money changes hands — quickly, discreetly.'),
+      'Jonny pauses at a doorway and exchanges a few low words with someone inside. Money changes hands — quickly, discreetly.',
       say('Business. Don\'t worry about it.'),
       branch('I wasn\'t going to ask.',
         say('Good. Smart.'),
@@ -688,32 +687,32 @@ function jonnyRoundScene(): Instruction[][] {
       ),
       branch('Is everything all right?',
         say('Always is when I\'m handling it.'),
-        text('He gives you a sideways look — not displeased.'),
+        'He gives you a sideways look — not displeased.',
         addNpcStat('affection', 1, 'jonny-elric', { max: 25, hidden: true }),
       ),
-    ],
+    ),
     // ── Scene 3: Quiet moment ──
-    [
-      text('You walk in silence for a while. The city hums distantly, but here the only sound is your footsteps.'),
+    scene(
+      'You walk in silence for a while. The city hums distantly, but here the only sound is your footsteps.',
       say('People think this job is all violence. It\'s not. Mostly it\'s just... showing up. Being seen. That\'s enough.'),
-      text('He glances at you.'),
+      'He glances at you.',
       say('Having someone to walk with makes a difference. Not that I\'d admit that to anyone else.'),
       branch('Your secret\'s safe.',
-        text('Something shifts behind his eyes — not softness, but a guard lowering, just slightly.'),
+        'Something shifts behind his eyes — not softness, but a guard lowering, just slightly.',
         addNpcStat('affection', 2, 'jonny-elric', { max: 25, hidden: true }),
       ),
       branch('You should tell people more often.',
         say('And ruin my reputation? Not a chance.'),
-        text('But he almost smiles.'),
+        'But he almost smiles.',
       ),
-    ],
+    ),
     // ── Scene 4: Return ──
-    [
-      text('The round is done. Jonny stops at the corner, adjusting his coat.'),
+    scene(
+      'The round is done. Jonny stops at the corner, adjusting his coat.',
       say('Same time next week?'),
-      text('He doesn\'t wait for an answer — he already knows.'),
+      'He doesn\'t wait for an answer — he already knows.',
       endDate(),
-    ],
+    ),
   ]
 }
 

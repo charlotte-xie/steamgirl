@@ -16,7 +16,7 @@ import {
   random,
   run,
   registerDslScript,
-  execAll,
+  seq,
 } from '../model/ScriptDSL'
 import { freshenUp } from './Effects'
 import { getNextLesson, getLessonInProgress, TIMETABLE } from './school/Lessons'
@@ -65,19 +65,19 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Socialise in Great Hall',
         symbol: '♣',
-        script: (g: Game) => execAll(g, socialiseGreatHall),
+        script: (g: Game) => g.run(seq(...socialiseGreatHall)),
         condition: (g: Game) => g.hourOfDay >= 7 && g.hourOfDay < 20,
       },
       {
         name: 'Breakfast in Great Hall',
         symbol: '☕',
-        script: (g: Game) => execAll(g, breakfastGreatHall),
+        script: (g: Game) => g.run(seq(...breakfastGreatHall)),
         condition: (g: Game) => g.hourOfDay >= 7 && g.hourOfDay < 9,
       },
       {
         name: 'Lunch in Great Hall',
         symbol: '🍽',
-        script: (g: Game) => execAll(g, lunchGreatHall),
+        script: (g: Game) => g.run(seq(...lunchGreatHall)),
         condition: (g: Game) => g.hourOfDay >= 12 && g.hourOfDay < 14,
       },
     ],
@@ -142,7 +142,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Socialise in Courtyard',
         symbol: '♣',
-        script: (g: Game) => execAll(g, socialiseCourtyard),
+        script: (g: Game) => g.run(seq(...socialiseCourtyard)),
       },
     ],
   },
@@ -160,7 +160,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Study in the Library',
         symbol: '📖',
-        script: (g: Game) => execAll(g, studyLibrary),
+        script: (g: Game) => g.run(seq(...studyLibrary)),
       },
     ],
   },

@@ -9,7 +9,7 @@ import {
   standardGreeting, standardCancel, standardNoShow, standardComplete,
   endDate,
 } from './Dating'
-import { scenes, text } from '../model/ScriptDSL'
+import { scene, scenes } from '../model/ScriptDSL'
 
 // ============================================================================
 // TEST FIXTURES
@@ -58,8 +58,8 @@ registerDatePlan({
   meetLocationName: 'the City Centre',
   waitMinutes: 120,
   dateScene: scenes(
-    [text('The date begins.')],
-    [text('The date continues.'), endDate()],
+    'The date begins.',
+    scene('The date continues.', endDate()),
   ),
   onGreeting: standardGreeting('Hello!'),
   onCancel: standardCancel('Oh no.', 20),

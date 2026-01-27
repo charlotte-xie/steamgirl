@@ -999,52 +999,26 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /**
-   * Push remaining scene pages onto the scene stack and add a Continue button.
-   * Called inline (via game.run) during scene setup — not via button clicks.
-   */
-  pushScenePages: (game: Game, params: { pages?: Instruction[][] }) => {
+  /** Push remaining scene pages onto the stack and add a Continue button. Called inline during scene setup. */
+  pushScenePages: (game: Game, params: { pages?: Instruction[] }) => {
     const pages = params.pages
     if (!pages || pages.length === 0) return
-    // Copy to avoid mutating shared DSL objects across playthroughs
-    game.scene.stack.push(pages.map(page => [...page]))
+    game.scene.stack.unshift(...pages)
     if (game.scene.options.length === 0) {
       game.addOption('advanceScene', {}, 'Continue')
     }
   },
 
-  /**
-   * Advance the scene stack. Called via Continue button or branch option clicks.
-   * Optionally pushes branch pages first (used by branch() options).
-   * Pops the next page from the top stack frame and runs it.
-   */
-  advanceScene: (game: Game, params: { push?: Instruction[][] }) => {
-    // Push branch pages if provided
+  /** Advance the scene: shift the next page off the stack and run it. Branches prepend their pages first. */
+  advanceScene: (game: Game, params: { push?: Instruction[] }) => {
     if (params.push) {
-      game.scene.stack.push((params.push as Instruction[][]).map(page => [...page]))
+      game.scene.stack.unshift(...params.push)
     }
-
-    // Pop next page from top frame (skip exhausted frames)
-    while (game.scene.stack.length > 0) {
-      const topFrame = game.scene.stack[game.scene.stack.length - 1]
-      if (topFrame.length === 0) {
-        game.scene.stack.pop()
-        continue
-      }
-
-      const page = topFrame.shift()!
-      if (topFrame.length === 0) game.scene.stack.pop()
-
-      // Run page instructions
-      for (const instruction of page) {
-        game.run(instruction)
-      }
-
-      // Auto-continue if more pages on stack and page didn't add its own options
-      if (game.scene.options.length === 0 && game.scene.stack.length > 0) {
-        game.addOption('advanceScene', {}, 'Continue')
-      }
-      return
+    if (game.scene.stack.length === 0) return
+    const page = game.scene.stack.shift()!
+    game.run(page)
+    if (game.scene.options.length === 0 && game.scene.stack.length > 0) {
+      game.addOption('advanceScene', {}, 'Continue')
     }
   },
 }

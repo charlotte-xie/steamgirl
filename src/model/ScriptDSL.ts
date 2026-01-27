@@ -40,6 +40,14 @@ export type { Instruction }
 // CORE TYPES
 // ============================================================================
 
+/** A scene element: either an Instruction or a plain string (auto-wrapped in text()). */
+export type SceneElement = Instruction | string
+
+/** Convert a SceneElement to an Instruction. Strings become text() calls. */
+export function toInstruction(el: SceneElement): Instruction {
+  return typeof el === 'string' ? text(el) : el
+}
+
 // ============================================================================
 // DSL BUILDERS - Pure functions that construct instruction tuples
 // ============================================================================
@@ -106,22 +114,22 @@ export const npcInteract = (script: string, params?: object): Instruction =>
 
 // --- Control Flow ---
 
-/** Execute a sequence of instructions */
-export const seq = (...instructions: Instruction[]): Instruction =>
-  run('seq', { instructions })
+/** Execute a sequence of instructions. Plain strings become text() calls. */
+export const seq = (...instructions: SceneElement[]): Instruction =>
+  run('seq', { instructions: instructions.map(toInstruction) })
 
 /**
  * Conditional execution - runs `then` instructions if condition is truthy.
  * Variadic: when(cond, instr1, instr2, ...)
  */
-export const when = (condition: Instruction, ...then: Instruction[]): Instruction =>
-  run('when', { condition, then })
+export const when = (condition: Instruction, ...then: SceneElement[]): Instruction =>
+  run('when', { condition, then: then.map(toInstruction) })
 
 /**
  * Opposite of when - runs instructions if condition is FALSE.
  */
-export const unless = (condition: Instruction, ...then: Instruction[]): Instruction =>
-  run('when', { condition: _not(condition), then })
+export const unless = (condition: Instruction, ...then: SceneElement[]): Instruction =>
+  run('when', { condition: _not(condition), then: then.map(toInstruction) })
 
 /**
  * Multi-branch conditional (like Lisp cond).
@@ -152,87 +160,69 @@ export function cond(...args: Instruction[]): Instruction {
   return run('cond', { branches, default: defaultExpr })
 }
 
-/** Execute a random instruction from the provided children */
-export const random = (...children: Instruction[]): Instruction =>
-  run('random', { children })
+/** Execute a random instruction from the provided children. Plain strings become text() calls. */
+export const random = (...children: SceneElement[]): Instruction =>
+  run('random', { children: children.map(toInstruction) })
 
 /**
  * Create a linear sequence of scenes with automatic "Continue" buttons.
- * Each scene is an array of instructions. After each scene (except the last),
- * a Continue button advances to the next scene. The last scene ends naturally.
- *
- * Remaining pages are pushed onto the Game scene stack rather than encoded
- * into button params. Branches within scenes naturally resume from the stack.
- *
- * @param sceneArrays - Each argument is an array of instructions for one scene
- * @returns An instruction that runs the first scene and pushes rest onto the stack
+ * Each page is a SceneElement — use `scene()` or `seq()` to group multiple
+ * instructions into one page. Plain strings become `text()` calls.
  *
  * @example
  * scenes(
- *   [move('city'), say('Welcome to the city!')],
- *   [move('market'), say('Here is the market.')],
- *   [move('park'), say('And finally, the park.')]
+ *   scene(move('city'), 'Welcome to the city!'),
+ *   scene(move('market'), 'Here is the market.'),
+ *   'And finally, the park.',
  * )
  */
-export const scenes = (...sceneArrays: Instruction[][]): Instruction => {
-  if (sceneArrays.length === 0) {
-    return seq()
-  }
-  const [first, ...rest] = sceneArrays
-  if (rest.length === 0) {
-    return seq(...first)
-  }
-  // Run first page inline, push remaining onto the scene stack
-  return seq(
-    ...first,
-    run('pushScenePages', { pages: rest }),
-  )
+export const scenes = (...pages: SceneElement[]): Instruction => {
+  if (pages.length === 0) return seq()
+  const instructions = pages.map(toInstruction)
+  if (instructions.length === 1) return instructions[0]
+  const [first, ...rest] = instructions
+  return seq(first, run('pushScenePages', { pages: rest }))
 }
 
 /**
- * Name a scene page for readability. The name is documentation only and has
- * no runtime effect. Use inside `scenes()`:
+ * Group multiple instructions into a single scene page.
+ * Compiles to `seq()`. Plain strings become `text()` calls.
  *
  * @example
  * scenes(
- *   scene('Setting off', text('Rob offers his arm...'), move('lake', 15)),
- *   scene('At the lake', text('Steam rises...'), say('I come here...')),
+ *   scene(move('lake', 15), 'Rob offers his arm...'),
+ *   scene('Steam rises from the water.', say('I come here often.')),
  * )
- *
- * @param _name - Human-readable label (discarded at runtime)
- * @param instructions - The scene page's instructions
- * @returns The instructions array unchanged
  */
-export function scene(_name: string, ...instructions: Instruction[]): Instruction[] {
-  return instructions
-}
+export const scene = (...elements: SceneElement[]): Instruction =>
+  seq(...elements)
 
 /**
  * Create a player-choice option that continues the current scenes() sequence.
- * Use inside a scene array to offer branching paths.
+ * Use inside a scene page to offer branching paths.
  *
- * The simplest form takes a label and inline instructions for a single branch scene:
- *   branch('Kiss him', text('You kiss.'), addNpcStat('affection', 5))
+ * The simplest form takes a label and inline instructions for a single branch page:
+ *   branch('Kiss him', 'You kiss.', addNpcStat('affection', 5))
  *
- * For multi-scene branches, pass an array of scene arrays as the second argument:
+ * For multi-page branches, pass an array of Instructions as the second argument:
  *   branch('Go to the garden', [
- *     [move('garden'), text('You arrive at the garden.')],
- *     [text('The roses are beautiful.'), endDate()],
+ *     scene(move('garden'), 'You arrive at the garden.'),
+ *     scene('The roses are beautiful.', endDate()),
  *   ])
  *
  * @param label - Button label shown to the player
- * @param rest - Either inline instructions (variadic) or a single Instruction[][] array
+ * @param rest - Either inline SceneElements (variadic) or a single Instruction[] array
  */
-export function branch(label: string, ...rest: Instruction[]): Instruction
-export function branch(label: string, scenes: Instruction[][]): Instruction
-export function branch(label: string, ...rest: (Instruction | Instruction[][])[]): Instruction {
-  // If the first (and only non-label) argument is an array of arrays, it's multi-scene
+export function branch(label: string, ...rest: SceneElement[]): Instruction
+export function branch(label: string, pages: Instruction[]): Instruction
+export function branch(label: string, ...rest: (SceneElement | Instruction[])[]): Instruction {
+  // If the single argument is an array of Instructions (pages), it's multi-page
   if (rest.length === 1 && Array.isArray(rest[0]) && Array.isArray((rest[0] as unknown[])[0])) {
     return option(label, 'global:advanceScene', { push: rest[0] })
   }
-  // Otherwise, all args are inline instructions for a single scene
+  // Otherwise, all args are inline elements for a single scene
   return option(label, 'global:advanceScene', {
-    push: [rest as Instruction[]],
+    push: [seq(...rest as SceneElement[])],
   })
 }
 
@@ -260,13 +250,13 @@ function isBranchLike(instr: Instruction): boolean {
 /** Append epilogue to the last page of a branch option's push array */
 function appendEpilogueToBranch(instr: Instruction, epilogue: Instruction[]): Instruction {
   const [name, params] = instr
-  const p = params as { label: string; script: string; params: { push: Instruction[][] } }
+  const p = params as { label: string; script: string; params: { push: Instruction[] } }
   const push = p.params?.push ?? []
 
   const newPush = push.length === 0
-    ? [epilogue]
+    ? [seq(...epilogue)]
     : push.map((page, i) =>
-      i === push.length - 1 ? [...page, ...epilogue] : page
+      i === push.length - 1 ? seq(page, ...epilogue) : page
     )
 
   return [name, { ...params, params: { ...p.params, push: newPush } }]
@@ -287,29 +277,30 @@ function appendEpilogue(instr: Instruction, epilogue: Instruction[]): Instructio
  * Group branches with an optional shared epilogue.
  *
  * Arguments are a mix of `branch()` / `gatedBranch()` results and plain
- * instructions. Branches become player options; non-branch instructions
+ * SceneElements. Branches become player options; non-branch elements
  * form the shared epilogue, merged into the **last page** of each branch
  * (no extra Continue click).
  *
- * Convention: list branches first, then epilogue instructions.
+ * Convention: list branches first, then epilogue elements.
  *
  * @example
  * choice(
- *   branch('Kiss him', text('You kiss.'), say('Wow.')),
- *   branch('Not tonight', text('You decline gracefully.')),
+ *   branch('Kiss him', 'You kiss.', say('Wow.')),
+ *   branch('Not tonight', 'You decline gracefully.'),
  *   addNpcStat('affection', 5, 'tour-guide', { hidden: true, max: 55 }),
  *   endDate(),
  * )
  */
-export function choice(...args: Instruction[]): Instruction {
+export function choice(...args: SceneElement[]): Instruction {
   const branches: Instruction[] = []
   const epilogue: Instruction[] = []
 
   for (const arg of args) {
-    if (isBranchLike(arg)) {
-      branches.push(arg)
+    const instr = toInstruction(arg)
+    if (isBranchLike(instr)) {
+      branches.push(instr)
     } else {
-      epilogue.push(arg)
+      epilogue.push(instr)
     }
   }
 
@@ -334,27 +325,31 @@ export function choice(...args: Instruction[]): Instruction {
  *   endDate(),
  * )
  */
-export function gatedBranch(condition: Instruction, label: string, ...rest: Instruction[]): Instruction
-export function gatedBranch(condition: Instruction, label: string, scenes: Instruction[][]): Instruction
+export function gatedBranch(condition: Instruction, label: string, ...rest: SceneElement[]): Instruction
+export function gatedBranch(condition: Instruction, label: string, pages: Instruction[]): Instruction
 export function gatedBranch(
   condition: Instruction, label: string,
-  ...rest: (Instruction | Instruction[][])[]
+  ...rest: (SceneElement | Instruction[])[]
 ): Instruction {
-  return when(condition, branch(label, ...(rest as Instruction[])))
+  return when(condition, branch(label, ...(rest as SceneElement[])))
 }
 
 /**
  * Perform a skill test. Can be used as:
  * - Predicate: skillCheck('Flirtation', 10) - returns boolean
- * - With callbacks: skillCheck('Flirtation', 10, [text('Success!')], [text('Failure!')])
+ * - With callbacks: skillCheck('Charm', 12, ['You charm them.', say('Wow!')], ['You fumble.'])
  */
 export const skillCheck = (
   skill: string,
   difficulty = 0,
-  onSuccess?: Instruction[],
-  onFailure?: Instruction[]
+  onSuccess?: SceneElement[],
+  onFailure?: SceneElement[]
 ): Instruction =>
-  run('skillCheck', { skill, difficulty, onSuccess, onFailure })
+  run('skillCheck', {
+    skill, difficulty,
+    onSuccess: onSuccess?.map(toInstruction),
+    onFailure: onFailure?.map(toInstruction),
+  })
 
 // --- Game Actions ---
 
@@ -507,23 +502,10 @@ export const or = (...predicates: Instruction[]): Instruction =>
 // EXECUTION HELPERS
 // ============================================================================
 
-/** Execute an instruction and return its result */
-export function exec(game: Game, instruction: Instruction): unknown {
-  const [scriptName, params] = instruction
-  return game.run(scriptName, params)
-}
-
-/** Execute a sequence of instructions */
-export function execAll(game: Game, instructions: Instruction[]): void {
-  for (const instr of instructions) {
-    exec(game, instr)
-  }
-}
-
 /** Register a script that executes a sequence of DSL instructions */
-export function registerDslScript(name: string, instructions: Instruction[]): void {
+export function registerDslScript(name: string, instructions: SceneElement[]): void {
   makeScripts({
-    [name]: (game: Game) => execAll(game, instructions)
+    [name]: (game: Game) => game.run(seq(...instructions))
   })
 }
 
@@ -545,11 +527,5 @@ export function registerDslScript(name: string, instructions: Instruction[]): vo
  *   myDslScript: script(text('Welcome'), option('Start'))
  * })
  */
-export const script = (...instructions: Instruction[]): ((game: Game) => void) =>
-  (game: Game) => {
-    if (instructions.length === 1) {
-      exec(game, instructions[0])
-    } else {
-      execAll(game, instructions)
-    }
-  }
+export const script = (...instructions: SceneElement[]): ((game: Game) => void) =>
+  (game: Game) => game.run(seq(...instructions))

@@ -15,7 +15,8 @@
       "Bash(npx vite:*)",
       "Bash(node:*)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(findstr:*)"
     ]
   }
 }
