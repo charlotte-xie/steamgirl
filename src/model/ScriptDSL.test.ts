@@ -238,11 +238,20 @@ describe('ScriptDSL', () => {
       })
 
       it('skillCheck() produces skillCheck instruction (callback mode)', () => {
-        expect(skillCheck('Flirtation', 10, [text('Success!')], [text('Fail!')])).toEqual(['skillCheck', {
+        expect(skillCheck('Flirtation', 10, text('Success!'), text('Fail!'))).toEqual(['skillCheck', {
           skill: 'Flirtation',
           difficulty: 10,
-          onSuccess: [['text', { parts: ['Success!'] }]],
-          onFailure: [['text', { parts: ['Fail!'] }]]
+          onSuccess: ['text', { parts: ['Success!'] }],
+          onFailure: ['text', { parts: ['Fail!'] }]
+        }])
+      })
+
+      it('skillCheck() with seq() callbacks', () => {
+        expect(skillCheck('Charm', 12, seq('You charm them.', say('Wow!')), seq('You fumble.'))).toEqual(['skillCheck', {
+          skill: 'Charm',
+          difficulty: 12,
+          onSuccess: seq('You charm them.', say('Wow!')),
+          onFailure: seq('You fumble.'),
         }])
       })
     })
@@ -754,7 +763,7 @@ describe('ScriptDSL', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0.49)
         try {
           game.run(
-            skillCheck('Flirtation', -100, [text('Success!')], [text('Failure!')])
+            skillCheck('Flirtation', -100, text('Success!'), text('Failure!'))
           )
           expect(game.scene.content.length).toBe(1)
           // With difficulty -100 and roll 50, should succeed (threshold = stat + skill + 100 > 50)

@@ -44,28 +44,26 @@ An `Instruction` is simply data describing what to do:
 ```typescript
 type Instruction = [string, Record<string, unknown>]
 
-// Example: ['text', { text: 'Hello world' }]
+// Example: ['text', { parts: ['Hello world'] }]
 // Meaning: "Call the 'text' script with these params"
 ```
 
 The DSL builders are just convenience functions that construct these tuples:
 
 ```typescript
-text('Hello')  // Returns: ['text', { text: 'Hello' }]
+text('Hello')  // Returns: ['text', { parts: ['Hello'] }]
 ```
 
 ### ScriptRef: Flexible Script References
 
-`game.run()` accepts either form:
+`game.run()` accepts any script form:
 
 ```typescript
-type ScriptRef = string | Instruction
+type Script = ScriptFn | Instruction | string
 
-// Both are equivalent:
+// All equivalent:
 game.run('gainItem', { item: 'crown', number: 5 })
 game.run(['gainItem', { item: 'crown', number: 5 }])
-
-// Use Instruction form with DSL builders:
 game.run(addItem('crown', 5))
 ```
 
@@ -78,7 +76,7 @@ Some scripts return values (typically booleans). These are used for conditions:
 const rich = game.run(hasItem('crown', 100))  // true or false
 
 // Control flow uses predicates internally
-when(hasItem('crown'), text('You have money!'))
+when(hasItem('crown'), 'You have money!')
 // The 'when' script calls exec() on the condition to get true/false
 ```
 
@@ -192,15 +190,19 @@ makeScript('checkGold', (game, { min }) => {
 
 ### Existing Utility Scripts
 
-Common scripts are already defined in `Utility.ts`:
+Common scripts are already defined in `Scripts.ts`:
 
 | Script | Params | Description |
 |--------|--------|-------------|
 | `gainItem` | `{ item, number }` | Add items to inventory |
 | `loseItem` | `{ item, number }` | Remove items from inventory |
-| `move` | `{ location }` | Move player to location |
-| `timeLapse` | `{ minutes }` | Advance game time |
-| `addStat` | `{ stat, change }` | Modify a player stat |
+| `move` | `{ location, minutes? }` | Move player to location (optionally advance time) |
+| `go` | `{ location, minutes? }` | Travel with link checks, time, and arrival hooks |
+| `timeLapse` | `{ minutes }` or `{ untilTime }` | Advance game time |
+| `addStat` | `{ stat, change, max?, min?, chance?, hidden? }` | Modify a player stat |
+| `addNpcStat` | `{ npc?, stat, change, max?, min?, hidden? }` | Modify an NPC stat |
+| `setNpcLocation` | `{ npc?, location }` | Move an NPC to a location |
+| `discoverLocation` | `{ location, text?, colour? }` | Reveal a hidden location |
 
 ## Declarative DSL
 
@@ -209,77 +211,108 @@ The DSL provides a clean syntax for authoring scripts that:
 - Can be stored, transmitted, or hot-reloaded
 - Compiles to `[scriptName, params]` tuples
 
-### Core Concept: Instructions
+### Core Concept: Instructions and Scene Elements
 
-An **Instruction** is simply a tuple: `[scriptName, params]`
+An **Instruction** is a tuple: `[scriptName, params]`
 
 ```typescript
 type Instruction = [string, Record<string, unknown>]
 ```
 
-DSL builder functions construct these tuples:
+A **SceneElement** is either an Instruction or a plain string. Strings are auto-wrapped in `text()`:
 
 ```typescript
-import { text, say, option } from './ScriptDSL'
+type SceneElement = Instruction | string
 
-text('Hello')        // ['text', { text: 'Hello' }]
-say('Welcome!', 'npc')  // ['say', { text: 'Welcome!', npc: 'npc', color: undefined }]
-option('next', {})   // ['option', { script: 'next', params: {}, label: undefined }]
+// These are equivalent:
+seq(text('Hello world'), say('Welcome!'))
+seq('Hello world', say('Welcome!'))  // String auto-wrapped
 ```
+
+This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`, `random()`, `branch()`, and `skillCheck()` callbacks — anywhere that accepts `SceneElement`.
 
 ### DSL Builders Reference
 
 #### Content
 
-| Builder | Output | Description |
-|---------|--------|-------------|
-| `text(t)` | `['text', { text: t }]` | Plain text paragraph |
-| `say(text, npc?, color?)` | `['say', {...}]` | NPC speech (uses NPC's color if not specified) |
-| `paragraph(...content)` | `['paragraph', { content }]` | Formatted paragraph with highlights |
-| `hl(text, color, hover?)` | `{ text, color, hoverText }` | Highlight helper (not an instruction) |
-| `option(script, params?, label?)` | `['option', {...}]` | Add an option button |
-| `npcLeaveOption(text?, reply?, label?)` | `['npcLeaveOption', {...}]` | Standard NPC leave option |
+| Builder | Description |
+|---------|-------------|
+| `text(...parts)` | Plain text paragraph. Parts can be strings or Instructions (like `playerName()`, `npcName()`) |
+| `say(...parts)` | NPC speech in the scene NPC's colour. Same part types as `text()` |
+| `paragraph(...content)` | Formatted paragraph with optional `hl()` highlights |
+| `hl(text, color, hover?)` | Highlight helper for use inside `paragraph()` (not an instruction) |
+| `playerName()` | Inline player name (for use as a part inside `text()` or `say()`) |
+| `npcName(npc?)` | Inline NPC name with speech colour (uses scene NPC if omitted) |
+| `option(label, script?, params?)` | Add an option button. Script auto-resolves against NPC scripts |
+| `npcLeaveOption(text?, reply?, label?)` | Standard NPC conversation exit |
+| `npcInteract(script, params?)` | Run a named script on the scene NPC |
 
 #### Control Flow
 
-| Builder | Output | Description |
-|---------|--------|-------------|
-| `seq(...instructions)` | `['seq', { instructions }]` | Execute sequence |
-| `when(cond, ...then)` | `['when', { condition, then }]` | Conditional (if true) |
-| `unless(cond, ...then)` | `['when', { condition: not(cond), then }]` | Conditional (if false) |
-| `cond(c1, e1, c2, e2, ..., default)` | `['cond', { branches, default }]` | Multi-branch conditional |
-| `random(...children)` | `['random', { children }]` | Execute one random child |
-| `skillCheck(skill, diff?, onSuccess?, onFailure?)` | `['skillCheck', {...}]` | Skill test (predicate or callback) |
+| Builder | Description |
+|---------|-------------|
+| `seq(...elements)` | Execute in sequence. Strings become `text()` |
+| `when(cond, ...then)` | Conditional (if true). Then elements can be strings |
+| `unless(cond, ...then)` | Conditional (if false) |
+| `cond(c1, e1, c2, e2, ..., default?)` | Multi-branch conditional (Lisp-style) |
+| `random(...children)` | Execute one random child. Strings become `text()` |
+| `skillCheck(skill, diff?, onSuccess?, onFailure?)` | Skill test. Callbacks are single elements (use `seq()` to group) |
+
+#### Scene Composition
+
+| Builder | Description |
+|---------|-------------|
+| `scenes(...pages)` | Multi-page sequence with auto Continue buttons |
+| `scene(...elements)` | Group elements into a single scene page (compiles to `seq()`) |
+| `branch(label, ...elements)` | Player choice that continues the scene sequence |
+| `branch(label, pages[])` | Multi-page player choice (pass `Instruction[]` array) |
+| `choice(...branches, ...epilogue)` | Branches with shared ending instructions |
+| `gatedBranch(cond, label, ...elements)` | Branch that only appears when condition is met |
 
 #### Game Actions
 
-| Builder | Output | Description |
-|---------|--------|-------------|
-| `addItem(item, n?)` | `['gainItem', { item, number }]` | Add to inventory |
-| `removeItem(item, n?)` | `['loseItem', { item, number }]` | Remove from inventory |
-| `move(location)` | `['move', { location }]` | Move player |
-| `timeLapse(minutes)` | `['timeLapse', { minutes }]` | Advance time |
-| `addStat(stat, change)` | `['addStat', { stat, change }]` | Modify stat |
-| `addQuest(id, args?)` | `['addQuest', {...}]` | Add quest card |
-| `completeQuest(id)` | `['completeQuest', {...}]` | Complete quest |
-| `addEffect(id, args?)` | `['addEffect', {...}]` | Add effect card |
+| Builder | Description |
+|---------|-------------|
+| `move(location, minutes?)` | Instant teleport (optionally advance time after) |
+| `go(location, minutes?)` | Travel with link checks, time, and arrival hooks |
+| `timeLapse(minutes)` | Advance time |
+| `timeLapseUntil(hourOfDay)` | Advance to specific hour (e.g. `10.25` for 10:15am) |
+| `addItem(item, count?)` | Add to inventory |
+| `removeItem(item, count?)` | Remove from inventory |
+| `addStat(stat, change, options?)` | Modify player stat (options: `max`, `min`, `chance`, `hidden`) |
+| `addNpcStat(stat, change, npc?, options?)` | Modify NPC stat (options: `max`, `min`, `hidden`). Uses scene NPC if omitted |
+| `moveNpc(npc, location)` | Move an NPC (pass `null` to clear location) |
+| `setNpc(npcId)` | Set scene NPC for speech colour |
+| `hideNpcImage()` | Hide NPC portrait (e.g. during travel) |
+| `showNpcImage()` | Show NPC portrait |
+| `learnNpcName()` | Mark scene NPC's name as known |
+| `discoverLocation(location, text?, colour?)` | Reveal a hidden location |
+| `recordTime(timer)` | Store current time for cooldowns |
+| `addQuest(id, args?)` | Add quest card |
+| `completeQuest(id)` | Complete quest |
+| `addEffect(id, args?)` | Add effect card |
+| `eatFood(quantity)` | Set lastEat timer and reduce hunger |
 
 #### Predicates
 
 Predicates are instructions that return boolean values:
 
-| Builder | Output | Description |
-|---------|--------|-------------|
-| `hasItem(item, count?)` | `['hasItem', {...}]` | Check inventory |
-| `hasStat(stat, min?, max?)` | `['hasStat', {...}]` | Check player stat |
-| `inLocation(location)` | `['inLocation', {...}]` | Check current location |
-| `inScene()` | `['inScene', {}]` | Check if scene has options |
-| `npcStat(npc, stat, min?, max?)` | `['npcStat', {...}]` | Check NPC stat |
-| `hasCard(cardId)` | `['hasCard', {...}]` | Check if player has card |
-| `cardCompleted(cardId)` | `['cardCompleted', {...}]` | Check if card is completed |
-| `not(predicate)` | `['not', {...}]` | Negate predicate |
-| `and(...predicates)` | `['and', {...}]` | All must be true |
-| `or(...predicates)` | `['or', {...}]` | Any must be true |
+| Builder | Description |
+|---------|-------------|
+| `hasItem(item, count?)` | Check inventory |
+| `hasStat(stat, min?, max?)` | Check player stat range |
+| `inLocation(location)` | Check current location |
+| `inScene()` | Check if scene has options |
+| `npcStat(npc, stat, min?, max?)` | Check NPC stat |
+| `hasCard(cardId)` | Check if player has card |
+| `cardCompleted(cardId)` | Check if card is completed |
+| `locationDiscovered(location)` | Check if location is discovered |
+| `hourBetween(from, to)` | Check time of day (supports wrap-around, e.g. `22, 6` for night) |
+| `timeElapsed(timer, minutes)` | Check cooldown |
+| `debug()` | True when debug mode is enabled |
+| `not(pred)` | Negate predicate |
+| `and(...preds)` | All must be true |
+| `or(...preds)` | Any must be true |
 
 #### Generic Builder
 
@@ -287,56 +320,111 @@ Predicates are instructions that return boolean values:
 run(scriptName, params)  // [scriptName, params]
 ```
 
-Use `run()` to call any script, including custom ones.
+Use `run()` to call any registered script.
 
-### Example: Tavern Scene
+#### script() Helper
+
+Converts DSL instructions into a `ScriptFn` for use in imperative contexts:
 
 ```typescript
-import {
-  text, paragraph, hl, say, option, npcLeaveOption,
-  when, cond, seq, hasItem,
-  type Instruction, registerDslScript
-} from './ScriptDSL'
+import { script } from './ScriptDSL'
 
-const enterTavern: Instruction[] = [
-  text('You push open the heavy oak door.'),
-  paragraph(
-    'The air is thick with ',
-    hl('pipe smoke', '#888888', 'Tobacco blend'),
-    '.'
-  ),
-  say('Welcome, traveler!', 'barkeeper'),
-  cond(
-    hasItem('crown', 5), seq(
-      say('What can I get you?', 'barkeeper'),
-      option('buyAle', { price: 2 }, 'Buy an ale'),
-      option('buyWine', { price: 5 }, 'Buy wine')
+// Use in NPC scripts, activity scripts, or makeScripts
+scripts: {
+  myScript: script(timeLapse(10), random('Flavour A.', 'Flavour B.')),
+}
+```
+
+### Example: NPC Scripts with DSL
+
+The `scripts` record on an NPC definition can mix pure DSL and imperative functions freely. DSL instructions are ideal for narrative sequences; imperative functions are better for complex logic:
+
+```typescript
+registerNPC('tour-guide', {
+  name: 'Rob Hayes',
+  // ...
+
+  scripts: {
+    // Pure DSL — a multi-scene tour (see Scene Composition below)
+    tour: scenes(
+      scene(
+        hideNpcImage(),
+        'You set off together.',
+        move('default'), timeLapse(15),
+        say('Here we are — the heart of Aetheria.'),
+      ),
+      scene(
+        discoverLocation('school'),
+        move('school'), timeLapse(15),
+        say('The University — you\'ll study here.'),
+      ),
+      scene(
+        showNpcImage(),
+        say('I hope that helps!'),
+        addNpcStat('affection', 1, 'tour-guide', { hidden: true }),
+        npcLeaveOption('You thank Rob and he leaves.'),
+      ),
     ),
-    say('Come back when you have coin.', 'barkeeper')
-  ),
-  option('lookAround', {}, 'Look around'),
-  npcLeaveOption('You nod and head out.', 'Safe travels!', 'Leave')
-]
 
-// Register as a runnable script
-registerDslScript('enterTavern', enterTavern)
+    // Pure DSL — a simple interaction with random flavour and options
+    roomChat: seq(
+      random(
+        say('Have you seen the bathroom? Claw-footed tub!'),
+        say('The view from up here — magnificent.'),
+        say('My flat has a window that looks onto a brick wall.'),
+      ),
+      option('Chat', 'roomChat'),
+      when(hasStat('Flirtation', 1),
+        option('Flirt', 'flirt'),
+      ),
+      option('Depart Room', 'leaveRoom'),
+      npcLeaveOption(),
+    ),
+
+    // Imperative — complex branching logic with skill checks
+    flirt: (game: Game) => {
+      const npc = game.getNPC('tour-guide')
+      if (npc.affection >= 30) {
+        if (game.player.skillTest('Charm', 12)) {
+          game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40, hidden: true }))
+          game.run(seq(
+            'You say something quiet and sincere.',
+            say('You\'re special, you know that?'),
+          ))
+        } else {
+          game.run(addNpcStat('affection', -3, 'tour-guide', { min: 20 }))
+          game.run(seq(
+            'You lean in close.',
+            say('Could we maybe slow down a bit?'),
+          ))
+        }
+      } else {
+        game.run(addNpcStat('affection', 3, 'tour-guide', { max: 30 }))
+        game.run(seq(
+          'You lean closer and compliment his knowledge.',
+          say('Oh! Well, I — thank you.'),
+          'His ears go pink.',
+        ))
+      }
+      // ... re-show options
+    },
+  },
+})
 ```
 
 ### Execution
 
-To execute DSL instructions:
+To execute DSL instructions inside imperative code, use `game.run()`:
 
 ```typescript
-import { exec, execAll } from './ScriptDSL'
+// Execute single instruction
+const hasGold = game.run(hasItem('crown', 10))  // boolean
 
-// Execute single instruction, get result
-const hasGold = exec(game, hasItem('crown', 10))  // boolean
-
-// Execute array of instructions
-execAll(game, [
-  text('Hello'),
-  when(hasItem('crown'), text('You are rich!'))
-])
+// Execute a sequence
+game.run(seq(
+  'Hello world.',
+  when(hasItem('crown'), 'You are rich!'),
+))
 ```
 
 ### JSON Serialization
@@ -350,38 +438,36 @@ const script: Instruction[] = [
 ]
 
 const json = JSON.stringify(script)
-// Can be stored, transmitted, loaded later
-
 const loaded = JSON.parse(json)
-execAll(game, loaded)
+game.run(seq(...loaded))
 ```
 
 ## Control Flow Details
 
 ### when / unless
 
-`when(condition, ...thenInstructions)` executes the instructions only if the condition is truthy.
+`when(condition, ...thenElements)` executes the elements only if the condition is truthy. Elements can be plain strings:
 
 ```typescript
 when(hasItem('key'),
-  text('You unlock the door.'),
+  'You unlock the door.',
   move('secretRoom')
 )
 
 unless(hasItem('key'),
-  text('The door is locked.')
+  'The door is locked.'
 )
 ```
 
 ### cond (Multi-branch)
 
-`cond` works like Lisp's cond - pairs of (condition, expression), with an optional default:
+`cond` works like Lisp's cond — pairs of (condition, expression), with an optional default:
 
 ```typescript
 // If/else (3 args)
 cond(hasItem('crown'), text('Rich!'), text('Poor!'))
 
-// Multiple branches
+// Multiple branches with default
 cond(
   hasItem('crown', 100), text('Wealthy!'),
   hasItem('crown', 10), text('Comfortable'),
@@ -390,37 +476,48 @@ cond(
 )
 ```
 
-### seq (Sequence)
-
-`seq` wraps multiple instructions to be treated as a single instruction. Useful with `cond`:
+Often combined with `seq()` for multi-instruction branches:
 
 ```typescript
 cond(
-  hasItem('crown', 5), seq(
-    say('Welcome, valued customer!'),
-    option('buyExpensive', {}, 'Premium goods')
+  npcStat('tour-guide', 'affection', 15),
+  seq(
+    say('I never get tired of this view. But it\'s nicer with company.'),
+    'He glances at you with a warm smile.',
   ),
-  say('Just browsing?')
+  say('Magnificent, isn\'t it?'),
+)
+```
+
+### seq (Sequence)
+
+`seq` wraps multiple elements into a single instruction. Plain strings become `text()`:
+
+```typescript
+seq(
+  'You enter the room.',   // Auto-wrapped to text('You enter the room.')
+  say('Welcome!'),
+  option('Continue', 'nextScene'),
 )
 ```
 
 ### random
 
-`random` executes one randomly selected child instruction:
+`random` executes one randomly selected child. Strings become `text()`:
 
 ```typescript
-// Random flavor text
+// Random NPC speech
 random(
-  text('A brass-plated automaton whirs past.'),
-  text('Steam hisses from a nearby pipe.'),
-  text('A clockwork bird chirps on a lamppost.')
+  say('I could get used to this.'),
+  say('Have you seen the bathroom? Claw-footed tub!'),
+  say('The view from up here — magnificent.'),
 )
 
-// Random item reward
+// Random flavour text
 random(
-  seq(text('You found a coin!'), addItem('crown')),
-  seq(text('You found a gem!'), addItem('gem')),
-  text('You found nothing.')
+  'A brass-plated automaton whirs past.',
+  'Steam hisses from a nearby pipe.',
+  'A clockwork bird chirps on a lamppost.',
 )
 ```
 
@@ -431,17 +528,232 @@ random(
 **Predicate mode** (no callbacks): Returns boolean, useful in conditions:
 ```typescript
 when(skillCheck('Perception', 10),
-  text('You notice something hidden.')
+  'You notice something hidden.'
 )
 ```
 
-**Callback mode**: Executes different instructions based on success/failure:
+**Callback mode**: Executes different instructions based on success/failure. Use `seq()` to group multiple elements:
 ```typescript
-skillCheck('Flirtation', 15,
-  [say('You charm them successfully.'), addStat('Charm', 1)],
-  [text('They seem unimpressed.')]
+skillCheck('Charm', 12,
+  seq(
+    'You find the right words. He beams.',
+    say('You mean that? That means a lot.'),
+    addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+  ),
+  seq(
+    'You try to find the right words, but the beauty of the place has left you lost for speech.',
+    say('It\'s a lot to take in, isn\'t it?'),
+  ),
 )
 ```
+
+## Scene Composition
+
+The scene system enables multi-page narrative sequences with automatic navigation. This is the primary way to author extended content like tours, dates, and story events.
+
+### scenes() — Multi-Page Sequences
+
+`scenes()` chains multiple pages with automatic Continue buttons between them:
+
+```typescript
+scripts: {
+  tour: scenes(
+    scene(
+      hideNpcImage(),
+      'You set off with Rob.',
+      move('default'), timeLapse(15),
+      say('The heart of Aetheria. Magnificent, isn\'t it?'),
+    ),
+    scene(
+      discoverLocation('school'),
+      move('school'), timeLapse(15),
+      say('The University — you\'ll study here.'),
+    ),
+    scene(
+      showNpcImage(),
+      say('I hope that helps!'),
+      npcLeaveOption('You thank Rob and he leaves.'),
+    ),
+  ),
+}
+```
+
+Each page runs its instructions, then a Continue button is added if more pages follow. If a page adds its own options (like `npcLeaveOption`), no Continue button is added.
+
+### scene() — Grouping Elements into Pages
+
+`scene()` groups multiple elements into a single page. It compiles to `seq()` — the name is purely for readability when scanning long sequences:
+
+```typescript
+// scene() is just a readable alias for seq()
+scene(move('lake', 15), 'Rob offers his arm...')
+// Equivalent to:
+seq(move('lake', 15), text('Rob offers his arm...'))
+```
+
+Without `scene()`, pages would be anonymous instructions — harder to navigate in long sequences.
+
+### branch() — Player Choices Within Scenes
+
+Use `branch()` inside a scene page to offer player choices. When the player picks a branch, the content plays, then the outer `scenes()` sequence resumes:
+
+```typescript
+scenes(
+  // Scene 1: setup
+  scene(
+    say('I\'m glad you came tonight.'),
+    'He moves a little closer on the bench.',
+  ),
+  // Scene 2: player choice
+  scene(
+    say('It\'s nicer with company.'),
+    branch('Lean against him',
+      'You lean into his shoulder. He relaxes.',
+      addNpcStat('affection', 3, 'tour-guide', { max: 45 }),
+      say('This is... really nice.'),
+    ),
+    branch('Stay where you are',
+      'You keep a comfortable distance.',
+      say('It\'s peaceful here, isn\'t it?'),
+    ),
+  ),
+  // Scene 3: continues after whichever branch was picked
+  scene(
+    'You sit together in the quiet.',
+    say('I had a lovely time tonight.'),
+  ),
+)
+```
+
+For **multi-page branches** (where a branch contains its own sequence of scenes), pass an `Instruction[]` array:
+
+```typescript
+branch('Go to the hidden garden', [
+  scene(
+    hideNpcImage(),
+    'Rob leads you along a narrow path.',
+    move('lake', 10),
+  ),
+  scene(
+    showNpcImage(),
+    'You step into a hidden garden.',
+    say('I\'ve never shown anyone before.'),
+    addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+  ),
+  // ... more scenes
+])
+```
+
+### choice() — Branches with Shared Epilogue
+
+When multiple branches share ending instructions, `choice()` avoids duplication:
+
+```typescript
+// Without choice(): endDate() duplicated in every branch
+branch('Kiss him', 'You kiss.', endDate()),
+branch('Not tonight', 'You decline.', endDate()),
+
+// With choice(): endDate() written once
+choice(
+  branch('Kiss him', 'You kiss.'),
+  branch('Not tonight', 'You decline.'),
+  endDate(),  // shared — runs at the end of whichever branch is chosen
+)
+```
+
+Non-branch elements form the shared epilogue, merged into the **last page** of each branch (no extra Continue click). Convention: list branches first, then epilogue.
+
+### gatedBranch() — Conditional Branches
+
+`gatedBranch()` shows an option only when a condition is met. If the condition is false at runtime, the option doesn't appear:
+
+```typescript
+scene(
+  say('Shall we walk a bit further?'),
+  cond(
+    npcStat('tour-guide', 'affection', 35),
+    seq(
+      'He hesitates, then lowers his voice.',
+      say('There\'s a place I\'ve never shown anyone...'),
+      branch('Go to the hidden garden', robGardenPath()),
+      branch('Stick to the pier', robPierPath()),
+    ),
+    seq(
+      say('The pier\'s lovely at night. Come on.'),
+      branch('Walk to the pier', robPierPath()),
+    ),
+  ),
+)
+```
+
+`gatedBranch()` works inside `choice()` too — the shared epilogue is threaded through correctly:
+
+```typescript
+choice(
+  gatedBranch(npcStat('tour-guide', 'affection', 35),
+    'Go to the hidden garden', ...gardenPath()),
+  branch('Walk to the pier', ...pierPath()),
+  endDate(),
+)
+```
+
+### Helper Functions for Branching Paths
+
+For complex branching (like date scenes with multiple routes), extract paths into functions that return `Instruction[]`:
+
+```typescript
+/** Pier path — the default scenic route. */
+function robPierPath(): Instruction[] {
+  return [
+    scene(
+      hideNpcImage(),
+      'You follow the lakeside path.',
+      move('pier', 10),
+    ),
+    scene(
+      showNpcImage(),
+      say('I brought you something.'),
+      'He produces a small brass compass.',
+    ),
+    scene(
+      'You sit on the edge of the pier.',
+      branch('Take his hand',
+        'You lace your fingers through his.',
+        addNpcStat('affection', 5, 'tour-guide', { max: 50 }),
+      ),
+      branch('Enjoy the view',
+        'You gaze up at the stars together.',
+      ),
+    ),
+    // ...shared walk-home scenes
+    ...robWalkHome(),
+  ]
+}
+```
+
+These functions are called at module load time to build the instruction tree. The result is a flat `Instruction[]` that can be spread into `scenes()` or passed to `branch()`:
+
+```typescript
+dateScene: scenes(
+  scene(/* opening */),
+  scene(/* choice */
+    branch('Go to the garden', robGardenPath()),
+    branch('Walk to the pier', robPierPath()),
+  ),
+),
+```
+
+### Quick Reference
+
+| Helper | Returns | Purpose |
+|--------|---------|---------|
+| `scenes(...pages)` | `Instruction` | Multi-page sequence with Continue buttons |
+| `scene(...elements)` | `Instruction` | Group elements into a single page (alias for `seq`) |
+| `branch(label, ...elements)` | `Instruction` | Player choice button (inline content) |
+| `branch(label, pages[])` | `Instruction` | Player choice button (multi-page) |
+| `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
+| `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
+| `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
 
 ## Mixing DSL with Imperative
 
@@ -452,22 +764,46 @@ The DSL coexists with imperative scripts. You can:
    run('myCustomScript', { arg1: 'value' })
    ```
 
-2. Use DSL instructions inside imperative scripts:
+2. Use DSL instructions inside imperative scripts via `game.run()`:
    ```typescript
-   makeScript('hybridScript', (game, params) => {
-     game.add('Setting up...')
-     execAll(game, [
-       when(hasItem('crown'), text('You have money!'))
-     ])
-     game.addOption('continue', {}, 'Continue')
+   scripts: {
+     flirt: (game: Game) => {
+       const npc = game.getNPC('tour-guide')
+       if (npc.affection >= 30) {
+         game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40 }))
+         game.run(seq(
+           'You say something quiet and sincere.',
+           say('You\'re special, you know that?'),
+         ))
+       } else {
+         game.run(addNpcStat('affection', 3, 'tour-guide', { max: 30 }))
+         game.run(seq(
+           'You lean closer and compliment his knowledge.',
+           say('Oh! Well, I — thank you.'),
+         ))
+       }
+     },
+   }
+   ```
+
+3. Convert DSL to a `ScriptFn` with `script()`:
+   ```typescript
+   import { script } from './ScriptDSL'
+
+   // Use anywhere a ScriptFn is expected
+   makeScripts({
+     myImperativeScript: (g) => { g.add('Hello') },
+     myDslScript: script('Welcome.', option('Start')),
    })
    ```
 
-3. Register DSL arrays as scripts:
+4. Register DSL arrays as named scripts:
    ```typescript
-   registerDslScript('myDslScript', [
-     text('Hello'),
-     option('next', {}, 'Continue')
+   registerDslScript('enterTavern', [
+     'You push open the heavy oak door.',
+     say('Welcome, traveller!'),
+     option('Buy a drink', 'buyDrink'),
+     npcLeaveOption('You nod and head out.', 'Safe travels!'),
    ])
    ```
 
@@ -481,14 +817,24 @@ All scripts are registered in a global registry (`model/Scripts.ts`). Scripts ca
 
 - **`model/Scripts.ts`** - Core script registry and all generic scripts (game actions, control flow, predicates, content)
 - **`model/ScriptDSL.ts`** - DSL builder functions that construct instruction tuples
-- **`story/Utility.ts`** - Story-specific scripts containing game world content (e.g., flavor text)
+- **`story/Utility.ts`** - Story-specific scripts containing game world content (e.g., flavour text)
 
 Scripts belong in `Scripts.ts` unless they contain story-specific content like hardcoded narrative text or world-specific logic.
+
+### Option Script Resolution
+
+The `option()` builder supports namespace prefixes for explicit resolution:
+
+- `option('Chat', 'npc:onChat')` — explicitly calls the NPC's `onChat` script
+- `option('Leave', 'global:endScene')` — explicitly calls the global `endScene` script
+- `option('Chat', 'onChat')` — auto-resolves: checks the scene NPC's scripts first, falls back to global
+
+If the script name is omitted, it's derived from the label: `option('Buy Drink')` becomes script `'buydrink'`.
 
 ### Return Values
 
 Scripts can return values. The DSL leverages this for predicates:
-- `exec(game, hasItem('crown'))` returns `true` or `false`
+- `game.run(hasItem('crown'))` returns `true` or `false`
 - Control flow scripts like `when` use `exec()` internally to evaluate conditions
 
 ### Type Safety
@@ -500,17 +846,17 @@ The `Instruction` type is `[string, Record<string, unknown>]`. While this allows
 hasItem('crown', 10)  // Always correct
 
 // Manual construction (less safe)
-const instr: Instruction = ['dsl.hasItem', { item: 'crown', count: 10 }]
+const instr: Instruction = ['hasItem', { item: 'crown', count: 10 }]
 ```
 
 ## Best Practices
 
-1. **Use DSL for narrative content** - scenes, dialogue, branching
-2. **Use imperative for complex logic** - calculations, inventory management, game mechanics
-3. **Keep scripts focused** - one responsibility per script
-4. **Leverage existing utility scripts** - `gainItem`, `loseItem`, `move`, etc.
-5. **Test builder output** - verify instructions produce expected tuples
-6. **Keep instructions JSON-clean** - no functions, classes, or circular references
+1. **Use DSL for narrative content** — scenes, dialogue, branching
+2. **Use imperative for complex logic** — calculations, state-dependent branching, loops
+3. **Use `scene()` to structure pages** — makes long sequences readable
+4. **Use plain strings** — `'You enter the room.'` is cleaner than `text('You enter the room.')`
+5. **Extract branching paths into functions** — return `Instruction[]` for reuse
+6. **Keep instructions JSON-clean** — no functions, classes, or circular references
 
 ## When to Use Which Approach
 
@@ -518,71 +864,64 @@ const instr: Instruction = ['dsl.hasItem', { item: 'crown', count: 10 }]
 
 - Writing dialogue scenes or narrative content
 - Creating branching storylines with conditions
-- Building content that should be saveable/loadable
+- Building multi-page sequences (tours, dates, story events)
 - The logic is primarily "if X then show Y"
-- You want the content to be hot-reloadable
 
 ```typescript
-// Good DSL usage: narrative scene
-const tavernScene: Instruction[] = [
-  text('The barkeeper looks up as you enter.'),
-  cond(
-    hasItem('crown', 10), say('Welcome, valued customer!', 'barkeeper'),
-    say('You look like you could use a drink.', 'barkeeper')
+// Good DSL usage: multi-scene tour with conditional dialogue
+tour: scenes(
+  scene(
+    hideNpcImage(),
+    'You set off together.',
+    move('default'), timeLapse(15),
+    cond(
+      npcStat('tour-guide', 'affection', 15),
+      say('I never get tired of this view. But it\'s nicer with company.'),
+      say('Magnificent, isn\'t it?'),
+    ),
   ),
-  option('orderDrink', {}, 'Order a drink'),
-  npcLeaveOption()
-]
+  scene(
+    discoverLocation('hotel'),
+    move('hotel'), timeLapse(5),
+    say('The Imperial Hotel. Very grand, very expensive.'),
+  ),
+  scene(
+    showNpcImage(),
+    say('I hope that helps!'),
+    addNpcStat('affection', 1, 'tour-guide', { hidden: true }),
+    npcLeaveOption('You thank Rob and he leaves.'),
+  ),
+),
 ```
 
 ### Use Imperative Scripts When:
 
 - Complex calculations or game mechanics
-- Interacting with external systems
-- Dynamic content generation based on complex state
-- Loops or recursive logic
-- Direct manipulation of multiple game systems
+- Dynamic content generation with loops or random selection from arrays
+- Skill checks with complex consequences (affection changes, multiple random outcomes)
+- State machine logic
 
 ```typescript
-// Good imperative usage: complex game logic
-makeScript('calculateDamage', (game, { weapon, target }) => {
-  const baseDamage = getWeaponDamage(weapon)
-  const modifier = game.player.stats.get('Strength') / 10
-  const defense = game.getNPC(target).stats.get('defense') ?? 0
-  const finalDamage = Math.max(0, baseDamage * modifier - defense)
-
-  game.getNPC(target).stats.set('health',
-    (game.getNPC(target).stats.get('health') ?? 100) - finalDamage
-  )
-
-  return finalDamage
-})
-```
-
-### Hybrid Approach
-
-Often the best solution combines both:
-
-```typescript
-// Imperative script that uses DSL for its narrative parts
-makeScript('enterShop', (game, params) => {
-  const shopkeeper = game.getNPC('shopkeeper')
-  const playerGold = game.player.inventory.find(i => i.id === 'crown')?.number ?? 0
-
-  // Complex logic in imperative
-  const discount = shopkeeper.stats.get('relationship') > 50 ? 0.9 : 1.0
-  const canAfford = playerGold >= 10 * discount
-
-  // Narrative in DSL
-  execAll(game, [
-    text('You enter the shop.'),
-    say(`Welcome! Everything is ${discount < 1 ? '10% off for you!' : 'at regular prices.'}`, 'shopkeeper'),
-    when(canAfford ? hasItem('crown') : not(hasItem('crown')),
-      option('buyItem', { discount }, 'Browse wares')
-    ),
-    npcLeaveOption()
-  ])
-})
+// Good imperative usage: complex flirt logic with skill checks and random pools
+flirt: (game: Game) => {
+  const npc = game.getNPC('tour-guide')
+  if (npc.affection >= 30) {
+    if (game.player.skillTest('Charm', 12)) {
+      game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40, hidden: true }))
+      const scenes = [
+        ['You say something sincere.', say('You\'re special, you know that?')],
+        ['You let the silence stretch.', say('I like this. Just being with you.')],
+      ]
+      game.run(seq(...scenes[Math.floor(Math.random() * scenes.length)]))
+    } else {
+      game.run(addNpcStat('affection', -3, 'tour-guide', { min: 20 }))
+      game.run(seq(
+        'You lean in close.',
+        say('Could we maybe slow down a bit?'),
+      ))
+    }
+  }
+},
 ```
 
 ## Common Patterns
@@ -592,7 +931,7 @@ makeScript('enterShop', (game, params) => {
 ```typescript
 // Only show option if player meets requirements
 when(and(hasItem('key'), hasStat('Perception', 20)),
-  option('secretDoor', {}, 'Examine the strange wall')
+  option('Examine the strange wall', 'secretDoor'),
 )
 ```
 
@@ -601,35 +940,71 @@ when(and(hasItem('key'), hasStat('Perception', 20)),
 ```typescript
 // Different dialogue based on relationship
 cond(
-  npcStat('merchant', 'trust', 80), say('My dear friend! I have something special for you.', 'merchant'),
-  npcStat('merchant', 'trust', 40), say('Ah, a familiar face. What can I do for you?', 'merchant'),
-  say('What do you want?', 'merchant')
+  npcStat('tour-guide', 'affection', 15),
+  seq(
+    say('I never get tired of this view. But it\'s nicer with company.'),
+    'He glances at you with a warm, slightly nervous smile.',
+  ),
+  say('Magnificent, isn\'t it?'),
 )
 ```
 
 ### Random Variety
 
 ```typescript
-// Add flavor without repetition
+// Random NPC comments
 random(
-  text('A steam whistle echoes in the distance.'),
-  text('Gears click and whir from the machinery above.'),
-  text('The gaslights flicker momentarily.')
+  say('I could get used to this.'),
+  say('Have you seen the bathroom? Claw-footed tub!'),
+  say('The view from up here — magnificent.'),
+  say('I wonder what the kitchens are like.'),
+  say('My flat has a window that looks onto a brick wall. This is rather different.'),
 )
 ```
 
-### Skill Checks with Consequences
+### Conditional Affection Dialogue
 
 ```typescript
-skillCheck('Flirtation', 15,
-  [
-    say('You charm them effortlessly.', 'target'),
-    addStat('Charm', 1),
-    run('unlockSpecialOption', {})
-  ],
-  [
-    text('They seem unimpressed by your advances.'),
-    addStat('Composure', -5)
-  ]
+// Rob varies his comments on the tour based on affection level
+cond(
+  npcStat('tour-guide', 'affection', 15),
+  seq(
+    say('The Lake. I come here when I need to think. It\'s my favourite spot.'),
+    'He pauses, watching the steam curl over the water.',
+    say('I don\'t usually tell people that. But — I wanted you to know.'),
+  ),
+  say('The Lake. A peaceful spot when the city gets too much.'),
+)
+```
+
+### NPC Image Toggle During Travel
+
+```typescript
+// Hide portrait during travel montage, show when arriving
+scene(
+  hideNpcImage(),
+  'You set off through the busy streets.',
+  move('hotel', 5),
+  'You push through the revolving brass doors into the lobby.',
+),
+scene(
+  showNpcImage(),
+  say('Blimey. Look at those chandeliers!'),
+),
+```
+
+### Skill Checks with Rich Outcomes
+
+```typescript
+skillCheck('Charm', 10,
+  seq(
+    'You raise your glass steadily, holding his gaze.',
+    say('You know what? You\'re alright.'),
+    addNpcStat('affection', 3, 'jonny-elric', { max: 18 }),
+  ),
+  seq(
+    'Your hand trembles slightly. He notices.',
+    say('Relax. If I wanted to hurt you, you wouldn\'t be sitting here.'),
+  ),
 )
 ```

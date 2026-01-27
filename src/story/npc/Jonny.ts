@@ -75,7 +75,7 @@ import { PRONOUNS, registerNPC } from '../../model/NPC'
 import type { ScheduleEntry } from '../../model/NPC'
 import {
   type Instruction,
-  say,
+  say, seq,
   addNpcStat,
   branch, scene, scenes,
   move,
@@ -620,16 +620,16 @@ function jonnyTourScene(): Instruction[] {
       say('To keeping the peace.'),
       'He raises his glass.',
       skillCheck('Charm', 10,
-        [
+        seq(
           'You raise yours to match, holding his gaze steadily. The corner of his mouth twitches — the closest thing to warmth you\'ve seen from him.',
           say('You know what? You\'re alright. Most people can\'t sit across from me without fidgeting.'),
           addNpcStat('affection', 3, 'jonny-elric', { max: 18 }),
-        ],
-        [
+        ),
+        seq(
           'You raise your glass. Your hand trembles slightly. He notices — he notices everything.',
           say('Relax. If I wanted to hurt you, you wouldn\'t be sitting here.'),
           'Strangely, that is not reassuring.',
-        ],
+        ),
       ),
     ),
     // ── Scene 5: Tense moment — someone interrupts ──

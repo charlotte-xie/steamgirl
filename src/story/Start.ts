@@ -35,15 +35,15 @@ registerNPC('automaton-greeter', {
       discoverLocation('lake'),
     ),
     onFlirt: skillCheck('Flirtation', 0,
-      [
+      seq(
         text('The automaton\'s gears stutter. Its optics flicker.'),
         say('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?'),
         addStat('Flirtation', 1, { chance: 1, max: 5 }),
-      ],
-      [
+      ),
+      seq(
         text('The automaton inclines its head with mechanical precision.'),
         say('I am a hospitality unit. Is there something specific you require?'),
-      ]
+      ),
     ),
     onGlitch: (g: Game) => {
       g.add('You notice a small panel on the automaton\'s back, slightly ajar. Curiosity gets the better of you, and you reach for it.')

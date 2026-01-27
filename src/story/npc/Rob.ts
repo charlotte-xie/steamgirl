@@ -543,16 +543,16 @@ function robGardenPath(): Instruction[] {
     scene(
       'You wander through the garden together. The roses smell impossibly sweet in the evening air.',
       skillCheck('Charm', 12,
-        [
+        seq(
           'You tell him it\'s the most beautiful place you\'ve seen in Aetheria. He beams — really beams — as though you\'ve given him a gift worth more than gold.',
           say('You mean that? It\'s just a forgotten garden, but — that means a lot. Coming from you.'),
           addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
-        ],
-        [
+        ),
+        seq(
           'You try to find the right words, but the beauty of the place has left you a bit lost for speech.',
           say('It\'s a lot to take in, isn\'t it? I was the same the first time.'),
           'He smiles, understanding.',
-        ],
+        ),
       ),
     ),
     // Garden: Intimacy choice
@@ -691,17 +691,17 @@ registerDatePlan({
     scene(
       'You sit together in the quiet, watching the last of the daylight dissolve into deep blue.',
       skillCheck('Perception', 10,
-        [
+        seq(
           'Something catches your eye — a streak of light arcing across the sky, trailing sparks like a tiny clockwork firework.',
           say('A shooting star! Did you see that? Quick — make a wish!'),
           'Rob closes his eyes tight, grinning like a child. When he opens them, he catches you watching and goes pink.',
           say('I\'m not telling you what I wished for. That\'s the rule.'),
           addNpcStat('affection', 2, 'tour-guide', { max: 45 }),
-        ],
-        [
+        ),
+        seq(
           'The stars are beginning to appear, faint pinpricks in the deepening sky.',
           say('Beautiful night for it. Couldn\'t have asked for better weather.'),
-        ],
+        ),
       ),
     ),
 

@@ -73,7 +73,9 @@ export const paragraph = (...content: (string | { text: string; color: string; h
 export const hl = (text: string, color: string, hoverText?: string): { text: string; color: string; hoverText?: string } =>
   ({ text, color, hoverText })
 
-/** NPC speech - uses NPC's default color if npc provided. Accepts strings and Instructions. */
+/** NPC speech - uses NPC's default color if npc provided. Accepts strings and Instructions.
+ * Authors should NOT use extra quotes within say() these are provided for in the output format.
+ */
 export const say = (...parts: TextPart[]): Instruction =>
   run('say', { parts })
 
@@ -337,18 +339,20 @@ export function gatedBranch(
 /**
  * Perform a skill test. Can be used as:
  * - Predicate: skillCheck('Flirtation', 10) - returns boolean
- * - With callbacks: skillCheck('Charm', 12, ['You charm them.', say('Wow!')], ['You fumble.'])
+ * - With callbacks: skillCheck('Charm', 12, seq('You charm them.', say('Wow!')), seq('You fumble.'))
+ *
+ * Use seq() to group multiple instructions into a single callback.
  */
 export const skillCheck = (
   skill: string,
   difficulty = 0,
-  onSuccess?: SceneElement[],
-  onFailure?: SceneElement[]
+  onSuccess?: SceneElement,
+  onFailure?: SceneElement
 ): Instruction =>
   run('skillCheck', {
     skill, difficulty,
-    onSuccess: onSuccess?.map(toInstruction),
-    onFailure: onFailure?.map(toInstruction),
+    onSuccess: onSuccess != null ? toInstruction(onSuccess) : undefined,
+    onFailure: onFailure != null ? toInstruction(onFailure) : undefined,
   })
 
 // --- Game Actions ---

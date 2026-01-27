@@ -228,14 +228,14 @@ cond(
   skillCheck('Perception', 10),
   seq(
     text('You notice a shooting star streak across the sky.'),
-    say('"Did you see that? Make a wish!"'),
+    say('Did you see that? Make a wish!'),
   ),
   text('The stars are beautiful tonight.'),
 )
 
 // With inline callbacks
 skillCheck('Charm', 15,
-  [say('"You always know just what to say."'), addNpcStat('affection', 3, 'my-npc')],
+  [say('You always know just what to say.'), addNpcStat('affection', 3, 'my-npc')],
   [text('You stumble over your words, but he smiles anyway.')],
 )
 ```
@@ -250,11 +250,11 @@ A common pattern is offering the player a choice between showing more intimacy o
   branch('Lean against him',
     text('You lean against his shoulder. He tenses for a moment, then relaxes.'),
     addNpcStat('affection', 3, 'my-npc'),
-    say('"This is nice."'),
+    say('This is nice.'),
   ),
   branch('Stay where you are',
     text('You keep a comfortable distance. He glances at you and smiles.'),
-    say('"It\'s peaceful here, isn\'t it?"'),
+    say('It\'s peaceful here, isn\'t it?'),
   ),
 ]
 ```

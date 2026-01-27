@@ -45,6 +45,7 @@ type SceneData = {
   type: 'story'
   content: Content[]           // Text blocks, speech, paragraphs
   options: SceneOptionItem[]   // Clickable action buttons → [scriptName, params]
+  stack: Instruction[]         // Pending scene pages for multi-page sequences
   npc?: string                 // Scene's NPC (affects speech colour)
   hideNpcImage?: boolean
   shop?: ActiveShop            // When set, renders as shop interface
@@ -52,6 +53,10 @@ type SceneData = {
 ```
 
 `game.inScene` returns `true` when there are options or a shop active. Many things (navigation overlays, activities) are hidden while in a scene.
+
+#### Scene Stack
+
+The `stack` stores pending pages for multi-page sequences created by `scenes()`. When `advanceScene` fires, it pops the next page from the stack and runs it. If the popped page has no options of its own, a Continue button is injected to advance to the next page. Non-`advanceScene` actions (like navigation) clear the stack via `takeAction`. The stack is serialised to JSON for save/load.
 
 ### Fluent Scene API
 
@@ -241,7 +246,7 @@ npc.say('Hello!')                        // Add NPC speech in their colour
 - `player` -- basestats, inventory (with worn/locked state), cards (with custom properties), outfits, timers
 - `locations` -- only `numVisits` and `discovered` per location
 - `npcs` -- only `stats` and `location` per NPC
-- `scene` -- full scene content and options (enables exact position restore)
+- `scene` -- full scene content, options, and stack (enables exact position restore including multi-page sequences)
 
 ### What's Not Saved
 

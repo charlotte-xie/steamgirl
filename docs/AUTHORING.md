@@ -175,16 +175,52 @@ registerNPC('barkeeper', {
   },
 
   scripts: {                                 // NPC-specific interaction scripts
-    onBuyDrink: (game) => {
-      const npc = game.npc
-      npc.say('What\'ll it be?')
-         .option('Sweet wine (5 Kr)', 'onOrderWine')
-         .leaveOption('Nothing, thanks.', 'Suit yourself.')
-    },
-    onOrderWine: (game) => {
-      game.player.removeItem('crown', 5)
-      game.run('gainItem', { item: 'sweet-wine' })
-      game.npc.say('Enjoy.')
+    // Pure DSL -- simple interactions
+    onBuyDrink: seq(
+      say('What\'ll it be?'),
+      option('Sweet wine (5 Kr)', 'onOrderWine'),
+      npcLeaveOption('Nothing, thanks.', 'Suit yourself.'),
+    ),
+
+    // DSL -- random flavour with options
+    roomChat: seq(
+      random(
+        say('Have you seen the bathroom? Claw-footed tub!'),
+        say('The view from up here -- magnificent.'),
+      ),
+      option('Chat', 'roomChat'),
+      option('Leave', 'leaveRoom'),
+      npcLeaveOption(),
+    ),
+
+    // DSL -- multi-scene sequence (tour, date, etc.)
+    tour: scenes(
+      scene(
+        hideNpcImage(),
+        'You set off together.',
+        move('default'), timeLapse(15),
+        say('Here we are -- the heart of Aetheria.'),
+      ),
+      scene(
+        showNpcImage(),
+        say('I hope that helps!'),
+        npcLeaveOption('You thank him and he leaves.'),
+      ),
+    ),
+
+    // Imperative -- complex logic with skill checks
+    flirt: (game: Game) => {
+      const npc = game.getNPC('barkeeper')
+      if (npc.affection >= 30) {
+        game.run(addNpcStat('affection', 2, 'barkeeper', { max: 40 }))
+        game.run(say('You\'re one of a kind, you know that?'))
+      } else {
+        game.run(addNpcStat('affection', 3, 'barkeeper', { max: 30 }))
+        game.run(seq(
+          'You lean closer and compliment his ale selection.',
+          say('Oh! Well, I -- thank you.'),
+        ))
+      }
     },
   },
 })
@@ -204,7 +240,12 @@ NPCs track relationship data automatically:
 
 ### NPC-Specific Scripts
 
-Scripts in the `scripts` record are accessed via the `interact` system. The `option()` DSL helper auto-resolves script names against the current scene NPC's scripts, so `option('Chat', 'onChat')` looks for the NPC's `onChat` script.
+Scripts in the `scripts` record can be **pure DSL** (Instructions), **imperative** (ScriptFn functions), or **mixed**. Use whatever fits the complexity:
+
+- **Pure DSL** (`seq(...)`, `scenes(...)`) -- for dialogue, sequences, and branching
+- **Imperative** (`(game: Game) => { ... }`) -- for skill checks, affection-gated logic, loops
+
+The `option()` DSL helper auto-resolves script names against the current scene NPC's scripts, so `option('Chat', 'onChat')` looks for the NPC's `onChat` script first, then falls back to the global registry.
 
 ## Scripting
 
@@ -228,12 +269,12 @@ makeScript('myScript', (game, params) => {
 
 ### Declarative DSL
 
-JSON-serialisable instructions. Best for narrative sequences:
+JSON-serialisable instructions. Best for narrative sequences. Plain strings are auto-wrapped in `text()`:
 
 ```typescript
 seq(
-  text('You enter the room.'),
-  when(hasItem('key'), text('The door is unlocked!')),
+  'You enter the room.',          // String auto-wrapped to text()
+  when(hasItem('key'), 'The door is unlocked!'),
   say('Welcome.'),
   option('Ask about the key', 'onAskKey'),
   npcLeaveOption('You nod and leave.', 'Goodbye.'),
@@ -246,48 +287,59 @@ seq(
 
 | Helper | Purpose |
 |--------|---------|
-| `text(...parts)` | Add narrative text (supports nested instructions like `playerName()`) |
-| `say(...parts)` | NPC dialogue in their speech colour |
-| `playerName()` | Inline player name |
-| `npcName(npcId?)` | Inline NPC name (uses scene NPC if omitted) |
-| `option(label, script?, params?)` | Action button |
+| `text(...parts)` | Add narrative text. Parts can be strings or Instructions (`playerName()`, `npcName()`) |
+| `say(...parts)` | NPC dialogue in the scene NPC's speech colour. Same part types as `text()` |
+| `playerName()` | Inline player name (for use inside `text()` or `say()`) |
+| `npcName(npcId?)` | Inline NPC name with speech colour (uses scene NPC if omitted) |
+| `paragraph(...content)` | Formatted paragraph with optional `hl()` highlights |
+| `option(label, script?, params?)` | Action button. Script auto-resolves against NPC scripts |
 | `npcLeaveOption(text?, reply?, label?)` | Standard conversation exit |
+| `npcInteract(script, params?)` | Run a named script on the scene NPC |
 
 #### Control Flow
 
 | Helper | Purpose |
 |--------|---------|
-| `seq(...instructions)` | Execute in sequence |
-| `when(condition, ...then)` | Conditional block |
+| `seq(...elements)` | Execute in sequence. Strings become `text()` |
+| `when(condition, ...then)` | Conditional block. Then elements can be strings |
 | `unless(condition, ...then)` | Inverted conditional |
-| `cond(condition, then, condition, then, ..., default?)` | Multi-branch |
-| `random(...children)` | Pick one at random |
-| `scenes(...sceneArrays)` | Multi-scene sequence with auto Continue buttons |
-| `scene(name, ...instructions)` | Named scene page for readability (returns `Instruction[]`) |
-| `branch(label, ...instructions)` | Player choice that continues the scene sequence |
+| `cond(condition, then, condition, then, ..., default?)` | Multi-branch (Lisp-style) |
+| `random(...children)` | Pick one at random. Strings become `text()` |
+| `skillCheck(skill, difficulty, onSuccess?, onFailure?)` | Stat roll. Callbacks are single elements (use `seq()` to group) |
+
+#### Scene Composition
+
+| Helper | Purpose |
+|--------|---------|
+| `scenes(...pages)` | Multi-page sequence with auto Continue buttons |
+| `scene(...elements)` | Group elements into a single page (compiles to `seq()`) |
+| `branch(label, ...elements)` | Player choice that continues the scene sequence |
+| `branch(label, pages[])` | Multi-page player choice (pass `Instruction[]`) |
 | `choice(...branches, ...epilogue)` | Branches with shared ending instructions |
-| `gatedBranch(condition, label, ...instructions)` | Branch that only appears when condition is met |
-| `skillCheck(skill, difficulty, onSuccess, onFailure)` | Stat roll with branches |
+| `gatedBranch(condition, label, ...elements)` | Branch that only appears when condition is met |
 
 #### Actions
 
 | Helper | Purpose |
 |--------|---------|
-| `move(location)` | Instant teleport |
-| `go(location, minutes?)` | Travel with time advance |
+| `move(location, minutes?)` | Instant teleport (optionally advance time after) |
+| `go(location, minutes?)` | Travel with link checks, time, and arrival hooks |
 | `timeLapse(minutes)` | Advance time |
-| `timeLapseUntil(hourOfDay)` | Advance to specific hour |
+| `timeLapseUntil(hourOfDay)` | Advance to specific hour (e.g. `10.25` for 10:15am) |
 | `setNpc(npcId)` | Set scene NPC for speech colour |
 | `hideNpcImage()` / `showNpcImage()` | Toggle NPC portrait |
 | `learnNpcName()` | Mark scene NPC's name as known |
 | `addItem(item, count?)` | Give item to player |
 | `removeItem(item, count?)` | Take item from player |
-| `addStat(stat, change, options?)` | Modify stat with display |
+| `addStat(stat, change, options?)` | Modify stat (options: `max`, `min`, `chance`, `hidden`) |
+| `addNpcStat(stat, change, npc?, options?)` | Modify NPC stat (options: `max`, `min`, `hidden`). Uses scene NPC if omitted |
+| `moveNpc(npc, location)` | Move an NPC (pass `null` to clear) |
 | `recordTime(timer)` | Store current time for cooldowns |
-| `discoverLocation(location)` | Reveal a hidden location |
+| `discoverLocation(location, text?, colour?)` | Reveal a hidden location |
 | `addQuest(questId, args?)` | Add quest card |
 | `completeQuest(questId)` | Mark quest complete |
 | `addEffect(effectId, args?)` | Add effect card |
+| `eatFood(quantity)` | Set lastEat timer and reduce hunger |
 
 #### Predicates
 
@@ -300,137 +352,181 @@ seq(
 | `npcStat(npc, stat, min?, max?)` | Check NPC stat |
 | `hasCard(cardId)` | Check for card |
 | `cardCompleted(cardId)` | Check quest completion |
+| `locationDiscovered(location)` | Check if location is discovered |
+| `hourBetween(from, to)` | Check time of day (supports wrap-around) |
 | `timeElapsed(timer, minutes)` | Check cooldown |
+| `debug()` | True when debug mode is enabled |
 | `not(pred)` / `and(...preds)` / `or(...preds)` | Logic combinators |
 
 ## Multi-Scene Sequences
 
-The `scenes()` helper chains multiple scenes with automatic Continue buttons:
+The `scenes()` helper chains multiple pages with automatic Continue buttons. Use `scene()` to group elements into readable pages (it compiles to `seq()`). Plain strings auto-wrap to `text()`:
 
 ```typescript
 scripts: {
   tour: scenes(
-    [
+    scene(
       hideNpcImage(),
-      text('You set off together.'),
-      move('city-centre'),
-      timeLapse(15),
-      say('This is the heart of Aetheria.'),
-    ],
-    [
-      move('school'),
-      timeLapse(15),
+      'You set off together through the crowded streets.',
+      move('default'), timeLapse(15),
+      say('Here we are -- the heart of Aetheria.'),
+    ),
+    scene(
+      discoverLocation('school'),
+      move('school'), timeLapse(15),
       say('The University -- you\'ll study here.'),
-    ],
-    [
+    ),
+    scene(
       showNpcImage(),
       say('I hope that helps!'),
-      npcLeaveOption(),
-    ],
+      addNpcStat('affection', 1, 'tour-guide', { hidden: true }),
+      npcLeaveOption('You thank Rob and he leaves.'),
+    ),
   ),
 }
 ```
 
-Each scene runs its instructions, then adds a Continue button if more scenes follow. If a scene adds its own options (like `npcLeaveOption`), no Continue button is added.
-
-### Named Scenes
-
-Use `scene()` to label scene pages for readability. The name is documentation only and has no runtime effect:
-
-```typescript
-scenes(
-  scene('Setting off', text('Rob offers his arm...'), move('lake', 15)),
-  scene('At the lake', text('Steam rises...'), say('I come here sometimes...')),
-  scene('Farewell', say('Get home safe.'), endDate()),
-)
-```
-
-Without `scene()`, pages are anonymous arrays -- harder to navigate in long date sequences.
+Each page runs its instructions, then a Continue button is added if more pages follow. If a page adds its own options (like `npcLeaveOption`), no Continue button is added.
 
 ### Branching Within Scenes
 
-Use `branch()` inside a scene page to offer player choices. When a scene contains branches, the outer `scenes()` sequence resumes automatically after the chosen branch completes:
+Use `branch()` inside a scene page to offer player choices. When a scene contains branches, the outer `scenes()` sequence resumes after the chosen branch completes:
 
 ```typescript
 scenes(
-  scene('Conversation',
+  scene(
     say('I\'m glad you came tonight.'),
-    text('He moves closer.'),
+    'He moves a little closer on the bench.',
+  ),
+  scene(
+    say('It\'s nicer with company.'),
     branch('Lean against him',
-      text('You lean into his shoulder.'),
+      'You lean into his shoulder. He relaxes.',
       addNpcStat('affection', 3, 'tour-guide', { max: 45 }),
+      say('This is... really nice.'),
     ),
     branch('Stay where you are',
-      text('You keep a comfortable distance.'),
+      'You keep a comfortable distance.',
+      say('It\'s peaceful here, isn\'t it?'),
     ),
   ),
-  scene('Later that evening',
-    text('You sit together in the quiet.'),
+  scene(
+    'You sit together in the quiet.',
+    say('I had a lovely time tonight.'),
   ),
 )
 ```
 
-The "Later that evening" scene runs after whichever branch the player picks. This threading happens automatically inside `continueScenes` -- authors don't need to manage it.
+The final scene runs after whichever branch the player picks. Threading happens automatically -- authors don't need to manage it.
+
+For **multi-page branches**, pass an `Instruction[]` array:
+
+```typescript
+branch('Go to the hidden garden', [
+  scene(
+    hideNpcImage(),
+    'Rob leads you along a narrow path.',
+    move('lake', 10),
+  ),
+  scene(
+    showNpcImage(),
+    'You step into a hidden garden.',
+    say('I\'ve never shown anyone before.'),
+    addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+  ),
+])
+```
 
 ### Choices with Shared Epilogue
 
 When multiple branches share ending instructions, use `choice()` to avoid duplicating them:
 
 ```typescript
-// Before: endDate() duplicated in every branch
-branch('Kiss him', text('You kiss.'), endDate()),
-branch('Not tonight', text('You decline.'), endDate()),
+// Without choice(): endDate() duplicated in every branch
+branch('Kiss him', 'You kiss.', endDate()),
+branch('Not tonight', 'You decline.', endDate()),
 
-// After: endDate() written once
+// With choice(): endDate() written once
 choice(
-  branch('Kiss him', text('You kiss.')),
-  branch('Not tonight', text('You decline.')),
+  branch('Kiss him', 'You kiss.'),
+  branch('Not tonight', 'You decline.'),
   endDate(),  // shared -- runs at the end of whichever branch is chosen
 )
 ```
 
-`choice()` accepts a mix of branches and plain instructions. Branches become player options; non-branch instructions form the shared epilogue, merged into the last page of each branch (no extra Continue click).
-
-Convention: list branches first, then epilogue instructions.
+Branches become player options; non-branch instructions form the shared epilogue, merged into the **last page** of each branch (no extra Continue click). Convention: list branches first, then epilogue instructions.
 
 ### Conditional Branches
 
-Use `gatedBranch()` to show an option only when a condition is met:
+Use `gatedBranch()` to show an option only when a condition is met. If the condition is false at runtime, the option simply doesn't appear:
 
 ```typescript
-// Before: awkward cond/seq nesting
-cond(
-  npcStat('tour-guide', 'affection', 35),
-  seq(
-    branch('Go to the hidden garden', ...gardenPath),
-    branch('Walk to the pier', ...pierPath),
-  ),
-  seq(
-    branch('Walk to the pier', ...pierPath),
-  ),
-)
-
-// After: reads as a flat option list with a gate
 choice(
   gatedBranch(npcStat('tour-guide', 'affection', 35),
-    'Go to the hidden garden', ...gardenPath),
-  branch('Walk to the pier', ...pierPath),
+    'Go to the hidden garden', ...gardenPath()),
+  branch('Walk to the pier', ...pierPath()),
   endDate(),
 )
 ```
 
-If the condition is false at runtime, the gated option simply doesn't appear. `gatedBranch()` works inside `choice()` -- the shared epilogue is threaded through correctly.
+`gatedBranch()` works inside `choice()` -- the shared epilogue is threaded through correctly.
+
+For complex branching, the alternative is `cond()` with explicit `seq()` blocks:
+
+```typescript
+scene(
+  say('Shall we walk a bit further?'),
+  cond(
+    npcStat('tour-guide', 'affection', 35),
+    seq(
+      'He hesitates, then lowers his voice.',
+      say('There\'s a place I\'ve never shown anyone...'),
+      branch('Go to the hidden garden', robGardenPath()),
+      branch('Stick to the pier', robPierPath()),
+    ),
+    seq(
+      say('The pier\'s lovely at night. Come on.'),
+      branch('Walk to the pier', robPierPath()),
+    ),
+  ),
+)
+```
+
+### Helper Functions for Branching Paths
+
+For date scenes with multiple routes, extract paths into functions returning `Instruction[]`:
+
+```typescript
+function robPierPath(): Instruction[] {
+  return [
+    scene(
+      hideNpcImage(),
+      'You follow the lakeside path.',
+      move('pier', 10),
+    ),
+    scene(
+      showNpcImage(),
+      say('I brought you something.'),
+      'He produces a small brass compass.',
+    ),
+    ...robWalkHome(),
+  ]
+}
+```
+
+These are called at module load time, so the result can be spread into `scenes()` or passed to `branch()`.
 
 ### Quick Reference
 
 | Helper | Returns | Purpose |
 |--------|---------|---------|
-| `scene(name, ...instrs)` | `Instruction[]` | Named page wrapper for `scenes()` |
-| `branch(label, ...instrs)` | `Instruction` | Player choice button |
-| `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
-| `gatedBranch(cond, label, ...instrs)` | `Instruction` | Conditional branch |
 | `scenes(...pages)` | `Instruction` | Multi-page sequence with Continue buttons |
-| `seq(...instrs)` | `Instruction` | Run instructions immediately (no pause) |
+| `scene(...elements)` | `Instruction` | Group elements into a single page (alias for `seq`) |
+| `branch(label, ...elements)` | `Instruction` | Player choice button (inline content) |
+| `branch(label, pages[])` | `Instruction` | Player choice button (multi-page) |
+| `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
+| `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
+| `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
 
 ## Items
 
@@ -583,10 +679,10 @@ The shop UI handles purchasing automatically (deducts Krona, adds item to invent
 // DSL predicate
 when(hasStat('Charm', 30), option('Flatter', 'onFlatter'))
 
-// Skill check with success/failure branches
+// Skill check with success/failure branches (use seq() for multiple elements)
 skillCheck('Flirtation', 20,
-  [say('You charm them effortlessly.')],
-  [say('Your attempt falls flat.')]
+  say('You charm them effortlessly.'),
+  say('Your attempt falls flat.'),
 )
 ```
 

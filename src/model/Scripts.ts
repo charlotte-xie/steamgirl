@@ -445,8 +445,8 @@ const coreScripts: Record<string, ScriptFn> = {
   skillCheck: (game: Game, params: {
     skill?: string
     difficulty?: number
-    onSuccess?: Instruction[]
-    onFailure?: Instruction[]
+    onSuccess?: Instruction
+    onFailure?: Instruction
   }): boolean | void => {
     if (!params.skill) return false
     const difficulty = params.difficulty ?? 0
@@ -459,9 +459,9 @@ const coreScripts: Record<string, ScriptFn> = {
 
     // Execute appropriate callback
     if (success && params.onSuccess) {
-      execAll(game, params.onSuccess)
+      exec(game, params.onSuccess)
     } else if (!success && params.onFailure) {
-      execAll(game, params.onFailure)
+      exec(game, params.onFailure)
     }
 
     return success
