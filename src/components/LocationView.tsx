@@ -41,9 +41,11 @@ export function LocationView({ location }: LocationViewProps) {
         }),
       }}
     >
-      <div style={{ flex: '1', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {!locationImage && <p>No Location</p>}
-      </div>
+      {!(sceneHasContent || sceneHasOptions || hasShop) && (
+        <div style={{ flex: '1', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {!locationImage && <p>No Location</p>}
+        </div>
+      )}
       <div className="overlays-container">
         {hasShop && <ShopOverlay shop={scene.shop!} />}
         {!hasShop && (sceneHasContent || sceneHasOptions) && <SceneOverlay scene={scene} />}

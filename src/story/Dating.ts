@@ -13,6 +13,10 @@
  * sensible defaults from simple parameters. These are used as fallbacks
  * when a DatePlan doesn't supply custom scripts.
  *
+ * NPC positioning during dates is handled automatically by the Date card's
+ * afterUpdate hook — NPC onMove hooks do not need date-awareness. The
+ * handleDateApproach helper simplifies onWait/onApproach hooks.
+ *
  * Usage:
  *   1. Import { registerDatePlan } in your NPC file
  *   2. Call registerDatePlan({ npcId, dateScene, ... })
@@ -27,6 +31,23 @@ import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts, type Script } from '../model/Scripts'
 import { type Instruction, run } from '../model/ScriptDSL'
+
+// ============================================================================
+// DATE CARD DATA
+// ============================================================================
+
+/** The instance data stored on a date card. */
+export interface DateCardData {
+  npc: string
+  meetTime: number
+  meetLocation: string
+  dateStarted: boolean
+}
+
+/** Type-safe accessor for date card properties. */
+export function dateCardData(card: Card): DateCardData {
+  return card as unknown as DateCardData
+}
 
 // ============================================================================
 // DATE PLAN INTERFACE
@@ -54,29 +75,29 @@ export interface DatePlan {
   /**
    * Script run when the NPC greets the player at the meeting point.
    * Receives the game with scene.npc already set.
-   * Should add options for 'Go with him' and 'Cancel the date'.
-   * Default: standardGreeting(npcDisplayName).
+   * Should add options for accepting and cancelling the date.
+   * Default: standardGreeting().
    */
   onGreeting?: Script
 
   /**
    * Script run when the player cancels the date at the meeting point.
    * Should handle affection penalty and card cleanup (or call dateCleanup).
-   * Default: standardCancel(npcDisplayName, 20).
+   * Default: standardCancel(undefined, 20).
    */
   onCancel?: Script
 
   /**
    * Script run when the player doesn't show up within the wait window.
    * Should handle affection penalty and card cleanup (or call dateCleanup).
-   * Default: standardNoShow(npcDisplayName, 15).
+   * Default: standardNoShow(npcDisplayName, undefined, 15).
    */
   onNoShow?: Script
 
   /**
    * Script run when the date scene completes successfully.
    * Should handle affection bonus and card cleanup (or call dateCleanup).
-   * Default: standardComplete(npcDisplayName, 15).
+   * Default: standardComplete(15).
    */
   onComplete?: Script
 }
@@ -88,13 +109,20 @@ export interface DatePlan {
 /**
  * Build a standard greeting script. The NPC says a greeting line and
  * the player gets Cancel / Go options.
+ *
+ * The accept button label defaults to "Go with him/her/them" based on
+ * the NPC's pronouns, or can be overridden with a custom label.
+ *
+ * @param greeting - Custom greeting text (default: 'You came! Shall we go?')
+ * @param goLabel - Custom label for the accept option (default: uses NPC pronouns)
  */
-export function standardGreeting(greeting?: string): Script {
+export function standardGreeting(greeting?: string, goLabel?: string): Script {
   return (game: Game) => {
     const npc = game.npc
     npc.say(greeting ?? 'You came! Shall we go?')
+    const label = goLabel ?? `Go with ${npc.pronouns.object}`
     game.addOption('dateCancel', { npc: game.scene.npc }, 'Cancel the date')
-    game.addOption('dateStart', { npc: game.scene.npc }, 'Go with him')
+    game.addOption('dateStart', { npc: game.scene.npc }, label)
   }
 }
 
@@ -108,8 +136,7 @@ export function standardCancel(response?: string, penalty = 20): Script {
     if (!npcId) return
     const npc = game.getNPC(npcId)
     npc.say(response ?? 'Oh. Right. Maybe some other time, then.')
-    npc.stats.set('affection', Math.max(0, npc.affection - penalty))
-    game.add({ type: 'text', text: `Affection -${penalty}`, color: '#ef4444' })
+    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
     game.removeCard('date', true)
     if (npc.template.onMove) game.run(npc.template.onMove)
   }
@@ -123,11 +150,10 @@ export function standardNoShow(npcDisplayName: string, narration?: string, penal
   return (game: Game) => {
     const card = getDateCard(game)
     if (!card) return
-    const npcId = card.npc as string
-    const npc = game.getNPC(npcId)
+    const data = dateCardData(card)
+    const npcId = data.npc
     game.add(narration ?? `${npcDisplayName} waited for you, but you never came.`)
-    npc.stats.set('affection', Math.max(0, npc.affection - penalty))
-    game.add({ type: 'text', text: `Affection -${penalty}`, color: '#ef4444' })
+    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
     card.failed = true
     game.removeCard('date', true)
   }
@@ -141,10 +167,10 @@ export function standardComplete(bonus = 15): Script {
   return (game: Game) => {
     const card = getDateCard(game)
     if (!card) return
-    const npcId = card.npc as string
+    const data = dateCardData(card)
+    const npcId = data.npc
     const npc = game.getNPC(npcId)
-    npc.stats.set('affection', Math.min(100, npc.affection + bonus))
-    game.add({ type: 'text', text: `Affection +${bonus}`, color: '#10b981' })
+    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: bonus, max: 100 })
     game.removeCard('date', true)
     if (npc.template.onMove) game.run(npc.template.onMove)
   }
@@ -181,6 +207,47 @@ export function getDateCard(game: Game): Card | undefined {
 }
 
 // ============================================================================
+// NPC HOOK HELPERS
+// ============================================================================
+
+/**
+ * Handle date-related NPC approach / wait. Call from an NPC's onWait
+ * or onApproach hook.
+ *
+ * If the player is at the meeting location during the date window,
+ * triggers `dateApproach`. Returns true if the date system handled
+ * the interaction (caller should return), false otherwise.
+ *
+ * NPC positioning is handled automatically by the date card's afterUpdate
+ * hook (which runs after onMove), so NPCs do **not** need date logic in
+ * their onMove hooks.
+ *
+ * @example
+ * onWait: (game) => {
+ *   if (handleDateApproach(game, 'tour-guide')) return
+ *   // ...normal wait logic
+ * },
+ */
+export function handleDateApproach(game: Game, npcId: string): boolean {
+  const card = getDateCard(game)
+  if (!card || dateCardData(card).npc !== npcId || card.dateStarted) return false
+
+  const data = dateCardData(card)
+  const plan = DATE_PLANS[npcId]
+  if (!plan) return false
+
+  const waitMinutes = plan.waitMinutes ?? 120
+  const deadline = data.meetTime + waitMinutes * 60
+
+  if (game.time >= data.meetTime && game.time < deadline && game.currentLocation === data.meetLocation) {
+    game.run('dateApproach', { npc: npcId })
+    return true
+  }
+
+  return false
+}
+
+// ============================================================================
 // DATE CARD DEFINITION
 // ============================================================================
 
@@ -191,7 +258,8 @@ const dateCardDefinition: CardDefinition = {
   color: '#f472b6',
 
   onAdded: (game: Game, card: Card) => {
-    const plan = DATE_PLANS[card.npc as string]
+    const data = dateCardData(card)
+    const plan = DATE_PLANS[data.npc]
     if (plan) {
       game.add({
         type: 'text',
@@ -205,11 +273,11 @@ const dateCardDefinition: CardDefinition = {
     if (card.dateStarted) return []
     if (card.completed || card.failed) return []
 
-    const plan = DATE_PLANS[card.npc as string]
+    const data = dateCardData(card)
+    const plan = DATE_PLANS[data.npc]
     if (!plan) return []
 
-    const meetTime = card.meetTime as number
-    const meetDate = new Date(meetTime * 1000)
+    const meetDate = new Date(data.meetTime * 1000)
     const today = game.date
 
     const isToday = today.getFullYear() === meetDate.getFullYear() &&
@@ -240,7 +308,7 @@ const dateCardDefinition: CardDefinition = {
 
     // Past meeting time — NPC is waiting
     const waitMinutes = plan.waitMinutes ?? 120
-    const deadline = meetTime + waitMinutes * 60
+    const deadline = data.meetTime + waitMinutes * 60
     if (game.time < deadline) {
       return [{
         text: `${plan.npcDisplayName} is waiting for you in ${plan.meetLocationName}!`,
@@ -257,17 +325,27 @@ const dateCardDefinition: CardDefinition = {
     const card = getDateCard(game)
     if (!card || card.dateStarted || card.completed || card.failed) return
 
-    const plan = DATE_PLANS[card.npc as string]
+    const data = dateCardData(card)
+    const plan = DATE_PLANS[data.npc]
     if (!plan) return
 
-    const meetTime = card.meetTime as number
     const waitMinutes = plan.waitMinutes ?? 120
-    const deadline = meetTime + waitMinutes * 60
+    const deadline = data.meetTime + waitMinutes * 60
 
     if (game.time >= deadline) {
       // Player didn't show — run the no-show script
       const noShow = plan.onNoShow ?? standardNoShow(plan.npcDisplayName)
       game.run(noShow)
+      return
+    }
+
+    // During the wait window, override NPC position to the meeting location.
+    // This runs after onMove, so the NPC's normal schedule is set first,
+    // then the date card moves them to the meeting point.
+    if (game.time >= data.meetTime && game.time < deadline) {
+      const npc = game.getNPC(data.npc)
+      npc.location = data.meetLocation
+      game.updateNPCsPresent()
     }
   },
 }
@@ -283,7 +361,8 @@ const dateScripts = {
   dateApproach: (game: Game, params: { npc?: string }) => {
     const card = getDateCard(game)
     if (!card) return
-    const npcId = params.npc ?? card.npc as string
+    const data = dateCardData(card)
+    const npcId = params.npc ?? data.npc
     const plan = DATE_PLANS[npcId]
     if (!plan) return
 
@@ -301,7 +380,8 @@ const dateScripts = {
   dateCancel: (game: Game, params: { npc?: string }) => {
     const card = getDateCard(game)
     if (!card) return
-    const npcId = params.npc ?? card.npc as string
+    const data = dateCardData(card)
+    const npcId = params.npc ?? data.npc
     const plan = DATE_PLANS[npcId]
     if (!plan) return
 
@@ -316,7 +396,8 @@ const dateScripts = {
   dateStart: (game: Game, params: { npc?: string }) => {
     const card = getDateCard(game)
     if (!card) return
-    const npcId = params.npc ?? card.npc as string
+    const data = dateCardData(card)
+    const npcId = params.npc ?? data.npc
     const plan = DATE_PLANS[npcId]
     if (!plan) return
 
@@ -328,7 +409,8 @@ const dateScripts = {
   dateComplete: (game: Game, params: { npc?: string }) => {
     const card = getDateCard(game)
     if (!card) return
-    const npcId = params.npc ?? card.npc as string
+    const data = dateCardData(card)
+    const npcId = params.npc ?? data.npc
     const plan = DATE_PLANS[npcId]
     if (!plan) return
 

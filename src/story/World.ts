@@ -24,6 +24,7 @@ import './Dating'
 
 // Register NPC definitions
 import './npc/Rob' // Rob Hayes - tour guide
+import './npc/Jonny' // Jonny Elric - enforcer
 
 // Register test NPC (for testing)
 import './TestNPC'

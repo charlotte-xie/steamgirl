@@ -124,71 +124,7 @@ registerNPC('spice-dealer', {
   },
 })
 
-registerNPC('jonny-elric', {
-  name: 'Jonny Elric',
-  uname: 'monocled gangster',
-  description: 'A sharp-dressed enforcer with a polished brass monocle that catches the gaslight. His movements are precise, economical—every gesture calculated. The well-maintained revolver at his hip and the scars on his knuckles tell a story of violence meted out with professional detachment.',
-  image: '/images/npcs/boss2.jpg',
-  speechColor: '#6b5b6b',
-  onMove: (game: Game) => {
-    const npc = game.getNPC('jonny-elric')
-    const schedule: ScheduleEntry[] = [
-      [6, 10, 'docks', [1]],            // Monday: early morning dockside intimidation
-      [10, 14, 'market', [2]],          // Tuesday: collecting protection money at the market
-      [14, 19, 'back-alley', [4]],      // Thursday: back-alley business
-      [6, 10, 'docks'],                 // default: morning at the docks
-      [10, 11, 'backstreets'],           // cutting through backstreets
-      [11, 13, 'market'],               // browsing the market (and keeping an eye on things)
-      [13, 14, 'backstreets'],           // returning through the backstreets
-      [14, 16, 'lowtown'],              // afternoon patrol in Lowtown
-      [16, 19, 'subway-lowtown'],        // watching the subway crowd
-      [20, 24, 'copper-pot-tavern'],     // evening drinks at the Copper Pot
-    ]
-    npc.followSchedule(game, schedule)
-  },
-  onApproach: (game: Game) => {
-    const npc = game.npc
-    if (npc.nameKnown > 0) {
-      game.add('Jonny Elric adjusts his monocle and fixes you with a flat, assessing stare. Friend of Elvis; enforcer by trade.')
-      npc.say("Something I can help you with?")
-      npc.chat()
-    } else {
-      game.add('A monocled figure adjusts his monocle and fixes you with a flat, assessing stare. Friend of Elvis; enforcer by trade.')
-      npc.say("Something I can help you with?")
-      game.add('He doesn\'t seem interested in talking until you\'ve proven yourself.')
-      npc.leaveOption("You back away slowly.", "Mind how you go.")
-    }
-  },
-  scripts: {
-    onGeneralChat: (g: Game) => {
-      const npc = g.npc
-      // Only show general chat if name is known
-      if (npc.nameKnown <= 0) {
-        g.add('He doesn\'t seem interested in talking until you\'ve proven yourself.')
-        return
-      }
-      npc.option('You know Elvis?', 'askElvis')
-        .option("Who runs these streets?", 'askTerritory')
-        .option('I need work.', 'work')
-        .leaveOption("You back away slowly.", "Mind how you go.")
-    },
-    askElvis: (g: Game) => {
-      const npc = g.npc
-      npc.say("Elvis and me go way back. I handle the rough stuff. He does the thinking. You want to talk to the boss, you find him—I'm not a messenger.")
-      npc.chat()
-    },
-    askTerritory: (g: Game) => {
-      const npc = g.npc
-      npc.say("Same as always. Elvis's word is law down here. I make sure people remember it.")
-      npc.chat()
-    },
-    work: (g: Game) => {
-      const npc = g.npc
-      npc.say("Maybe. You look like you could hold your own. But I don't hire strangers. Earn Elvis's nod first—then we'll talk.")
-      npc.chat()
-    },
-  },
-})
+// Jonny Elric is defined in npc/Jonny.ts
 
 registerNPC('elvis-crowe', {
   name: 'Elvis Crowe',

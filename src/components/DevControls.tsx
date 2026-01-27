@@ -1,10 +1,19 @@
 import { useGame } from '../context/GameContext'
 import { useGameLoader } from '../context/GameLoaderContext'
 import { Game } from '../model/Game'
+import { STAT_NAMES, SKILL_NAMES } from '../model/Stats'
+import { GAME_SAVE_AUTO } from '../constants/storage'
 
 export function DevControls() {
   const { game, setGame, refresh } = useGame()
   const { quickRestart, saveGame, loadGameSave, hasManualSave } = useGameLoader()
+
+  /** Recalculate stats, trigger re-render, and auto-save after any dev mutation. */
+  const applyAndSave = () => {
+    game.player.calcStats()
+    refresh()
+    localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(game.toJSON()))
+  }
 
   return (
     <div className="dev-controls-overlay">
@@ -38,7 +47,7 @@ export function DevControls() {
       </button>
       <button
         className="dev-btn"
-        onClick={() => { game.player.addItem('crown', 1000); refresh() }}
+        onClick={() => { game.player.addItem('crown', 1000); applyAndSave() }}
         title="Add 1000 Krona"
       >
         <span className="dev-btn-icon">💰</span>
@@ -48,13 +57,30 @@ export function DevControls() {
         className="dev-btn"
         onClick={() => {
           game.player.cards = game.player.cards.filter(c => c.type !== 'Effect')
-          game.player.calcStats()
-          refresh()
+          applyAndSave()
         }}
         title="Remove all effects"
       >
         <span className="dev-btn-icon">✕</span>
         <span className="dev-btn-label">-Effects</span>
+      </button>
+      <button
+        className="dev-btn"
+        onClick={() => {
+          for (const stat of STAT_NAMES) {
+            const cur = game.player.basestats.get(stat) ?? 0
+            game.player.basestats.set(stat, Math.min(100, cur + 10))
+          }
+          for (const skill of SKILL_NAMES) {
+            const cur = game.player.basestats.get(skill) ?? 0
+            game.player.basestats.set(skill, Math.min(100, cur + 10))
+          }
+          applyAndSave()
+        }}
+        title="Add +10 to all stats and skills"
+      >
+        <span className="dev-btn-icon">+</span>
+        <span className="dev-btn-label">Stats+</span>
       </button>
     </div>
   )

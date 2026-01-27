@@ -27,6 +27,23 @@ export interface NPCData {
   nameKnown?: boolean
 }
 
+/** Subject/object/possessive pronoun set for an NPC (e.g. he/him/his). */
+export interface Pronouns {
+  /** Subject pronoun — 'he', 'she', 'they' */
+  subject: string
+  /** Object pronoun — 'him', 'her', 'them' */
+  object: string
+  /** Possessive pronoun — 'his', 'her', 'their' */
+  possessive: string
+}
+
+/** Common pronoun presets. */
+export const PRONOUNS = {
+  he: { subject: 'he', object: 'him', possessive: 'his' } satisfies Pronouns,
+  she: { subject: 'she', object: 'her', possessive: 'her' } satisfies Pronouns,
+  they: { subject: 'they', object: 'them', possessive: 'their' } satisfies Pronouns,
+}
+
 // Static / library information for an NPC
 export interface NPCDefinition {
   name?: string
@@ -36,6 +53,8 @@ export interface NPCDefinition {
   image?: string
   /** Default colour for this NPC's speech/dialogue. Can be overridden per speech() call. */
   speechColor?: string
+  /** NPC pronouns — defaults to they/them/their. Use PRONOUNS.he, PRONOUNS.she, etc. */
+  pronouns?: Pronouns
   // Optional generate function that initializes the NPC instance (NPC is already constructed)
   generate?: (game: Game, npc: NPC) => void
   // Script to run when player approaches this NPC for the first time
@@ -148,6 +167,11 @@ export class NPC {
       throw new Error(`NPC definition not found: ${this.id}`)
     }
     return definition
+  }
+
+  /** Gets this NPC's pronouns (defaults to they/them/their). */
+  get pronouns(): Pronouns {
+    return this.template.pronouns ?? PRONOUNS.they
   }
 
   /** Makes this NPC say something. Uses the NPC's speech color. Returns this for fluent chaining. */

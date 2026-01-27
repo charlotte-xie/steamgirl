@@ -10,7 +10,7 @@ A date follows this lifecycle:
 2. **Card Created** -- Accepting creates a `Date` card with the meeting time, location, and NPC reference. Reminders escalate as the time approaches.
 3. **Meeting** -- The NPC moves to the meeting location at the arranged time and waits (default 2 hours). If the player arrives, the NPC greets them with Cancel/Go options. If the player doesn't show, a no-show penalty fires.
 4. **Date Scene** -- The date itself is an arbitrary `Script` -- typically a `scenes()` sequence with branching, skill checks, and player choices.
-5. **Completion** -- The date ends with an affection bonus and card cleanup.
+5. **Completion** -- The date ends with card cleanup and NPC returned to schedule. Affection changes should happen during the date scenes themselves, not as a flat completion bonus.
 
 ## Architecture
 
@@ -44,15 +44,17 @@ All behaviour fields are `Script` -- they can be imperative functions, DSL instr
 
 | Builder | Purpose | Key Parameters |
 |---------|---------|----------------|
-| `standardGreeting(greeting?)` | NPC says hello, offers Cancel/Go options | Custom greeting text |
+| `standardGreeting(greeting?, goLabel?)` | NPC says hello, offers Cancel/Go options | Custom greeting text; accept button label (defaults to "Go with him/her/them" using NPC pronouns) |
 | `standardCancel(response?, penalty?)` | Affection penalty, card removed | Response text, penalty amount (default 20) |
 | `standardNoShow(name, narration?, penalty?)` | No-show narration, affection penalty | NPC name, narration text, penalty (default 15) |
-| `standardComplete(bonus?)` | Affection bonus, card removed | Bonus amount (default 15) |
+| `standardComplete(bonus?)` | Card removed, optional affection bonus | Bonus amount (default 15; use 0 if affection is handled in-scene) |
 | `endDate()` | DSL instruction to end the date successfully | *(none -- NPC auto-detected from card)* |
 | `branch(label, ...instructions)` | Player choice that continues the scene sequence | Label + inline instructions for a single branch scene |
 | `branch(label, scenes)` | Multi-scene player choice | Label + `Instruction[][]` for multi-scene branches |
 
 `endDate()` is a convenience DSL builder that produces the `dateComplete` instruction. It automatically resolves the NPC from the active date card, so date scenes can be NPC-independent. Use it as the last instruction in a date scene.
+
+The `standardCancel`, `standardNoShow`, and `standardComplete` builders use the `addNpcStat` script internally for affection changes, so any game-wide behaviour (logging, events, display) applies consistently.
 
 Use the script builders as defaults or override with fully custom scripts:
 
@@ -71,16 +73,18 @@ registerDatePlan({
 
 ### Date Card
 
-The `date` card stores per-instance state:
+The `date` card stores per-instance state typed by the `DateCardData` interface:
 
-| Property | Type | Purpose |
-|----------|------|---------|
-| `npc` | string | NPC ID for lookup in the date plan registry |
-| `meetTime` | number | Unix seconds for the meeting time |
-| `meetLocation` | string | Location ID for the meeting point |
-| `dateStarted` | boolean | Set to `true` when the NPC greets the player |
-| `completed` | boolean | Set on successful completion |
-| `failed` | boolean | Set on no-show |
+```typescript
+interface DateCardData {
+  npc: string          // NPC ID for lookup in the date plan registry
+  meetTime: number     // Unix seconds for the meeting time
+  meetLocation: string // Location ID for the meeting point
+  dateStarted: boolean // Set to true when the NPC greets the player
+}
+```
+
+Use `dateCardData(card)` for type-safe access to these properties rather than casting manually. The card also uses the standard `completed` and `failed` flags from the Card base.
 
 The card definition provides escalating reminders:
 
@@ -88,7 +92,9 @@ The card definition provides escalating reminders:
 - **On the day, before meeting time**: "Meet Rob in the City Centre at 6pm today" (info)
 - **During the wait window**: "Rob is waiting for you in the City Centre!" (urgent)
 
-The `afterUpdate` hook detects no-shows: if `game.time` passes the deadline (meetTime + waitMinutes), it runs the `onNoShow` script.
+The `afterUpdate` hook handles two responsibilities:
+1. **NPC positioning** -- During the wait window, moves the NPC to the meeting location. This runs after `onMove`, so the NPC's normal schedule is set first, then the date card overrides the position.
+2. **No-show detection** -- If `game.time` passes the deadline (meetTime + waitMinutes), runs the `onNoShow` script.
 
 ### Lifecycle Scripts
 
@@ -99,15 +105,55 @@ Four global scripts handle the date lifecycle, registered by `Dating.ts`:
 | `dateApproach` | Player arrives at meeting location | Sets `dateStarted = true`, runs `onGreeting` |
 | `dateCancel` | Player chooses Cancel | Runs `onCancel` (affection penalty, cleanup) |
 | `dateStart` | Player chooses Go | Runs `dateScene` |
-| `dateComplete` | Date scene ends successfully | Runs `onComplete` (affection bonus, cleanup) |
+| `dateComplete` | Date scene ends successfully | Runs `onComplete` (cleanup, optional affection bonus) |
 
 ### NPC Integration
 
-NPCs need three hooks to support dates:
+NPCs need two hooks to support dates. NPC positioning is handled automatically by the Date card's `afterUpdate` -- NPC `onMove` hooks do not need date logic.
 
-- **`onMove`** -- During the date window, move to the meeting location instead of following the normal schedule.
 - **`onWait`** -- If the player is waiting at the meeting location during the date window, trigger `dateApproach`.
 - **`onApproach`** -- If the player clicks the NPC at the meeting location during the date window, trigger `dateApproach`.
+
+Both can use the `handleDateApproach(game, npcId)` helper, which returns `true` if the date system handled the interaction:
+
+```typescript
+import { handleDateApproach } from '../Dating'
+
+registerNPC('my-npc', {
+  pronouns: PRONOUNS.he,  // Used by standardGreeting for "Go with him"
+
+  // onMove only needs normal scheduling — date positioning is automatic
+  onMove: (game) => {
+    npc.followSchedule(game, [[9, 18, 'station']])
+  },
+
+  onWait: (game) => {
+    if (handleDateApproach(game, 'my-npc')) return
+    // ...normal wait logic
+  },
+
+  onApproach: (game) => {
+    if (handleDateApproach(game, 'my-npc')) return
+    // ...normal approach logic
+  },
+})
+```
+
+NPCs should set `pronouns` on their definition (using `PRONOUNS.he`, `PRONOUNS.she`, or `PRONOUNS.they`) so that `standardGreeting` generates the correct accept button label (e.g. "Go with him").
+
+## Affection Tiers
+
+NPC affection ranges from 0 to 100. These tiers guide content gating and NPC behaviour:
+
+| Range | Tier | Description |
+|-------|------|-------------|
+| 1--20 | Mild Like | Friendly warmth. NPC enjoys the player's company. |
+| 20--40 | Active Interest | Clear attraction. NPC seeks out the player, flirts back, asks for dates. |
+| 40--60 | Real Affection | Genuine emotional bond. Intimate moments, vulnerability, first kisses. |
+| 60--80 | Strong Love | Deep commitment. NPC prioritises the player, opens up fully. |
+| 80--100 | Infatuation / Obsession | Potentially dangerous intensity. Jealousy, possessiveness, or unhealthy attachment may emerge. |
+
+The rate at which affection grows is NPC-specific. A warm, open character like Rob might reach Active Interest quickly through casual flirting, while a guarded gangster might require completing dangerous tasks before budging past Mild Like. Use `max` caps on `addNpcStat` to enforce per-interaction ceilings, and document each NPC's affection budget in their source file.
 
 ## Writing Date Scenes
 
