@@ -138,7 +138,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ],
     onFirstArrive: script(
       text('You unlock the door and step inside. The room is small but immaculate — polished brass fixtures, crisp sheets, a writing desk by the window. You could get used to this.'),
-      when(npcStat('tour-guide', 'affection', 1),
+      when(npcStat('affection', { npc: 'tour-guide' }),
         text('You wonder if Rob the tour guide would like to see it.'),
       ),
     ),

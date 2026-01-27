@@ -116,7 +116,7 @@ After all chunks complete (or if a scene was created), the optional `then` scrip
 Called when the player waits at a location where this NPC is present. Receives `{ npc: string, minutes: number }`. Can create a scene to interrupt the wait.
 
 ```typescript
-registerNPC('tour-guide', {
+registerNPC({
   // ...
   onWait: (game: Game) => {
     const npc = game.getNPC('tour-guide')
@@ -243,7 +243,7 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 | `hl(text, color, hover?)` | Highlight helper for use inside `paragraph()` (not an instruction) |
 | `playerName()` | Inline player name (for use as a part inside `text()` or `say()`) |
 | `npcName(npc?)` | Inline NPC name with speech colour (uses scene NPC if omitted) |
-| `option(label, script?, params?)` | Add an option button. Script auto-resolves against NPC scripts |
+| `option(label, script?, params?)` | Fire-and-forget button — runs a script, no automatic return. For menus, navigation, "Leave" |
 | `npcLeaveOption(text?, reply?, label?)` | Standard NPC conversation exit |
 | `npcInteract(script, params?)` | Run a named script on the scene NPC |
 
@@ -264,8 +264,7 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 |---------|-------------|
 | `scenes(...pages)` | Multi-page sequence with auto Continue buttons |
 | `scene(...elements)` | Group elements into a single scene page (compiles to `seq()`) |
-| `branch(label, ...elements)` | Player choice that continues the scene sequence |
-| `branch(label, pages[])` | Multi-page player choice (pass `Instruction[]` array) |
+| `branch(label, ...elements)` | Story choice with auto-resume. Use `scenes()` as an element for multi-page branches |
 | `choice(...branches, ...epilogue)` | Branches with shared ending instructions |
 | `gatedBranch(cond, label, ...elements)` | Branch that only appears when condition is met |
 
@@ -280,7 +279,7 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 | `addItem(item, count?)` | Add to inventory |
 | `removeItem(item, count?)` | Remove from inventory |
 | `addStat(stat, change, options?)` | Modify player stat (options: `max`, `min`, `chance`, `hidden`) |
-| `addNpcStat(stat, change, npc?, options?)` | Modify NPC stat (options: `max`, `min`, `hidden`). Uses scene NPC if omitted |
+| `addNpcStat(stat, change, options?)` | Modify NPC stat (options: `npc`, `max`, `min`, `hidden`). Uses scene NPC if `npc` omitted |
 | `moveNpc(npc, location)` | Move an NPC (pass `null` to clear location) |
 | `setNpc(npcId)` | Set scene NPC for speech colour |
 | `hideNpcImage()` | Hide NPC portrait (e.g. during travel) |
@@ -303,7 +302,7 @@ Predicates are instructions that return boolean values:
 | `hasStat(stat, min?, max?)` | Check player stat range |
 | `inLocation(location)` | Check current location |
 | `inScene()` | Check if scene has options |
-| `npcStat(npc, stat, min?, max?)` | Check NPC stat |
+| `npcStat(stat, options?)` | Check NPC stat (options: `npc`, `min`, `max`). Defaults to scene NPC, stat > 0 |
 | `hasCard(cardId)` | Check if player has card |
 | `cardCompleted(cardId)` | Check if card is completed |
 | `locationDiscovered(location)` | Check if location is discovered |
@@ -340,7 +339,7 @@ scripts: {
 The `scripts` record on an NPC definition can mix pure DSL and imperative functions freely. DSL instructions are ideal for narrative sequences; imperative functions are better for complex logic:
 
 ```typescript
-registerNPC('tour-guide', {
+registerNPC({
   name: 'Rob Hayes',
   // ...
 
@@ -361,7 +360,7 @@ registerNPC('tour-guide', {
       scene(
         showNpcImage(),
         say('I hope that helps!'),
-        addNpcStat('affection', 1, 'tour-guide', { hidden: true }),
+        addNpcStat('affection', 1, { hidden: true }),
         npcLeaveOption('You thank Rob and he leaves.'),
       ),
     ),
@@ -386,20 +385,20 @@ registerNPC('tour-guide', {
       const npc = game.getNPC('tour-guide')
       if (npc.affection >= 30) {
         if (game.player.skillTest('Charm', 12)) {
-          game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40, hidden: true }))
+          game.run(addNpcStat('affection', 2, { max: 40, hidden: true }))
           game.run(seq(
             'You say something quiet and sincere.',
             say('You\'re special, you know that?'),
           ))
         } else {
-          game.run(addNpcStat('affection', -3, 'tour-guide', { min: 20 }))
+          game.run(addNpcStat('affection', -3, { min: 20 }))
           game.run(seq(
             'You lean in close.',
             say('Could we maybe slow down a bit?'),
           ))
         }
       } else {
-        game.run(addNpcStat('affection', 3, 'tour-guide', { max: 30 }))
+        game.run(addNpcStat('affection', 3, { max: 30 }))
         game.run(seq(
           'You lean closer and compliment his knowledge.',
           say('Oh! Well, I — thank you.'),
@@ -480,7 +479,7 @@ Often combined with `seq()` for multi-instruction branches:
 
 ```typescript
 cond(
-  npcStat('tour-guide', 'affection', 15),
+  npcStat('affection', { min: 15 }),
   seq(
     say('I never get tired of this view. But it\'s nicer with company.'),
     'He glances at you with a warm smile.',
@@ -538,7 +537,7 @@ skillCheck('Charm', 12,
   seq(
     'You find the right words. He beams.',
     say('You mean that? That means a lot.'),
-    addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+    addNpcStat('affection', 3, { max: 50 }),
   ),
   seq(
     'You try to find the right words, but the beauty of the place has left you lost for speech.',
@@ -593,6 +592,29 @@ seq(move('lake', 15), text('Rob offers his arm...'))
 
 Without `scene()`, pages would be anonymous instructions — harder to navigate in long sequences.
 
+### option() vs branch()
+
+Both create clickable buttons, but they differ in **continuation**:
+
+- **`option()`** — fire-and-forget. Runs a named script and the current scene is gone. No automatic return. Use for menu items, NPC interactions, "Buy a drink", "Leave".
+- **`branch()`** — inline detour. Pushes content onto the scene stack, so the outer `scenes()` sequence resumes automatically once the branch finishes. Use for story choices within narrative sequences (dates, tours, events).
+
+```typescript
+// option(): clicking "Buy a drink" runs buyDrink — you don't come back here
+option('Buy a drink', 'buyDrink')
+
+// branch(): clicking "Lean against him" plays the content, then Scene 3 continues
+scenes(
+  scene(say('Choose.'),
+    branch('Lean against him', 'You lean in.'),
+    branch('Stay put', 'You keep your distance.'),
+  ),
+  scene(say('It was a lovely evening.')),  // ← resumes here either way
+)
+```
+
+Under the hood, `branch()` constructs an `option()` targeting `advanceScene` with a `push` parameter — the scene stack does the wiring.
+
 ### branch() — Player Choices Within Scenes
 
 Use `branch()` inside a scene page to offer player choices. When the player picks a branch, the content plays, then the outer `scenes()` sequence resumes:
@@ -609,7 +631,7 @@ scenes(
     say('It\'s nicer with company.'),
     branch('Lean against him',
       'You lean into his shoulder. He relaxes.',
-      addNpcStat('affection', 3, 'tour-guide', { max: 45 }),
+      addNpcStat('affection', 3, { max: 45 }),
       say('This is... really nice.'),
     ),
     branch('Stay where you are',
@@ -625,10 +647,10 @@ scenes(
 )
 ```
 
-For **multi-page branches** (where a branch contains its own sequence of scenes), pass an `Instruction[]` array:
+For **multi-page branches**, wrap the content in `scenes()`:
 
 ```typescript
-branch('Go to the hidden garden', [
+branch('Go to the hidden garden', scenes(
   scene(
     hideNpcImage(),
     'Rob leads you along a narrow path.',
@@ -638,10 +660,9 @@ branch('Go to the hidden garden', [
     showNpcImage(),
     'You step into a hidden garden.',
     say('I\'ve never shown anyone before.'),
-    addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+    addNpcStat('affection', 3, { max: 50 }),
   ),
-  // ... more scenes
-])
+))
 ```
 
 ### choice() — Branches with Shared Epilogue
@@ -671,7 +692,7 @@ Non-branch elements form the shared epilogue, merged into the **last page** of e
 scene(
   say('Shall we walk a bit further?'),
   cond(
-    npcStat('tour-guide', 'affection', 35),
+    npcStat('affection', { min: 35 }),
     seq(
       'He hesitates, then lowers his voice.',
       say('There\'s a place I\'ve never shown anyone...'),
@@ -690,21 +711,21 @@ scene(
 
 ```typescript
 choice(
-  gatedBranch(npcStat('tour-guide', 'affection', 35),
-    'Go to the hidden garden', ...gardenPath()),
-  branch('Walk to the pier', ...pierPath()),
+  gatedBranch(npcStat('affection', { min: 35 }),
+    'Go to the hidden garden', gardenPath()),
+  branch('Walk to the pier', pierPath()),
   endDate(),
 )
 ```
 
 ### Helper Functions for Branching Paths
 
-For complex branching (like date scenes with multiple routes), extract paths into functions that return `Instruction[]`:
+For complex branching (like date scenes with multiple routes), extract paths into functions. Complete paths return `Instruction` (a `scenes()` call); shared fragments return `Instruction[]` for spreading:
 
 ```typescript
-/** Pier path — the default scenic route. */
-function robPierPath(): Instruction[] {
-  return [
+/** Pier path — complete route returning scenes(). */
+function robPierPath(): Instruction {
+  return scenes(
     scene(
       hideNpcImage(),
       'You follow the lakeside path.',
@@ -719,19 +740,27 @@ function robPierPath(): Instruction[] {
       'You sit on the edge of the pier.',
       branch('Take his hand',
         'You lace your fingers through his.',
-        addNpcStat('affection', 5, 'tour-guide', { max: 50 }),
+        addNpcStat('affection', 5, { max: 50 }),
       ),
       branch('Enjoy the view',
         'You gaze up at the stars together.',
       ),
     ),
-    // ...shared walk-home scenes
+    // Shared walk-home fragment spread into this scenes()
     ...robWalkHome(),
+  )
+}
+
+/** Shared fragment — returns Instruction[] for spreading. */
+function robWalkHome(): Instruction[] {
+  return [
+    scene(hideNpcImage(), 'Rob walks you home.', move('backstreets', 20)),
+    scene(showNpcImage(), say('I had a lovely time tonight.'), endDate()),
   ]
 }
 ```
 
-These functions are called at module load time to build the instruction tree. The result is a flat `Instruction[]` that can be spread into `scenes()` or passed to `branch()`:
+Complete paths can be passed directly to `branch()`:
 
 ```typescript
 dateScene: scenes(
@@ -749,8 +778,7 @@ dateScene: scenes(
 |--------|---------|---------|
 | `scenes(...pages)` | `Instruction` | Multi-page sequence with Continue buttons |
 | `scene(...elements)` | `Instruction` | Group elements into a single page (alias for `seq`) |
-| `branch(label, ...elements)` | `Instruction` | Player choice button (inline content) |
-| `branch(label, pages[])` | `Instruction` | Player choice button (multi-page) |
+| `branch(label, ...elements)` | `Instruction` | Story choice with auto-resume (use `scenes()` for multi-page) |
 | `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
 | `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
 | `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
@@ -770,13 +798,13 @@ The DSL coexists with imperative scripts. You can:
      flirt: (game: Game) => {
        const npc = game.getNPC('tour-guide')
        if (npc.affection >= 30) {
-         game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40 }))
+         game.run(addNpcStat('affection', 2, { max: 40 }))
          game.run(seq(
            'You say something quiet and sincere.',
            say('You\'re special, you know that?'),
          ))
        } else {
-         game.run(addNpcStat('affection', 3, 'tour-guide', { max: 30 }))
+         game.run(addNpcStat('affection', 3, { max: 30 }))
          game.run(seq(
            'You lean closer and compliment his knowledge.',
            say('Oh! Well, I — thank you.'),
@@ -875,7 +903,7 @@ tour: scenes(
     'You set off together.',
     move('default'), timeLapse(15),
     cond(
-      npcStat('tour-guide', 'affection', 15),
+      npcStat('affection', { min: 15 }),
       say('I never get tired of this view. But it\'s nicer with company.'),
       say('Magnificent, isn\'t it?'),
     ),
@@ -888,7 +916,7 @@ tour: scenes(
   scene(
     showNpcImage(),
     say('I hope that helps!'),
-    addNpcStat('affection', 1, 'tour-guide', { hidden: true }),
+    addNpcStat('affection', 1, { hidden: true }),
     npcLeaveOption('You thank Rob and he leaves.'),
   ),
 ),
@@ -907,14 +935,14 @@ flirt: (game: Game) => {
   const npc = game.getNPC('tour-guide')
   if (npc.affection >= 30) {
     if (game.player.skillTest('Charm', 12)) {
-      game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40, hidden: true }))
+      game.run(addNpcStat('affection', 2, { max: 40, hidden: true }))
       const scenes = [
         ['You say something sincere.', say('You\'re special, you know that?')],
         ['You let the silence stretch.', say('I like this. Just being with you.')],
       ]
       game.run(seq(...scenes[Math.floor(Math.random() * scenes.length)]))
     } else {
-      game.run(addNpcStat('affection', -3, 'tour-guide', { min: 20 }))
+      game.run(addNpcStat('affection', -3, { min: 20 }))
       game.run(seq(
         'You lean in close.',
         say('Could we maybe slow down a bit?'),
@@ -940,7 +968,7 @@ when(and(hasItem('key'), hasStat('Perception', 20)),
 ```typescript
 // Different dialogue based on relationship
 cond(
-  npcStat('tour-guide', 'affection', 15),
+  npcStat('affection', { min: 15 }),
   seq(
     say('I never get tired of this view. But it\'s nicer with company.'),
     'He glances at you with a warm, slightly nervous smile.',
@@ -967,7 +995,7 @@ random(
 ```typescript
 // Rob varies his comments on the tour based on affection level
 cond(
-  npcStat('tour-guide', 'affection', 15),
+  npcStat('affection', { min: 15 }),
   seq(
     say('The Lake. I come here when I need to think. It\'s my favourite spot.'),
     'He pauses, watching the steam curl over the water.',
@@ -1000,7 +1028,7 @@ skillCheck('Charm', 10,
   seq(
     'You raise your glass steadily, holding his gaze.',
     say('You know what? You\'re alright.'),
-    addNpcStat('affection', 3, 'jonny-elric', { max: 18 }),
+    addNpcStat('affection', 3, { max: 18 }),
   ),
   seq(
     'Your hand trembles slightly. He notices.',

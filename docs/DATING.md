@@ -128,12 +128,12 @@ registerNPC('my-npc', {
   },
 
   onWait: (game) => {
-    if (handleDateApproach(game, 'my-npc')) return
+    if (handleDateApproach(game)) return
     // ...normal wait logic
   },
 
   onApproach: (game) => {
-    if (handleDateApproach(game, 'my-npc')) return
+    if (handleDateApproach(game)) return
     // ...normal approach logic
   },
 })
@@ -205,10 +205,10 @@ scenes(
     say('"That was lovely."'),
     // Only attempt a kiss if affection is high enough
     cond(
-      npcStat('my-npc', 'affection', 40),
+      npcStat('affection', { min: 40 }),
       seq(
         say('"May I... may I kiss you?"'),
-        branch('Kiss him', text('You share a gentle kiss.'), addNpcStat('affection', 5, 'my-npc')),
+        branch('Kiss him', text('You share a gentle kiss.'), addNpcStat('affection', 5)),
         branch('Not yet', say('"Of course. No rush."')),
       ),
       // Default: too early for a kiss
@@ -235,8 +235,8 @@ cond(
 
 // With inline callbacks
 skillCheck('Charm', 15,
-  [say('You always know just what to say.'), addNpcStat('affection', 3, 'my-npc')],
-  [text('You stumble over your words, but he smiles anyway.')],
+  seq(say('You always know just what to say.'), addNpcStat('affection', 3)),
+  'You stumble over your words, but he smiles anyway.',
 )
 ```
 
@@ -249,7 +249,7 @@ A common pattern is offering the player a choice between showing more intimacy o
   text('He moves a little closer on the bench.'),
   branch('Lean against him',
     text('You lean against his shoulder. He tenses for a moment, then relaxes.'),
-    addNpcStat('affection', 3, 'my-npc'),
+    addNpcStat('affection', 3),
     say('This is nice.'),
   ),
   branch('Stay where you are',
@@ -283,11 +283,11 @@ For complex branching, nest `scenes()` inside `cond()`:
 
 ```typescript
 cond(
-  npcStat('my-npc', 'affection', 30),
+  npcStat('affection', { min: 30 }),
   scenes(
     [say('"I know a secret spot. Follow me!"')],
     [text('He leads you to a hidden garden.'), say('"Nobody else knows about this place."')],
-    [addNpcStat('affection', 5, 'my-npc'), endDate()],
+    [addNpcStat('affection', 5), endDate()],
   ),
   scenes(
     [say('"Shall we head back? It\'s getting late."')],

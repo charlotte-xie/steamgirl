@@ -498,14 +498,17 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.inScene
   },
 
-  /** Check NPC stat value */
+  /** Check NPC stat value. Defaults to stat > 0 if no min/max specified. Uses scene NPC if npc omitted. */
   npcStat: (game: Game, params: { npc?: string; stat?: string; min?: number; max?: number }): boolean => {
-    if (!params.npc || !params.stat) return false
-    const npc = game.npcs.get(params.npc)
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId || !params.stat) return false
+    const npc = game.npcs.get(npcId)
     if (!npc) return false
     const value = npc.stats.get(params.stat) ?? 0
     if (params.min !== undefined && value < params.min) return false
     if (params.max !== undefined && value > params.max) return false
+    // Default: stat > 0 when no range specified
+    if (params.min === undefined && params.max === undefined) return value > 0
     return true
   },
 

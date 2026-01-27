@@ -178,7 +178,7 @@ registerNPC('jonny-elric', {
 
     if (game.player.skillTest('Charm', 15)) {
       // Passed — you held his attention
-      game.run(addNpcStat('affection', 1, 'jonny-elric', { hidden: true }))
+      game.run(addNpcStat('affection', 1, { hidden: true }))
       npc.say('Hmm.')
       game.add('His eyes linger on you for a moment longer than necessary. Something registers — not warmth, exactly, but a flicker of interest.')
       npc.say('Not bad. But I\'m busy.')
@@ -186,7 +186,7 @@ registerNPC('jonny-elric', {
       // Failed — he's unimpressed
       // Only penalise if there's something to lose
       if (npc.affection > 0) {
-        game.run(addNpcStat('affection', -1, 'jonny-elric', { min: 0, hidden: true }))
+        game.run(addNpcStat('affection', -1, { min: 0, hidden: true }))
       }
       npc.say('Do I know you?')
       game.add('His gaze slides past you as though you\'ve ceased to exist.')
@@ -208,7 +208,7 @@ registerNPC('jonny-elric', {
 
       // Charm test on each interaction
       if (game.player.skillTest('Charm', 12)) {
-        game.run(addNpcStat('affection', 1, 'jonny-elric', { max: 5, hidden: true }))
+        game.run(addNpcStat('affection', 1, { max: 5, hidden: true }))
         const lines = [
           'He gives you a measured nod. You\'re holding his attention.',
           'Something shifts behind the monocle — a grudging respect.',
@@ -217,7 +217,7 @@ registerNPC('jonny-elric', {
         game.add(lines[Math.floor(Math.random() * lines.length)])
       } else {
         if (npc.affection > 0) {
-          game.run(addNpcStat('affection', -1, 'jonny-elric', { min: 0, hidden: true }))
+          game.run(addNpcStat('affection', -1, { min: 0, hidden: true }))
         }
         const lines = [
           'His expression hardens. You\'ve lost him.',
@@ -449,8 +449,8 @@ registerNPC('jonny-elric', {
       game.add('He adjusts his monocle, but his hand is trembling. He didn\'t expect it to go that easily. Maybe it didn\'t.')
       jonny.say('I won\'t forget this.')
 
-      game.run(addNpcStat('affection', 20, 'jonny-elric'))
-      game.run(addNpcStat('affection', -40, 'elvis-crowe', { min: 0 }))
+      game.run(addNpcStat('affection', 20))
+      game.run(addNpcStat('affection', -40, { npc: 'elvis-crowe', min: 0 }))
 
       // Make Elvis know the player's name now — they've met properly
       elvis.nameKnown = 1
@@ -485,8 +485,8 @@ registerNPC('jonny-elric', {
       jonny.say('You made your choice.')
       game.add('He walks out without looking back. The cellar feels very empty.')
 
-      game.run(addNpcStat('affection', 20, 'elvis-crowe'))
-      game.run(addNpcStat('affection', -40, 'jonny-elric', { min: 0 }))
+      game.run(addNpcStat('affection', 20, { npc: 'elvis-crowe' }))
+      game.run(addNpcStat('affection', -40, { min: 0 }))
 
       // Make Elvis know the player's name now
       elvis.nameKnown = 1
@@ -544,8 +544,8 @@ registerNPC('jonny-elric', {
 
         game.add('The door shuts. You\'re alone in the cellar, and the gas lamp flickers as though even it disapproves.')
 
-        game.run(addNpcStat('affection', -20, 'jonny-elric', { min: 0 }))
-        game.run(addNpcStat('affection', -20, 'elvis-crowe', { min: 0 }))
+        game.run(addNpcStat('affection', -20, { min: 0 }))
+        game.run(addNpcStat('affection', -20, { npc: 'elvis-crowe', min: 0 }))
 
         // Elvis still learns your name
         elvis.nameKnown = 1
@@ -584,7 +584,7 @@ function jonnyTourScene(): Instruction[] {
       branch('That must keep people safe.',
         'He glances at you — surprised, then pleased.',
         say('That\'s... exactly right. Someone\'s got to do it.'),
-        addNpcStat('affection', 2, 'jonny-elric', { max: 12 }),
+        addNpcStat('affection', 2, { max: 12 }),
       ),
       branch('Isn\'t that just intimidation?',
         'His jaw tightens.',
@@ -602,7 +602,7 @@ function jonnyTourScene(): Instruction[] {
       branch('You\'re good at what you do.',
         say('Damn right I am.'),
         'He straightens his coat, visibly gratified.',
-        addNpcStat('affection', 3, 'jonny-elric', { max: 15 }),
+        addNpcStat('affection', 3, { max: 15 }),
       ),
       branch('Doesn\'t anyone push back?',
         say('They try. Once.'),
@@ -623,7 +623,7 @@ function jonnyTourScene(): Instruction[] {
         seq(
           'You raise yours to match, holding his gaze steadily. The corner of his mouth twitches — the closest thing to warmth you\'ve seen from him.',
           say('You know what? You\'re alright. Most people can\'t sit across from me without fidgeting.'),
-          addNpcStat('affection', 3, 'jonny-elric', { max: 18 }),
+          addNpcStat('affection', 3, { max: 18 }),
         ),
         seq(
           'You raise your glass. Your hand trembles slightly. He notices — he notices everything.',
@@ -643,7 +643,7 @@ function jonnyTourScene(): Instruction[] {
       branch('You handled that well.',
         'He looks at you — really looks at you — and for a moment the enforcer mask slips.',
         say('Most people look away when things get tense. You didn\'t.'),
-        addNpcStat('affection', 2, 'jonny-elric', { max: 20 }),
+        addNpcStat('affection', 2, { max: 20 }),
       ),
       branch('That was a bit frightening.',
         say('I know. But you stayed. That counts for something.'),
@@ -683,12 +683,12 @@ function jonnyRoundScene(): Instruction[] {
       say('Business. Don\'t worry about it.'),
       branch('I wasn\'t going to ask.',
         say('Good. Smart.'),
-        addNpcStat('affection', 2, 'jonny-elric', { max: 25, hidden: true }),
+        addNpcStat('affection', 2, { max: 25, hidden: true }),
       ),
       branch('Is everything all right?',
         say('Always is when I\'m handling it.'),
         'He gives you a sideways look — not displeased.',
-        addNpcStat('affection', 1, 'jonny-elric', { max: 25, hidden: true }),
+        addNpcStat('affection', 1, { max: 25, hidden: true }),
       ),
     ),
     // ── Scene 3: Quiet moment ──
@@ -699,7 +699,7 @@ function jonnyRoundScene(): Instruction[] {
       say('Having someone to walk with makes a difference. Not that I\'d admit that to anyone else.'),
       branch('Your secret\'s safe.',
         'Something shifts behind his eyes — not softness, but a guard lowering, just slightly.',
-        addNpcStat('affection', 2, 'jonny-elric', { max: 25, hidden: true }),
+        addNpcStat('affection', 2, { max: 25, hidden: true }),
       ),
       branch('You should tell people more often.',
         say('And ruin my reputation? Not a chance.'),

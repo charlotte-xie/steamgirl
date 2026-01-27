@@ -132,19 +132,19 @@ describe('ScriptDSL', () => {
         }])
       })
 
-      it('branch() with Instruction[] uses multi-scene push', () => {
-        const result = branch('Go to garden', [
+      it('branch() with scenes() wraps multi-page content', () => {
+        const result = branch('Go to garden', scenes(
           scene(text('Scene 1')),
           scene(text('Scene 2')),
-        ])
+        ))
         expect(result).toEqual(['option', {
           label: 'Go to garden',
           script: 'global:advanceScene',
           params: {
-            push: [
-              seq(text('Scene 1')),
-              seq(text('Scene 2')),
-            ],
+            push: [seq(scenes(
+              scene(text('Scene 1')),
+              scene(text('Scene 2')),
+            ))],
           },
         }])
       })
@@ -315,7 +315,7 @@ describe('ScriptDSL', () => {
       })
 
       it('npcStat() produces npcStat instruction', () => {
-        expect(npcStat('barkeeper', 'trust', 50)).toEqual(['npcStat', { npc: 'barkeeper', stat: 'trust', min: 50, max: undefined }])
+        expect(npcStat('trust', { npc: 'barkeeper', min: 50 })).toEqual(['npcStat', { npc: 'barkeeper', stat: 'trust', min: 50 }])
       })
 
       it('hasCard() produces hasCard instruction', () => {
@@ -417,12 +417,13 @@ describe('ScriptDSL', () => {
         ])
       })
 
-      it('choice() with multi-scene branch appends epilogue to last page only', () => {
+      it('choice() with multi-scene branch appends epilogue to branch content', () => {
+        const branchContent = scenes(
+          scene(text('Scene 1')),
+          scene(text('Scene 2')),
+        )
         const result = choice(
-          branch('Garden', [
-            scene(text('Scene 1')),
-            scene(text('Scene 2')),
-          ]),
+          branch('Garden', branchContent),
           text('Epilogue text'),
         )
 
@@ -431,10 +432,9 @@ describe('ScriptDSL', () => {
         const [, branchParams] = instructions[0]
         const push = (branchParams as any).params.push
 
-        // Scene 1 unchanged
-        expect(push[0]).toEqual(seq(text('Scene 1')))
-        // Scene 2 has epilogue appended via seq wrapping
-        expect(push[1]).toEqual(seq(seq(text('Scene 2')), text('Epilogue text')))
+        // Single push entry: seq(branch content, epilogue)
+        expect(push).toHaveLength(1)
+        expect(push[0]).toEqual(seq(seq(branchContent), text('Epilogue text')))
       })
 
       it('gatedBranch() produces when(condition, branch(...))', () => {
@@ -448,18 +448,18 @@ describe('ScriptDSL', () => {
         )
       })
 
-      it('gatedBranch() with multi-scene produces when(condition, branch(scenes))', () => {
-        const scenePages: Instruction[] = [
+      it('gatedBranch() with scenes() produces when(condition, branch(scenes(...)))', () => {
+        const multiPage = scenes(
           scene(text('Scene 1')),
           scene(text('Scene 2')),
-        ]
+        )
         const result = gatedBranch(
-          npcStat('npc', 'affection', 35),
+          npcStat('affection', { npc: 'npc', min: 35 }),
           'Hidden path',
-          scenePages,
+          multiPage,
         )
         expect(result).toEqual(
-          when(npcStat('npc', 'affection', 35), branch('Hidden path', scenePages))
+          when(npcStat('affection', { npc: 'npc', min: 35 }), branch('Hidden path', multiPage))
         )
       })
 
@@ -1095,14 +1095,14 @@ describe('ScriptDSL', () => {
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
       })
 
-      it('branch() helper works with multi-page branch', () => {
+      it('branch() helper works with multi-page branch via scenes()', () => {
         game.clearScene()
         game.run(scenes(
           'Scene 1',
-          branch('Garden path', [
+          branch('Garden path', scenes(
             text('Garden scene 1'),
             text('Garden scene 2'),
-          ]),
+          )),
           'After garden',
         ))
 

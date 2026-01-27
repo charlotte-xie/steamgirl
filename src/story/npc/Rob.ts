@@ -163,7 +163,7 @@ registerNPC('tour-guide', {
       scene(
         hideNpcImage(),
         cond(
-          npcStat('tour-guide', 'affection', 15),
+          npcStat('affection', { min: 15 }),
           seq(
             'You set off together, Rob matching your pace. He keeps glancing at you with a warm, slightly nervous smile.',
             move('default'), timeLapse(15),
@@ -198,7 +198,7 @@ registerNPC('tour-guide', {
         discoverLocation('lake'),
         move('lake'), timeLapse(18),
         cond(
-          npcStat('tour-guide', 'affection', 15),
+          npcStat('affection', { min: 15 }),
           seq(
             say('The Lake. I come here when I need to think. It\'s my favourite spot in the whole city.'),
             'He pauses, watching the steam curl over the water.',
@@ -213,7 +213,7 @@ registerNPC('tour-guide', {
         discoverLocation('market'),
         move('market'), timeLapse(15),
         cond(
-          npcStat('tour-guide', 'affection', 15),
+          npcStat('affection', { min: 15 }),
           seq(
             say('The Market. Brilliant for oddities, but stay close — some of the vendors can be a bit pushy.'),
             'He steps a little nearer as the crowd thickens, his hand hovering protectively near your elbow.',
@@ -228,7 +228,7 @@ registerNPC('tour-guide', {
         move('backstreets'), timeLapse(15),
         'The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.',
         cond(
-          npcStat('tour-guide', 'affection', 15),
+          npcStat('affection', { min: 15 }),
           seq(
             say('Your room\'s in one of the buildings, I believe. It can get a bit rough at night, so — if you ever need anything, you know where to find me.'),
             'He catches your eye, and looks away quickly.',
@@ -241,7 +241,7 @@ registerNPC('tour-guide', {
         showNpcImage(),
         'Rob shows you around the backstreets for a while.',
         cond(
-          npcStat('tour-guide', 'affection', 15),
+          npcStat('affection', { min: 15 }),
           seq(
             say('I really enjoyed that. More than usual, if I\'m honest.'),
             'He lingers, reluctant to say goodbye.',
@@ -249,8 +249,8 @@ registerNPC('tour-guide', {
           ),
           say('I hope this helps you find your feet. Enjoy Aetheria!'),
         ),
-        addNpcStat('affection', 1, 'tour-guide', { hidden: true }),
-        addNpcStat('tourDone', 1, 'tour-guide', { hidden: true }),
+        addNpcStat('affection', 1, { hidden: true }),
+        addNpcStat('tourDone', 1, { hidden: true }),
         npcLeaveOption('You thank Rob and he leaves you in the backstreets.'),
       ),
     ),
@@ -289,8 +289,8 @@ registerNPC('tour-guide', {
           say('This is how the other half lives, eh? Polished brass everywhere!'),
           say('Steam radiator and everything! You\'ve done well for yourself.'),
         ),
-        addNpcStat('affection', 10, 'tour-guide', { max: 15 }),
-        addNpcStat('hotelVisited', 1, 'tour-guide', { hidden: true }),
+        addNpcStat('affection', 10, { max: 15 }),
+        addNpcStat('hotelVisited', 1, { hidden: true }),
         'Rob is clearly impressed by your accommodation.',
       ),
       // Transition into normal room conversation
@@ -337,7 +337,7 @@ registerNPC('tour-guide', {
       if (npc.affection >= 30) {
         if (game.player.skillTest('Charm', 12)) {
           // Charming enough to keep things comfortable
-          game.run(addNpcStat('affection', 2, 'tour-guide', { max: 40, hidden: true }))
+          game.run(addNpcStat('affection', 2, { max: 40, hidden: true }))
           const highFlirtScenes = [
             [
               'You say something quiet and sincere about how much you enjoy his company.',
@@ -359,7 +359,7 @@ registerNPC('tour-guide', {
           game.run(seq(...chosen))
         } else {
           // Too forward — Rob pulls back
-          game.run(addNpcStat('affection', -3, 'tour-guide', { min: 20 }))
+          game.run(addNpcStat('affection', -3, { min: 20 }))
           const pushbackScenes = [
             [
               'You lean in close and trail a finger down his arm.',
@@ -382,7 +382,7 @@ registerNPC('tour-guide', {
         }
       } else {
         // Normal flirting — easy phase, +3 capped at 30
-        game.run(addNpcStat('affection', 3, 'tour-guide', { max: 30 }))
+        game.run(addNpcStat('affection', 3, { max: 30 }))
 
         const flirtScenes = [
           [
@@ -482,8 +482,8 @@ registerNPC('tour-guide', {
 // ============================================================================
 
 /** Pier path — the default scenic route with gift and stargazing. */
-function robPierPath(): Instruction[] {
-  return [
+function robPierPath(): Instruction {
+  return scenes(
     // Pier: Walking there
     scene(
       hideNpcImage(),
@@ -506,7 +506,7 @@ function robPierPath(): Instruction[] {
       'Rob points upward, his arm almost but not quite touching yours.',
       branch('Take his hand',
         'You reach over and lace your fingers through his. He freezes — then holds on as though you might vanish.',
-        addNpcStat('affection', 5, 'tour-guide', { max: 50 }),
+        addNpcStat('affection', 5, { max: 50 }),
         say('I... wasn\'t expecting that.'),
         'His thumb traces a small circle on the back of your hand. Neither of you speaks for a while, and neither of you needs to.',
       ),
@@ -517,12 +517,12 @@ function robPierPath(): Instruction[] {
     ),
     // Walk home
     ...robWalkHome(),
-  ]
+  )
 }
 
 /** Garden path — high-affection secret route. */
-function robGardenPath(): Instruction[] {
-  return [
+function robGardenPath(): Instruction {
+  return scenes(
     // Garden: Getting there
     scene(
       hideNpcImage(),
@@ -537,7 +537,7 @@ function robGardenPath(): Instruction[] {
       say('I found this place years ago. Nobody comes here. I think people have forgotten it exists.'),
       'His voice is soft, almost reverent.',
       say('I\'ve never shown anyone before. But I thought... I thought you\'d understand why I love it.'),
-      addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+      addNpcStat('affection', 3, { max: 50 }),
     ),
     // Garden: Conversation — skill check for a special moment
     scene(
@@ -546,7 +546,7 @@ function robGardenPath(): Instruction[] {
         seq(
           'You tell him it\'s the most beautiful place you\'ve seen in Aetheria. He beams — really beams — as though you\'ve given him a gift worth more than gold.',
           say('You mean that? It\'s just a forgotten garden, but — that means a lot. Coming from you.'),
-          addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+          addNpcStat('affection', 3, { max: 50 }),
         ),
         seq(
           'You try to find the right words, but the beauty of the place has left you a bit lost for speech.',
@@ -562,7 +562,7 @@ function robGardenPath(): Instruction[] {
       'His voice catches slightly. He looks down at his hands.',
       branch('Sit close beside him',
         'You sit next to him, close enough that your shoulders press together. He exhales — a long, shaky breath — and you feel some tension leave him.',
-        addNpcStat('affection', 3, 'tour-guide', { max: 50 }),
+        addNpcStat('affection', 3, { max: 50 }),
         say('I don\'t really know what I\'m doing,'),
         'he admits quietly.',
         say('But I\'m glad I\'m doing it with you.'),
@@ -575,7 +575,7 @@ function robGardenPath(): Instruction[] {
     ),
     // Walk home
     ...robWalkHome(),
-  ]
+  )
 }
 
 /** Shared walk-home and farewell scenes. Both paths converge here. */
@@ -594,12 +594,12 @@ function robWalkHome(): Instruction[] {
       say('I had a really lovely time tonight. Thank you for coming.'),
       // High affection: Rob asks to kiss you
       cond(
-        npcStat('tour-guide', 'affection', 40),
+        npcStat('affection', { min: 40 }),
         seq(
           'He stops under a streetlamp, its amber glow soft on his face. He turns to you, and for once he doesn\'t look away.',
           say('I... would it be all right if I kissed you?'),
           'His voice is barely a whisper. His ears are crimson.',
-          branch('Kiss him', [
+          branch('Kiss him', scenes(
             // The kiss — pure narrative, no stat noise
             scene(
               'You close the distance between you. The kiss is gentle, a little clumsy, and over too soon. When you pull apart his eyes are shining.',
@@ -610,10 +610,10 @@ function robWalkHome(): Instruction[] {
             scene(
               say('Get home safe. Please.'),
               'He backs away slowly, still smiling, then turns and disappears into the steam.',
-              addNpcStat('affection', 5, 'tour-guide', { hidden: true, max: 55 }),
+              addNpcStat('affection', 5, { hidden: true, max: 55 }),
               endDate(),
             ),
-          ]),
+          )),
           branch('Not tonight',
             say('Of course. No — of course. I\'m sorry, I shouldn\'t have—'),
             'You tell him there\'s nothing to apologise for. He nods, manages a smile.',
@@ -676,7 +676,7 @@ registerDatePlan({
       // Player choice: show intimacy or hold back
       branch('Lean against him',
         'You lean against his shoulder. He tenses for a moment, then relaxes, letting out a slow breath.',
-        addNpcStat('affection', 3, 'tour-guide', { max: 45 }),
+        addNpcStat('affection', 3, { max: 45 }),
         say('This is... really nice.'),
         'His voice is barely above a whisper. You feel the warmth of him through his coat.',
       ),
@@ -696,7 +696,7 @@ registerDatePlan({
           say('A shooting star! Did you see that? Quick — make a wish!'),
           'Rob closes his eyes tight, grinning like a child. When he opens them, he catches you watching and goes pink.',
           say('I\'m not telling you what I wished for. That\'s the rule.'),
-          addNpcStat('affection', 2, 'tour-guide', { max: 45 }),
+          addNpcStat('affection', 2, { max: 45 }),
         ),
         seq(
           'The stars are beginning to appear, faint pinpricks in the deepening sky.',
@@ -710,7 +710,7 @@ registerDatePlan({
       say('Shall we walk a bit further? I know a few spots around here.'),
       // High-affection path: Rob knows a secret garden
       cond(
-        npcStat('tour-guide', 'affection', 35),
+        npcStat('affection', { min: 35 }),
         seq(
           'He hesitates, then lowers his voice.',
           say('Actually... there\'s a place I\'ve never shown anyone. A garden, hidden behind the old waterworks. It\'s a bit of a scramble to get to, but it\'s worth it. If you trust me.'),

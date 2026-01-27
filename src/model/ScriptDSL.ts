@@ -88,7 +88,15 @@ export const npcName = (npc?: string): Instruction =>
   run('npcName', { npc })
 
 /**
- * Add an option button to the scene.
+ * Add an option button to the scene — fire-and-forget navigation.
+ *
+ * When clicked the named script runs and takes over completely; there is
+ * no automatic return to the current scene. Use for menu items, NPC
+ * interactions, "Leave" buttons, and any navigation that exits the
+ * current context.
+ *
+ * For player choices **within** a `scenes()` sequence that should resume
+ * afterwards, use `branch()` instead.
  *
  * Script resolution:
  * - 'npc:scriptName' - explicitly call NPC script
@@ -200,31 +208,29 @@ export const scene = (...elements: SceneElement[]): Instruction =>
   seq(...elements)
 
 /**
- * Create a player-choice option that continues the current scenes() sequence.
- * Use inside a scene page to offer branching paths.
+ * Create a player-choice option that **continues** the current `scenes()`
+ * sequence after its content plays out.
  *
- * The simplest form takes a label and inline instructions for a single branch page:
+ * Unlike `option()` (fire-and-forget — runs a script, no return), `branch()`
+ * pushes its content onto the scene stack so the outer sequence resumes
+ * automatically once the branch finishes. Use `branch()` for story choices
+ * inside narrative sequences; use `option()` for menu navigation.
+ *
+ * Single-page branch:
  *   branch('Kiss him', 'You kiss.', addNpcStat('affection', 5))
  *
- * For multi-page branches, pass an array of Instructions as the second argument:
- *   branch('Go to the garden', [
+ * Multi-page branch — wrap in scenes():
+ *   branch('Go to the garden', scenes(
  *     scene(move('garden'), 'You arrive at the garden.'),
  *     scene('The roses are beautiful.', endDate()),
- *   ])
+ *   ))
  *
  * @param label - Button label shown to the player
- * @param rest - Either inline SceneElements (variadic) or a single Instruction[] array
+ * @param rest - SceneElements to display when chosen (strings auto-wrap to text())
  */
-export function branch(label: string, ...rest: SceneElement[]): Instruction
-export function branch(label: string, pages: Instruction[]): Instruction
-export function branch(label: string, ...rest: (SceneElement | Instruction[])[]): Instruction {
-  // If the single argument is an array of Instructions (pages), it's multi-page
-  if (rest.length === 1 && Array.isArray(rest[0]) && Array.isArray((rest[0] as unknown[])[0])) {
-    return option(label, 'global:advanceScene', { push: rest[0] })
-  }
-  // Otherwise, all args are inline elements for a single scene
+export function branch(label: string, ...rest: SceneElement[]): Instruction {
   return option(label, 'global:advanceScene', {
-    push: [seq(...rest as SceneElement[])],
+    push: [seq(...rest)],
   })
 }
 
@@ -289,7 +295,7 @@ function appendEpilogue(instr: Instruction, epilogue: Instruction[]): Instructio
  * choice(
  *   branch('Kiss him', 'You kiss.', say('Wow.')),
  *   branch('Not tonight', 'You decline gracefully.'),
- *   addNpcStat('affection', 5, 'tour-guide', { hidden: true, max: 55 }),
+ *   addNpcStat('affection', 5, { npc: 'tour-guide', hidden: true, max: 55 }),
  *   endDate(),
  * )
  */
@@ -321,19 +327,16 @@ export function choice(...args: SceneElement[]): Instruction {
  *
  * @example
  * choice(
- *   gatedBranch(npcStat('tour-guide', 'affection', 35),
+ *   gatedBranch(npcStat('affection', { min: 35 }),
  *     'Go to the hidden garden', ...gardenPath()),
  *   branch('Walk to the pier', ...pierPath()),
  *   endDate(),
  * )
  */
-export function gatedBranch(condition: Instruction, label: string, ...rest: SceneElement[]): Instruction
-export function gatedBranch(condition: Instruction, label: string, pages: Instruction[]): Instruction
 export function gatedBranch(
-  condition: Instruction, label: string,
-  ...rest: (SceneElement | Instruction[])[]
+  condition: Instruction, label: string, ...rest: SceneElement[]
 ): Instruction {
-  return when(condition, branch(label, ...(rest as SceneElement[])))
+  return when(condition, branch(label, ...rest))
 }
 
 /**
@@ -429,12 +432,12 @@ export const discoverLocation = (location: string, text?: string, colour?: strin
 export const timeLapseUntil = (untilTime: number): Instruction =>
   run('timeLapse', { untilTime })
 
-/** Modify an NPC stat (e.g. affection). Uses scene NPC if npc omitted. */
+/** Modify an NPC stat (e.g. affection). Uses scene NPC if npc omitted from options. */
 export const addNpcStat = (
-  stat: string, change: number, npc?: string,
-  options?: { hidden?: boolean; max?: number; min?: number }
+  stat: string, change: number,
+  options?: { npc?: string; hidden?: boolean; max?: number; min?: number }
 ): Instruction => {
-  return run('addNpcStat', { stat, change, npc, ...(options ?? {}) })
+  return run('addNpcStat', { stat, change, ...(options ?? {}) })
 }
 
 /** Move an NPC to a location (or null to clear). Uses scene NPC if npc omitted. */
@@ -459,9 +462,9 @@ export const inLocation = (location: string): Instruction =>
 export const inScene = (): Instruction =>
   run('inScene', {})
 
-/** Check NPC stat value */
-export const npcStat = (npc: string, stat: string, min?: number, max?: number): Instruction =>
-  run('npcStat', { npc, stat, min, max })
+/** Check NPC stat value. Defaults to stat > 0 if no min/max specified. Uses scene NPC if npc omitted. */
+export const npcStat = (stat: string, options?: { npc?: string; min?: number; max?: number }): Instruction =>
+  run('npcStat', { stat, ...(options ?? {}) })
 
 /** Check if player has a card */
 export const hasCard = (cardId: string): Instruction =>
