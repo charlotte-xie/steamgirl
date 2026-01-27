@@ -287,31 +287,30 @@ describe('Game', () => {
     expect(after).toBe(before + 1)
   })
 
-  it('should have spice dealer present in lowtown at 1am', () => {
+  it('should have Timmy Bug present in lowtown at 1am', () => {
     const game = new Game()
-    
+
     // Set time to 1am (01:00) on January 5, 1902
-    // JavaScript Date: year, month (0-indexed), day, hours, minutes, seconds
     const oneAmDate = new Date(1902, 0, 5, 1, 0, 0)
     game.time = Math.floor(oneAmDate.getTime() / 1000)
-    
+
     // Ensure lowtown location exists and is discovered
     const lowtownLocation = game.getLocation('lowtown')
     lowtownLocation.discovered = true
-    
+
     // Move player to lowtown
     game.moveToLocation('lowtown')
-    
-    // Get the spice dealer NPC (this will trigger onMove and position it)
-    const spiceDealer = game.getNPC('spice-dealer')
-    
-    // Check that spice dealer's location is lowtown
-    expect(spiceDealer.location).toBe('lowtown')
-    
+
+    // Get Timmy Bug (this will trigger onMove and position him)
+    const timmy = game.getNPC('spice-dealer')
+
+    // Check that Timmy's location is lowtown
+    expect(timmy.location).toBe('lowtown')
+
     // Update npcsPresent to reflect current NPC locations
     game.updateNPCsPresent()
-    
-    // Check that spice dealer is in npcsPresent
+
+    // Check that Timmy is in npcsPresent
     expect(game.npcsPresent).toContain('spice-dealer')
   })
 

@@ -251,11 +251,36 @@ export function handleDateApproach(game: Game, npcId: string): boolean {
 // DATE CARD DEFINITION
 // ============================================================================
 
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function formatMeetTime(meetTime: number): string {
+  const d = new Date(meetTime * 1000)
+  const h = d.getHours()
+  const m = d.getMinutes()
+  const period = h >= 12 ? 'pm' : 'am'
+  const h12 = h % 12 || 12
+  const time = m > 0 ? `${h12}:${m.toString().padStart(2, '0')}${period}` : `${h12}${period}`
+  return `${time}, ${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`
+}
+
 const dateCardDefinition: CardDefinition = {
   name: 'Date',
   description: 'You have a date arranged.',
   type: 'Date',
   color: '#f472b6',
+
+  displayName: (card: Card) => {
+    const plan = DATE_PLANS[dateCardData(card).npc]
+    return plan ? `Date with ${plan.npcDisplayName}` : 'Date'
+  },
+
+  displayDescription: (card: Card) => {
+    const data = dateCardData(card)
+    const plan = DATE_PLANS[data.npc]
+    if (!plan) return 'You have a date arranged.'
+    return `Meet ${plan.npcDisplayName} at ${plan.meetLocationName} at ${formatMeetTime(data.meetTime)}`
+  },
 
   onAdded: (game: Game, card: Card) => {
     const data = dateCardData(card)

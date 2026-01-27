@@ -27,6 +27,10 @@ export interface CardData {
 export interface CardDefinition {
   name: string
   description?: string
+  /** Dynamic name based on card instance data. Falls back to static `name` if omitted. */
+  displayName?: (card: Card) => string
+  /** Dynamic description based on card instance data. Falls back to static `description` if omitted. */
+  displayDescription?: (card: Card) => string
   image?: string
   type: CardType
   script?: Script

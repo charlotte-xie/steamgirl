@@ -149,7 +149,7 @@ registerNPC('ivan-hess', {
     },
     gossip: (g: Game) => {
       const npc = g.npc
-      npc.say("Word is the constables have been poking around the old mill. And the Spice Dealer's been in twice this week, which always means someone's looking for something. Beyond that, I keep my ears open and my mouth shut.")
+      npc.say("Word is the constables have been poking around the old mill. And Timmy Bug's been in twice this week, which always means someone's looking for something. Beyond that, I keep my ears open and my mouth shut.")
       npc.chat()
     },
     work: (g: Game) => {

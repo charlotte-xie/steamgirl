@@ -8,19 +8,22 @@ type CardProps = {
 export function Card({ card }: CardProps) {
   const cardDef = card.template
 
-  // Determine quest status
-  let questStatus: string | null = null
+  const name = cardDef.displayName?.(card) ?? cardDef.name
+  const description = cardDef.displayDescription?.(card) ?? cardDef.description
+
+  // Determine card status
+  let status: string | null = null
   let statusColor: string | undefined = undefined
-  if (cardDef.type === 'Quest') {
+  if (cardDef.type === 'Quest' || cardDef.type === 'Date') {
     if (card.completed === true) {
-      questStatus = 'Completed'
-      statusColor = '#10b981' // green (same as completed messages)
+      status = 'Completed'
+      statusColor = '#10b981' // green
     } else if (card.failed === true) {
-      questStatus = 'Failed'
-      statusColor = '#ef4444' // red (same as failed messages)
+      status = 'Failed'
+      statusColor = '#ef4444' // red
     } else {
-      questStatus = 'Ongoing'
-      statusColor = '#3b82f6' // blue (same as quest received)
+      status = cardDef.type === 'Date' ? 'Pending' : 'Ongoing'
+      statusColor = cardDef.type === 'Date' ? '#f472b6' : '#3b82f6'
     }
   }
 
@@ -31,17 +34,17 @@ export function Card({ card }: CardProps) {
     <div className="card-component">
       {cardDef.image && (
         <div className="card-image">
-          <img src={assetUrl(cardDef.image)} alt={cardDef.name} />
+          <img src={assetUrl(cardDef.image)} alt={name} />
         </div>
       )}
       <div className="card-content">
-        <h4 className="card-title" style={effectColor ? { color: effectColor } : undefined}>{cardDef.name}</h4>
-        {cardDef.description && (
-          <p className="card-description">{cardDef.description}</p>
+        <h4 className="card-title" style={effectColor ? { color: effectColor } : undefined}>{name}</h4>
+        {description && (
+          <p className="card-description">{description}</p>
         )}
-        {questStatus && (
+        {status && (
           <div className="card-status" style={{ color: statusColor }}>
-            {questStatus}
+            {status}
           </div>
         )}
       </div>

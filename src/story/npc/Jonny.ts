@@ -161,6 +161,8 @@ registerNPC('jonny-elric', {
         game.add('The monocled enforcer gives you a second look. This time, he doesn\'t dismiss you outright.')
         npc.say('You\'ve got nerve, I\'ll give you that. Name\'s Jonny. Jonny Elric.')
         game.add('He extends a scarred hand — briefly, formally.')
+        // Timmy notices you're on speaking terms with the enforcer
+        game.run(addNpcStat('respect', 5, { npc: 'spice-dealer', hidden: true }))
       } else {
         game.add('Jonny Elric adjusts his monocle and fixes you with a flat, assessing stare.')
         npc.say('Something I can help you with?')
@@ -382,6 +384,8 @@ registerNPC('jonny-elric', {
 
       // Mark as done immediately
       jonny.stats.set('cellarsDone', 1)
+      // Timmy hears you attended a gang summit
+      game.run(addNpcStat('respect', 15, { npc: 'spice-dealer', hidden: true }))
 
       // Move both NPCs to the cellars for the scene
       jonny.location = 'tavern-cellars'
@@ -454,6 +458,8 @@ registerNPC('jonny-elric', {
 
       // Make Elvis know the player's name now — they've met properly
       elvis.nameKnown = 1
+      // Timmy hears you met the boss face-to-face
+      game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
 
       // Return NPCs to schedule
       if (jonny.template.onMove) game.run(jonny.template.onMove)
@@ -490,6 +496,8 @@ registerNPC('jonny-elric', {
 
       // Make Elvis know the player's name now
       elvis.nameKnown = 1
+      // Timmy hears you met the boss face-to-face
+      game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
 
       // Return NPCs to schedule
       if (jonny.template.onMove) game.run(jonny.template.onMove)
@@ -529,6 +537,8 @@ registerNPC('jonny-elric', {
 
         // Make Elvis know the player's name now
         elvis.nameKnown = 1
+        // Timmy hears you met the boss face-to-face
+        game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
 
         // No affection change — neutrality has its price
       } else {
@@ -549,6 +559,8 @@ registerNPC('jonny-elric', {
 
         // Elvis still learns your name
         elvis.nameKnown = 1
+        // Timmy hears you met the boss — even a botched meeting counts
+        game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
       }
 
       // Return NPCs to schedule
@@ -711,6 +723,8 @@ function jonnyRoundScene(): Instruction[] {
       'The round is done. Jonny stops at the corner, adjusting his coat.',
       say('Same time next week?'),
       'He doesn\'t wait for an answer — he already knows.',
+      // Timmy notices you've been doing rounds with the enforcer
+      addNpcStat('respect', 5, { npc: 'spice-dealer', hidden: true }),
       endDate(),
     ),
   ]
@@ -745,6 +759,8 @@ registerDatePlan({
       game.run(scenes(...jonnyRoundScene()))
     } else {
       npc.stats.set('tourDone', 1)
+      // Timmy hears you toured Lowtown with the enforcer
+      game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
       game.run(scenes(...jonnyTourScene()))
     }
   },
