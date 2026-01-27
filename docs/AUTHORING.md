@@ -263,6 +263,10 @@ seq(
 | `cond(condition, then, condition, then, ..., default?)` | Multi-branch |
 | `random(...children)` | Pick one at random |
 | `scenes(...sceneArrays)` | Multi-scene sequence with auto Continue buttons |
+| `scene(name, ...instructions)` | Named scene page for readability (returns `Instruction[]`) |
+| `branch(label, ...instructions)` | Player choice that continues the scene sequence |
+| `choice(...branches, ...epilogue)` | Branches with shared ending instructions |
+| `gatedBranch(condition, label, ...instructions)` | Branch that only appears when condition is met |
 | `skillCheck(skill, difficulty, onSuccess, onFailure)` | Stat roll with branches |
 
 #### Actions
@@ -328,6 +332,105 @@ scripts: {
 ```
 
 Each scene runs its instructions, then adds a Continue button if more scenes follow. If a scene adds its own options (like `npcLeaveOption`), no Continue button is added.
+
+### Named Scenes
+
+Use `scene()` to label scene pages for readability. The name is documentation only and has no runtime effect:
+
+```typescript
+scenes(
+  scene('Setting off', text('Rob offers his arm...'), move('lake', 15)),
+  scene('At the lake', text('Steam rises...'), say('I come here sometimes...')),
+  scene('Farewell', say('Get home safe.'), endDate()),
+)
+```
+
+Without `scene()`, pages are anonymous arrays -- harder to navigate in long date sequences.
+
+### Branching Within Scenes
+
+Use `branch()` inside a scene page to offer player choices. When a scene contains branches, the outer `scenes()` sequence resumes automatically after the chosen branch completes:
+
+```typescript
+scenes(
+  scene('Conversation',
+    say('I\'m glad you came tonight.'),
+    text('He moves closer.'),
+    branch('Lean against him',
+      text('You lean into his shoulder.'),
+      addNpcStat('affection', 3, 'tour-guide', { max: 45 }),
+    ),
+    branch('Stay where you are',
+      text('You keep a comfortable distance.'),
+    ),
+  ),
+  scene('Later that evening',
+    text('You sit together in the quiet.'),
+  ),
+)
+```
+
+The "Later that evening" scene runs after whichever branch the player picks. This threading happens automatically inside `continueScenes` -- authors don't need to manage it.
+
+### Choices with Shared Epilogue
+
+When multiple branches share ending instructions, use `choice()` to avoid duplicating them:
+
+```typescript
+// Before: endDate() duplicated in every branch
+branch('Kiss him', text('You kiss.'), endDate()),
+branch('Not tonight', text('You decline.'), endDate()),
+
+// After: endDate() written once
+choice(
+  branch('Kiss him', text('You kiss.')),
+  branch('Not tonight', text('You decline.')),
+  endDate(),  // shared -- runs at the end of whichever branch is chosen
+)
+```
+
+`choice()` accepts a mix of branches and plain instructions. Branches become player options; non-branch instructions form the shared epilogue, merged into the last page of each branch (no extra Continue click).
+
+Convention: list branches first, then epilogue instructions.
+
+### Conditional Branches
+
+Use `gatedBranch()` to show an option only when a condition is met:
+
+```typescript
+// Before: awkward cond/seq nesting
+cond(
+  npcStat('tour-guide', 'affection', 35),
+  seq(
+    branch('Go to the hidden garden', ...gardenPath),
+    branch('Walk to the pier', ...pierPath),
+  ),
+  seq(
+    branch('Walk to the pier', ...pierPath),
+  ),
+)
+
+// After: reads as a flat option list with a gate
+choice(
+  gatedBranch(npcStat('tour-guide', 'affection', 35),
+    'Go to the hidden garden', ...gardenPath),
+  branch('Walk to the pier', ...pierPath),
+  endDate(),
+)
+```
+
+If the condition is false at runtime, the gated option simply doesn't appear. `gatedBranch()` works inside `choice()` -- the shared epilogue is threaded through correctly.
+
+### Quick Reference
+
+| Helper | Returns | Purpose |
+|--------|---------|---------|
+| `scene(name, ...instrs)` | `Instruction[]` | Named page wrapper for `scenes()` |
+| `branch(label, ...instrs)` | `Instruction` | Player choice button |
+| `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
+| `gatedBranch(cond, label, ...instrs)` | `Instruction` | Conditional branch |
+| `scenes(...pages)` | `Instruction` | Multi-page sequence with Continue buttons |
+| `seq(...instrs)` | `Instruction` | Run instructions immediately (no pause) |
 
 ## Items
 

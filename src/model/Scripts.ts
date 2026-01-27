@@ -8,6 +8,7 @@
  * Core scripts are:
  * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats, addNpcStat, setNpcLocation
  * - Control flow: seq, when, cond
+ * - Scene stack: pushScenePages, advanceScene
  * - Predicates: hasItem, hasStat, inLocation, inScene, hasCard, cardCompleted, npcStat, debug, not, and, or
  * - Content: text, paragraph, say, option, npcLeaveOption
  * - Cards: addQuest, completeQuest, addEffect
@@ -999,51 +1000,51 @@ const coreScripts: Record<string, ScriptFn> = {
   },
 
   /**
-   * Continue a scenes() sequence. Called by the Continue button with remaining scenes.
-   * Runs the next scene and adds another Continue button if more scenes remain.
-   * If the scene adds its own options, the Continue button is skipped (scene interrupted).
+   * Push remaining scene pages onto the scene stack and add a Continue button.
+   * Called inline (via game.run) during scene setup — not via button clicks.
    */
-  continueScenes: (game: Game, params: { remaining?: Instruction[][] } = {}) => {
-    const remaining = params.remaining
-    if (!remaining || remaining.length === 0) return
+  pushScenePages: (game: Game, params: { pages?: Instruction[][] }) => {
+    const pages = params.pages
+    if (!pages || pages.length === 0) return
+    // Copy to avoid mutating shared DSL objects across playthroughs
+    game.scene.stack.push(pages.map(page => [...page]))
+    if (game.scene.options.length === 0) {
+      game.addOption('advanceScene', {}, 'Continue')
+    }
+  },
 
-    const [current, ...rest] = remaining
-
-    // Run the current scene's instructions
-    for (const instruction of current) {
-      game.run(instruction)
+  /**
+   * Advance the scene stack. Called via Continue button or branch option clicks.
+   * Optionally pushes branch pages first (used by branch() options).
+   * Pops the next page from the top stack frame and runs it.
+   */
+  advanceScene: (game: Game, params: { push?: Instruction[][] }) => {
+    // Push branch pages if provided
+    if (params.push) {
+      game.scene.stack.push((params.push as Instruction[][]).map(page => [...page]))
     }
 
-    if (game.scene.options.length > 0) {
-      // Scene added its own options — thread outer continuation into any
-      // options that target continueScenes so the sequence resumes after
-      // the branch finishes. We replace the script tuple with a new one
-      // to avoid mutating shared DSL objects (which would accumulate
-      // across multiple playthroughs).
-      if (rest.length > 0) {
-        for (let i = 0; i < game.scene.options.length; i++) {
-          const opt = game.scene.options[i]
-          if (opt.type === 'button') {
-            const [scriptName, scriptParams] = opt.script
-            if (scriptName === 'continueScenes' || scriptName === 'global:continueScenes') {
-              const innerRemaining = (scriptParams as Record<string, unknown>).remaining as Instruction[][] | undefined
-              game.scene.options[i] = {
-                ...opt,
-                script: [scriptName, {
-                  ...scriptParams,
-                  remaining: [
-                    ...(innerRemaining || []),
-                    ...rest,
-                  ],
-                }],
-              }
-            }
-          }
-        }
+    // Pop next page from top frame (skip exhausted frames)
+    while (game.scene.stack.length > 0) {
+      const topFrame = game.scene.stack[game.scene.stack.length - 1]
+      if (topFrame.length === 0) {
+        game.scene.stack.pop()
+        continue
       }
-    } else if (rest.length > 0) {
-      // No options added — add automatic Continue button
-      game.addOption('continueScenes', { remaining: rest }, 'Continue')
+
+      const page = topFrame.shift()!
+      if (topFrame.length === 0) game.scene.stack.pop()
+
+      // Run page instructions
+      for (const instruction of page) {
+        game.run(instruction)
+      }
+
+      // Auto-continue if more pages on stack and page didn't add its own options
+      if (game.scene.options.length === 0 && game.scene.stack.length > 0) {
+        game.addOption('advanceScene', {}, 'Continue')
+      }
+      return
     }
   },
 }

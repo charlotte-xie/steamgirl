@@ -161,8 +161,11 @@ export const random = (...children: Instruction[]): Instruction =>
  * Each scene is an array of instructions. After each scene (except the last),
  * a Continue button advances to the next scene. The last scene ends naturally.
  *
+ * Remaining pages are pushed onto the Game scene stack rather than encoded
+ * into button params. Branches within scenes naturally resume from the stack.
+ *
  * @param sceneArrays - Each argument is an array of instructions for one scene
- * @returns An instruction that runs the first scene and sets up continuations
+ * @returns An instruction that runs the first scene and pushes rest onto the stack
  *
  * @example
  * scenes(
@@ -177,14 +180,31 @@ export const scenes = (...sceneArrays: Instruction[][]): Instruction => {
   }
   const [first, ...rest] = sceneArrays
   if (rest.length === 0) {
-    // Last scene - no continue button
     return seq(...first)
   }
-  // Add continue button that carries the remaining scenes
+  // Run first page inline, push remaining onto the scene stack
   return seq(
     ...first,
-    option('Continue', 'global:continueScenes', { remaining: rest })
+    run('pushScenePages', { pages: rest }),
   )
+}
+
+/**
+ * Name a scene page for readability. The name is documentation only and has
+ * no runtime effect. Use inside `scenes()`:
+ *
+ * @example
+ * scenes(
+ *   scene('Setting off', text('Rob offers his arm...'), move('lake', 15)),
+ *   scene('At the lake', text('Steam rises...'), say('I come here...')),
+ * )
+ *
+ * @param _name - Human-readable label (discarded at runtime)
+ * @param instructions - The scene page's instructions
+ * @returns The instructions array unchanged
+ */
+export function scene(_name: string, ...instructions: Instruction[]): Instruction[] {
+  return instructions
 }
 
 /**
@@ -208,12 +228,119 @@ export function branch(label: string, scenes: Instruction[][]): Instruction
 export function branch(label: string, ...rest: (Instruction | Instruction[][])[]): Instruction {
   // If the first (and only non-label) argument is an array of arrays, it's multi-scene
   if (rest.length === 1 && Array.isArray(rest[0]) && Array.isArray((rest[0] as unknown[])[0])) {
-    return option(label, 'global:continueScenes', { remaining: rest[0] })
+    return option(label, 'global:advanceScene', { push: rest[0] })
   }
   // Otherwise, all args are inline instructions for a single scene
-  return option(label, 'global:continueScenes', {
-    remaining: [rest as Instruction[]],
+  return option(label, 'global:advanceScene', {
+    push: [rest as Instruction[]],
   })
+}
+
+// --- Branch detection & epilogue helpers (internal) ---
+
+/** True if instruction is an option targeting advanceScene (i.e. output of branch()) */
+function isBranchOption(instr: Instruction): boolean {
+  const [name, params] = instr
+  if (name !== 'option') return false
+  const script = (params as { script?: string }).script
+  return script === 'global:advanceScene' || script === 'advanceScene'
+}
+
+/** True if instruction is a branch or a gated branch (when wrapping a single branch) */
+function isBranchLike(instr: Instruction): boolean {
+  if (isBranchOption(instr)) return true
+  const [name, params] = instr
+  if (name === 'when') {
+    const thenInstrs = (params as { then?: Instruction[] }).then
+    return !!thenInstrs && thenInstrs.length === 1 && isBranchOption(thenInstrs[0])
+  }
+  return false
+}
+
+/** Append epilogue to the last page of a branch option's push array */
+function appendEpilogueToBranch(instr: Instruction, epilogue: Instruction[]): Instruction {
+  const [name, params] = instr
+  const p = params as { label: string; script: string; params: { push: Instruction[][] } }
+  const push = p.params?.push ?? []
+
+  const newPush = push.length === 0
+    ? [epilogue]
+    : push.map((page, i) =>
+      i === push.length - 1 ? [...page, ...epilogue] : page
+    )
+
+  return [name, { ...params, params: { ...p.params, push: newPush } }]
+}
+
+/** Append epilogue to a branch-like instruction (plain branch or gated branch) */
+function appendEpilogue(instr: Instruction, epilogue: Instruction[]): Instruction {
+  if (isBranchOption(instr)) {
+    return appendEpilogueToBranch(instr, epilogue)
+  }
+  // gatedBranch pattern: when(condition, branch(...))
+  const [name, params] = instr
+  const p = params as { condition: Instruction; then: Instruction[] }
+  return [name, { ...p, then: [appendEpilogueToBranch(p.then[0], epilogue)] }]
+}
+
+/**
+ * Group branches with an optional shared epilogue.
+ *
+ * Arguments are a mix of `branch()` / `gatedBranch()` results and plain
+ * instructions. Branches become player options; non-branch instructions
+ * form the shared epilogue, merged into the **last page** of each branch
+ * (no extra Continue click).
+ *
+ * Convention: list branches first, then epilogue instructions.
+ *
+ * @example
+ * choice(
+ *   branch('Kiss him', text('You kiss.'), say('Wow.')),
+ *   branch('Not tonight', text('You decline gracefully.')),
+ *   addNpcStat('affection', 5, 'tour-guide', { hidden: true, max: 55 }),
+ *   endDate(),
+ * )
+ */
+export function choice(...args: Instruction[]): Instruction {
+  const branches: Instruction[] = []
+  const epilogue: Instruction[] = []
+
+  for (const arg of args) {
+    if (isBranchLike(arg)) {
+      branches.push(arg)
+    } else {
+      epilogue.push(arg)
+    }
+  }
+
+  if (epilogue.length === 0) {
+    return seq(...branches)
+  }
+
+  return seq(...branches.map(b => appendEpilogue(b, epilogue)))
+}
+
+/**
+ * A branch that only appears when a condition is met.
+ * Compiles to `when(condition, branch(label, ...))`.
+ *
+ * Works inside `choice()` — the epilogue will be merged through the gate.
+ *
+ * @example
+ * choice(
+ *   gatedBranch(npcStat('tour-guide', 'affection', 35),
+ *     'Go to the hidden garden', ...gardenPath()),
+ *   branch('Walk to the pier', ...pierPath()),
+ *   endDate(),
+ * )
+ */
+export function gatedBranch(condition: Instruction, label: string, ...rest: Instruction[]): Instruction
+export function gatedBranch(condition: Instruction, label: string, scenes: Instruction[][]): Instruction
+export function gatedBranch(
+  condition: Instruction, label: string,
+  ...rest: (Instruction | Instruction[][])[]
+): Instruction {
+  return when(condition, branch(label, ...(rest as Instruction[])))
 }
 
 /**

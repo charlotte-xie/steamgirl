@@ -1,7 +1,7 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
-import { getScript, isInstruction, isScriptFn, type Script } from './Scripts'
+import { getScript, isInstruction, isScriptFn, type Instruction, type Script } from './Scripts'
 import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 
@@ -32,6 +32,8 @@ export type SceneData = {
   hideNpcImage?: boolean
   /** When set, the scene renders as a shop interface. */
   shop?: ActiveShop
+  /** Pending scene pages (LIFO stack of FIFO frames). Managed by pushScenePages/advanceScene scripts. */
+  stack: Instruction[][][]
 }
 
 export interface GameData {
@@ -88,6 +90,7 @@ export class Game {
       type: 'story',
       content: [],
       options: [],
+      stack: [],
     }
     
     // Initialize time to noon on January 1, 1902 (unix timestamp in seconds)
@@ -258,6 +261,11 @@ export class Game {
     // Clear the scene before running a new script
     this.clearScene()
 
+    // Non-scene-management actions abandon the scene stack
+    if (scriptName !== 'advanceScene') {
+      this.scene.stack = []
+    }
+
     try {
       // Get and run the script (may modify game state)
       const script = getScript(scriptName)
@@ -288,8 +296,8 @@ export class Game {
       this.run(card.template.afterUpdate)
     })
 
-    // Unset npc when there are no scene options (conversation has ended)
-    if (this.scene.options.length === 0) {
+    // Unset npc when there are no scene options and no pending scene pages
+    if (this.scene.options.length === 0 && this.scene.stack.length === 0) {
       this.scene.npc = undefined
       this.scene.hideNpcImage = undefined
     }
@@ -483,15 +491,16 @@ export class Game {
     })
   }
 
-  /** Clear the current scene (resets content and options). Preserves npc and hideNpcImage so follow-up scripts in the same flow keep speech colour and image behaviour. */
+  /** Clear display state (content, options, shop). Preserves sequence context (npc, hideNpcImage, stack). */
   clearScene(): void {
-    this.scene = {
-      type: 'story',
-      content: [],
-      options: [],
-      npc: this.scene.npc,
-      hideNpcImage: this.scene.hideNpcImage,
-    }
+    this.scene.content = []
+    this.scene.options = []
+    this.scene.shop = undefined
+  }
+
+  /** Dismiss the current scene entirely — clears all content, options, and the scene stack. */
+  dismissScene(): void {
+    this.scene = { type: 'story', content: [], options: [], stack: [] }
   }
 
   toJSON(): GameData {
@@ -565,11 +574,15 @@ export class Game {
           type: 'story',
           content: oldScene.dialog ? [{ type: 'text', text: oldScene.dialog }] : [],
           options: oldScene.next ? [{ type: 'button', script: [oldScene.next, {}] }] : [],
+          stack: [],
         }
       }
       // If scene exists but doesn't match expected format, keep default from constructor
     }
-    
+
+    // Ensure scene stack is initialized (old saves may not have it)
+    if (!game.scene.stack) game.scene.stack = []
+
     // Deserialize locations map - create copies from prototypes and apply serialized changes
     if (data.locations) {
       game.locations = new Map<string, Location>()

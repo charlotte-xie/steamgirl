@@ -76,7 +76,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
   const dismissScene = () => {
-    game.clearScene()
+    game.dismissScene()
     setUpdateCounter((c) => c + 1)
   }
 
