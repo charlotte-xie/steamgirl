@@ -67,48 +67,42 @@ function minutesUntilHour(game: Game, targetHour: number): number {
 /**
  * Generate an appropriate wakeup message based on the reason and final energy level.
  */
-function getWakeupMessage(reason: WakeupReason, energy: number, minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  const durationText = hours > 0
-    ? (mins > 0 ? `${hours} hours and ${mins} minutes` : `${hours} hours`)
-    : `${mins} minutes`
-
+function getWakeupMessage(reason: WakeupReason, energy: number): string {
   switch (reason) {
     case 'interrupted':
       return 'You wake suddenly...'
 
     case 'alarm':
       if (energy >= 90) {
-        return `You are woken by your alarm after ${durationText}. You feel well rested despite the interruption.`
+        return 'You are woken by your alarm. You feel well rested despite the interruption.'
       } else if (energy >= 60) {
-        return `Your alarm pulls you from sleep after ${durationText}. You could have used more rest, but you'll manage.`
+        return 'Your alarm pulls you from sleep. You could have used more rest, but you will manage.'
       } else {
-        return `The alarm drags you unwillingly from sleep after only ${durationText}. You feel groggy and unrested.`
+        return 'The alarm drags you unwillingly from sleep. You feel groggy and unrested.'
       }
 
     case 'max':
       if (energy >= 80) {
-        return `You wake after a refreshing ${durationText} nap, feeling much better.`
+        return 'You wake from a refreshing nap, feeling much better.'
       } else if (energy >= 50) {
-        return `You wake after ${durationText}. That was a pleasant rest.`
+        return 'You wake from a pleasant rest.'
       } else {
-        return `You doze for ${durationText} before stirring. It helped a little.`
+        return 'You doze for a while before stirring. It helped a little.'
       }
 
     case 'min':
-      return `You rest for ${durationText}, then get up. You feel somewhat restored.`
+      return 'You rest for a while, then get up. You feel somewhat restored.'
 
     case 'rested':
     default:
       if (energy >= 95) {
-        return `You wake naturally after ${durationText}, feeling completely restored. The world seems brighter somehow.`
+        return 'You wake naturally, feeling completely restored. The world seems brighter somehow.'
       } else if (energy >= 80) {
-        return `You sleep for ${durationText} and wake feeling refreshed and ready for the day.`
+        return 'You wake feeling refreshed and ready for the day.'
       } else if (energy >= 60) {
-        return `After ${durationText} of sleep, you wake feeling reasonably rested.`
+        return 'You wake feeling reasonably rested.'
       } else {
-        return `You manage ${durationText} of fitful sleep. It's something, at least.`
+        return 'You manage some fitful sleep. It is something, at least.'
       }
   }
 }
@@ -229,7 +223,7 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   }
 
   // Generate wakeup message
-  const wakeupMessage = getWakeupMessage(wakeupReason, newEnergy, minutesSlept)
+  const wakeupMessage = getWakeupMessage(wakeupReason, newEnergy)
 
   if (interrupted) {
     // Prepend wakeup message to existing scene content
@@ -247,9 +241,42 @@ export function sleep(game: Game, params: SleepParams = {}): void {
 }
 
 // ============================================================================
+// BED ACTIVITY
+// ============================================================================
+
+export type BedParams = {
+  /** Quality modifier for this bed (1.0 = default, higher = more restorative) */
+  quality?: number
+}
+
+/**
+ * Standard bed activity that can be added to any location with a bed.
+ * Shows a scene with options for Nap or Sleep.
+ *
+ * @param quality - Quality modifier (1.0 = default, higher = more restorative)
+ * @returns A LocationActivity that can be added to a location's activities array
+ */
+export function bedActivity(params: BedParams = {}) {
+  return {
+    name: 'Bed',
+    symbol: '🛏',
+    script: ['bedScene', params] as [string, BedParams],
+  }
+}
+
+// ============================================================================
 // SCRIPT REGISTRATION
 // ============================================================================
 
 makeScript('sleep', (game: Game, params: SleepParams) => {
   sleep(game, params)
+})
+
+makeScript('bedScene', (game: Game, params: BedParams) => {
+  const quality = params.quality ?? 1.0
+
+  game.add('You approach the bed.')
+  game.addOption('sleep', { max: 60, quality }, 'Take a Nap')
+  game.addOption('sleep', { quality }, 'Go to Sleep')
+  game.addOption('endScene', {}, 'Never mind')
 })

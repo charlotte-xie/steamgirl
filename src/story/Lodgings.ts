@@ -3,8 +3,9 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation, sleep } from '../model/ScriptDSL'
+import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
 import { takeWash, freshenUp } from './Effects'
+import { bedActivity } from './Sleep'
 
 registerNPC('landlord', {
   name: 'Gerald Moss',
@@ -74,17 +75,7 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'stairwell', time: 1, label: 'Exit to Stairwell' },
     ],
     activities: [
-      {
-        name: 'Take a Nap',
-        symbol: '💤',
-        script: sleep({ min: 10, max: 60 }),
-      },
-      {
-        name: 'Sleep',
-        symbol: '🛏',
-        condition: (g: Game) => g.hourOfDay >= 21 || g.hourOfDay < 5,
-        script: sleep({ min: 30, alarm: 7 }),
-      },
+      bedActivity(),
     ],
   },
   bathroom: {

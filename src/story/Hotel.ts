@@ -5,8 +5,9 @@ import type { CardDefinition } from '../model/Card'
 import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, sleep } from '../model/ScriptDSL'
+import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run } from '../model/ScriptDSL'
 import { freshenUp, takeWash, consumeAlcohol } from './Effects'
+import { bedActivity } from './Sleep'
 
 // ============================================================================
 // HOTEL BOOKING CARD
@@ -287,17 +288,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       ),
     ),
     activities: [
-      {
-        name: 'Take a Nap',
-        symbol: '💤',
-        script: sleep({ min: 10, max: 60, quality: 1.1 }),
-      },
-      {
-        name: 'Sleep',
-        symbol: '🛏',
-        condition: (g: Game) => g.hourOfDay >= 21 || g.hourOfDay < 5,
-        script: sleep({ min: 30, alarm: 11, quality: 1.1 }),
-      },
+      bedActivity({ quality: 1.1 }),
     ],
   },
   'nice-bathroom': {
@@ -492,17 +483,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       text('The lift opens directly into the suite. You step out onto thick carpet and take in your surroundings — the four-poster bed, the sitting area, the view that seems to encompass half the city. This is how the other half lives.'),
     ),
     activities: [
-      {
-        name: 'Take a Nap',
-        symbol: '💤',
-        script: sleep({ min: 10, max: 60, quality: 1.2 }),
-      },
-      {
-        name: 'Sleep',
-        symbol: '🛏',
-        condition: (g: Game) => g.hourOfDay >= 21 || g.hourOfDay < 5,
-        script: sleep({ min: 30, alarm: 11, quality: 1.2 }),
-      },
+      bedActivity({ quality: 1.2 }),
     ],
   },
   'suite-bathroom': {
