@@ -4,6 +4,7 @@ import { NPC, type NPCData, getNPCDefinition } from './NPC'
 import { getScript, isInstruction, isScriptFn, type Instruction, type Script } from './Scripts'
 import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
+import { intervalsCrossed } from '../utils/intervalsCrossed'
 
 // Re-export Content types for convenience
 export type { Content, InlineContent, ParagraphContent, SceneOptionItem }
@@ -473,9 +474,7 @@ export class Game {
 
   /** Calculate the number of interval boundaries crossed based on game time. */
   calcTicks(secondsElapsed: number, interval: number): number {
-    const currentPeriod = Math.floor(this.time / interval)
-    const previousPeriod = Math.floor((this.time - secondsElapsed) / interval)
-    return currentPeriod - previousPeriod
+    return intervalsCrossed(this.time - secondsElapsed, this.time, interval)
   }
 
   /**

@@ -80,10 +80,8 @@ export const peckishEffect: CardDefinition = {
   color: '#f59e0b', // Amber
   hungerLevel: 50,
   subsumedBy: ['hungry', 'starving'],
-  onAdded: (game: Game) => {
-    if (!game.player.sleeping) {
-      game.add({ type: 'text', text: 'You are starting to feel peckish. Your stomach gives a quiet rumble.', color: '#f59e0b' })
-    }
+  onAdded: (_game: Game) => {
+    /* Not important enough to notify the player */
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Willpower', -5)
@@ -120,10 +118,10 @@ export const hungryEffect: CardDefinition = {
     player.modifyStat('Willpower', -10)
   },
   onTime: (game: Game, _card: Card, seconds: number) => {
-    // Chance-based escalation to Starving: 0.3% per minute
+    // Chance-based escalation to Starving: 0.2% per minute
     const minutes = Math.floor(seconds / 60)
     if (minutes > 0) {
-      const chanceNone = Math.pow(1 - 0.003, minutes)
+      const chanceNone = Math.pow(1 - 0.002, minutes)
       if (Math.random() > chanceNone) {
         game.addEffect('starving')
       }

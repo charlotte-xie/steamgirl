@@ -156,17 +156,21 @@ const coreScripts: Record<string, ScriptFn> = {
     }
 
     const totalSeconds = seconds + (minutes * 60)
-    const hourBefore = Math.floor(game.hourOfDay)
 
     if (totalSeconds > 0) {
       game.time += totalSeconds
-    }
 
-    const hourAfter = Math.floor(game.hourOfDay)
-    const hourChanged = hourBefore !== hourAfter
+      // Deplete energy over time (1 per 15-minute boundary crossed) - but not while sleeping
+      if (!game.player.sleeping) {
+        const energyTicks = game.calcTicks(totalSeconds, 15 * 60) // 15 minutes in seconds
+        if (energyTicks > 0) {
+          const currentEnergy = game.player.basestats.get('Energy') ?? 0
+          const newEnergy = Math.max(0, currentEnergy - energyTicks)
+          game.player.basestats.set('Energy', newEnergy)
+        }
+      }
 
-    // Call onTime for all player cards
-    if (totalSeconds > 0) {
+      // Call onTime for all player cards
       const cards = [...game.player.cards]
       for (const card of cards) {
         const cardDef = card.template
@@ -174,20 +178,19 @@ const coreScripts: Record<string, ScriptFn> = {
           cardDef.onTime(game, card, totalSeconds)
         }
       }
-    }
 
-    // Run standard time-based effect accumulation (hunger, etc.)
-    // This runs after onTime so newly added cards don't get onTime in the same tick
-    if (totalSeconds > 0) {
+      // Run standard time-based effect accumulation (hunger, etc.)
+      // This runs after onTime so newly added cards don't get onTime in the same tick
       game.run('timeEffects', { seconds: totalSeconds })
-    }
 
-    // If hour changed, call onMove for all NPCs
-    if (hourChanged) {
-      game.npcs.forEach((npc) => {
-        game.run(npc.template.onMove)
-      })
-      game.updateNPCsPresent()
+      // If hour boundary crossed, call onMove for all NPCs
+      const hoursCrossed = game.calcTicks(totalSeconds, 60 * 60) // 1 hour in seconds
+      if (hoursCrossed > 0) {
+        game.npcs.forEach((npc) => {
+          game.run(npc.template.onMove)
+        })
+        game.updateNPCsPresent()
+      }
     }
   },
 
