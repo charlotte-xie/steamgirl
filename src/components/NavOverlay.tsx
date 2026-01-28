@@ -47,7 +47,7 @@ export function NavOverlay() {
   const renderGroup = (title: string, groupLinks: LocationLink[]) => {
     if (groupLinks.length === 0) return null
     return (
-      <div className="overlay-group nav-group" key={title}>
+      <div className="overlay-group" key={title}>
         <div className="overlay-group-title">{title}</div>
         <div className="overlay-group-content">
           {groupLinks.map((link, index) => {

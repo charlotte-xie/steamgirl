@@ -33,13 +33,13 @@
 
   /* Design tokens / color system */
   --bg-main: #0e0b09; /* deep soot / iron */
-  --bg-panel: var(--leather-dark); /* dark brass panel */
+  --bg-panel: var(--copper-dark); /* dark brass panel */
   --bg-frame: var(--velvet-dark); /* dark brass panel */
-  --bg-panel-soft: rgba(88, 57, 33, 0.25); /* soft copper wash */
+  --bg-panel-soft: color-mix(in srgb, var(--bg-panel) 30%, transparent); /* soft copper wash */
   --bg-placeholder: radial-gradient(circle at 0 0, rgba(255, 176, 59, 0.16), transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(146, 79, 46, 0.2), transparent 55%),
     linear-gradient(135deg, #291812, #14100f);
-  --bg-overlay: rgba(20, 20, 20, 0.6);
+  --bg-overlay: color-mix(in srgb, var(--copper-dark) 30%, transparent);
 
   --bg-card: var(--copper-dark);
   --bg-widget: var(--copper-dark);
@@ -1127,55 +1127,30 @@ img {
   justify-content: center;
 }
 
-/* Thumbnails inside overlay groups: no per-item box, minimal styling (shared for nav, activities, characters) */
-.overlay-group .thumbnail,
-.nav-group .thumbnail {
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.overlay-group .thumbnail:hover:not(:disabled),
-.nav-group .thumbnail:hover:not(:disabled) {
-  background: var(--bg-panel-soft);
-  border-color: var(--border-subtle);
-  box-shadow: none;
-}
-
-/* General-purpose thumbnail component */
-
+/* Thumbnail component (used in bottom overlays) */
 .thumbnail {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
   padding: var(--space-xs);
-  background: var(--bg-panel);
-  border: 1px solid transparent;
+  background: transparent;
+  border: none;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-strong), var(--shadow-inner);
   cursor: pointer;
-  transition: all 0.2s ease;
   min-width: 6.25rem;
   max-width: 7.5rem;
   color: inherit;
 }
 
 .thumbnail:hover:not(:disabled) {
-  box-shadow: var(--shadow-strong), var(--shadow-inner);
+  background: var(--bg-panel-soft);
 }
 
-.thumbnail-disabled,
 .thumbnail:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
   filter: grayscale(0.5);
-}
-
-.thumbnail-disabled:hover,
-.thumbnail:disabled:hover {
-  transform: none;
-  background: var(--bg-overlay);
-  border-color: transparent;
 }
 
 .thumbnail-image {
@@ -1184,23 +1159,21 @@ img {
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
+  /* Fallback styles for symbol placeholder (ignored on img) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel-soft);
+  font-size: 3rem;
+  color: var(--text-muted);
+}
+
+.thumbnail:hover:not(:disabled) .thumbnail-image {
+  border-color: var(--border-main);
 }
 
 .thumbnail-subtitle {
   font-size: var(--font-xs);
-  color: var(--text-muted);
-}
-
-.thumbnail-placeholder {
-  width: 5rem;
-  height: 5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-panel-soft);
-  font-size: 3rem; /* intentionally large for placeholder initial */
   color: var(--text-muted);
   font-weight: 600;
 }
@@ -1222,6 +1195,7 @@ img {
 
 .item-view:hover {
   background: var(--bg-panel-soft);
+  border-color: var(--border-subtle);
 }
 
 .item-view.selected {

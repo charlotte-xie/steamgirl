@@ -28,7 +28,7 @@ export function Thumbnail({ image, name, subtitle, symbol, onClick, title, disab
           className="thumbnail-image"
         />
       ) : (
-        <div className="thumbnail-placeholder">
+        <div className="thumbnail-image">
           {symbol || '?'}
         </div>
       )}
