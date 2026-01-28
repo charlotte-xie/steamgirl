@@ -433,6 +433,19 @@ export class Player {
   }
 
   /**
+   * Modify a base stat by an amount, bounded to 0-100.
+   * Returns the actual change applied (may differ from amount due to bounds).
+   * @param statName - The stat to modify
+   * @param amount - The amount to add (can be negative)
+   */
+  addBaseStat(statName: StatName, amount: number): number {
+    const current = this.basestats.get(statName) ?? 0
+    const newValue = Math.max(0, Math.min(100, current + amount))
+    this.basestats.set(statName, Math.round(newValue))
+    return newValue - current
+  }
+
+  /**
    * Calculate stats by copying basestats to stats, then applying modifiers from active Items and Cards.
    * This should be called whenever stats need to be recalculated (e.g., when items/cards change).
    * Stats are bounded to 0-100 only after all modifiers have been applied.

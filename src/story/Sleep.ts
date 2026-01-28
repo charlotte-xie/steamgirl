@@ -11,6 +11,7 @@
 
 import { Game } from '../model/Game'
 import { makeScript } from '../model/Scripts'
+import { applyRelaxation } from './Effects'
 
 // ============================================================================
 // CONSTANTS
@@ -276,7 +277,18 @@ makeScript('bedScene', (game: Game, params: BedParams) => {
   const quality = params.quality ?? 1.0
 
   game.add('You approach the bed.')
+  game.addOption('relax', { quality }, 'Relax')
   game.addOption('sleep', { max: 60, quality }, 'Take a Nap')
   game.addOption('sleep', { quality }, 'Go to Sleep')
   game.addOption('endScene', {}, 'Never mind')
+})
+
+makeScript('relax', (game: Game, params: { quality?: number }) => {
+  game.add('You lie down and relax for a while.')
+  game.run('wait', { minutes: 20 })
+
+  // Only apply relaxation if not interrupted
+  if (!game.inScene) {
+    applyRelaxation(game, 20, params.quality || 1.0)
+  }
 })

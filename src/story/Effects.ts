@@ -335,3 +335,21 @@ export function consumeAlcohol(game: Game, amount: number): void {
     game.addEffect('intoxicated', { alcohol: amount })
   }
 }
+
+/** Base energy restored per minute of relaxation */
+const RELAX_ENERGY = 0.2
+
+/**
+ * Apply relaxation energy gain.
+ * @param game - The game instance
+ * @param minutes - Duration of relaxation in minutes
+ * @param quality - Quality modifier (higher = more restorative)
+ */
+export function applyRelaxation(game: Game, minutes: number, quality: number): void {
+  const energyGain = minutes * quality * RELAX_ENERGY
+  const actualGain = game.player.addBaseStat('Energy', energyGain)
+
+  if (actualGain > 0) {
+    game.add({ type: 'text', text: `+${Math.round(actualGain)} Energy`, color: '#10b981' })
+  }
+}

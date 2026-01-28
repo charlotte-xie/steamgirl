@@ -288,7 +288,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       ),
     ),
     activities: [
-      bedActivity({ quality: 1.1 }),
+      bedActivity({ quality: 1.3 }),
     ],
   },
   'nice-bathroom': {
@@ -483,7 +483,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       text('The lift opens directly into the suite. You step out onto thick carpet and take in your surroundings — the four-poster bed, the sitting area, the view that seems to encompass half the city. This is how the other half lives.'),
     ),
     activities: [
-      bedActivity({ quality: 1.2 }),
+      bedActivity({ quality: 1.4 }),
     ],
   },
   'suite-bathroom': {
