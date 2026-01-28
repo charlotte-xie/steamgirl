@@ -1,9 +1,8 @@
 import { defineConfig } from 'vite'
 
 // @ts-ignore - vitest types will be available after installation
-export default defineConfig(({ mode }) => ({
-  // Dev (localhost:3000): base '/'. GitHub Pages (production build): base '/steamgirl/'.
-  base: mode === 'production' ? '/steamgirl/' : '/',
+export default defineConfig(() => ({
+  base: './',
   server: {
     port: 3000,
   },

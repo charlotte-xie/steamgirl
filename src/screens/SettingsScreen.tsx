@@ -1,6 +1,7 @@
-import { useSyncExternalStore } from 'react'
+import { useSyncExternalStore, useState } from 'react'
 import { Frame } from '../components/Frame'
 import { useGame } from '../context/GameContext'
+import { useGameLoader } from '../context/GameLoaderContext'
 import { DEBUG_MODE } from '../constants/storage'
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -28,13 +29,21 @@ export function useDebugMode(): boolean {
 
 export function SettingsScreen() {
   const { game } = useGame()
+  const { saveGame } = useGameLoader()
   const debugEnabled = useDebugMode()
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   const toggleDebug = () => {
     const next = !debugEnabled
     localStorage.setItem(DEBUG_MODE, String(next))
     game.isDebug = next
     notifyDebugListeners()
+  }
+
+  const handleSave = () => {
+    saveGame(game)
+    setSaveMessage('Game saved!')
+    setTimeout(() => setSaveMessage(null), 2000)
   }
 
   return (
@@ -45,21 +54,37 @@ export function SettingsScreen() {
 
           <div className="setting-row">
             <div className="setting-info">
-              <span className="setting-label">Debug Controls</span>
-              <span className="setting-desc">Show developer tools overlay</span>
+              <span className="setting-label">Save Game</span>
+              <span className="setting-desc">Save your progress to a manual save slot</span>
             </div>
             <button
               type="button"
-              className={`steam-toggle ${debugEnabled ? 'on' : ''}`}
-              onClick={toggleDebug}
-              aria-pressed={debugEnabled}
-              title={debugEnabled ? 'Disable debug controls' : 'Enable debug controls'}
+              className="steam-button"
+              onClick={handleSave}
             >
-              <span className="steam-toggle-track">
-                <span className="steam-toggle-knob" />
-              </span>
+              {saveMessage ?? 'Save'}
             </button>
           </div>
+
+          {isLocalhost && (
+            <div className="setting-row">
+              <div className="setting-info">
+                <span className="setting-label">Debug Controls</span>
+                <span className="setting-desc">Show developer tools overlay</span>
+              </div>
+              <button
+                type="button"
+                className={`steam-toggle ${debugEnabled ? 'on' : ''}`}
+                onClick={toggleDebug}
+                aria-pressed={debugEnabled}
+                title={debugEnabled ? 'Disable debug controls' : 'Enable debug controls'}
+              >
+                <span className="steam-toggle-track">
+                  <span className="steam-toggle-knob" />
+                </span>
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </Frame>

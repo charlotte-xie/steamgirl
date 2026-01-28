@@ -3,17 +3,11 @@ import { useGameLoader } from '../context/GameLoaderContext'
 import { useNavigate } from 'react-router-dom'
 import { assetUrl } from '../utils/assetUrl'
 
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
 export function StartScreen() {
-  const { newGame, loadGame, continueGame, hasGame } = useGameLoader()
+  const { newGame, loadGame, continueGame, hasGame, hasManualSave } = useGameLoader()
   const navigate = useNavigate()
-
-  const handleSettings = () => {
-    // TODO: Implement settings
-  }
-
-  const handleDemo = () => {
-    navigate('/demo')
-  }
 
   return (
     <div className="start-screen">
@@ -27,9 +21,8 @@ export function StartScreen() {
         <nav>
           <BrassButton variant="primary" disabled={!hasGame} onClick={() => continueGame()}>Continue</BrassButton>
           <BrassButton variant="primary" onClick={newGame}>New Game</BrassButton>
-          <BrassButton onClick={() => loadGame()}>Load Game</BrassButton>
-          <BrassButton onClick={handleSettings}>Settings</BrassButton>
-          <BrassButton onClick={handleDemo}>Demo</BrassButton>
+          <BrassButton disabled={!hasManualSave} onClick={() => loadGame()}>Load Game</BrassButton>
+          {isLocalhost && <BrassButton onClick={() => navigate('/demo')}>Demo</BrassButton>}
         </nav>
       </main>
     </div>
