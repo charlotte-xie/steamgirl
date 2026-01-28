@@ -285,10 +285,11 @@ export class Game {
     }
   }
 
-  /** 
+  /**
    * Run everything that needs to happen after an action.
    * - Run any card effects that might change game state / trigger a new scene
    * - Move any NPCs (if needed)
+   * - Recalculate stats to reflect any basestat changes
    */
   afterAction(): void {
     // Run afterUpdate scripts for all cards
@@ -301,7 +302,10 @@ export class Game {
       this.scene.npc = undefined
       this.scene.hideNpcImage = undefined
     }
-    
+
+    // Recalculate stats to ensure UI reflects any basestat changes from the action
+    this.player.calcStats()
+
     // Note: NPC movement is handled by timeLapse script when hour changes
     // If we need to check NPC positions after actions, it would go here
   }

@@ -317,7 +317,7 @@ export function eatFood(game: Game, quantity: number): void {
 export function consumeAlcohol(game: Game, amount: number): void {
   // Find existing intoxicated effect
   const intoxicatedCard = game.player.cards.find(card => card.id === 'intoxicated' && card.type === 'Effect')
-  
+
   if (intoxicatedCard) {
     // Add to existing alcohol value
     const currentAlcohol = (intoxicatedCard.alcohol as number) || 0

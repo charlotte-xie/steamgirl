@@ -10,6 +10,9 @@
 // Register effect definitions first (used by other modules)
 import './Effects'
 
+// Register sleep system
+import './Sleep'
+
 // Register item definitions (used by other modules)
 import './items'
 

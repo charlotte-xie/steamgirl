@@ -3,7 +3,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
+import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation, sleep } from '../model/ScriptDSL'
 import { takeWash, freshenUp } from './Effects'
 
 registerNPC('landlord', {
@@ -75,28 +75,15 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ],
     activities: [
       {
-        name: 'Nap',
-        symbol: 'z',
-        script: (g: Game, _params: {}) => {
-          g.add('You lie down on your bed for a brief nap. The steady hum of the building\'s steam pipes lulls you into a light sleep.')
-          g.timeLapse(30)
-          g.player.setTimer('lastNap', g.time)
-        },
+        name: 'Take a Nap',
+        symbol: '💤',
+        script: sleep({ min: 10, max: 60 }),
       },
       {
         name: 'Sleep',
-        symbol: 'zz',
-        condition: (g: Game) => g.hourOfDay >= 21,
-        script: (g: Game, _params: {}) => {
-          const currentDate = g.date
-          const nextDay = new Date(currentDate)
-          nextDay.setDate(nextDay.getDate() + 1)
-          nextDay.setHours(7, 0, 0, 0)
-          const secondsUntil7am = Math.floor((nextDay.getTime() - currentDate.getTime()) / 1000)
-          g.add('You slip into bed and sleep soundly through the night. When you wake, the morning light filters through the window as steam pipes begin to hiss with the start of a new day.')
-          g.run('timeLapse', { seconds: secondsUntil7am })
-          g.player.setTimer('lastSleep', g.time)
-        },
+        symbol: '🛏',
+        condition: (g: Game) => g.hourOfDay >= 21 || g.hourOfDay < 5,
+        script: sleep({ min: 30, alarm: 7 }),
       },
     ],
   },

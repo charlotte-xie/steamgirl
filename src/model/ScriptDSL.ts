@@ -441,6 +441,21 @@ export const recordTime = (timer: string): Instruction =>
 export const eatFood = (quantity: number): Instruction =>
   run('eatFood', { quantity })
 
+/**
+ * Sleep to restore energy.
+ * @param options.alarm - Force wakeup at a specific hour (0-24, e.g., 7 for 7am)
+ * @param options.max - Maximum sleep duration in minutes (for naps)
+ * @param options.min - Minimum sleep duration in minutes
+ * @param options.quality - Quality modifier (1.0 = default, higher = more restorative)
+ */
+export const sleep = (options?: {
+  alarm?: number
+  max?: number
+  min?: number
+  quality?: number
+}): Instruction =>
+  run('sleep', options ?? {})
+
 /** Discover a location (sets discovered flag, optionally with announcement text) */
 export const discoverLocation = (location: string, text?: string, colour?: string): Instruction =>
   run('discoverLocation', { location, text, colour })
