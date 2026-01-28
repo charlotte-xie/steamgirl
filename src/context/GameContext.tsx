@@ -45,10 +45,9 @@ function loadFromStorage(source: unknown): Game | null {
     let json: string | null = null
     if (source === 'loadGame') {
       json = localStorage.getItem(GAME_SAVE)
-    } else if (source === 'newGame' || source === 'continueGame') {
-      json = localStorage.getItem(GAME_SAVE_AUTO)
     } else {
-      json = localStorage.getItem(GAME_SAVE) ?? localStorage.getItem(GAME_SAVE_AUTO)
+      // For newGame, continueGame, or page reload (no source), use autosave
+      json = localStorage.getItem(GAME_SAVE_AUTO)
     }
     const game = json ? Game.fromJSON(json) : null
     if (game) game.isDebug = getDebugFromStorage()
