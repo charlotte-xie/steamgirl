@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run } from '../model/ScriptDSL'
-import { freshenUp, takeWash, consumeAlcohol } from './Effects'
+import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
 // ============================================================================
@@ -317,6 +317,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           g.add('You fill the claw-footed tub with steaming water and lower yourself in. The brass taps gleam as fragrant steam curls around you. This is considerably nicer than the lodgings.')
           g.timeLapse(60)
           takeWash(g)
+          applyRelaxation(g, 60, 1.5)
         },
       },
     ],
@@ -423,6 +424,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
               'You close your eyes and listen to the echo of water against marble. This is the life.',
             ]
             g.add(texts[Math.floor(Math.random() * texts.length)])
+            applyRelaxation(g, 30, 2.0)
           }
         },
       },
@@ -513,6 +515,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           g.timeLapse(60)
           takeWash(g)
           g.player.modifyStat('Mood', 10)
+          applyRelaxation(g, 60, 2.0)
         },
       },
     ],

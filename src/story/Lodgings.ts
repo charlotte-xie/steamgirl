@@ -4,7 +4,7 @@ import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
 import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
-import { takeWash, freshenUp } from './Effects'
+import { takeWash, freshenUp, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
 registerNPC('landlord', {
@@ -105,6 +105,7 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           g.add('You fill the tub with steaming hot water and sink into its warmth. The steam-powered heating coils keep the water at a perfect temperature. You close your eyes and let the stress of the day melt away.')
           g.timeLapse(60)
           takeWash(g)
+          applyRelaxation(g, 60, 1.0)
         },
       },
     ],

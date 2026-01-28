@@ -2,6 +2,7 @@ import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { script, seq, random, text, timeLapse, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
+import { applyRelaxation } from './Effects'
 
 // Location definitions for the city of Aetheria
 // These are the standard locations. Others might be added elsewhere
@@ -317,15 +318,17 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ],
     secret: true, // Starts as undiscovered - must be found through exploration
     onRelax: (g: Game) => {
-      g.run('addStat', { stat: 'Mood', change: 2, max: 80 })
+      g.add('You find a quiet spot by the water and let the peaceful atmosphere wash over you.')
       g.run('wait', { minutes: 30 })
+      g.run('addStat', { stat: 'Mood', change: 2, max: 80 })
+      applyRelaxation(g, 30, 1.0)
     },
     activities: [
       {
         name: 'Relax',
         condition: hourBetween(7, 19),
         script: (g: Game) => {
-          g.run('relaxAtLocation', {})
+          g.run('relaxAtLocation', {quality: 1.5})
         },
       },
     ],
