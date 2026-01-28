@@ -8,14 +8,59 @@ const GAUGE_METERS: MeterName[] = ['Energy', 'Composure', 'Mood']
 // Secondary meters shown as bars (only when value > 0)
 const BAR_METERS: MeterName[] = ['Arousal', 'Stress', 'Pain']
 
+// Debug control button style
+const debugButtonStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: 'var(--text-main)',
+  opacity: 0.4,
+  cursor: 'pointer',
+  padding: '0 2px',
+  fontSize: '0.7rem',
+  fontWeight: 'bold',
+  lineHeight: 1,
+}
+
 export function MeterPanel() {
-  const { game } = useGame()
+  const { game, refresh } = useGame()
 
   // Filter bar meters to show only those with value > 0
   const visibleBarMeters = BAR_METERS.filter(meterName => {
     const value = game.player.stats.get(meterName) || 0
     return value > 0
   })
+
+  // Debug control to modify meter value
+  const modifyMeter = (meterName: MeterName, delta: number) => {
+    const current = game.player.basestats.get(meterName) ?? 0
+    const newValue = Math.max(0, Math.min(100, current + delta))
+    game.player.basestats.set(meterName, newValue)
+    game.player.calcStats()
+    refresh()
+  }
+
+  // Render debug controls for a meter
+  const renderDebugControls = (meterName: MeterName) => {
+    if (!game.isDebug) return null
+    return (
+      <span style={{ marginLeft: '4px' }}>
+        <button
+          style={debugButtonStyle}
+          onClick={(e) => { e.stopPropagation(); modifyMeter(meterName, -10) }}
+          title={`-10 ${meterName}`}
+        >
+          −
+        </button>
+        <button
+          style={debugButtonStyle}
+          onClick={(e) => { e.stopPropagation(); modifyMeter(meterName, 10) }}
+          title={`+10 ${meterName}`}
+        >
+          +
+        </button>
+      </span>
+    )
+  }
 
   return (
     <div className="meter-panel">
@@ -26,13 +71,15 @@ export function MeterPanel() {
           const meterInfo = METER_INFO[meterName]
           const tooltip = `${meterName} = ${meterValue}\n${meterInfo.description}`
           return (
-            <SteamGauge
-              key={meterName}
-              value={meterValue}
-              label={meterName}
-              color={meterInfo.gainColor}
-              description={tooltip}
-            />
+            <div key={meterName} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <SteamGauge
+                value={meterValue}
+                label={meterName}
+                color={meterInfo.gainColor}
+                description={tooltip}
+              />
+              {renderDebugControls(meterName)}
+            </div>
           )
         })}
       </div>
@@ -54,6 +101,7 @@ export function MeterPanel() {
                   title={tooltip}
                 >
                   {meterName}
+                  {renderDebugControls(meterName)}
                 </span>
                 <div className="meter-bar-track">
                   <div

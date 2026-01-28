@@ -25,6 +25,9 @@ const MAX_ENERGY = 100
 /** Energy threshold below which full sleep is allowed */
 const TIRED_THRESHOLD = 70
 
+/** Sleep is processed in chunks to allow interruption */
+const SLEEP_CHUNK_MINUTES = 30
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -42,7 +45,7 @@ export type SleepParams = {
   fullSleep?: boolean
 }
 
-export type WakeupReason = 'rested' | 'alarm' | 'max' | 'min'
+export type WakeupReason = 'rested' | 'alarm' | 'max' | 'min' | 'interrupted'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -72,6 +75,15 @@ function getWakeupMessage(reason: WakeupReason, energy: number, minutes: number)
     : `${mins} minutes`
 
   switch (reason) {
+    case 'interrupted':
+      if (minutes < 30) {
+        return 'You wake with a start, heart pounding.'
+      } else if (energy >= 60) {
+        return `You wake suddenly after ${durationText}, still groggy but alert.`
+      } else {
+        return `You jolt awake after only ${durationText} of restless sleep.`
+      }
+
     case 'alarm':
       if (energy >= 90) {
         return `You are woken by your alarm after ${durationText}. You feel well rested despite the interruption.`
@@ -117,6 +129,9 @@ function getWakeupMessage(reason: WakeupReason, energy: number, minutes: number)
  * Energy is restored at a rate of 1 point per 6 minutes (10 per hour),
  * so 8 hours of sleep restores 80 energy.
  *
+ * Sleep is processed in chunks using the wait system, allowing events
+ * to interrupt sleep (e.g., NPC encounters, random events).
+ *
  * @param alarm - Force wakeup at a specific hour (0-24)
  * @param max - Maximum sleep duration in minutes (for naps)
  * @param min - Minimum sleep duration in minutes
@@ -129,21 +144,21 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   // Auto-detect: if no max is set, it's full sleep; otherwise it's a nap
   const isFullSleep = fullSleep ?? (max === undefined)
 
-  // Get current energy and calculate deficit
-  const currentEnergy = game.player.basestats.get('Energy') ?? 0
+  // Get current energy
+  const startEnergy = game.player.basestats.get('Energy') ?? 0
 
   // Check if player is too energetic for full sleep
-  if (isFullSleep && currentEnergy >= TIRED_THRESHOLD) {
+  if (isFullSleep && startEnergy >= TIRED_THRESHOLD) {
     game.add('You\'re not tired enough to sleep properly. You lie down but find yourself staring at the ceiling, mind racing.')
     return
   }
 
   // For naps when not tired, cap at 30 minutes
-  if (!isFullSleep && currentEnergy >= TIRED_THRESHOLD) {
+  if (!isFullSleep && startEnergy >= TIRED_THRESHOLD) {
     max = Math.min(max ?? 30, 30)
   }
 
-  const energyNeeded = MAX_ENERGY - currentEnergy
+  const energyNeeded = MAX_ENERGY - startEnergy
 
   // Calculate base sleep duration needed to fully restore energy
   // Higher quality = faster energy gain = less sleep needed
@@ -151,58 +166,83 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   const baseMinutesNeeded = energyNeeded / effectiveEnergyPerMinute
 
   // Start with ideal sleep duration
-  let sleepMinutes = baseMinutesNeeded
+  let targetMinutes = baseMinutesNeeded
   let wakeupReason: WakeupReason = 'rested'
 
   // Apply minimum constraint
-  if (min !== undefined && sleepMinutes < min) {
-    sleepMinutes = min
+  if (min !== undefined && targetMinutes < min) {
+    targetMinutes = min
     wakeupReason = 'min'
   }
 
   // Apply maximum constraint
-  if (max !== undefined && sleepMinutes > max) {
-    sleepMinutes = max
+  if (max !== undefined && targetMinutes > max) {
+    targetMinutes = max
     wakeupReason = 'max'
   }
 
   // Apply alarm constraint
   if (alarm !== undefined) {
     const minutesToAlarm = minutesUntilHour(game, alarm)
-    if (minutesToAlarm < sleepMinutes) {
-      sleepMinutes = minutesToAlarm
+    if (minutesToAlarm < targetMinutes) {
+      targetMinutes = minutesToAlarm
       wakeupReason = 'alarm'
     }
   }
 
   // Ensure we sleep at least 1 minute
-  sleepMinutes = Math.max(1, Math.round(sleepMinutes))
+  targetMinutes = Math.max(1, Math.round(targetMinutes))
 
-  // Calculate actual energy restored (quality modifies gain rate)
+  // Process sleep in chunks using wait, allowing interruption
+  let minutesSlept = 0
+  let interrupted = false
+
+  while (minutesSlept < targetMinutes) {
+    const remaining = targetMinutes - minutesSlept
+    const chunk = Math.min(remaining, SLEEP_CHUNK_MINUTES)
+
+    // Use wait to allow events to trigger
+    game.run('wait', { minutes: chunk })
+    minutesSlept += chunk
+
+    // Check if a scene was triggered (sleep interrupted)
+    if (game.inScene) {
+      interrupted = true
+      wakeupReason = 'interrupted'
+      break
+    }
+  }
+
+  // Calculate actual energy restored based on time slept
   const energyRestored = Math.min(
-    sleepMinutes * effectiveEnergyPerMinute,
-    MAX_ENERGY - currentEnergy
+    minutesSlept * effectiveEnergyPerMinute,
+    MAX_ENERGY - startEnergy
   )
 
   // Apply energy restoration
-  const newEnergy = Math.min(MAX_ENERGY, currentEnergy + energyRestored)
+  const newEnergy = Math.min(MAX_ENERGY, startEnergy + energyRestored)
   game.player.basestats.set('Energy', Math.round(newEnergy))
 
-  // Run time lapse
-  game.timeLapse(sleepMinutes)
-
-  // Set lastSleep timer for full sleep
-  if (isFullSleep) {
+  // Set lastSleep timer for full sleep (even if interrupted)
+  if (isFullSleep && minutesSlept >= (min ?? 0)) {
     game.player.setTimer('lastSleep', game.time)
   }
 
-  // Generate wakeup message based on reason and energy level
-  const wakeupMessage = getWakeupMessage(wakeupReason, newEnergy, sleepMinutes)
-  game.add(wakeupMessage)
+  // Generate wakeup message
+  const wakeupMessage = getWakeupMessage(wakeupReason, newEnergy, minutesSlept)
 
-  // Show energy restoration
-  if (energyRestored > 0) {
-    game.add({ type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: '#10b981' })
+  if (interrupted) {
+    // Prepend wakeup message to existing scene content
+    game.scene.content.unshift({ type: 'paragraph', content: [{ type: 'text', text: wakeupMessage }] })
+    if (energyRestored > 0) {
+      game.scene.content.splice(1, 0, { type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: '#10b981' })
+    }
+  } else {
+    // Normal wakeup - add messages normally
+    game.add(wakeupMessage)
+    if (energyRestored > 0) {
+      game.add({ type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: '#10b981' })
+    }
   }
 }
 

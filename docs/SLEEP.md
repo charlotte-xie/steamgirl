@@ -10,6 +10,15 @@ Sleep restores Energy over time. The rate of restoration and constraints depend 
 
 Energy is restored at a base rate per minute of sleep. Higher quality beds increase this rate, meaning less sleep time is needed to restore the same amount of energy.
 
+## Interruptible Sleep
+
+Sleep is processed in chunks using the wait system rather than a single time lapse. This allows events (NPC encounters, random events) to interrupt sleep:
+
+- Sleep proceeds in 30-minute increments
+- After each chunk, the system checks if a scene was triggered
+- If interrupted, the player wakes early with partial energy restoration
+- The wakeup message is prepended to the interrupting scene's content
+
 ## Sleep Types
 
 ### Full Sleep
@@ -46,9 +55,11 @@ Sleep duration is calculated to restore full energy, then constrained by:
 
 The system generates contextual messages based on:
 
-- **Wakeup reason**: naturally rested, alarm, hit max duration, or hit min duration
+- **Wakeup reason**: naturally rested, alarm, hit max duration, hit min duration, or interrupted
 - **Final energy level**: affects tone (well-rested vs still tired)
 - **Sleep duration**: included in the message for context
+
+When sleep is interrupted by an event, the wakeup message ("You wake suddenly...") is prepended to the scene content so players understand the context.
 
 ## Bed Quality
 
