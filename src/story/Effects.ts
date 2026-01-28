@@ -81,7 +81,9 @@ export const peckishEffect: CardDefinition = {
   hungerLevel: 50,
   subsumedBy: ['hungry', 'starving'],
   onAdded: (game: Game) => {
-    game.add({ type: 'text', text: 'You are starting to feel peckish. Your stomach gives a quiet rumble.', color: '#f59e0b' })
+    if (!game.player.sleeping) {
+      game.add({ type: 'text', text: 'You are starting to feel peckish. Your stomach gives a quiet rumble.', color: '#f59e0b' })
+    }
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Willpower', -5)
@@ -107,7 +109,9 @@ export const hungryEffect: CardDefinition = {
   replaces: ['peckish'],
   subsumedBy: ['starving'],
   onAdded: (game: Game) => {
-    game.add({ type: 'text', text: 'Your stomach growls insistently. You really need to eat something.', color: '#f97316' })
+    if (!game.player.sleeping) {
+      game.add({ type: 'text', text: 'Your stomach growls insistently. You really need to eat something.', color: '#f97316' })
+    }
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Perception', -5)
@@ -135,7 +139,13 @@ export const starvingEffect: CardDefinition = {
   hungerLevel: 150,
   replaces: ['peckish', 'hungry'],
   onAdded: (game: Game) => {
-    game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: '#ef4444' })
+    if (game.player.sleeping) {
+      // Starving wakes the player - it's a danger condition
+      game.add({ type: 'text', text: 'You have a gnawing ache in your stomach. Your body is demanding food.', color: '#ef4444' })
+      game.addOption('endScene', {}, 'Get up')
+    } else {
+      game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: '#ef4444' })
+    }
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Strength', -10)

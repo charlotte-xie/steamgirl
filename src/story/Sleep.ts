@@ -76,13 +76,7 @@ function getWakeupMessage(reason: WakeupReason, energy: number, minutes: number)
 
   switch (reason) {
     case 'interrupted':
-      if (minutes < 30) {
-        return 'You wake with a start, heart pounding.'
-      } else if (energy >= 60) {
-        return `You wake suddenly after ${durationText}, still groggy but alert.`
-      } else {
-        return `You jolt awake after only ${durationText} of restless sleep.`
-      }
+      return 'You wake suddenly...'
 
     case 'alarm':
       if (energy >= 90) {
@@ -193,6 +187,9 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   // Ensure we sleep at least 1 minute
   targetMinutes = Math.max(1, Math.round(targetMinutes))
 
+  // Set sleeping flag
+  game.player.sleeping = true
+
   // Process sleep in chunks using wait, allowing interruption
   let minutesSlept = 0
   let interrupted = false
@@ -212,6 +209,9 @@ export function sleep(game: Game, params: SleepParams = {}): void {
       break
     }
   }
+
+  // Clear sleeping flag (player is now awake)
+  game.player.sleeping = false
 
   // Calculate actual energy restored based on time slept
   const energyRestored = Math.min(

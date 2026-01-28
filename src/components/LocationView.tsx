@@ -41,6 +41,19 @@ export function LocationView({ location }: LocationViewProps) {
         }),
       }}
     >
+      {/* Sleep overlay - darkens location when player is sleeping */}
+      {game.player.sleeping && (
+        <div
+          className="sleep-overlay"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
+      )}
       {!(sceneHasContent || sceneHasOptions || hasShop) && (
         <div style={{ flex: '1', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           {!locationImage && <p>No Location</p>}

@@ -33,9 +33,12 @@ export class Player {
   inventory: Item[]
   cards: Card[]
   outfits: OutfitData
+  /** Transient flag indicating the player is currently sleeping (not serialized) */
+  sleeping: boolean
 
   constructor() {
     this.name = "" // Empty name indicates uninitialized character
+    this.sleeping = false
     this.basestats = new Map<StatName, number>()
     this.stats = new Map<StatName, number>()
     this.timers = new Map<TimerName, number>()
