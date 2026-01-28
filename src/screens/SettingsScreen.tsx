@@ -1,5 +1,6 @@
 import { useSyncExternalStore, useState } from 'react'
 import { Frame } from '../components/Frame'
+import { BrassButton } from '../components/BrassButton'
 import { useGame } from '../context/GameContext'
 import { useGameLoader } from '../context/GameLoaderContext'
 import { DEBUG_MODE } from '../constants/storage'
@@ -57,13 +58,9 @@ export function SettingsScreen() {
               <span className="setting-label">Save Game</span>
               <span className="setting-desc">Save your progress to a manual save slot</span>
             </div>
-            <button
-              type="button"
-              className="steam-button"
-              onClick={handleSave}
-            >
+            <BrassButton onClick={handleSave}>
               {saveMessage ?? 'Save'}
-            </button>
+            </BrassButton>
           </div>
 
           {isLocalhost && (
