@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext'
 import { Widget } from './Widget'
+import { RemindersPanel } from './RemindersPanel'
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -89,6 +90,8 @@ export function Clock() {
             ))}
           </div>
         </div>
+
+        <RemindersPanel />
       </div>
     </Widget>
   )

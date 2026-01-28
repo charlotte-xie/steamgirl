@@ -1,6 +1,5 @@
 import { Clock } from './Clock'
 import { StatsPanel } from './StatsPanel'
-import { RemindersPanel } from './RemindersPanel'
 import { AvatarPanel } from './AvatarPanel'
 import { ScreenSwitcher, type ScreenId } from './ScreenSwitcher'
 
@@ -11,7 +10,7 @@ interface PlayerPanelProps {
 
 export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps) {
   return (
-    <div className="player-panel panel-elevated" style={{ height: '100%' }}>
+    <div className="player-panel" style={{ height: '100%' }}>
       <AvatarPanel />
 
       <div className="widget-container">
@@ -20,7 +19,6 @@ export function PlayerPanel({ currentScreen, onScreenChange }: PlayerPanelProps)
 
       <div className="status-panel">
         <StatsPanel />
-        <RemindersPanel />
       </div>
 
       <ScreenSwitcher currentScreen={currentScreen} onScreenChange={onScreenChange} />
