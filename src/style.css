@@ -1144,7 +1144,7 @@ img {
 }
 
 .thumbnail:hover:not(:disabled) {
-  background: var(--bg-panel-soft);
+  background: color-mix(in srgb, var(--brass-light) 15%, transparent);
 }
 
 .thumbnail:disabled {
@@ -1163,7 +1163,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-panel-soft);
+  background: var(--bg-overlay);
   font-size: 3rem;
   color: var(--text-muted);
 }
