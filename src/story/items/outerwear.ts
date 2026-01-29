@@ -23,6 +23,7 @@ registerItemDefinition(
     name: 'suede corset',
     description:
       'A soft brown suede corset with subtle brass lacing. Flattering but comfortable.',
+    image: '/images/steamgirl/Corset.PNG',
     calcStats: (player) => {
       player.modifyStat('Charm', 3)
       player.modifyStat('Agility', -1)

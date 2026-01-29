@@ -21,6 +21,7 @@ registerItemDefinition(
   extendItem('base-hat', {
     name: 'bowler hat',
     description: 'A classic black bowler hat with a silk ribbon. Respectable and refined.',
+    image: '/images/steamgirl/Hat.PNG',
     calcStats: (player) => {
       player.modifyStat('Charm', 3)
     },

@@ -31,6 +31,7 @@ registerItemDefinition(
   extendItem('base-bottom', {
     name: 'pleated skirt',
     description: 'A navy blue skirt with crisp pleats. Modest and practical.',
+    image: '/images/steamgirl/SchoolSkirt.PNG',
     calcStats: (player) => {
       player.modifyStat('Charm', 1)
     },

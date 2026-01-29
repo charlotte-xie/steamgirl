@@ -5,6 +5,18 @@
 import { registerItemDefinition, extendItem } from '../../model/Item'
 
 registerItemDefinition(
+  'dress-basic',
+  extendItem('base-dress', {
+    name: 'basic dress',
+    description: 'A long, plain dress of sturdy cotton. Unremarkable but decent.',
+    image: '/images/steamgirl/BasicDress.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 1)
+    },
+  })
+)
+
+registerItemDefinition(
   'dress-simple',
   extendItem('base-dress', {
     name: 'simple dress',

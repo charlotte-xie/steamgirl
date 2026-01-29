@@ -34,9 +34,26 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
     setSelectedItem(null)
   }
 
-  // Select item from list - find by reference
+  // Select item from list - double click toggles wear/unwear
   const handleSelectFromList = (item: Item) => {
-    setSelectedItem(item)
+    if (selectedItem === item && !inScene) {
+      const isWearable = item.template.positions && item.template.positions.length > 0 && item.template.layer
+      if (isWearable) {
+        if (item.worn) {
+          if (!item.locked) {
+            game.player.unwearItem(item.id)
+            game.player.calcStats()
+            refresh()
+          }
+        } else {
+          game.player.wearItem(item)
+          game.player.calcStats()
+          refresh()
+        }
+      }
+    } else {
+      setSelectedItem(item)
+    }
   }
 
   // Select item from clothing grid

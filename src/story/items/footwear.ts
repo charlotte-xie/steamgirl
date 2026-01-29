@@ -36,6 +36,7 @@ registerItemDefinition(
   extendItem('base-footwear', {
     name: 'leather boots',
     description: 'Sturdy leather boots with brass buckles. Practical for any occasion.',
+    image: '/images/steamgirl/Boots.PNG',
     calcStats: (player) => {
       player.modifyStat('Agility', 2)
     },

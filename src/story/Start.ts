@@ -81,6 +81,10 @@ export const startScripts = {
   init: (g: Game) => {
     const pc=g.player
 
+    // Clear any pre-init inventory (e.g. character creation screen clothes)
+    pc.stripAll(true)
+    pc.inventory.length = 0
+
     // Set player name
     pc.name = 'Elise'
     
@@ -128,30 +132,47 @@ export const startScripts = {
     g.run('gainItem', { item: 'school-skirt' })
     g.run('gainItem', { item: 'school-socks' })
 
+    // Add additional clothing
+    g.run('gainItem', { item: 'crop-top' })
+    g.run('gainItem', { item: 'tied-shirt' })
+    g.run('gainItem', { item: 'bikini-top' })
+    g.run('gainItem', { item: 'bikini-bottom' })
+    g.run('gainItem', { item: 'dress-basic' })
+    g.run('gainItem', { item: 'steam-bra' })
+    g.run('gainItem', { item: 'steam-stockings' })
+
     // Add cursed gloves for testing locked items
     g.run('gainItem', { item: 'gloves-cursed' })
 
     // Wear starting clothes (casual outfit)
     pc.wearItem('bra-cotton')
     pc.wearItem('panties-cotton')
-    pc.wearItem('blouse-white')
-    pc.wearItem('corset-suede')
+    pc.wearItem('crop-top')
     pc.wearItem('skirt-pleated')
     pc.wearItem('stockings-long')
     pc.wearItem('boots-leather')
 
     // Save starting outfits
     pc.saveOutfit('Casual') // Save current worn items as Casual
-    pc.outfits['School'] = [
-      'bra-cotton',
-      'panties-cotton',
-      'blouse-white',
-      'school-necktie',
-      'school-blazer',
-      'school-skirt',
-      'school-socks',
-      'boots-leather',
-    ]
+    pc.outfits['School'] = {
+      items: [
+        'bra-cotton',
+        'panties-cotton',
+        'tied-shirt',
+        'school-necktie',
+        'school-blazer',
+        'school-skirt',
+        'school-socks',
+        'boots-leather',
+      ],
+    }
+    pc.outfits['Bikini'] = {
+      items: [
+        'bikini-top',
+        'bikini-bottom',
+        'boots-leather',
+      ],
+    }
     
     // Generate NPCs that should be present at the start
     // NOTE: NPCs are lazily instantiated - they only exist in game.npcs after getNPC() is called.

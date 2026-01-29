@@ -46,3 +46,27 @@ registerItemDefinition(
     },
   })
 )
+
+registerItemDefinition(
+  'crop-top',
+  extendItem('base-vest', {
+    name: 'crop top',
+    description: 'A short, fitted top that bares the midriff. Daring by Aetherian standards.',
+    image: '/images/steamgirl/CropTop.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 3)
+    },
+  })
+)
+
+registerItemDefinition(
+  'tied-shirt',
+  extendItem('base-vest', {
+    name: 'tied shirt',
+    description: 'A white shirt tied in a knot at the front, leaving the belly exposed.',
+    image: '/images/steamgirl/TiedShirt.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 2)
+    },
+  })
+)

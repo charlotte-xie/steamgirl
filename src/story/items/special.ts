@@ -37,6 +37,7 @@ registerItemDefinition(
     name: 'school skirt',
     description:
       'A navy blue pleated skirt that falls just below the knee. Part of the standard uniform.',
+    image: '/images/steamgirl/SchoolSkirt.PNG',
     calcStats: (player) => {
       player.modifyStat('Etiquette', 1)
     },
@@ -49,6 +50,36 @@ registerItemDefinition(
     name: 'school socks',
     description:
       'Knee-high white socks with red and white stripes. Standard issue for students.',
+  })
+)
+
+// ============================================================================
+// STEAM-POWERED ITEMS
+// ============================================================================
+
+registerItemDefinition(
+  'steam-bra',
+  extendItem('base-bra', {
+    name: 'steam-powered brassiere',
+    description: 'A remarkable undergarment of brass and leather, powered by a tiny steam engine. It hums softly against the skin.',
+    image: '/images/steamgirl/SteamBra.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 5)
+      player.modifyStat('Mechanics', 3)
+    },
+  })
+)
+
+registerItemDefinition(
+  'steam-stockings',
+  extendItem('base-stockings', {
+    name: 'steam-powered stockings',
+    description: 'Elegant stockings woven with fine copper filaments and tiny pneumatic pistons. They enhance the wearer\'s grace with mechanical precision.',
+    image: '/images/steamgirl/SteamStockings.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Agility', 5)
+      player.modifyStat('Charm', 3)
+    },
   })
 )
 

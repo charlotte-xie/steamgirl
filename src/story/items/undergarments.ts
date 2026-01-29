@@ -33,6 +33,7 @@ registerItemDefinition(
   extendItem('base-bra', {
     name: 'cotton brassiere',
     description: 'A simple supportive undergarment of white cotton.',
+    image: '/images/steamgirl/BraTop.PNG',
   })
 )
 
@@ -56,6 +57,7 @@ registerItemDefinition(
   extendItem('base-panties', {
     name: 'cotton drawers',
     description: 'Simple white cotton undergarments.',
+    image: '/images/steamgirl/Panties.PNG',
   })
 )
 
@@ -66,6 +68,30 @@ registerItemDefinition(
     description: 'Luxuriously soft silk undergarments with delicate lace edges.',
     calcStats: (player) => {
       player.modifyStat('Mood', 3)
+    },
+  })
+)
+
+registerItemDefinition(
+  'bikini-top',
+  extendItem('base-bra', {
+    name: 'bikini top',
+    description: 'A simple bikini top. Not standard attire in Aetheria.',
+    image: '/images/steamgirl/BikiniTop.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 2)
+    },
+  })
+)
+
+registerItemDefinition(
+  'bikini-bottom',
+  extendItem('base-panties', {
+    name: 'bikini bottom',
+    description: 'A simple bikini bottom. Definitely not standard attire in Aetheria.',
+    image: '/images/steamgirl/BikiniBottom.PNG',
+    calcStats: (player) => {
+      player.modifyStat('Charm', 2)
     },
   })
 )
