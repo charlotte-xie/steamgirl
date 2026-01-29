@@ -14,6 +14,9 @@
  *
  * Multiple items can occupy the same position at different layers.
  * E.g., bra (chest:under) + blouse (chest:inner) + corset (chest:outer)
+ *
+ * Default images are provided where available as sensible fallbacks.
+ * Specific items can override with their own image.
  */
 
 import { registerItemDefinition } from '../../model/Item'
@@ -27,6 +30,7 @@ registerItemDefinition('base-hat', {
   category: 'Clothes',
   positions: ['head'],
   layer: 'outer',
+  image: '/images/steamgirl/Hat.PNG',
 })
 
 // ============================================================================
@@ -99,6 +103,7 @@ registerItemDefinition('base-bra', {
   category: 'Clothes',
   positions: ['chest'],
   layer: 'under',
+  image: '/images/steamgirl/BraTop.PNG',
 })
 
 registerItemDefinition('base-top', {
@@ -106,6 +111,7 @@ registerItemDefinition('base-top', {
   category: 'Clothes',
   positions: ['chest', 'belly', 'arms'], // Shirt/blouse covers torso and arms
   layer: 'inner',
+  image: '/images/steamgirl/TiedShirt.PNG',
 })
 
 registerItemDefinition('base-vest', {
@@ -113,6 +119,7 @@ registerItemDefinition('base-vest', {
   category: 'Clothes',
   positions: ['chest', 'belly'], // Vest covers torso but not arms
   layer: 'inner',
+  image: '/images/steamgirl/CropTop.PNG',
 })
 
 registerItemDefinition('base-outerwear', {
@@ -127,6 +134,7 @@ registerItemDefinition('base-corset', {
   category: 'Clothes',
   positions: ['chest', 'belly'], // Corset covers torso (waist for cinching belts, not corsets)
   layer: 'outer',
+  image: '/images/steamgirl/Corset.PNG',
 })
 
 // ============================================================================
@@ -138,6 +146,7 @@ registerItemDefinition('base-panties', {
   category: 'Clothes',
   positions: ['hips'],
   layer: 'under',
+  image: '/images/steamgirl/Panties.PNG',
 })
 
 registerItemDefinition('base-bottom', {
@@ -145,6 +154,7 @@ registerItemDefinition('base-bottom', {
   category: 'Clothes',
   positions: ['hips', 'legs'], // Long skirts/trousers cover hips and legs
   layer: 'inner',
+  image: '/images/steamgirl/SchoolSkirt.PNG',
 })
 
 registerItemDefinition('base-shorts', {
@@ -152,6 +162,7 @@ registerItemDefinition('base-shorts', {
   category: 'Clothes',
   positions: ['hips'], // Shorts/short skirts cover only hips
   layer: 'inner',
+  image: '/images/steamgirl/Shorts.PNG',
 })
 
 // ============================================================================
@@ -163,6 +174,7 @@ registerItemDefinition('base-dress', {
   category: 'Clothes',
   positions: ['chest', 'belly', 'arms', 'hips', 'legs'],
   layer: 'inner',
+  image: '/images/steamgirl/BasicDress.PNG',
 })
 
 // ============================================================================
@@ -174,6 +186,7 @@ registerItemDefinition('base-stockings', {
   category: 'Clothes',
   positions: ['legs', 'feet'],
   layer: 'under',
+  image: '/images/steamgirl/Socks.PNG',
 })
 
 registerItemDefinition('base-socks', {
@@ -181,6 +194,7 @@ registerItemDefinition('base-socks', {
   category: 'Clothes',
   positions: ['feet'],
   layer: 'under',
+  image: '/images/steamgirl/Socks.PNG',
 })
 
 registerItemDefinition('base-footwear', {
@@ -188,6 +202,7 @@ registerItemDefinition('base-footwear', {
   category: 'Clothes',
   positions: ['feet'],
   layer: 'outer',
+  image: '/images/steamgirl/Boots.PNG',
 })
 
 // ============================================================================
