@@ -28,6 +28,7 @@ import { registerItemDefinition } from '../../model/Item'
 registerItemDefinition('base-hat', {
   name: 'hat',
   category: 'Clothes',
+  icon: 'hat',
   positions: ['head'],
   layer: 'outer',
   image: '/images/steamgirl/Hat.PNG',
@@ -40,6 +41,7 @@ registerItemDefinition('base-hat', {
 registerItemDefinition('base-mask', {
   name: 'mask',
   category: 'Clothes',
+  icon: 'mask',
   positions: ['face'],
   layer: 'outer',
 })
@@ -47,6 +49,7 @@ registerItemDefinition('base-mask', {
 registerItemDefinition('base-eyewear', {
   name: 'eyewear',
   category: 'Clothes',
+  icon: 'eyewear',
   positions: ['face'],
   layer: 'accessory',
 })
@@ -58,6 +61,7 @@ registerItemDefinition('base-eyewear', {
 registerItemDefinition('base-necklace', {
   name: 'necklace',
   category: 'Clothes',
+  icon: 'necklace',
   positions: ['neck'],
   layer: 'accessory',
 })
@@ -65,6 +69,7 @@ registerItemDefinition('base-necklace', {
 registerItemDefinition('base-collar', {
   name: 'collar',
   category: 'Clothes',
+  icon: 'necklace',
   positions: ['neck'],
   layer: 'under',
 })
@@ -72,6 +77,7 @@ registerItemDefinition('base-collar', {
 registerItemDefinition('base-necktie', {
   name: 'necktie',
   category: 'Clothes',
+  icon: 'necktie',
   positions: ['neck'],
   layer: 'inner',
 })
@@ -83,6 +89,7 @@ registerItemDefinition('base-necktie', {
 registerItemDefinition('base-bracelet', {
   name: 'bracelet',
   category: 'Clothes',
+  icon: 'bracelet',
   positions: ['wrists'],
   layer: 'accessory',
 })
@@ -90,6 +97,7 @@ registerItemDefinition('base-bracelet', {
 registerItemDefinition('base-armwear', {
   name: 'armwear',
   category: 'Clothes',
+  icon: 'bracelet',
   positions: ['arms'],
   layer: 'accessory',
 })
@@ -101,6 +109,7 @@ registerItemDefinition('base-armwear', {
 registerItemDefinition('base-bra', {
   name: 'bra',
   category: 'Clothes',
+  icon: 'underwear',
   positions: ['chest'],
   layer: 'under',
   image: '/images/steamgirl/BraTop.PNG',
@@ -109,6 +118,7 @@ registerItemDefinition('base-bra', {
 registerItemDefinition('base-top', {
   name: 'top',
   category: 'Clothes',
+  icon: 'top',
   positions: ['chest', 'belly', 'arms'], // Shirt/blouse covers torso and arms
   layer: 'inner',
   image: '/images/steamgirl/TiedShirt.PNG',
@@ -117,6 +127,7 @@ registerItemDefinition('base-top', {
 registerItemDefinition('base-vest', {
   name: 'vest',
   category: 'Clothes',
+  icon: 'top',
   positions: ['chest', 'belly'], // Vest covers torso but not arms
   layer: 'inner',
   image: '/images/steamgirl/CropTop.PNG',
@@ -125,6 +136,7 @@ registerItemDefinition('base-vest', {
 registerItemDefinition('base-outerwear', {
   name: 'outerwear',
   category: 'Clothes',
+  icon: 'outerwear',
   positions: ['chest', 'belly', 'arms'], // Jacket/coat covers torso and arms
   layer: 'outer',
 })
@@ -132,6 +144,7 @@ registerItemDefinition('base-outerwear', {
 registerItemDefinition('base-corset', {
   name: 'corset',
   category: 'Clothes',
+  icon: 'corset',
   positions: ['chest', 'belly'], // Corset covers torso (waist for cinching belts, not corsets)
   layer: 'outer',
   image: '/images/steamgirl/Corset.PNG',
@@ -144,6 +157,7 @@ registerItemDefinition('base-corset', {
 registerItemDefinition('base-panties', {
   name: 'panties',
   category: 'Clothes',
+  icon: 'knickers',
   positions: ['hips'],
   layer: 'under',
   image: '/images/steamgirl/Panties.PNG',
@@ -152,6 +166,7 @@ registerItemDefinition('base-panties', {
 registerItemDefinition('base-bottom', {
   name: 'bottom',
   category: 'Clothes',
+  icon: 'bottom',
   positions: ['hips', 'legs'], // Long skirts/trousers cover hips and legs
   layer: 'inner',
   image: '/images/steamgirl/SchoolSkirt.PNG',
@@ -160,6 +175,7 @@ registerItemDefinition('base-bottom', {
 registerItemDefinition('base-shorts', {
   name: 'shorts',
   category: 'Clothes',
+  icon: 'bottom',
   positions: ['hips'], // Shorts/short skirts cover only hips
   layer: 'inner',
   image: '/images/steamgirl/Shorts.PNG',
@@ -172,6 +188,7 @@ registerItemDefinition('base-shorts', {
 registerItemDefinition('base-dress', {
   name: 'dress',
   category: 'Clothes',
+  icon: 'dress',
   positions: ['chest', 'belly', 'arms', 'hips', 'legs'],
   layer: 'inner',
   image: '/images/steamgirl/BasicDress.PNG',
@@ -184,6 +201,7 @@ registerItemDefinition('base-dress', {
 registerItemDefinition('base-stockings', {
   name: 'stockings',
   category: 'Clothes',
+  icon: 'socks',
   positions: ['legs', 'feet'],
   layer: 'under',
   image: '/images/steamgirl/Socks.PNG',
@@ -192,6 +210,7 @@ registerItemDefinition('base-stockings', {
 registerItemDefinition('base-socks', {
   name: 'socks',
   category: 'Clothes',
+  icon: 'socks',
   positions: ['feet'],
   layer: 'under',
   image: '/images/steamgirl/Socks.PNG',
@@ -200,6 +219,7 @@ registerItemDefinition('base-socks', {
 registerItemDefinition('base-footwear', {
   name: 'footwear',
   category: 'Clothes',
+  icon: 'footwear',
   positions: ['feet'],
   layer: 'outer',
   image: '/images/steamgirl/Boots.PNG',
@@ -212,6 +232,7 @@ registerItemDefinition('base-footwear', {
 registerItemDefinition('base-gloves', {
   name: 'gloves',
   category: 'Clothes',
+  icon: 'gloves',
   positions: ['hands'],
   layer: 'accessory',
 })
@@ -223,6 +244,7 @@ registerItemDefinition('base-gloves', {
 registerItemDefinition('base-belt', {
   name: 'belt',
   category: 'Clothes',
+  icon: 'belt',
   positions: ['waist'],
   layer: 'accessory',
 })

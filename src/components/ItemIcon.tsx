@@ -1,5 +1,6 @@
 import type { Item } from '../model/Item'
 import { capitalise } from '../model/Text'
+import { getItemIcon } from './ItemIcons'
 
 interface ItemIconProps {
   item: Item
@@ -13,10 +14,12 @@ export function ItemIcon({ item, showNumber = false, showLocked = false }: ItemI
   const displayWorn = showNumber && item.worn && !item.locked
   const displayLocked = (showNumber || showLocked) && item.worn && item.locked
 
+  const IconSvg = itemDef.icon ? getItemIcon(itemDef.icon) : undefined
+
   return (
     <div className="item-icon-container">
       <div className="item-icon-placeholder">
-        {capitalise(itemDef.name).charAt(0)}
+        {IconSvg ? <IconSvg /> : capitalise(itemDef.name).charAt(0)}
       </div>
       {displayNumber && (
         <span className="item-number-badge">{item.number}</span>
