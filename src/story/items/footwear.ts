@@ -40,6 +40,15 @@ registerItemDefinition(
 // ============================================================================
 
 registerItemDefinition(
+  'shoes-plain',
+  extendItem('base-footwear', {
+    name: 'plain shoes',
+    description: 'Simple leather shoes with a low heel. Comfortable and unremarkable.',
+    image: '/images/steamgirl/Shoes.PNG',
+  })
+)
+
+registerItemDefinition(
   'boots-leather',
   extendItem('base-footwear', {
     name: 'leather boots',

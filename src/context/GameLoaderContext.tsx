@@ -57,8 +57,13 @@ export function GameLoaderProvider({ children }: { children: ReactNode }) {
       g.player.addItem(id)
       g.player.wearItem(id)
     }
-    localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(g.toJSON()))
-    const state = opts?.replace ? { source: 'newGame' as const, _t: Date.now() } : { source: 'newGame' as const }
+    // Don't autosave here — the game is uninitialised and saving would
+    // overwrite the player's previous autosave before they commit to starting.
+    // Pass the serialised game via navigation state so GameProvider can load it.
+    const gameJson = JSON.stringify(g.toJSON())
+    const state = opts?.replace
+      ? { source: 'newGame' as const, gameJson, _t: Date.now() }
+      : { source: 'newGame' as const, gameJson }
     navigate('/game', { state, replace: opts?.replace })
   }
 

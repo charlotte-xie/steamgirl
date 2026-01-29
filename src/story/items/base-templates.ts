@@ -175,7 +175,7 @@ registerItemDefinition('base-bottom', {
 registerItemDefinition('base-shorts', {
   name: 'shorts',
   category: 'Clothes',
-  icon: 'bottom',
+  icon: 'trousers',
   positions: ['hips'], // Shorts/short skirts cover only hips
   layer: 'inner',
   image: '/images/steamgirl/Shorts.PNG',

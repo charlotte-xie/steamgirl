@@ -12,18 +12,17 @@ import '../story/Lodgings' // Register lodgings scripts
 
 /** Returns the item IDs for the starting outfit based on chosen specialty. */
 export function getStartingOutfit(specialty: Specialty | null): string[] {
-  const underwear = ['bra-cotton', 'panties-cotton']
-  const shoes = ['white-socks', 'boots-leather']
+  const underwear = ['bra-cotton', 'panties-cotton', 'white-socks']
 
   switch (specialty) {
     case 'Aetherics':
-      return [...underwear, 'dress-basic', ...shoes]
+      return [...underwear, 'dress-basic', 'shoes-plain']
     case 'Mechanics':
-      return [...underwear, 'tied-shirt', 'shorts-basic', ...shoes]
+      return [...underwear, 'tied-shirt', 'shorts-basic', 'boots-leather']
     case 'Flirtation':
-      return [...underwear, 'crop-top', 'skirt-pleated', ...shoes]
+      return [...underwear, 'crop-top', 'skirt-pleated', 'shoes-plain']
     default:
-      return [...underwear, 'crop-top', 'shorts-basic', ...shoes]
+      return [...underwear, 'crop-top', 'shorts-basic', 'boots-leather']
   }
 }
 

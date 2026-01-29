@@ -30,7 +30,7 @@ export function useDebugMode(): boolean {
 
 export function SettingsScreen() {
   const { game } = useGame()
-  const { saveGame } = useGameLoader()
+  const { saveGame, loadGame, hasManualSave, returnToStart } = useGameLoader()
   const debugEnabled = useDebugMode()
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
@@ -47,11 +47,19 @@ export function SettingsScreen() {
     setTimeout(() => setSaveMessage(null), 2000)
   }
 
+  const handleLoad = () => {
+    loadGame()
+  }
+
+  const handleExit = () => {
+    returnToStart(game)
+  }
+
   return (
     <Frame className="screen-frame">
       <div className="settings-screen">
         <section className="info-section">
-          <h3>Settings</h3>
+          <h3>Save &amp; Load</h3>
 
           <div className="setting-row">
             <div className="setting-info">
@@ -62,6 +70,20 @@ export function SettingsScreen() {
               {saveMessage ?? 'Save'}
             </BrassButton>
           </div>
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Load Game</span>
+              <span className="setting-desc">Load from your last manual save</span>
+            </div>
+            <BrassButton onClick={handleLoad} disabled={!hasManualSave}>
+              Load
+            </BrassButton>
+          </div>
+        </section>
+
+        <section className="info-section">
+          <h3>Settings</h3>
 
           {isLocalhost && (
             <div className="setting-row">
@@ -82,6 +104,16 @@ export function SettingsScreen() {
               </button>
             </div>
           )}
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Exit to Main Menu</span>
+              <span className="setting-desc">Return to the start screen (progress is auto-saved)</span>
+            </div>
+            <BrassButton onClick={handleExit}>
+              Exit
+            </BrassButton>
+          </div>
         </section>
       </div>
     </Frame>

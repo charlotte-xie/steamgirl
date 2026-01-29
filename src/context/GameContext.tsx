@@ -40,13 +40,16 @@ function getDebugFromStorage(): boolean {
   return isLocalhost
 }
 
-function loadFromStorage(source: unknown): Game | null {
+function loadFromState(state: Record<string, unknown> | null): Game | null {
   try {
     let json: string | null = null
-    if (source === 'loadGame') {
+    if (state?.gameJson && typeof state.gameJson === 'string') {
+      // New game passed via navigation state (avoids overwriting autosave)
+      json = state.gameJson
+    } else if (state?.source === 'loadGame') {
       json = localStorage.getItem(GAME_SAVE)
     } else {
-      // For newGame, continueGame, or page reload (no source), use autosave
+      // For continueGame or page reload (no source), use autosave
       json = localStorage.getItem(GAME_SAVE_AUTO)
     }
     const game = json ? Game.fromJSON(json) : null
@@ -60,7 +63,7 @@ function loadFromStorage(source: unknown): Game | null {
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const { state } = useLocation()
-  const [game, setGame] = useState<Game | null>(() => loadFromStorage(state?.source))
+  const [game, setGame] = useState<Game | null>(() => loadFromState(state))
   const [, setUpdateCounter] = useState(0)
 
   if (!game) {

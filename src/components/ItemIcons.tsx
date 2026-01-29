@@ -45,6 +45,14 @@ const icons: Record<string, () => JSX.Element> = {
     </svg>
   ),
 
+  trousers: () => (
+    <svg {...svgProps}>
+      {/* Trousers */}
+      <path d="M6 4 L14 4 L14 9 L13 17 L11 17 L10 10 L9 17 L7 17 L6 9Z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M6 4 L14 4" strokeWidth="2" />
+    </svg>
+  ),
+
   dress: () => (
     <svg {...svgProps}>
       {/* Dress */}

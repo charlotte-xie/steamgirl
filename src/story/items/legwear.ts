@@ -53,6 +53,7 @@ registerItemDefinition(
     name: 'riding trousers',
     description:
       'Fitted trousers of supple leather, designed for riding or adventuring.',
+    icon: 'trousers',
     calcStats: (player) => {
       player.modifyStat('Agility', 3)
     },
@@ -64,6 +65,7 @@ registerItemDefinition(
   extendItem('base-bottom', {
     name: 'work trousers',
     description: 'Durable canvas trousers with reinforced knees. Built for hard labor.',
+    icon: 'trousers',
     calcStats: (player) => {
       player.modifyStat('Strength', 2)
     },
