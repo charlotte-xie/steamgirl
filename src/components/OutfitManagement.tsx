@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useGame } from '../context/GameContext'
-import { getOutfitNames } from '../model/Outfits'
+import { getOutfitNames, getOutfitThumbnail } from '../model/Outfits'
 import { Button } from './Button'
+import { captureAvatar } from '../utils/captureAvatar'
 
 export function OutfitManagement() {
   const { game, refresh } = useGame()
@@ -17,12 +18,13 @@ export function OutfitManagement() {
 
   const handleSaveAs = () => {
     setIsNaming(true)
-    setNewName('')
+    setNewName(selectedOutfit ?? '')
   }
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (newName.trim()) {
-      player.saveOutfit(newName.trim())
+      const thumbnail = await captureAvatar()
+      player.saveOutfit(newName.trim(), thumbnail)
       setSelectedOutfit(newName.trim())
       setIsNaming(false)
       setNewName('')
@@ -35,9 +37,10 @@ export function OutfitManagement() {
     setNewName('')
   }
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (selectedOutfit) {
-      player.saveOutfit(selectedOutfit)
+      const thumbnail = await captureAvatar()
+      player.saveOutfit(selectedOutfit, thumbnail)
       refresh()
     }
   }
@@ -78,24 +81,32 @@ export function OutfitManagement() {
 
       {outfitNames.length > 0 && (
         <div className="inventory-items">
-          {outfitNames.map(name => (
-            <button
-              key={name}
-              type="button"
-              className={`thumbnail outfit-item ${selectedOutfit === name ? 'selected' : ''}`}
-              onClick={() => {
-                if (isNaming) {
-                  setNewName(name)
-                } else {
-                  setSelectedOutfit(name === selectedOutfit ? null : name)
-                }
-              }}
-              title={name}
-            >
-              <div className="thumbnail-image">◇</div>
-              <p className="thumbnail-subtitle">{name}</p>
-            </button>
-          ))}
+          {outfitNames.map(name => {
+            const thumbnail = getOutfitThumbnail(player.outfits, name)
+            return (
+              <button
+                key={name}
+                type="button"
+                className={`thumbnail outfit-item ${selectedOutfit === name ? 'selected' : ''}`}
+                onClick={() => {
+                  if (isNaming) {
+                    setNewName(name)
+                  } else {
+                    setSelectedOutfit(name === selectedOutfit ? null : name)
+                  }
+                }}
+                title={name}
+              >
+                <div className="thumbnail-image">
+                  {thumbnail
+                    ? <img src={thumbnail} alt={name} />
+                    : '◇'
+                  }
+                </div>
+                <p className="thumbnail-subtitle">{name}</p>
+              </button>
+            )
+          })}
         </div>
       )}
 

@@ -17,7 +17,8 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(findstr:*)",
-      "Bash(git grep:*)"
+      "Bash(git grep:*)",
+      "Bash(pnpm add:*)"
     ]
   }
 }

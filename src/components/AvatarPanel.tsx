@@ -1,7 +1,7 @@
 import { useGame } from '../context/GameContext'
 import { EffectTag } from './EffectTag'
 import { Frame } from './Frame'
-import { assetUrl } from '../utils/assetUrl'
+import { AvatarImage } from './AvatarImage'
 
 interface AvatarPanelProps {
   /** Override the displayed name (useful for character creation screen) */
@@ -17,9 +17,7 @@ export function AvatarPanel({ nameOverride }: AvatarPanelProps = {}) {
   return (
     <div className="avatar-container">
       <Frame className="avatar-frame">
-        <div className="avatar-placeholder">
-          <img src={assetUrl('/girl/SteamGirl.png')} alt="Player Avatar" />
-        </div>
+        <AvatarImage />
         {/* Status effect tags overlay - top left */}
         {effectCards.length > 0 && (
           <div className="avatar-effects-overlay">

@@ -1,7 +1,7 @@
 import { Item, type ItemData, ensureItem, type ClothingSlotKey, type ClothingPosition, type ClothingLayer } from './Item'
 import { Card, type CardData } from './Card'
 import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO } from './Stats'
-import { type OutfitData, saveOutfit, deleteOutfit } from './Outfits'
+import { type OutfitData, saveOutfit, deleteOutfit, getOutfitItems } from './Outfits'
 
 export type ItemSpec = string | Item
 
@@ -385,10 +385,11 @@ export class Player {
   /**
    * Save the currently worn items as an outfit.
    * @param name - The name for the outfit
+   * @param thumbnail - Optional data URL of an avatar snapshot
    */
-  saveOutfit(name: string): void {
+  saveOutfit(name: string, thumbnail?: string): void {
     const wornItemIds = this.getWornItems().map(item => item.id)
-    this.outfits = saveOutfit(this.outfits, name, wornItemIds)
+    this.outfits = saveOutfit(this.outfits, name, wornItemIds, thumbnail)
   }
 
   /**
@@ -406,8 +407,8 @@ export class Player {
    * @returns true if outfit exists, false otherwise
    */
   wearOutfit(name: string): boolean {
-    const itemIds = this.outfits[name]
-    if (!itemIds) return false
+    const itemIds = getOutfitItems(this.outfits, name)
+    if (itemIds.length === 0 && !(name in this.outfits)) return false
 
     // Strip all current clothes
     this.stripAll()
