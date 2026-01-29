@@ -35,7 +35,6 @@ const Icons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <rect x="4" y="8" width="16" height="12" rx="2" />
       <path d="M8 8V6a4 4 0 0 1 8 0v2" />
-      <line x1="12" y1="12" x2="12" y2="16" />
     </svg>
   ),
   // Scroll - for Quests

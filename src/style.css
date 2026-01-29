@@ -1655,8 +1655,8 @@ img {
   gap: var(--space-xs);
   border-top: 1px solid var(--border-subtle);
   padding-top: var(--space-sm);
-  max-height: 6rem;
-  overflow-y: auto;
+  align-self: stretch;
+  text-align: left;
 }
 
 .reminder-item {

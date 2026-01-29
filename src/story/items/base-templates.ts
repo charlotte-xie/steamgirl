@@ -189,7 +189,7 @@ registerItemDefinition('base-dress', {
   name: 'dress',
   category: 'Clothes',
   icon: 'dress',
-  positions: ['chest', 'belly', 'arms', 'hips', 'legs'],
+  positions: ['chest', 'belly', 'hips', 'legs'],
   layer: 'inner',
   image: '/images/steamgirl/BasicDress.PNG',
 })
@@ -221,7 +221,7 @@ registerItemDefinition('base-footwear', {
   category: 'Clothes',
   icon: 'footwear',
   positions: ['feet'],
-  layer: 'outer',
+  layer: 'inner',
   image: '/images/steamgirl/Boots.PNG',
 })
 

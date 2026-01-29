@@ -86,7 +86,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const initializeCharacter = (options: CharacterOptions) => {
     // Run the init script to set up the game
     const init = getScript('init')
-    if (init) init(game, {})
+    if (init) init(game, { specialty: options.specialty })
 
     // Override the player name with the user's choice
     game.player.name = options.name

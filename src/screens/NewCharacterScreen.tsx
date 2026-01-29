@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '../components/Button'
 import { CenteredContent } from '../components/CenteredContent'
 import { AvatarPanel } from '../components/AvatarPanel'
+import { useGame } from '../context/GameContext'
+import { getStartingOutfit } from '../story/Start'
 
 export type Specialty = 'Aetherics' | 'Mechanics' | 'Flirtation'
 
@@ -37,6 +39,21 @@ interface NewCharacterScreenProps {
 export function NewCharacterScreen({ onStart, onCancel }: NewCharacterScreenProps) {
   const [playerName, setPlayerName] = useState('Elise')
   const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty | null>(null)
+
+  const { game, refresh } = useGame()
+
+  // Update avatar outfit when specialty changes
+  useEffect(() => {
+    const pc = game.player
+    pc.stripAll(true)
+    pc.inventory.length = 0
+    const outfit = getStartingOutfit(selectedSpecialty)
+    for (const id of outfit) {
+      pc.addItem(id)
+      pc.wearItem(id)
+    }
+    refresh()
+  }, [selectedSpecialty])
 
   const trimmedName = playerName.trim()
   const isValidName = trimmedName.length > 0

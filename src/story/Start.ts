@@ -6,8 +6,26 @@ import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
 import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option } from '../model/ScriptDSL'
+import type { Specialty } from '../screens/NewCharacterScreen'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
+
+/** Returns the item IDs for the starting outfit based on chosen specialty. */
+export function getStartingOutfit(specialty: Specialty | null): string[] {
+  const underwear = ['bra-cotton', 'panties-cotton']
+  const shoes = ['white-socks', 'boots-leather']
+
+  switch (specialty) {
+    case 'Aetherics':
+      return [...underwear, 'dress-basic', ...shoes]
+    case 'Mechanics':
+      return [...underwear, 'tied-shirt', 'shorts-basic', ...shoes]
+    case 'Flirtation':
+      return [...underwear, 'crop-top', 'skirt-pleated', ...shoes]
+    default:
+      return [...underwear, 'crop-top', 'shorts-basic', ...shoes]
+  }
+}
 
 // Register NPCs that appear at the station
 registerNPC('automaton-greeter', {
@@ -78,8 +96,9 @@ registerNPC('commuter', {
 })
 
 export const startScripts = {
-  init: (g: Game) => {
+  init: (g: Game, params: { specialty?: Specialty | null }) => {
     const pc=g.player
+    const specialty = params.specialty ?? null
 
     // Clear any pre-init inventory (e.g. character creation screen clothes)
     pc.stripAll(true)
@@ -87,7 +106,7 @@ export const startScripts = {
 
     // Set player name
     pc.name = 'Elise'
-    
+
     // Set base stats to 30
     pc.basestats.set('Agility', 30)
     pc.basestats.set('Perception', 30)
@@ -95,13 +114,13 @@ export const startScripts = {
     pc.basestats.set('Charm', 30)
     pc.basestats.set('Willpower', 30)
     pc.basestats.set('Strength', 30)
-    
+
     // Set initial meter values (meters are now part of basestats)
     pc.basestats.set('Energy', 80)
     pc.basestats.set('Mood', 70)
     pc.basestats.set('Composure', 50)
     // Arousal, Stress, Pain remain at 0 (initialized in constructor)
-    
+
     // Set initial skill values
     pc.basestats.set('Mechanics', 20)
 
@@ -113,18 +132,12 @@ export const startScripts = {
     g.run('gainItem', { item: 'pocket-watch', number: 1 })
     g.run('gainItem', { item: 'sweet-wine', number: 3 })
     g.run('gainItem', { item: 'acceptance-letter', number: 1 })
-    g.run('gainItem', { item: 'magic-potion', number: 1 })
-    g.run('gainItem', { item: 'fun-juice', number: 1 })
 
-    // Add starting clothing (casual outfit)
-    g.run('gainItem', { item: 'bra-cotton' })
-    g.run('gainItem', { item: 'panties-cotton' })
-    g.run('gainItem', { item: 'blouse-white' })
-    g.run('gainItem', { item: 'corset-suede' })
-    g.run('gainItem', { item: 'skirt-pleated' })
-    g.run('gainItem', { item: 'stockings-long' })
-    g.run('gainItem', { item: 'boots-leather' })
-    g.run('gainItem', { item: 'hat-bowler' }) // Not worn, for testing
+    // Add starting clothing based on specialty
+    const startingOutfit = getStartingOutfit(specialty)
+    for (const id of startingOutfit) {
+      g.run('gainItem', { item: id })
+    }
 
     // Add school uniform items
     g.run('gainItem', { item: 'school-blazer' })
@@ -132,25 +145,10 @@ export const startScripts = {
     g.run('gainItem', { item: 'school-skirt' })
     g.run('gainItem', { item: 'school-socks' })
 
-    // Add additional clothing
-    g.run('gainItem', { item: 'crop-top' })
-    g.run('gainItem', { item: 'tied-shirt' })
-    g.run('gainItem', { item: 'bikini-top' })
-    g.run('gainItem', { item: 'bikini-bottom' })
-    g.run('gainItem', { item: 'dress-basic' })
-    g.run('gainItem', { item: 'steam-bra' })
-    g.run('gainItem', { item: 'steam-stockings' })
-
-    // Add cursed gloves for testing locked items
-    g.run('gainItem', { item: 'gloves-cursed' })
-
-    // Wear starting clothes (casual outfit)
-    pc.wearItem('bra-cotton')
-    pc.wearItem('panties-cotton')
-    pc.wearItem('crop-top')
-    pc.wearItem('skirt-pleated')
-    pc.wearItem('stockings-long')
-    pc.wearItem('boots-leather')
+    // Wear starting outfit
+    for (const id of startingOutfit) {
+      pc.wearItem(id)
+    }
 
     // Save starting outfits
     pc.saveOutfit('Casual') // Save current worn items as Casual
@@ -166,14 +164,33 @@ export const startScripts = {
         'boots-leather',
       ],
     }
-    pc.outfits['Bikini'] = {
-      items: [
-        'bikini-top',
-        'bikini-bottom',
-        'boots-leather',
-      ],
+
+    // Debug-only extra items for testing
+    if (g.isDebug) {
+      g.run('gainItem', { item: 'magic-potion', number: 1 })
+      g.run('gainItem', { item: 'fun-juice', number: 1 })
+      g.run('gainItem', { item: 'blouse-white' })
+      g.run('gainItem', { item: 'corset-suede' })
+      g.run('gainItem', { item: 'hat-bowler' })
+      g.run('gainItem', { item: 'crop-top' })
+      g.run('gainItem', { item: 'tied-shirt' })
+      g.run('gainItem', { item: 'shorts-basic' })
+      g.run('gainItem', { item: 'skirt-pleated' })
+      g.run('gainItem', { item: 'dress-basic' })
+      g.run('gainItem', { item: 'bikini-top' })
+      g.run('gainItem', { item: 'bikini-bottom' })
+      g.run('gainItem', { item: 'steam-bra' })
+      g.run('gainItem', { item: 'steam-stockings' })
+      g.run('gainItem', { item: 'gloves-cursed' })
+      pc.outfits['Bikini'] = {
+        items: [
+          'bikini-top',
+          'bikini-bottom',
+          'boots-leather',
+        ],
+      }
     }
-    
+
     // Generate NPCs that should be present at the start
     // NOTE: NPCs are lazily instantiated - they only exist in game.npcs after getNPC() is called.
     // Most NPCs are generated when their home location's onArrive hook runs (e.g., Tavern.ts).

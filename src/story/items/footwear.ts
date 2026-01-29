@@ -17,6 +17,14 @@ registerItemDefinition(
 )
 
 registerItemDefinition(
+  'white-socks',
+  extendItem('base-socks', {
+    name: 'white socks',
+    description: 'Plain white cotton socks. Simple and practical.',
+  })
+)
+
+registerItemDefinition(
   'stockings-silk',
   extendItem('base-stockings', {
     name: 'silk stockings',

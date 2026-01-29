@@ -39,6 +39,15 @@ registerItemDefinition(
 )
 
 registerItemDefinition(
+  'shorts-basic',
+  extendItem('base-shorts', {
+    name: 'shorts',
+    description: 'Simple canvas shorts, cut above the knee. Practical for warm weather or workshop work.',
+    image: '/images/steamgirl/Shorts.PNG',
+  })
+)
+
+registerItemDefinition(
   'trousers-riding',
   extendItem('base-bottom', {
     name: 'riding trousers',

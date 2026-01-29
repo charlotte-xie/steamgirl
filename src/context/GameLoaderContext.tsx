@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Game } from '../model/Game'
 import { getScript } from '../model/Scripts'
 import { GAME_SAVE, GAME_SAVE_AUTO, DEBUG_MODE } from '../constants/storage'
+import { getStartingOutfit } from '../story/Start'
 
 type GameLoaderContextType = {
   newGame: (opts?: { replace?: boolean }) => void
@@ -50,18 +51,12 @@ export function GameLoaderProvider({ children }: { children: ReactNode }) {
     const g = new Game()
     initDebugFlag(g)
     // Give starting clothes so the avatar isn't naked on character creation screen
-    g.player.addItem('bra-cotton')
-    g.player.addItem('panties-cotton')
-    g.player.addItem('crop-top')
-    g.player.addItem('skirt-pleated')
-    g.player.addItem('stockings-long')
-    g.player.addItem('boots-leather')
-    g.player.wearItem('bra-cotton')
-    g.player.wearItem('panties-cotton')
-    g.player.wearItem('crop-top')
-    g.player.wearItem('skirt-pleated')
-    g.player.wearItem('stockings-long')
-    g.player.wearItem('boots-leather')
+    // Uses the default (no specialty) outfit
+    const outfit = getStartingOutfit(null)
+    for (const id of outfit) {
+      g.player.addItem(id)
+      g.player.wearItem(id)
+    }
     localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(g.toJSON()))
     const state = opts?.replace ? { source: 'newGame' as const, _t: Date.now() } : { source: 'newGame' as const }
     navigate('/game', { state, replace: opts?.replace })
