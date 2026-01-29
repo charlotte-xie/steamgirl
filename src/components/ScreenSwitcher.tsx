@@ -51,11 +51,11 @@ const Icons = {
       <path d="M4 4h6c1.1 0 2 .9 2 2v14c-1.5-1-3-1-4-1H4V4zM20 4h-6c-1.1 0-2 .9-2 2v14c1.5-1 3-1 4-1h4V4z" />
     </svg>
   ),
-  // Gear - for Settings
+  // Cog - for Settings
   settings: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+      <path d="M10.5 2h3l.5 3.2a8 8 0 0 1 2.1 1.2l3-.9 1.5 2.6-2.5 2.1a8 8 0 0 1 0 2.4l2.5 2.1-1.5 2.6-3-.9a8 8 0 0 1-2.1 1.2L13.5 22h-3l-.5-3.2a8 8 0 0 1-2.1-1.2l-3 .9-1.5-2.6 2.5-2.1a8 8 0 0 1 0-2.4L3.4 9.3l1.5-2.6 3 .9A8 8 0 0 1 10 6.4Z" />
       <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
     </svg>
   ),
   // Door - for Exit

@@ -122,16 +122,16 @@ body {
   color: var(--text-main);
 
   background:
-    radial-gradient(circle at 10% 0%, rgba(139, 90, 43, 0.1), transparent 55%),
+    radial-gradient(circle at 10% 0%, rgba(48, 58, 45, 0.1), transparent 55%),
     radial-gradient(circle at 90% 100%, rgba(61, 37, 16, 0.15), transparent 60%),
     repeating-linear-gradient(
-      135deg,
+      90deg,
       transparent,
       transparent 4px,
-      rgba(92, 58, 30, 0.15) 4px,
-      rgba(92, 58, 30, 0.15) 8px
+      rgba(17, 20, 19, 0.15) 4px,
+      rgba(17, 19, 18, 0.15) 8px
     ),
-    var(--wood-dark);
+    var(--copper-dark);
 }
 
 h1,
