@@ -1469,6 +1469,11 @@ img {
   padding-top: var(--space-sm);
 }
 
+.outfit-management .inventory-items {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: var(--space-sm);
+}
+
 .outfit-management h4 {
   margin: 0 0 var(--space-xs) 0;
   color: var(--text-main);
@@ -1482,8 +1487,7 @@ img {
 }
 
 .outfit-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid transparent;
   border-radius: var(--radius-xs);
   padding: 0.25rem 0.5rem;
   font-size: var(--font-sm);
@@ -1497,7 +1501,6 @@ img {
 }
 
 .outfit-item.selected {
-  background: var(--bg-panel);
   border-color: var(--border-main);
 }
 

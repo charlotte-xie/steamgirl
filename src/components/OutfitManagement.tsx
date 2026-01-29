@@ -77,11 +77,12 @@ export function OutfitManagement() {
       <h4>Outfits</h4>
 
       {outfitNames.length > 0 && (
-        <div className="outfit-list">
+        <div className="inventory-items">
           {outfitNames.map(name => (
             <button
               key={name}
-              className={`outfit-item ${selectedOutfit === name ? 'selected' : ''}`}
+              type="button"
+              className={`thumbnail outfit-item ${selectedOutfit === name ? 'selected' : ''}`}
               onClick={() => {
                 if (isNaming) {
                   setNewName(name)
@@ -89,8 +90,10 @@ export function OutfitManagement() {
                   setSelectedOutfit(name === selectedOutfit ? null : name)
                 }
               }}
+              title={name}
             >
-              {name}
+              <div className="thumbnail-image">◇</div>
+              <p className="thumbnail-subtitle">{name}</p>
             </button>
           ))}
         </div>
