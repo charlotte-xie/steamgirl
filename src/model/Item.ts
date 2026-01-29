@@ -282,6 +282,40 @@ export function extendItem(baseId: ItemId, overrides: Partial<ItemDefinition>): 
   return { ...base, ...overrides }
 }
 
+// Z-order values for clothing layers (higher = rendered on top)
+export const LAYER_Z: Record<ClothingLayer, number> = {
+  body: 10,
+  under: 20,
+  inner: 30,
+  outer: 40,
+  accessory: 50,
+}
+
+// Z-order offsets for clothing positions (tiebreaker within same layer)
+export const POSITION_Z: Record<ClothingPosition, number> = {
+  feet: 0,
+  legs: 1,
+  hips: 2,
+  belly: 3,
+  neck: 3,
+  chest: 4,
+  face: 4,
+  waist: 5,
+  head: 5,
+  arms: 6,
+  hands: 7,
+  wrists: 8,
+}
+
+/** Calculate the z-order for an item based on its layer and positions */
+export function getItemZOrder(def: ItemDefinition): number {
+  const layerZ = def.layer ? LAYER_Z[def.layer] : 0
+  const positionZ = def.positions
+    ? Math.max(...def.positions.map(p => POSITION_Z[p]))
+    : 0
+  return layerZ + positionZ
+}
+
 // Get an item definition by id
 export function getItem(id: ItemId): ItemDefinition | undefined {
   return ITEM_DEFINITIONS[id]

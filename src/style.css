@@ -253,6 +253,12 @@ img {
   border-radius: var(--radius-md);
 }
 
+.avatar-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* Status effect tags overlay on avatar */
 .avatar-effects-overlay {
   position: absolute;
