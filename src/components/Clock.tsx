@@ -35,28 +35,68 @@ export function Clock() {
       <div className="clock-widget">
         <div className="clock-layout">
           {/* Left: Clock face */}
-          <svg width="70" height="70" viewBox="0 0 70 70" className="clock-face">
-            <circle cx="35" cy="35" r="32" fill="rgba(52, 32, 16, 0.95)" stroke="rgba(220, 170, 90, 0.6)" strokeWidth="2" />
-            <circle cx="35" cy="35" r="27" fill="rgba(34, 24, 16, 0.9)" />
-            <circle cx="35" cy="35" r="2" fill="rgba(220, 170, 90, 0.8)" />
+          <svg width="76" height="76" viewBox="0 0 76 76" className="clock-face">
+            {/* Outer cog teeth */}
+            {[...Array(16)].map((_, i) => {
+              const angle = (i * Math.PI * 2) / 16
+              const cos = Math.cos(angle)
+              const sin = Math.sin(angle)
+              const innerR = 33
+              const outerR = 37
+              const halfTooth = Math.PI / 32
+              const a1 = angle - halfTooth
+              const a2 = angle + halfTooth
+              return (
+                <polygon
+                  key={`tooth-${i}`}
+                  points={`
+                    ${38 + Math.cos(a1) * innerR},${38 + Math.sin(a1) * innerR}
+                    ${38 + Math.cos(a1) * outerR},${38 + Math.sin(a1) * outerR}
+                    ${38 + cos * (outerR + 1)},${38 + sin * (outerR + 1)}
+                    ${38 + Math.cos(a2) * outerR},${38 + Math.sin(a2) * outerR}
+                    ${38 + Math.cos(a2) * innerR},${38 + Math.sin(a2) * innerR}
+                  `}
+                  fill="rgba(180, 130, 60, 0.7)"
+                />
+              )
+            })}
+
+            {/* Cog body ring */}
+            <circle cx="38" cy="38" r="33" fill="none" stroke="rgba(180, 130, 60, 0.7)" strokeWidth="2.5" />
+
+            {/* Outer brass bezel */}
+            <circle cx="38" cy="38" r="30" fill="rgba(52, 32, 16, 0.95)" stroke="rgba(220, 170, 90, 0.6)" strokeWidth="2" />
+
+            {/* Inner face */}
+            <circle cx="38" cy="38" r="25" fill="rgba(34, 24, 16, 0.9)" />
+
+            {/* Decorative inner ring */}
+            <circle cx="38" cy="38" r="23" fill="none" stroke="rgba(102, 87, 64, 0.3)" strokeWidth="0.5" />
 
             {/* Hour markers */}
             {[...Array(12)].map((_, i) => {
               const angle = (i * Math.PI * 2) / 12 - Math.PI / 2
-              const x1 = 35 + Math.cos(angle) * 21
-              const y1 = 35 + Math.sin(angle) * 21
-              const x2 = 35 + Math.cos(angle) * 25
-              const y2 = 35 + Math.sin(angle) * 25
-              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(102, 87, 64, 0.7)" strokeWidth="1.5" />
+              const isMajor = i % 3 === 0
+              const x1 = 38 + Math.cos(angle) * (isMajor ? 18 : 20)
+              const y1 = 38 + Math.sin(angle) * (isMajor ? 18 : 20)
+              const x2 = 38 + Math.cos(angle) * 23
+              const y2 = 38 + Math.sin(angle) * 23
+              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                stroke={isMajor ? 'rgba(220, 170, 90, 0.8)' : 'rgba(102, 87, 64, 0.7)'}
+                strokeWidth={isMajor ? 2 : 1} />
             })}
 
             {/* Hour hand */}
-            <line x1="35" y1="35" x2={35 + Math.cos(hourAngle) * 14} y2={35 + Math.sin(hourAngle) * 14}
+            <line x1="38" y1="38" x2={38 + Math.cos(hourAngle) * 13} y2={38 + Math.sin(hourAngle) * 13}
                   stroke="rgba(220, 170, 90, 0.9)" strokeWidth="3" strokeLinecap="round" />
 
             {/* Minute hand */}
-            <line x1="35" y1="35" x2={35 + Math.cos(minuteAngle) * 21} y2={35 + Math.sin(minuteAngle) * 21}
+            <line x1="38" y1="38" x2={38 + Math.cos(minuteAngle) * 20} y2={38 + Math.sin(minuteAngle) * 20}
                   stroke="rgba(255, 214, 170, 0.9)" strokeWidth="1.5" strokeLinecap="round" />
+
+            {/* Centre boss */}
+            <circle cx="38" cy="38" r="3" fill="rgba(180, 130, 60, 0.6)" stroke="rgba(220, 170, 90, 0.8)" strokeWidth="1" />
+            <circle cx="38" cy="38" r="1.5" fill="rgba(220, 170, 90, 0.9)" />
           </svg>
 
           {/* Right: Text display */}

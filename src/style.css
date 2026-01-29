@@ -13,6 +13,10 @@
   --leather-mid: #2b070d;
   --leather-dark: #1a0408;
 
+  --emerald-light: #7b967b;
+  --emerald-mid: #415745;
+  --emerald-dark: #0f1411;
+
   --wood-light: #775535;
   --wood-mid: #493422;
   --wood-dark: #2b1d11;
@@ -34,15 +38,16 @@
   /* Design tokens / color system */
   --bg-main: #0e0b09; /* deep soot / iron */
   --bg-panel: var(--copper-dark); /* dark brass panel */
-  --bg-frame: var(--velvet-dark); /* dark brass panel */
-  --bg-panel-soft: color-mix(in srgb, var(--bg-panel) 30%, transparent); /* soft copper wash */
+  --bg-frame: var(--emerald-dark); /* dark brass panel */
+  --bg-panel-soft: color-mix(in srgb, var(--emerald-dark) 30%, transparent); /* soft copper wash */
   --bg-placeholder: radial-gradient(circle at 0 0, rgba(255, 176, 59, 0.16), transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(146, 79, 46, 0.2), transparent 55%),
     linear-gradient(135deg, #291812, #14100f);
   --bg-overlay: color-mix(in srgb, var(--copper-dark) 30%, transparent);
+  --bg-thumbnail: var(--copper-dark);
 
   --bg-card: var(--copper-dark);
-  --bg-widget: var(--copper-dark);
+  --bg-widget: var(--emerald-mid);
 
   /* Borders (using brass palette) */
   --border-subtle: rgba(212, 168, 83, 0.4); /* brass-light at 40% */
@@ -1167,9 +1172,9 @@ img {
   border: 1px solid var(--border-subtle);
   /* Fallback styles for symbol placeholder (ignored on img) */
   display: flex;
+  background: var(--bg-thumbnail);
   align-items: center;
   justify-content: center;
-  background: var(--bg-overlay);
   font-size: 3rem;
   color: var(--text-muted);
 }
@@ -1241,7 +1246,7 @@ img {
   justify-content: center;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
-  background: var(--bg-panel-soft);
+  background: var(--bg-thumbnail);
   font-size: var(--font-md);
   color: var(--text-muted);
   font-weight: 600;
