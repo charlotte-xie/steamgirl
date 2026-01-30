@@ -25,6 +25,7 @@ import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
 import { getReputation, type ReputationId } from './Faction'
+import { type NPC } from './NPC'
 
 // ============================================================================
 // SCRIPT TYPES
@@ -124,18 +125,84 @@ function resolveParts(game: Game, parts: (string | Instruction)[]): (string | In
 }
 
 /**
- * A TextAccessor is returned by a script to support chaining.
- * When {a:b:c} is evaluated, script 'a' returns an accessor,
- * then accessor.resolve(game, 'b:c') is called with the rest of the expression.
- * With no remaining expression, resolve(game, '') is called for a default value.
+ * An Accessor is returned by a script to support expression chaining.
+ * When game.run('foo:bar') is called, script 'foo' returns an Accessor,
+ * then accessor.resolve(game, ':bar') is called with the raw rest of the expression.
+ * When no rest is present, accessor.default(game) is called.
  */
-export interface TextAccessor {
+export interface Accessor {
+  default(game: Game): unknown
   resolve(game: Game, rest: string): unknown
 }
 
-function isTextAccessor(value: unknown): value is TextAccessor {
+export function isAccessor(value: unknown): value is Accessor {
   return value != null && typeof value === 'object' && 'resolve' in value
-    && typeof (value as TextAccessor).resolve === 'function'
+    && typeof (value as Accessor).resolve === 'function'
+}
+
+/**
+ * Parse an argline like "(rob)" or "(rob):rest" from the start of a rest string.
+ * Returns the content inside parens and the remaining string after the closing paren.
+ * If rest doesn't start with '(', returns undefined.
+ */
+function parseArgs(rest: string): { argline: string, tail: string } | undefined {
+  if (!rest.startsWith('(')) return undefined
+  const close = rest.indexOf(')')
+  if (close === -1) return undefined
+  const after = rest.slice(close + 1)
+  // Strip leading colon from tail — tail should never start with ':'
+  const tail = after.startsWith(':') ? after.slice(1) : after
+  return { argline: rest.slice(1, close), tail }
+}
+
+/** NPC accessor — resolves NPC properties via expression chaining. */
+class NPCAccessor implements Accessor {
+  npc: NPC | undefined
+  constructor(npc: NPC | undefined) { this.npc = npc }
+
+  /** {npc} with no chain — return display name */
+  default(_game: Game): InlineContent {
+    return this.nameContent()
+  }
+
+  /**
+   * {npc:prop} or {npc(id):prop} — resolve a property on this NPC.
+   * rest starts with ':' or '(' depending on how we got here.
+   */
+  resolve(game: Game, rest: string): unknown {
+    // Handle args: npc(rob) or npc(rob):he
+    const args = parseArgs(rest)
+    if (args) {
+      const accessor = new NPCAccessor(game.getNPC(args.argline))
+      return args.tail ? accessor.resolve(game, args.tail) : accessor.default(game)
+    }
+
+    const npc = this.requireNpc()
+
+    switch (rest) {
+      case 'name': return this.nameContent()
+      case 'he': return npc.pronouns.subject
+      case 'him': return npc.pronouns.object
+      case 'his': return npc.pronouns.possessive
+      case 'He': return capitalise(npc.pronouns.subject)
+      case 'Him': return capitalise(npc.pronouns.object)
+      case 'His': return capitalise(npc.pronouns.possessive)
+      default:
+        throw new Error(`Unknown NPC accessor property: ${rest}`)
+    }
+  }
+
+  requireNpc(): NPC {
+    if (!this.npc) throw new Error('NPC accessor: no NPC specified')
+    return this.npc
+  }
+
+  nameContent(): InlineContent {
+    const npc = this.requireNpc()
+    const name = npc.nameKnown > 0 ? npc.template.name : npc.template.uname
+    const color = npc.template.speechColor ?? '#888'
+    return { type: 'text', text: name || 'someone', color }
+  }
 }
 
 function isContent(value: unknown): value is InlineContent {
@@ -147,42 +214,29 @@ function interpolationError(expression: string): InlineContent {
 }
 
 /**
- * Resolve a single interpolation expression. The first colon splits the script name
- * from the rest of the expression. If the script returns a TextAccessor, the rest
- * is passed to accessor.resolve(game, rest). Instructions are unwrapped iteratively.
+ * Resolve a single interpolation expression via game.run.
+ * game.run handles expression syntax (colons, parens, accessor chaining).
+ * If the final result is an Accessor with no remaining expression, calls .default().
  */
 function resolveExpression(game: Game, expression: string): string | InlineContent {
   if (!expression) {
     return { type: 'text', text: '{}', color: '#ff4444' }
   }
 
-  const colonIndex = expression.indexOf(':')
-  const scriptName = (colonIndex === -1 ? expression : expression.slice(0, colonIndex)).trim()
-  const rest = colonIndex === -1 ? '' : expression.slice(colonIndex + 1)
+  try {
+    let resolved: unknown = game.run(expression)
 
-  const scriptFn = getScript(scriptName)
-  if (!scriptFn) {
-    return interpolationError(expression)
-  }
-
-  let resolved: unknown = game.run(scriptName)
-
-  // Unwrap Instructions and chain through TextAccessors
-  for (let i = 0; i < 1000; i++) {
-    if (isInstruction(resolved)) {
-      resolved = game.run(resolved)
-    } else if (isTextAccessor(resolved)) {
-      resolved = resolved.resolve(game, rest)
-    } else {
-      break
+    // If game.run returned an Accessor (no chaining syntax), call default
+    if (isAccessor(resolved)) {
+      resolved = resolved.default(game)
     }
-  }
-  if (isInstruction(resolved) || isTextAccessor(resolved)) {
-    throw new Error(`Interpolation exceeded 1000 iterations resolving {${expression}}`)
+
+    if (typeof resolved === 'string') return resolved
+    if (isContent(resolved)) return resolved
+  } catch {
+    // Script not found or other error
   }
 
-  if (typeof resolved === 'string') return resolved
-  if (isContent(resolved)) return resolved
   return interpolationError(expression)
 }
 
@@ -935,6 +989,12 @@ const coreScripts: Record<string, ScriptFn> = {
   pc: (game: Game): InlineContent => {
     const name = game.player.name || 'Elise'
     return { type: 'text', text: name, color: '#e0b0ff' }
+  },
+
+  /** NPC accessor — returns NPCAccessor for expression chaining: {npc}, {npc:he}, {npc(rob):name} */
+  npc: (game: Game): Accessor => {
+    const npcId = game.scene.npc
+    return new NPCAccessor(npcId ? game.getNPC(npcId) : undefined)
   },
 
   /** Return an NPC's name as InlineContent. Uses scene NPC if not specified. */

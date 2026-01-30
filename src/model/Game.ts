@@ -1,10 +1,19 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
-import { getScript, isInstruction, isScriptFn, type Instruction, type Script } from './Scripts'
+import { getScript, isInstruction, isScriptFn, isAccessor, type Instruction, type Script } from './Scripts'
 import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 import { intervalsCrossed } from '../utils/intervalsCrossed'
+
+/** Find the index of the first expression character (: or () in a script name, or -1 if plain. */
+function findExpressionStart(script: string): number {
+  for (let i = 0; i < script.length; i++) {
+    const ch = script[i]
+    if (ch === ':' || ch === '(') return i
+  }
+  return -1
+}
 
 // Re-export Content types for convenience
 export type { Content, InlineContent, ParagraphContent, SceneOptionItem }
@@ -322,6 +331,16 @@ export class Game {
    *
    * For multiple instructions, use seq() to combine them into a single Instruction.
    */
+  /**
+   * Run a script. Supports expression syntax for accessor chaining:
+   * - 'scriptName' — plain script call
+   * - 'scriptName:rest' — run script, chain through accessor with rest
+   * - 'scriptName(args)' — run script, chain through accessor with (args)
+   * - 'scriptName(args):rest' — both
+   *
+   * When an accessor is resolved and outer params are provided,
+   * the resolved result is run as a script with those params.
+   */
   run(script: Script | null | undefined, params: Record<string, unknown> = {}): unknown {
     // Null/undefined - no-op
     if (script == null) {
@@ -339,12 +358,36 @@ export class Game {
       return this.run(name, { ...instrParams, ...params })
     }
 
-    // String - look up registered script
-    const scriptFn = getScript(script)
-    if (!scriptFn) {
-      throw new Error(`Script not found: ${script}`)
+    // String - check for expression syntax (colons or parens)
+    const exprIndex = findExpressionStart(script)
+    if (exprIndex === -1) {
+      // Plain script name - look up and run
+      const scriptFn = getScript(script)
+      if (!scriptFn) {
+        throw new Error(`Script not found: ${script}`)
+      }
+      return scriptFn(this, params)
     }
-    return scriptFn(this, params)
+
+    // Expression: extract script name, run it, chain through accessor
+    const scriptName = script.slice(0, exprIndex)
+    // Strip the leading separator (: or opening paren is kept for parseArgs)
+    const rest = script[exprIndex] === ':' ? script.slice(exprIndex + 1) : script.slice(exprIndex)
+    const scriptFn = getScript(scriptName)
+    if (!scriptFn) {
+      throw new Error(`Script not found: ${scriptName}`)
+    }
+    let resolved: unknown = scriptFn(this, {})
+    if (!isAccessor(resolved)) {
+      throw new Error(`Script '${scriptName}' does not return an Accessor (expression: ${script})`)
+    }
+    resolved = resolved.resolve(this, rest)
+
+    // If there are outer params and the result is runnable, run it
+    if (Object.keys(params).length > 0) {
+      return this.run(resolved as Script, params)
+    }
+    return resolved
   }
 
   /** Advance time by the given minutes (runs the timeLapse script). Returns this for chaining. */

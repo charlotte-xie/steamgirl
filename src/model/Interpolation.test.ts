@@ -98,4 +98,72 @@ describe('Text Interpolation', () => {
     expect(parts[1]).toBe(' meets ')
     expect(parts[2]).toEqual({ type: 'text', text: 'Elise', color: '#e0b0ff' })
   })
+
+  describe('NPC accessor', () => {
+    function npcGame(): Game {
+      const game = new Game()
+      game.scene.npc = 'tour-guide'
+      game.getNPC('tour-guide').stats.set('nameKnown', 1)
+      return game
+    }
+
+    it('{npc} returns scene NPC display name', () => {
+      const game = npcGame()
+      const parts = getResolvedParts(game, '{npc} looks up.')
+      expect(parts).toHaveLength(2)
+      expect(parts[0]).toEqual({ type: 'text', text: 'Rob Hayes', color: '#94a3b8' })
+      expect(parts[1]).toBe(' looks up.')
+    })
+
+    it('{npc} returns uname when name not known', () => {
+      const game = npcGame()
+      game.getNPC('tour-guide').stats.set('nameKnown', 0)
+      const parts = getResolvedParts(game, '{npc} looks up.')
+      expect(parts).toHaveLength(2)
+      expect(parts[0]).toEqual({ type: 'text', text: 'tour guide', color: '#94a3b8' })
+    })
+
+    it('{npc:he} returns pronoun', () => {
+      const game = npcGame()
+      const parts = getResolvedParts(game, '{npc:he} smiles.')
+      expect(parts).toHaveLength(2)
+      expect(parts[0]).toBe('he')
+      expect(parts[1]).toBe(' smiles.')
+    })
+
+    it('{npc:He} returns capitalised pronoun', () => {
+      const game = npcGame()
+      const parts = getResolvedParts(game, '{npc:He} smiles.')
+      expect(parts).toHaveLength(2)
+      expect(parts[0]).toBe('He')
+    })
+
+    it('{npc:him} and {npc:his} return object/possessive pronouns', () => {
+      const game = npcGame()
+      expect(getResolvedParts(game, '{npc:him}')[0]).toBe('him')
+      expect(getResolvedParts(game, '{npc:his}')[0]).toBe('his')
+    })
+
+    it('{npc(tour-guide)} returns specific NPC name', () => {
+      const game = new Game() // no scene NPC set
+      game.getNPC('tour-guide').stats.set('nameKnown', 1)
+      const parts = getResolvedParts(game, '{npc(tour-guide)} waves.')
+      expect(parts).toHaveLength(2)
+      expect(parts[0]).toEqual({ type: 'text', text: 'Rob Hayes', color: '#94a3b8' })
+    })
+
+    it('{npc(tour-guide):he} returns specific NPC pronoun', () => {
+      const game = new Game()
+      const parts = getResolvedParts(game, '{npc(tour-guide):he} waves.')
+      expect(parts).toHaveLength(2)
+      expect(parts[0]).toBe('he')
+    })
+
+    it('{npc:unknown} produces red error', () => {
+      const game = npcGame()
+      const parts = getResolvedParts(game, '{npc:unknown}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toEqual({ type: 'text', text: '{npc:unknown}', color: '#ff4444' })
+    })
+  })
 })
