@@ -3,7 +3,7 @@ import type { Instruction } from '../../model/Scripts'
 import type { Card, CardDefinition, Reminder } from '../../model/Card'
 import { registerCardDefinition } from '../../model/Card'
 import { makeScripts } from '../../model/Scripts'
-import { random, timeLapseUntil, run, seq, scenes, choice, branch, lessonTime } from '../../model/ScriptDSL'
+import { random, timeLapseUntil, run, seq, scenes, choice, branch, lessonTime, say } from '../../model/ScriptDSL'
 
 // ============================================================================
 // TIMETABLE STRUCTURE
@@ -251,15 +251,15 @@ const EARLY_ARRIVAL_FLAVOUR = [
 const LESSONS: Record<string, LessonDefinition> = {
   'lesson-basic-aetherics': {
     lateArrival: random(
-      'Professor Vael pauses mid-sentence and fixes you with a sharp look over her brass spectacles. "How good of you to join us. Do try to be punctual."',
-      'The class turns to watch as you slip through the door. Professor Vael\'s expression is icy. "Late again? Take your seat. Quietly."',
-      'Professor Vael doesn\'t break stride, but her voice gains a pointed edge. "I trust you have a compelling reason for your tardiness. No? Then sit down."',
+      seq('Professor Vael pauses mid-sentence and fixes you with a sharp look over her brass spectacles.', say('How good of you to join us. Do try to be punctual.')),
+      seq('The class turns to watch as you slip through the door. Professor Vael\'s expression is icy.', say('Late again? Take your seat. Quietly.')),
+      seq('Professor Vael doesn\'t break stride, but her voice gains a pointed edge.', say('I trust you have a compelling reason for your tardiness. No? Then sit down.')),
     ),
     body: scenes(
       lessonTime(0, random(
         'The professor adjusts her brass spectacles and begins chalking luminous formulae onto the board. The air hums with residual aetheric charge.',
         'A tall woman in a copper-trimmed coat strides to the lectern and taps a tuning fork against a crystal sphere. It rings with a faint, unearthly resonance.',
-        'The professor ignites a small aetheric lamp without touching it, drawing impressed murmurs from the students. "Pay attention," she says. "That was the easy part."',
+        seq('The professor ignites a small aetheric lamp without touching it, drawing impressed murmurs from the students.', say('Pay attention. That was the easy part.')),
       )),
       lessonTime(25, random(
         'The professor demonstrates how aetheric resonance differs from simple galvanic current, her hands tracing patterns in the charged air.',
@@ -273,22 +273,22 @@ const LESSONS: Record<string, LessonDefinition> = {
       )),
       lessonTime(75, random(
         'The professor dismisses the class with a reminder to review chapter four before the next session. You gather your notes, your mind buzzing with new concepts.',
-        'As the lesson ends, the professor extinguishes the demonstration apparatus with a wave of her hand. "Practice your focusing exercises," she calls out as students begin to leave.',
+        seq('As the lesson ends, the professor extinguishes the demonstration apparatus with a wave of her hand.', say('Practice your focusing exercises.'), 'Students begin to leave.'),
         'The crystal spheres are carefully packed away as the lecture concludes. You feel you understand the fundamentals a little better now.',
       ), run('endLesson')),
     ),
   },
   'lesson-basic-mechanics': {
     lateArrival: random(
-      'Professor Greaves looks up from the workbench and grunts. "You\'re late. Grab your tools and catch up. I won\'t be repeating myself."',
-      'The instructor gives you a hard look as you enter. "In a real workshop, late means someone else gets your job. Sit down."',
-      'Greaves shakes his head as you take your seat. "Punctuality is a form of precision. Remember that."',
+      seq('Professor Greaves looks up from the workbench and grunts.', say('You\'re late. Grab your tools and catch up. I won\'t be repeating myself.')),
+      seq('The instructor gives you a hard look as you enter.', say('In a real workshop, late means someone else gets your job. Sit down.')),
+      seq('Greaves shakes his head as you take your seat.', say('Punctuality is a form of precision. Remember that.')),
     ),
     body: scenes(
       lessonTime(0, random(
-        'The workshop master, a stocky man with oil-stained hands, gestures at the partially disassembled engine on the central bench. "Right then. Let\'s see what makes her tick."',
-        'Gears and springs are laid out in precise rows on the workbench. The instructor picks up a brass cog and holds it to the light. "Every tooth matters," he says.',
-        'The instructor wheels in a complex clockwork assembly on a trolley, its exposed mechanisms gleaming. "Today we get practical," he announces.',
+        seq('The workshop master, a stocky man with oil-stained hands, gestures at the partially disassembled engine on the central bench.', say('Right then. Let\'s see what makes her tick.')),
+        seq('Gears and springs are laid out in precise rows on the workbench. The instructor picks up a brass cog and holds it to the light.', say('Every tooth matters.')),
+        seq('The instructor wheels in a complex clockwork assembly on a trolley, its exposed mechanisms gleaming.', say('Today we get practical.')),
       )),
       lessonTime(25, random(
         'You learn to identify the key components of a differential steam regulator, tracing the flow of pressure through its chambers.',
@@ -302,7 +302,7 @@ const LESSONS: Record<string, LessonDefinition> = {
       )),
       lessonTime(75, random(
         'The instructor calls time and you wipe the oil from your hands with a rag. Your fingers ache pleasantly from the precise work.',
-        'Tools are returned to their racks as the session ends. The instructor nods approvingly at your workbench. "Not bad for a beginner."',
+        seq('Tools are returned to their racks as the session ends. The instructor nods approvingly at your workbench.', say('Not bad for a beginner.')),
         'You pack away your tools, satisfied with the small mechanism now ticking steadily on your bench. The fundamentals are starting to click.',
       ), run('endLesson')),
     ),
