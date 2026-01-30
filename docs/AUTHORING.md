@@ -529,6 +529,97 @@ Complete paths pass directly to `branch()` — no wrapping needed:
 | `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
 | `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
 
+## Writing Guidelines
+
+Rules for authoring narrative content and random events.
+
+### Player Speech
+
+Never write the player's dialogue directly. Always narrate what the player says in third person:
+
+```
+// BAD — puts words in the player's mouth
+text('"Perhaps I\'m exactly who you\'d want to meet," you say.')
+
+// GOOD — narrates the player's action
+text('You hold his gaze and let a slow smile play across your lips.')
+text('You steer the conversation to safer waters.')
+text('You decline with a polite smile.')
+```
+
+### Anonymous NPCs
+
+Do not give names to random encounter NPCs (e.g. bar patrons, passers-by, market vendors). Named NPCs imply a relationship the player can return to. If the same event fires twice, a named stranger feels absurd. Use descriptions instead:
+
+```
+// BAD — named stranger in a repeatable event
+text('"I\'m Edmund," he says.')
+
+// GOOD — anonymous, works on repeat
+text('A well-dressed man in a tailored waistcoat slides onto the stool beside you.')
+text('A gentleman with silver-streaked hair takes the neighbouring seat.')
+```
+
+Use `random()` to vary the stranger's description so repeat encounters feel fresh.
+
+### Repeatability
+
+Consider whether an interaction makes sense if it fires multiple times. Random events will repeat — the player may sit at the same bar dozens of times. Design accordingly:
+
+- Use `random()` for varied opening descriptions, dialogue, and flavour text
+- Avoid one-off revelations or unique items in repeatable events
+- Don't reference previous occurrences of the same event ("back again?")
+- For truly one-off events, gate them with a card, timer, or flag
+
+### Randomness and Variety
+
+Add variety through multiple layers:
+
+```typescript
+// Vary the approach
+random(
+  text('A gentleman in a velvet jacket takes the neighbouring stool.'),
+  text('A broad-shouldered man with silver cufflinks settles beside you.'),
+  text('A man in an impeccable suit catches the barman\'s eye.'),
+)
+
+// Vary the conversation
+random(
+  text('The conversation turns to the city\'s theatre scene.'),
+  text('He mentions a new exhibition at the museum.'),
+)
+```
+
+Also vary which options are available using `gatedBranch()` or `when()` so the player sees different choices depending on their stats or circumstances.
+
+### Stat Gains from Random Events
+
+Be sparing with stat gains from repeatable events. Set appropriate maximums to prevent grinding:
+
+```typescript
+// GOOD — low gain, low chance, capped well below endgame values
+addStat('Flirtation', 1, { max: 35, chance: 0.4 })
+
+// BAD — high gain, no cap, guaranteed
+addStat('Flirtation', 5)
+```
+
+Guidelines:
+- **Chance**: Use `chance: 0.3–0.5` for most random event gains
+- **Amount**: +1 per event is typical; +2 only for significant interactions
+- **Max cap**: Set `max` to prevent stats being grindable past ~35–40 from random bar encounters. Story quests and dedicated training should be the path to higher stats
+- **Mood/meters**: Cap at 85–90 from passive activities (the last stretch should require real effort)
+
+### Event Trigger Rates
+
+For `onWait` hooks (fire every 10-minute chunk during `wait()`):
+
+- **10–15%**: Ambient flavour text (doesn't interrupt the wait)
+- **15–25%**: Minor encounters (interrupts wait, creates a scene)
+- **< 10%**: Significant events with lasting consequences
+
+A 30-minute wait processes 3 chunks, so a 20% trigger chance gives roughly a 50% chance of firing at least once per wait.
+
 ## Items
 
 ### Clothing Items

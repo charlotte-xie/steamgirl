@@ -270,6 +270,35 @@ const coreScripts: Record<string, ScriptFn> = {
     game.player.calcStats()
   },
 
+  /** Wear an item the player already has in inventory */
+  wearItem: (game: Game, params: { item?: string } = {}) => {
+    const itemId = params.item
+    if (!itemId || typeof itemId !== 'string') {
+      throw new Error('wearItem script requires an item parameter')
+    }
+    game.player.wearItem(itemId)
+    game.player.calcStats()
+  },
+
+  /** Unwear all clothing (respects locks unless force is true) */
+  stripAll: (game: Game, params: { force?: boolean } = {}) => {
+    game.player.stripAll(params.force ?? false)
+    game.player.calcStats()
+  },
+
+  /** Strip all clothing and wear a list of items. Items not in inventory are skipped. */
+  changeOutfit: (game: Game, params: { items?: string[]; force?: boolean } = {}) => {
+    const items = params.items
+    if (!items || !Array.isArray(items)) {
+      throw new Error('changeOutfit script requires an items array')
+    }
+    game.player.stripAll(params.force ?? false)
+    for (const id of items) {
+      game.player.wearItem(id)
+    }
+    game.player.calcStats()
+  },
+
   /** Modify a base stat with optional display text and color */
   addStat: (game: Game, params: {
     stat?: StatName

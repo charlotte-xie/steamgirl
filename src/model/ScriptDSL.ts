@@ -385,6 +385,18 @@ export const addItem = (item: string, number = 1): Instruction =>
 export const removeItem = (item: string, number = 1): Instruction =>
   run('loseItem', { item, number })
 
+/** Wear an item the player already has in inventory */
+export const wearItem = (item: string): Instruction =>
+  run('wearItem', { item })
+
+/** Unwear all clothing (respects locks unless force is true) */
+export const stripAll = (force = false): Instruction =>
+  run('stripAll', { force })
+
+/** Strip all clothing and wear a list of items */
+export const changeOutfit = (items: string[], force = false): Instruction =>
+  run('changeOutfit', { items, force })
+
 /** Move player to location (instant teleport). Optionally advance time after moving. */
 export const move = (location: string, minutes?: number): Instruction =>
   run('move', { location, minutes })
