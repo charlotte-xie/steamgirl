@@ -67,6 +67,8 @@ export interface ItemDefinition {
   icon?: string           // SVG icon name for inventory display (see ItemIcons.tsx)
   category?: ItemCategory
   stackable?: boolean
+  colour?: string                 // CSS colour for the item (tints icon SVGs and avatar image)
+  imageTint?: string              // CSS colour for multiply-blend tinting on the avatar (defaults to colour)
   positions?: ClothingPosition[]  // For wearable items - where on the body (can occupy multiple)
   layer?: ClothingLayer           // For wearable items - what layer (under, inner, outer, accessory)
   onConsume?: Script
@@ -331,6 +333,14 @@ export function getItemZOrder(def: ItemDefinition): number {
 // Get an item definition by id
 export function getItem(id: ItemId): ItemDefinition | undefined {
   return ITEM_DEFINITIONS[id]
+}
+
+/**
+ * Create a tinted variant of an existing item.
+ * Convenience wrapper around extendItem that sets imageTint.
+ */
+export function tintedItem(baseId: ItemId, colour: string, overrides: Partial<ItemDefinition>): ItemDefinition {
+  return extendItem(baseId, { colour, imageTint: colour, ...overrides })
 }
 
 // Ensure an ItemSpec is converted to an Item instance.

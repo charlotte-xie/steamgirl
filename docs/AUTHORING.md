@@ -19,6 +19,10 @@ GOOD: You decline with a polite smile.
 
 This applies everywhere -- `text()`, `leaveOption` departure text, branch labels. The player's voice belongs to the player.
 
+### Context awareness
+
+Gate or branch based on game context, e.g. time of day if necessary to ensure content is appropriate to the context. This is especially important for interactions that could happen at any time (random encounters etc.)
+
 ### NPC Speech
 
 Use `say()` for NPC dialogue. Do not include quotation marks -- the speech formatting handles that:

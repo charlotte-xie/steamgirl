@@ -2,7 +2,7 @@
  * footwear.ts - Boots, shoes, stockings, and socks.
  */
 
-import { registerItemDefinition, extendItem } from '../../model/Item'
+import { registerItemDefinition, extendItem, tintedItem } from '../../model/Item'
 
 // ============================================================================
 // STOCKINGS & SOCKS (under layer)
@@ -32,6 +32,34 @@ registerItemDefinition(
     calcStats: (player) => {
       player.modifyStat('Charm', 2)
     },
+  })
+)
+
+// ============================================================================
+// TINTED SOCK VARIANTS
+// ============================================================================
+
+registerItemDefinition(
+  'socks-black',
+  tintedItem('white-socks', '#222222', {
+    name: 'black socks',
+    description: 'Plain black cotton socks. Simple and practical.',
+  })
+)
+
+registerItemDefinition(
+  'socks-navy',
+  tintedItem('white-socks', '#223355', {
+    name: 'navy socks',
+    description: 'Dark navy cotton socks with a hint of blue.',
+  })
+)
+
+registerItemDefinition(
+  'socks-red',
+  tintedItem('white-socks', '#cc3333', {
+    name: 'red socks',
+    description: 'Bright red cotton socks. A bold choice.',
   })
 )
 

@@ -271,6 +271,22 @@ img {
   pointer-events: none;
 }
 
+.avatar-tint {
+  isolation: isolate;
+}
+
+.avatar-tint img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-tint-overlay {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: multiply;
+}
+
 /* Status effect tags overlay on avatar */
 .avatar-effects-overlay {
   position: absolute;

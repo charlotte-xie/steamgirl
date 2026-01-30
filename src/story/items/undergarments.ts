@@ -2,7 +2,7 @@
  * undergarments.ts - Chemises, bras, drawers, and other underclothing.
  */
 
-import { registerItemDefinition, extendItem } from '../../model/Item'
+import { registerItemDefinition, extendItem, tintedItem } from '../../model/Item'
 
 // ============================================================================
 // CHEST - UNDER LAYER (bras, chemises)
@@ -31,7 +31,7 @@ registerItemDefinition(
 registerItemDefinition(
   'bra-cotton',
   extendItem('base-bra', {
-    name: 'cotton brassiere',
+    name: 'white bra',
     description: 'A simple supportive undergarment of white cotton.',
     image: '/images/steamgirl/BraTop.PNG',
   })
@@ -55,7 +55,7 @@ registerItemDefinition(
 registerItemDefinition(
   'panties-cotton',
   extendItem('base-panties', {
-    name: 'cotton drawers',
+    name: 'white panties',
     description: 'Simple white cotton undergarments.',
     image: '/images/steamgirl/Panties.PNG',
   })
@@ -71,6 +71,46 @@ registerItemDefinition(
     },
   })
 )
+
+// ============================================================================
+// TINTED VARIANTS
+// ============================================================================
+
+registerItemDefinition(
+  'bra-black',
+  tintedItem('bra-cotton', '#222222', {
+    name: 'black bra',
+    description: 'A sleek black undergarment. Simple and flattering.',
+  })
+)
+
+registerItemDefinition(
+  'bra-pink',
+  tintedItem('bra-cotton', '#f2a0b0', {
+    name: 'blush bra',
+    description: 'A soft pink undergarment with a delicate feminine charm.',
+  })
+)
+
+registerItemDefinition(
+  'panties-black',
+  tintedItem('panties-cotton', '#222222', {
+    name: 'black panties',
+    description: 'Simple black undergarments. Practical and elegant.',
+  })
+)
+
+registerItemDefinition(
+  'panties-pink',
+  tintedItem('panties-cotton', '#f2a0b0', {
+    name: 'blush panties',
+    description: 'Soft pink undergarments with a gentle rosy hue.',
+  })
+)
+
+// ============================================================================
+// SWIMWEAR
+// ============================================================================
 
 registerItemDefinition(
   'bikini-top',

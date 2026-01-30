@@ -18,7 +18,7 @@ export function ItemIcon({ item, showNumber = false, showLocked = false }: ItemI
 
   return (
     <div className="item-icon-container">
-      <div className="item-icon-placeholder">
+      <div className="item-icon-placeholder" style={itemDef.colour ? { color: itemDef.colour } : undefined}>
         {IconSvg ? <IconSvg /> : capitalise(itemDef.name).charAt(0)}
       </div>
       {displayNumber && (

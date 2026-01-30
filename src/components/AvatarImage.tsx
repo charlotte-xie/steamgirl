@@ -27,14 +27,32 @@ export const AvatarImage = forwardRef<HTMLDivElement>(function AvatarImage(_, re
       {BASE_LAYERS.map(src => (
         <img key={src} className="avatar-layer" src={assetUrl(src)} alt="" />
       ))}
-      {clothingLayers.map(item => (
-        <img
-          key={item.id}
-          className="avatar-layer"
-          src={assetUrl(item.template.image!)}
-          alt={item.template.name}
-        />
-      ))}
+      {clothingLayers.map(item => {
+        const tint = item.template.imageTint ?? item.template.colour
+        const imageSrc = assetUrl(item.template.image!)
+        return tint ? (
+          <div key={item.id} className="avatar-layer avatar-tint">
+            <img src={imageSrc} alt={item.template.name} />
+            <div
+              className="avatar-tint-overlay"
+              style={{
+                backgroundColor: tint,
+                maskImage: `url(${imageSrc})`,
+                WebkitMaskImage: `url(${imageSrc})`,
+                maskSize: 'cover',
+                WebkitMaskSize: 'cover',
+              }}
+            />
+          </div>
+        ) : (
+          <img
+            key={item.id}
+            className="avatar-layer"
+            src={assetUrl(item.template.image!)}
+            alt={item.template.name}
+          />
+        )
+      })}
     </div>
   )
 })
