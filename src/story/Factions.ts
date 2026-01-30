@@ -15,6 +15,7 @@ import { registerFaction, registerReputation } from '../model/Faction'
 registerFaction('school', {
   name: 'School',
   description: 'The University of Aetheria — the academic establishment.',
+  colour: '#3b82f6',
   reputations: ['academic', 'social', 'sporting'],
 })
 
@@ -49,6 +50,7 @@ registerReputation('sporting', {
 registerFaction('lowtown', {
   name: 'Lowtown',
   description: 'The underworld of Aetheria — gangs, hustlers, and survivors.',
+  colour: '#6b5b6b',
   reputations: ['gangster', 'bad-girl', 'junkie'],
 })
 
@@ -83,6 +85,7 @@ registerReputation('junkie', {
 registerFaction('high-society', {
   name: 'High Society',
   description: 'The upper echelons of Aetherian society — wealth, power, and influence.',
+  colour: '#e0b0ff',
   reputations: ['socialite', 'entertainer', 'politics', 'service'],
 })
 

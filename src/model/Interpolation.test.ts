@@ -159,6 +159,21 @@ describe('Text Interpolation', () => {
       expect(parts[0]).toBe('he')
     })
 
+    it('{npc:faction} returns faction name with colour', () => {
+      const game = new Game()
+      game.scene.npc = 'spice-dealer'
+      const parts = getResolvedParts(game, '{npc:faction}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toEqual({ type: 'text', text: 'Lowtown', color: '#6b5b6b' })
+    })
+
+    it('{npc(spice-dealer):faction} returns faction for specific NPC', () => {
+      const game = new Game()
+      const parts = getResolvedParts(game, '{npc(spice-dealer):faction}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toEqual({ type: 'text', text: 'Lowtown', color: '#6b5b6b' })
+    })
+
     it('{npc:unknown} produces red error', () => {
       const game = npcGame()
       const parts = getResolvedParts(game, '{npc:unknown}')

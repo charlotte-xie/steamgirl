@@ -36,6 +36,8 @@ export interface FactionDefinition {
   name: string
   /** Flavour description of the faction */
   description: string
+  /** Display colour for the faction name */
+  colour?: string
   /** Reputation track IDs belonging to this faction */
   reputations: ReputationId[]
 }

@@ -25,7 +25,6 @@ import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
 import { getReputation, type ReputationId } from './Faction'
-import { type NPC } from './NPC'
 
 // ============================================================================
 // SCRIPT TYPES
@@ -145,7 +144,7 @@ export function isAccessor(value: unknown): value is Accessor {
  * Returns the content inside parens and the remaining string after the closing paren.
  * If rest doesn't start with '(', returns undefined.
  */
-function parseArgs(rest: string): { argline: string, tail: string } | undefined {
+export function parseArgs(rest: string): { argline: string, tail: string } | undefined {
   if (!rest.startsWith('(')) return undefined
   const close = rest.indexOf(')')
   if (close === -1) return undefined
@@ -155,55 +154,6 @@ function parseArgs(rest: string): { argline: string, tail: string } | undefined 
   return { argline: rest.slice(1, close), tail }
 }
 
-/** NPC accessor — resolves NPC properties via expression chaining. */
-class NPCAccessor implements Accessor {
-  npc: NPC | undefined
-  constructor(npc: NPC | undefined) { this.npc = npc }
-
-  /** {npc} with no chain — return display name */
-  default(_game: Game): InlineContent {
-    return this.nameContent()
-  }
-
-  /**
-   * {npc:prop} or {npc(id):prop} — resolve a property on this NPC.
-   * rest starts with ':' or '(' depending on how we got here.
-   */
-  resolve(game: Game, rest: string): unknown {
-    // Handle args: npc(rob) or npc(rob):he
-    const args = parseArgs(rest)
-    if (args) {
-      const accessor = new NPCAccessor(game.getNPC(args.argline))
-      return args.tail ? accessor.resolve(game, args.tail) : accessor.default(game)
-    }
-
-    const npc = this.requireNpc()
-
-    switch (rest) {
-      case 'name': return this.nameContent()
-      case 'he': return npc.pronouns.subject
-      case 'him': return npc.pronouns.object
-      case 'his': return npc.pronouns.possessive
-      case 'He': return capitalise(npc.pronouns.subject)
-      case 'Him': return capitalise(npc.pronouns.object)
-      case 'His': return capitalise(npc.pronouns.possessive)
-      default:
-        throw new Error(`Unknown NPC accessor property: ${rest}`)
-    }
-  }
-
-  requireNpc(): NPC {
-    if (!this.npc) throw new Error('NPC accessor: no NPC specified')
-    return this.npc
-  }
-
-  nameContent(): InlineContent {
-    const npc = this.requireNpc()
-    const name = npc.nameKnown > 0 ? npc.template.name : npc.template.uname
-    const color = npc.template.speechColor ?? '#888'
-    return { type: 'text', text: name || 'someone', color }
-  }
-}
 
 function isContent(value: unknown): value is InlineContent {
   return value != null && typeof value === 'object' && 'type' in value
@@ -989,12 +939,6 @@ const coreScripts: Record<string, ScriptFn> = {
   pc: (game: Game): InlineContent => {
     const name = game.player.name || 'Elise'
     return { type: 'text', text: name, color: '#e0b0ff' }
-  },
-
-  /** NPC accessor — returns NPCAccessor for expression chaining: {npc}, {npc:he}, {npc(rob):name} */
-  npc: (game: Game): Accessor => {
-    const npcId = game.scene.npc
-    return new NPCAccessor(npcId ? game.getNPC(npcId) : undefined)
   },
 
   /** Return an NPC's name as InlineContent. Uses scene NPC if not specified. */

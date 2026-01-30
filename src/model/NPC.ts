@@ -1,6 +1,8 @@
 import { Game } from "./Game"
-import type { Script } from "./Scripts"
-import { speech } from "./Format"
+import { makeScript, parseArgs, type Accessor, type Script } from "./Scripts"
+import { type InlineContent, speech } from "./Format"
+import { capitalise } from "./Text"
+import { getFaction } from "./Faction"
 
 export type NPCId = string
 
@@ -276,3 +278,63 @@ export function getNPCDefinition(id: NPCId): NPCDefinition | undefined {
 export function getAllNPCIds(): NPCId[] {
   return Object.keys(NPC_DEFINITIONS)
 }
+
+// ============================================================================
+// NPC ACCESSOR — expression chaining for {npc}, {npc:he}, {npc(rob):faction}
+// ============================================================================
+
+class NPCAccessor implements Accessor {
+  npc: NPC | undefined
+  constructor(npc: NPC | undefined) { this.npc = npc }
+
+  default(_game: Game): InlineContent {
+    return this.nameContent()
+  }
+
+  resolve(game: Game, rest: string): unknown {
+    // Handle args: npc(rob) or npc(rob):he
+    const args = parseArgs(rest)
+    if (args) {
+      const accessor = new NPCAccessor(game.getNPC(args.argline))
+      return args.tail ? accessor.resolve(game, args.tail) : accessor.default(game)
+    }
+
+    const npc = this.requireNpc()
+
+    switch (rest) {
+      case 'name': return this.nameContent()
+      case 'he': return npc.pronouns.subject
+      case 'him': return npc.pronouns.object
+      case 'his': return npc.pronouns.possessive
+      case 'He': return capitalise(npc.pronouns.subject)
+      case 'Him': return capitalise(npc.pronouns.object)
+      case 'His': return capitalise(npc.pronouns.possessive)
+      case 'faction': {
+        const factionId = npc.template.faction
+        if (!factionId) return 'unaffiliated'
+        const faction = getFaction(factionId)
+        if (!faction) return factionId
+        return { type: 'text' as const, text: faction.name, color: faction.colour }
+      }
+      default:
+        throw new Error(`Unknown NPC accessor property: ${rest}`)
+    }
+  }
+
+  requireNpc(): NPC {
+    if (!this.npc) throw new Error('NPC accessor: no NPC specified')
+    return this.npc
+  }
+
+  nameContent(): InlineContent {
+    const npc = this.requireNpc()
+    const name = npc.nameKnown > 0 ? npc.template.name : npc.template.uname
+    const color = npc.template.speechColor ?? '#888'
+    return { type: 'text', text: name || 'someone', color }
+  }
+}
+
+makeScript('npc', (game: Game): Accessor => {
+  const npcId = game.scene.npc
+  return new NPCAccessor(npcId ? game.getNPC(npcId) : undefined)
+})
