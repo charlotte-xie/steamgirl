@@ -12,7 +12,7 @@ interface LocationViewProps {
 }
 
 export function LocationView({ location }: LocationViewProps) {
-  const { game, updateCounter } = useGame()
+  const { game } = useGame()
   game.beforeAction()
 
   const template = location.template

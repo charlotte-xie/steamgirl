@@ -51,7 +51,7 @@ import {
   move, time,
   hideNpcImage, showNpcImage,
   hasStat, npcStat, skillCheck,
-  run, 
+  run, and, not, hasCard, inLocation,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -330,122 +330,120 @@ registerNPC('tour-guide', {
     // Past 30, needs a Charm check — failure causes pushback and -3.
     // May trigger a date invitation if conditions are met.
     // ----------------------------------------------------------------
-    flirt: (game: Game) => {
-      const npc = game.getNPC('tour-guide')
-
-      // Past 30 affection, Rob is wary of being pushed — needs subtlety
-      if (npc.affection >= 30) {
-        if (game.player.skillTest('Charm', 12)) {
-          // Charming enough to keep things comfortable
-          game.run(addNpcStat('affection', 2, { max: 40, hidden: true }))
-          const highFlirtScenes = [
-            [
-              'You say something quiet and sincere about how much you enjoy his company.',
-              say('I... thank you. I mean that. You\'re — you\'re special, you know that?'),
-              'He holds your gaze for a moment, then looks away with a small, genuine smile.',
-            ],
-            [
-              'You let the silence between you stretch — warm and companionable, not awkward.',
-              say('I like this. Just... being with you. Not having to fill every moment with chatter.'),
-              'He relaxes visibly, leaning back.',
-            ],
-            [
-              'You compliment something specific — the way he always notices when you\'re cold, the way he remembers little things.',
-              say('You noticed that? I didn\'t think anyone—'),
-              'He breaks off, blinking. His smile is slow but real.',
-            ],
-          ]
-          const chosen = highFlirtScenes[Math.floor(Math.random() * highFlirtScenes.length)]
-          game.run(seq(...chosen))
-        } else {
-          // Too forward — Rob pulls back
-          game.run(addNpcStat('affection', -3, { min: 20 }))
-          const pushbackScenes = [
-            [
-              'You lean in close and trail a finger down his arm.',
-              say('I — could we — maybe slow down a bit?'),
-              'He takes a small step back, not unkindly, but firmly. His ears are red and he won\'t quite meet your eye.',
-            ],
-            [
-              'You try to hold his hand, but he gently disentangles his fingers.',
-              say('Sorry, I just — I\'m not quite ready for... I need a bit more time.'),
-              'He looks genuinely uncomfortable. You\'ve pushed a little too far.',
-            ],
-            [
-              'You say something bold. Rob\'s smile falters.',
-              say('That\'s — I mean — you\'re lovely, but I...'),
-              'He trails off, clutching his guidebook like a shield. The moment passes awkwardly.',
-            ],
-          ]
-          const chosen = pushbackScenes[Math.floor(Math.random() * pushbackScenes.length)]
-          game.run(seq(...chosen))
-        }
-      } else {
-        // Normal flirting — easy phase, +3 capped at 30
-        game.run(addNpcStat('affection', 3, { max: 30 }))
-
-        const flirtScenes = [
-          [
-            'You lean a little closer and compliment his knowledge of the city.',
-            say('Oh! Well, I — thank you. I do try to keep up with things. You\'re very kind to say so.'),
-            'His ears go pink.',
-          ],
-          [
-            'You brush his arm and tell him he\'s got a lovely smile.',
-            say('I — what? Me? I mean — that\'s — blimey.'),
-            'He fumbles with his guidebook, grinning like an idiot.',
-          ],
-          [
-            'You catch his eye and hold it just a beat longer than necessary.',
-            say('I, erm. Right. Yes. Where were we? I\'ve completely lost my train of thought.'),
-            'He scratches the back of his neck, flustered but clearly pleased.',
-          ],
-          [
-            'You tell him you feel safe with him around.',
-            say('Really? That\'s — well, that means a lot, actually. I\'ll always look out for you.'),
-            'He straightens up a little, trying not to beam.',
-          ],
-          [
-            'You tuck a stray bit of hair behind your ear and ask if he\'d like to show you around again sometime — just the two of you.',
-            say('Just us? I — yes. Yes, I\'d like that very much.'),
-            'He clutches his guidebook to his chest as though it might escape.',
-          ],
-        ]
-        const chosen = flirtScenes[Math.floor(Math.random() * flirtScenes.length)]
-        game.run(seq(...chosen))
-      }
-
-      game.timeLapse(3)
-
-      // Check date invitation conditions
-      const canInvite = game.player.skillTest('Flirtation', 10)
-        && npc.affection > 20
-        && !game.player.hasCard('date')
-
-      if (canInvite) {
-        // Rob asks the player on a date
-        npc.say('I was thinking... would you fancy going for a walk tomorrow evening? Just the two of us. I know a lovely spot by the lake.')
-        game.add('He looks at you hopefully, his ears going pink again.')
-        game.addOption(['interact', { script: 'dateAccept' }], 'Accept the date')
-        game.addOption(['interact', { script: 'dateDecline' }], 'Decline')
-        npc.leaveOption()
-      } else {
-        // Re-show normal options depending on location
-        if (game.currentLocation === 'dorm-suite') {
-          game.addOption(['interact', { script: 'roomChat' }], 'Chat')
-          game.addOption(['interact', { script: 'flirt' }], 'Flirt')
-          game.addOption(['interact', { script: 'leaveRoom' }], 'Depart Room')
-          npc.leaveOption()
-        } else {
-          game.addOption(['interact', { script: 'tour' }], 'Accept the tour')
-          if (game.player.hasCard('hotel-booking')) {
-            game.addOption(['interact', { script: 'inviteToRoom' }], 'Invite to see your hotel room')
-          }
-          game.addOption(['interact', { script: 'flirt' }], 'Flirt')
-          npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
-        }
-      }
-    },
+    flirt: seq(
+      // Main flirt interaction
+      cond(
+        npcStat('affection', { min: 30 }),
+        // Past 30: needs Charm to avoid pushback
+        skillCheck('Charm', 12,
+          seq(
+            addNpcStat('affection', 2, { max: 40, hidden: true }),
+            random(
+              seq(
+                'You say something quiet and sincere about how much you enjoy his company.',
+                say('I... thank you. I mean that. You\'re — you\'re special, you know that?'),
+                'He holds your gaze for a moment, then looks away with a small, genuine smile.',
+              ),
+              seq(
+                'You let the silence between you stretch — warm and companionable, not awkward.',
+                say('I like this. Just... being with you. Not having to fill every moment with chatter.'),
+                'He relaxes visibly, leaning back.',
+              ),
+              seq(
+                'You compliment something specific — the way he always notices when you\'re cold, the way he remembers little things.',
+                say('You noticed that? I didn\'t think anyone—'),
+                'He breaks off, blinking. His smile is slow but real.',
+              ),
+            ),
+          ),
+          seq(
+            addNpcStat('affection', -3, { min: 20 }),
+            random(
+              seq(
+                'You lean in close and trail a finger down his arm.',
+                say('I — could we — maybe slow down a bit?'),
+                'He takes a small step back, not unkindly, but firmly. His ears are red and he won\'t quite meet your eye.',
+              ),
+              seq(
+                'You try to hold his hand, but he gently disentangles his fingers.',
+                say('Sorry, I just — I\'m not quite ready for... I need a bit more time.'),
+                'He looks genuinely uncomfortable. You\'ve pushed a little too far.',
+              ),
+              seq(
+                'You say something bold. Rob\'s smile falters.',
+                say('That\'s — I mean — you\'re lovely, but I...'),
+                'He trails off, clutching his guidebook like a shield. The moment passes awkwardly.',
+              ),
+            ),
+          ),
+        ),
+        // Below 30: easy flirting
+        seq(
+          addNpcStat('affection', 3, { max: 30 }),
+          random(
+            seq(
+              'You lean a little closer and compliment his knowledge of the city.',
+              say('Oh! Well, I — thank you. I do try to keep up with things. You\'re very kind to say so.'),
+              'His ears go pink.',
+            ),
+            seq(
+              'You brush his arm and tell him he\'s got a lovely smile.',
+              say('I — what? Me? I mean — that\'s — blimey.'),
+              'He fumbles with his guidebook, grinning like an idiot.',
+            ),
+            seq(
+              'You catch his eye and hold it just a beat longer than necessary.',
+              say('I, erm. Right. Yes. Where were we? I\'ve completely lost my train of thought.'),
+              'He scratches the back of his neck, flustered but clearly pleased.',
+            ),
+            seq(
+              'You tell him you feel safe with him around.',
+              say('Really? That\'s — well, that means a lot, actually. I\'ll always look out for you.'),
+              'He straightens up a little, trying not to beam.',
+            ),
+            seq(
+              'You tuck a stray bit of hair behind your ear and ask if he\'d like to show you around again sometime — just the two of you.',
+              say('Just us? I — yes. Yes, I\'d like that very much.'),
+              'He clutches his guidebook to his chest as though it might escape.',
+            ),
+          ),
+        ),
+      ),
+      time(3),
+      // Date invitation — probabilistic skill check + conditions
+      cond(
+        and(
+          run('skillCheck', { skill: 'Flirtation', difficulty: 10 }),
+          npcStat('affection', { min: 21 }),
+          not(hasCard('date')),
+        ),
+        seq(
+          say('I was thinking... would you fancy going for a walk tomorrow evening? Just the two of us. I know a lovely spot by the lake.'),
+          'He looks at you hopefully, his ears going pink again.',
+          option('Accept the date', npcInteract('dateAccept')),
+          option('Decline', npcInteract('dateDecline')),
+          npcLeaveOption(),
+        ),
+        // Re-show options based on location
+        cond(
+          inLocation('dorm-suite'),
+          seq(
+            option('Chat', 'npc:roomChat'),
+            option('Flirt', 'npc:flirt'),
+            option('Depart Room', 'npc:leaveRoom'),
+            npcLeaveOption(),
+          ),
+          seq(
+            option('Accept the tour', npcInteract('tour')),
+            when(hasCard('hotel-booking'),
+              option('Invite to see your hotel room', npcInteract('inviteToRoom')),
+            ),
+            option('Flirt', npcInteract('flirt')),
+            npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
+          ),
+        ),
+      ),
+    ),
 
     // ----------------------------------------------------------------
     // DATE INVITATION — accept or decline
