@@ -1,5 +1,6 @@
 import { useSyncExternalStore, useState } from 'react'
 import { Frame } from '../components/Frame'
+import { Panel } from '../components/Panel'
 import { BrassButton } from '../components/BrassButton'
 import { useGame } from '../context/GameContext'
 import { useGameLoader } from '../context/GameLoaderContext'
@@ -58,7 +59,7 @@ export function SettingsScreen() {
   return (
     <Frame className="screen-frame">
       <div className="settings-screen">
-        <section className="info-section">
+        <Panel>
           <h3>Save &amp; Load</h3>
 
           <div className="setting-row">
@@ -80,12 +81,22 @@ export function SettingsScreen() {
               Load
             </BrassButton>
           </div>
-        </section>
 
-        <section className="info-section">
-          <h3>Settings</h3>
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Exit to Main Menu</span>
+              <span className="setting-desc">Return to the start screen (progress is auto-saved)</span>
+            </div>
+            <BrassButton onClick={handleExit}>
+              Exit
+            </BrassButton>
+          </div>
+        </Panel>
 
-          {isLocalhost && (
+        {isLocalhost && (
+          <Panel>
+            <h3>Debug</h3>
+
             <div className="setting-row">
               <div className="setting-info">
                 <span className="setting-label">Debug Controls</span>
@@ -103,18 +114,8 @@ export function SettingsScreen() {
                 </span>
               </button>
             </div>
-          )}
-
-          <div className="setting-row">
-            <div className="setting-info">
-              <span className="setting-label">Exit to Main Menu</span>
-              <span className="setting-desc">Return to the start screen (progress is auto-saved)</span>
-            </div>
-            <BrassButton onClick={handleExit}>
-              Exit
-            </BrassButton>
-          </div>
-        </section>
+          </Panel>
+        )}
       </div>
     </Frame>
   )

@@ -46,7 +46,7 @@
   --bg-main: #0e0b09; /* deep soot / iron */
   --bg-panel: var(--copper-dark); /* dark brass panel */
   --bg-frame: var(--emerald-dark); /* dark brass panel */
-  --bg-panel-soft: color-mix(in srgb, var(--emerald-dark) 30%, transparent); /* soft copper wash */
+  --bg-panel-soft: color-mix(in srgb, var(--copper-dark) 30%, transparent); /* soft copper wash */
   --bg-placeholder: radial-gradient(circle at 0 0, rgba(255, 176, 59, 0.16), transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(146, 79, 46, 0.2), transparent 55%),
     linear-gradient(135deg, #291812, #14100f);
@@ -1410,16 +1410,16 @@ img {
 }
 
 .inventory-with-grid .inventory-clothing {
-  width: 16rem;
+  width: 20rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
+  gap: var(--space-xs);
 }
 
-.inventory-with-grid .inventory-clothing h4 {
-  margin: 0 0 var(--space-xs) 0;
-  color: var(--text-main);
+.inventory-worn {
+  margin-top: auto;
 }
 
 /* Clothing grid */
@@ -1492,13 +1492,15 @@ img {
 
 /* Outfit management */
 .outfit-management {
-  margin-top: auto;
-  padding-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .outfit-management .inventory-items {
-  grid-template-columns: repeat(2, 1fr);
-  margin-bottom: var(--space-sm);
+  grid-template-columns: repeat(3, 1fr);
+  overflow-y: auto;
+  max-height: 16rem;
 }
 
 .outfit-management h4 {
@@ -1961,7 +1963,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-sm);
   background: var(--bg-panel-soft);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);

@@ -120,16 +120,16 @@ export function OutfitManagement() {
             placeholder="Outfit name..."
             autoFocus
           />
-          <Button size="small" onClick={handleConfirmSave} disabled={!newName.trim()}>{nameMatchesExisting ? 'Update' : 'Save'}</Button>
-          <Button size="small" onClick={handleCancelSave}>Cancel</Button>
+          <Button onClick={handleConfirmSave} disabled={!newName.trim()}>{nameMatchesExisting ? 'Update' : 'Save'}</Button>
+          <Button onClick={handleCancelSave}>Cancel</Button>
         </div>
       ) : (
         <div className="outfit-actions">
-          <Button size="small" onClick={handleSaveAs}>Save As...</Button>
-          <Button size="small" onClick={handleUpdate} disabled={!selectedOutfit}>Update</Button>
-          <Button size="small" onClick={handleWear} disabled={!selectedOutfit || inScene} title={sceneTooltip}>Wear</Button>
-          <Button size="small" onClick={handleStrip} disabled={inScene} title={sceneTooltip}>Strip</Button>
-          <Button size="small" onClick={handleDelete} disabled={!selectedOutfit}>Delete</Button>
+          <Button onClick={handleSaveAs}>Save As...</Button>
+          <Button onClick={handleUpdate} disabled={!selectedOutfit}>Update</Button>
+          <Button onClick={handleWear} disabled={!selectedOutfit || inScene} title={sceneTooltip}>Wear</Button>
+          <Button onClick={handleStrip} disabled={inScene} title={sceneTooltip}>Strip</Button>
+          <Button onClick={handleDelete} disabled={!selectedOutfit}>Delete</Button>
         </div>
       )}
     </div>

@@ -1,6 +1,3 @@
-import { useGameLoader } from '../context/GameLoaderContext'
-import { useGame } from '../context/GameContext'
-
 export type ScreenId = 'game' | 'character' | 'inventory' | 'quests' | 'info' | 'settings'
 
 interface ScreenSwitcherProps {
@@ -9,7 +6,7 @@ interface ScreenSwitcherProps {
 }
 
 interface ScreenButton {
-  id: ScreenId | 'exit'
+  id: ScreenId
   label: string
   icon: React.ReactNode
 }
@@ -57,13 +54,6 @@ const Icons = {
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
-  // Door - for Exit
-  exit: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M5 4h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5" />
-      <path d="M16 12H9M12 9l3 3-3 3" />
-    </svg>
-  ),
 }
 
 const SCREENS: ScreenButton[] = [
@@ -73,18 +63,11 @@ const SCREENS: ScreenButton[] = [
   { id: 'quests', label: 'Quests', icon: Icons.quests },
   { id: 'info', label: 'Info', icon: Icons.info },
   { id: 'settings', label: 'Settings', icon: Icons.settings },
-  { id: 'exit', label: 'Exit', icon: Icons.exit },
 ]
 
 export function ScreenSwitcher({ currentScreen, onScreenChange }: ScreenSwitcherProps) {
-  const { game } = useGame()
-  const { returnToStart } = useGameLoader()
-
-  const handleClick = (id: ScreenId | 'exit') => {
-    if (id === 'exit') {
-      returnToStart(game)
-    } else if (id === currentScreen) {
-      // Toggle off: clicking selected screen returns to game view
+  const handleClick = (id: ScreenId) => {
+    if (id === currentScreen) {
       onScreenChange('game')
     } else {
       onScreenChange(id)

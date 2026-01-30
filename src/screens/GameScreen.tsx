@@ -1,6 +1,6 @@
 import { PlayerPanel } from '../components/PlayerPanel'
 import { LocationView } from '../components/LocationView'
-import { InventoryView } from '../components/InventoryView'
+import { InventoryScreen } from './InventoryScreen'
 import { Frame } from '../components/Frame'
 import { DevControls } from '../components/DevControls'
 import { useGame } from '../context/GameContext'
@@ -45,7 +45,7 @@ export function GameScreen() {
       case 'inventory':
         return (
           <Frame className="screen-frame">
-            <InventoryView onUseItem={() => setCurrentScreen('game')} />
+            <InventoryScreen onUseItem={() => setCurrentScreen('game')} />
           </Frame>
         )
       case 'quests':

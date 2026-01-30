@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useGame } from '../context/GameContext'
-import { ItemView } from './ItemView'
-import { Button } from './Button'
-import { Panel } from './Panel'
-import { ClothingGrid } from './ClothingGrid'
-import { OutfitManagement } from './OutfitManagement'
+import { ItemView } from '../components/ItemView'
+import { Button } from '../components/Button'
+import { Panel } from '../components/Panel'
+import { ClothingGrid } from '../components/ClothingGrid'
+import { OutfitManagement } from '../components/OutfitManagement'
 import { capitalise } from '../model/Text'
 import type { Item, ItemCategory } from '../model/Item'
 
@@ -16,7 +16,7 @@ interface InventoryViewProps {
   onUseItem?: () => void
 }
 
-export function InventoryView({ onUseItem }: InventoryViewProps) {
+export function InventoryScreen({ onUseItem }: InventoryViewProps) {
   const { game, runScript, refresh } = useGame()
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [filter, setFilter] = useState<FilterOption>('All')
@@ -143,7 +143,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
               <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
                 {selectedItem.template.onExamine && (
                   <Button
-                    size="small"
+                    
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={() => runScript('examineItem', { item: selectedItem.id })}
@@ -153,7 +153,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                 )}
                 {selectedItem.template.onConsume && (
                   <Button
-                    size="small"
+                    
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={() => {
@@ -166,7 +166,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                 )}
                 {canWear && (
                   <Button
-                    size="small"
+                    
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={handleWear}
@@ -176,7 +176,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                 )}
                 {isWearable && selectedItem?.worn && (
                   <Button
-                    size="small"
+                    
                     disabled={inScene || isLocked}
                     title={isLocked ? lockedTooltip : sceneTooltip}
                     onClick={handleRemove}
@@ -185,7 +185,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
                   </Button>
                 )}
                 <Button
-                  size="small"
+                  
                   disabled={inScene || !canDiscard}
                   title={!canDiscard ? (selectedItem.worn ? 'Remove item first' : 'Cannot discard special items') : sceneTooltip}
                   onClick={handleDiscard}
@@ -200,13 +200,15 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
         </Panel>
       </div>
       <div className="inventory-clothing">
-        <h4>Worn</h4>
-        <ClothingGrid
-          player={game.player}
-          selectedItem={selectedItem}
-          onSelectItem={handleSelectFromGrid}
-        />
         <OutfitManagement />
+        <div className="inventory-worn">
+          <ClothingGrid
+            player={game.player}
+            selectedItem={selectedItem}
+            onSelectItem={handleSelectFromGrid}
+          />
+        </div>
+
       </div>
     </div>
   )
