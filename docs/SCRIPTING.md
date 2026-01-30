@@ -204,6 +204,10 @@ Common scripts are already defined in `Scripts.ts`:
 | `addReputation` | `{ reputation, change, max?, min?, chance?, hidden? }` | Modify a faction reputation score (0--100) |
 | `setNpcLocation` | `{ npc?, location }` | Move an NPC to a location |
 | `discoverLocation` | `{ location, text?, colour? }` | Reveal a hidden location |
+| `saveOutfit` | `{ name }` | Save current worn items under a name |
+| `wearOutfit` | `{ name, delete? }` | Restore a saved outfit; `delete: true` removes it |
+| `changeOutfit` | `{ items, force? }` | Strip all and wear a list of items |
+| `menu` | `{ entries }` | Repeatable choice loop (used by `menu()` DSL) |
 
 ## Declarative DSL
 
@@ -268,6 +272,8 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 | `branch(label, ...elements)` | Story choice with auto-resume. Use `scenes()` as an element for multi-page branches |
 | `choice(...branches, ...epilogue)` | Branches with shared ending instructions |
 | `gatedBranch(cond, label, ...elements)` | Branch that only appears when condition is met |
+| `menu(...entries)` | Repeatable choice loop (`branch` loops, `exit` breaks) |
+| `exit(label, ...elements)` | Terminal branch inside `menu()` |
 
 #### Game Actions
 
@@ -288,6 +294,9 @@ This auto-wrapping works in `seq()`, `scene()`, `scenes()`, `when()`, `unless()`
 | `showNpcImage()` | Show NPC portrait |
 | `learnNpcName()` | Mark scene NPC's name as known |
 | `discoverLocation(location, text?, colour?)` | Reveal a hidden location |
+| `saveOutfit(name)` | Save current worn items for later restoration |
+| `wearOutfit(name, { delete? })` | Restore a saved outfit; `delete: true` removes it |
+| `changeOutfit(items)` | Strip all and wear a list of items |
 | `recordTime(timer)` | Store current time for cooldowns |
 | `addQuest(id, args?)` | Add quest card |
 | `completeQuest(id)` | Complete quest |
@@ -802,6 +811,8 @@ dateScene: scenes(
 | `branch(label, ...elements)` | `Instruction` | Story choice with auto-resume (use `scenes()` for multi-page) |
 | `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
 | `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
+| `menu(...entries)` | `Instruction` | Repeatable choice loop (`branch` loops, `exit` breaks) |
+| `exit(label, ...elements)` | `Instruction` | Terminal branch inside `menu()` |
 | `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
 
 ## Mixing DSL with Imperative
@@ -1057,3 +1068,65 @@ skillCheck('Charm', 10,
   ),
 )
 ```
+
+### Repeatable Menus
+
+`menu()` presents options that loop — the player returns to the menu after each non-exit choice. `exit()` breaks the loop. Conditions on `when()` are re-evaluated each display.
+
+```typescript
+menu(
+  branch('Talk', random('He tells you about...', 'You discuss...'), timeLapse(10)),
+  branch('Have a drink', run('consumeAlcohol', { amount: 15 }), timeLapse(5)),
+  when(hasStat('Flirtation', 1),
+    branch('Flirt', skillCheck('Flirtation', 20, successContent, failureContent)),
+  ),
+  exit('Call it a night', 'You say goodnight.', farewell),
+  exit('Stay a while longer...', patronKissAttempt(farewell)),
+)
+```
+
+See `src/story/Hotel.ts` for a complete example with garden, pool, and Room 533 menus.
+
+### Costume Changes
+
+Save/restore outfits when a scene temporarily changes the player's clothing:
+
+```typescript
+// Save before changing
+saveOutfit('_before-pool'),
+changeOutfit(['bikini-top', 'bikini-bottom']),
+
+// Restore when done (delete: true cleans up)
+wearOutfit('_before-pool', { delete: true }),
+```
+
+Use `_` prefix for temporary saves to distinguish from player-created outfits. Make sure **every exit path** restores — pass restore instructions through a farewell parameter if needed:
+
+```typescript
+function poolFarewell(): Instruction {
+  return seq(
+    'You towel off and change back into your clothes.',
+    wearOutfit('_before-pool', { delete: true }),
+    move('hotel-bar'),
+  )
+}
+```
+
+### Parameterised Scenes
+
+When branching paths share logic but differ in cleanup (farewell text, outfit restore, destination), extract the shared structure into a function that accepts the variable parts as parameters:
+
+```typescript
+function kissAttempt(farewell: Instruction): Instruction {
+  return choice(
+    branch('Let him', skillCheck('Flirtation', 30, successPath, seq(awkwardText, farewell))),
+    branch('Turn away', rejectionText, farewell),
+  )
+}
+
+// Each caller provides path-specific cleanup
+patronGardenPath() → kissAttempt(gardenFarewell())
+patronPoolPath()   → kissAttempt(poolFarewell())
+```
+
+This avoids scene stack pollution — the farewell is embedded in the instruction tree rather than pushed as separate stack pages that might leak across unrelated scenes.

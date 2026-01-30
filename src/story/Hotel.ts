@@ -160,67 +160,82 @@ makeScripts({
 // BAR PATRON RANDOM ENCOUNTER (DSL)
 // ============================================================================
 
-// The kiss-or-not moment, shared by both pool and garden paths.
-// Each path provides its own farewell so the flow is self-contained.
+// The patron leans in to kiss — the player responds.
 // Uses a Flirtation skill check (Charm + Flirtation vs difficulty 30):
-//   - Early player (Charm 10, Flirtation 5): threshold ~-15, almost never succeeds
-//   - Mid player (Charm 25, Flirtation 20): threshold ~15, succeeds ~15%
-//   - Late player (Charm 40, Flirtation 60): threshold ~70, succeeds ~70%
-function patronKissChoice(farewell: Instruction): Instruction {
-  return choice(
-    gatedBranch(hasStat('Flirtation', 1), 'Kiss him',
-      skillCheck('Flirtation', 30,
-        // Success — the kiss lands
-        seq(
-          text('You close the distance between you. His eyes widen slightly, then he smiles and leans in to meet you.'),
-          random(
-            'The kiss is brief but electric — the taste of gin and something sweeter. When you pull back, he looks genuinely surprised.',
-            'His hand finds the small of your back as you kiss. It\'s gentle, unhurried, and when it ends neither of you speaks for a moment.',
-          ),
-          addStat('Flirtation', 1, { max: 40, chance: 0.5 }),
-          addStat('Charm', 1, { max: 40, chance: 0.3 }),
-          text('He holds your gaze, something shifting behind his eyes. When he speaks, his voice is low.'),
-          random(
-            '"I have a room upstairs — 533. We could have a drink, just the two of us. No pressure." His smile is warm, inviting, entirely without menace.',
-            '"My room is just upstairs. 533. It seems a shame to end the evening here." He lets the suggestion hang, watching your reaction.',
-          ),
-          choice(
-            branch('Go with him',
-              'You hold his gaze for a moment, then nod. His smile widens and he offers his arm.',
-              // If at the pool, change back into clothes before heading upstairs
-              run('restorePoolOutfit'),
-              'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
-              move('room-533', 2),
-              run('room533Scene'),
+//   - Early player (Charm 10, Flirtation 5): ~0% — the moment is awkward
+//   - Mid player (Charm 25, Flirtation 20): ~15% — sometimes it clicks
+//   - Late player (Charm 40, Flirtation 60): ~70% — natural chemistry
+function patronKissAttempt(farewell: Instruction): Instruction {
+  return seq(
+    random(
+      'He turns to face you. His hand lifts — hesitates — then brushes a strand of hair from your face. His eyes search yours.',
+      'The conversation trails off into silence. He\'s looking at you with an expression that leaves little to the imagination. His hand finds yours.',
+    ),
+    text('"I\'ve been wanting to do this all evening," he murmurs, and leans in.'),
+    choice(
+      branch('Let him',
+        skillCheck('Flirtation', 30,
+          // Success — the kiss works
+          scenes(
+            scene(
+              random(
+                'His lips meet yours. The kiss is brief but electric — the taste of gin and something sweeter. When he pulls back, his eyes are bright.',
+                'His hand finds the small of your back as he kisses you. It\'s gentle, unhurried, and when it ends neither of you speaks for a moment.',
+              ),
+              addStat('Flirtation', 1, { max: 40, chance: 0.5 }),
+              addStat('Charm', 1, { max: 40, chance: 0.3 }),
+              addStat('Arousal', 3, { max: 100 }),
             ),
-            branch('Decline gracefully',
-              'You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.',
-              '"Of course. It was a wonderful evening regardless." He kisses your hand and bids you goodnight.',
-              addStat('Mood', 5, { max: 85 }),
-              farewell,
+            scene(
+              text('He holds your gaze, something shifting behind his eyes. When he speaks, his voice is low.'),
+              random(
+                '"I have a room upstairs — 533. We could have a drink, just the two of us. No pressure." His smile is warm, inviting, entirely without menace.',
+                '"My room is just upstairs. 533. It seems a shame to end the evening here." He lets the suggestion hang, watching your reaction.',
+              ),
+              choice(
+                branch('Go with him',
+                  'You nod. His smile widens and he offers his arm.',
+                  run('restorePoolOutfit'),
+                  'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
+                  move('room-533', 2),
+                  run('room533Scene'),
+                ),
+                branch('Decline',
+                  random(
+                    'You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.',
+                    'You smile but step back. "Not tonight." He takes it well.',
+                  ),
+                  '"Of course. It was a wonderful evening regardless." He kisses your hand and bids you goodnight.',
+                  addStat('Mood', 5, { max: 85 }),
+                  farewell,
+                ),
+              ),
             ),
           ),
-        ),
-        // Failure — the moment doesn't land
-        seq(
-          random(
-            'You lean in, but the timing is off. He pulls back slightly, surprised, and the moment dissolves into awkward laughter.',
-            'You move closer, but he misreads the gesture and turns to signal the barman. The moment slips away.',
+          // Failure — the moment is awkward
+          seq(
+            random(
+              'You let him, but the timing is off somehow. The kiss is clumsy, and when he pulls back you both laugh nervously.',
+              'His lips brush yours, but the spark isn\'t there. He senses it too and draws back with a rueful smile.',
+            ),
+            addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
+            random(
+              '"Well," he says, recovering quickly. "It\'s been a delightful evening." He smiles warmly, but the moment has passed.',
+              'He clears his throat. "I should probably call it a night. But I\'ve enjoyed your company tremendously."',
+            ),
+            farewell,
           ),
-          addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
-          random(
-            '"Well," he says, recovering quickly. "It\'s been a delightful evening." He smiles warmly, but the spark has dimmed.',
-            'He clears his throat. "I should probably call it a night. But I\'ve enjoyed your company tremendously."',
-          ),
-          farewell,
         ),
       ),
-    ),
-    branch('Let the moment pass',
-      'The tension hangs between you for a heartbeat, then dissolves into a warm smile. Some things are better left as possibilities.',
-      '"It\'s been a wonderful evening," he says, and means it.',
-      addStat('Mood', 5, { max: 85 }),
-      farewell,
+      branch('Turn away',
+        random(
+          'You turn your head slightly — just enough. He stops, reads the gesture, and straightens up. No offence taken.',
+          'You put a gentle hand on his chest. He pauses, then nods with a warm smile. The tension dissolves.',
+        ),
+        '"It\'s been a wonderful evening," he says, and means it.',
+        addStat('Mood', 5, { max: 85 }),
+        farewell,
+      ),
     ),
   )
 }
@@ -237,7 +252,7 @@ function gardenFarewell(): Instruction {
   )
 }
 
-// Garden path — walk, talk, repeatable menu, optional kiss, return to bar
+// Garden path — walk, talk, repeatable menu, patron escalates
 function patronGardenPath(): Instruction {
   return scene(
     'You follow him through the lobby and into the brass lift. He presses the top button with a confident smile.',
@@ -274,8 +289,21 @@ function patronGardenPath(): Instruction {
         timeLapse(10),
         addStat('Mood', 2, { max: 85 }),
       ),
-      exit('Make your move',
-        patronKissChoice(gardenFarewell()),
+      exit('Call it a night',
+        random(
+          'You tell him you should be heading back. He nods, not pushy about it.',
+          'The evening air is getting chilly. You suggest heading inside.',
+        ),
+        '"Of course. It\'s been a wonderful evening." He smiles warmly.',
+        addStat('Mood', 3, { max: 85 }),
+        gardenFarewell(),
+      ),
+      exit('Stay a while longer...',
+        random(
+          'A comfortable silence settles between you. The city glitters below, impossibly beautiful.',
+          'The conversation fades into something quieter. You stand close together, the cool air pressing you near.',
+        ),
+        patronKissAttempt(gardenFarewell()),
       ),
     ),
   )
@@ -295,7 +323,7 @@ function poolFarewell(): Instruction {
   )
 }
 
-// Pool path — change into swimwear, repeatable menu, optional kiss, stay at pool
+// Pool path — change into swimwear, repeatable menu, patron escalates
 function patronPoolPath(): Instruction {
   return scenes(
     scene(
@@ -349,8 +377,23 @@ function patronPoolPath(): Instruction {
           run('consumeAlcohol', { amount: 15 }),
           timeLapse(5),
         ),
-        exit('Make your move',
-          patronKissChoice(poolFarewell()),
+        exit('Get out',
+          'You\'ve had enough swimming. You pull yourself up onto the marble edge, water streaming from your skin.',
+          random(
+            'He follows suit, shaking water from his hair. "Had enough?"',
+            'He watches you from the water, then hauls himself out beside you.',
+          ),
+          'You towel off and change back into your clothes.',
+          wearOutfit('_before-pool', { delete: true }),
+          addStat('Mood', 3, { max: 85 }),
+          poolFarewell(),
+        ),
+        exit('Float together',
+          random(
+            'You drift closer until you\'re floating side by side. His arm slips around your waist beneath the water.',
+            'The swimming slows. You find yourselves treading water close together, the warm glow from below casting soft light on his face.',
+          ),
+          patronKissAttempt(poolFarewell()),
         ),
       ),
     ),

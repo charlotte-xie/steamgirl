@@ -341,6 +341,9 @@ seq(
 | `completeQuest(questId)` | Mark quest complete |
 | `addEffect(effectId, args?)` | Add effect card |
 | `eatFood(quantity)` | Set lastEat timer and reduce hunger |
+| `saveOutfit(name)` | Save current worn items for later restoration |
+| `wearOutfit(name, { delete? })` | Restore a saved outfit. `delete: true` removes the save afterwards |
+| `changeOutfit(items)` | Strip all and wear a list of items |
 
 #### Predicates
 
@@ -574,9 +577,122 @@ Between each action, the player sees a "Continue" button before the menu reappea
 | `exit(label, ...elements)` | `Instruction` | Terminal branch inside `menu()` |
 | `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
 
+## Patterns
+
+### Costume Changes
+
+Save and restore outfits when a scene temporarily changes the player's clothes:
+
+```typescript
+// Save before changing
+saveOutfit('_before-pool'),
+changeOutfit(['bikini-top', 'bikini-bottom']),
+
+// Restore when leaving (delete: true cleans up the save)
+wearOutfit('_before-pool', { delete: true }),
+```
+
+Convention: prefix temporary saves with `_` to distinguish them from player-created outfits.
+
+For locations where the player can change manually (not during a scripted scene), use activity scripts with conditions:
+
+```typescript
+activities: [
+  {
+    name: 'Change into Swimwear',
+    condition: (g) => g.player.hasItem('bikini-top') && !g.player.getWornItems().some(i => i.id === 'bikini-top'),
+    script: (g) => {
+      g.player.saveOutfit('_before-pool')
+      g.player.stripAll()
+      g.player.wearItem('bikini-top')
+      g.player.wearItem('bikini-bottom')
+      g.player.calcStats()
+    },
+  },
+  {
+    name: 'Get Dressed',
+    condition: (g) => !!g.player.outfits['_before-pool'],
+    script: (g) => {
+      g.player.wearOutfit('_before-pool')
+      g.player.deleteOutfit('_before-pool')
+      g.player.calcStats()
+    },
+  },
+]
+```
+
+### Parameterised Scenes
+
+Extract reusable scene fragments that accept parameters. This avoids duplicating shared logic and prevents scene stack pollution:
+
+```typescript
+// Farewell varies by path — pass it as a parameter
+function kissAttempt(farewell: Instruction): Instruction {
+  return choice(
+    branch('Let him',
+      skillCheck('Flirtation', 30,
+        seq('The kiss lands.', roomInvite()),
+        seq('Awkward moment.', farewell),
+      ),
+    ),
+    branch('Turn away', 'You step back.', farewell),
+  )
+}
+
+// Each path provides its own farewell
+function gardenPath(): Instruction {
+  return seq(patronMenu(), kissAttempt(gardenFarewell()))
+}
+
+function poolPath(): Instruction {
+  return seq(patronMenu(), kissAttempt(poolFarewell()))
+}
+```
+
+This pattern is preferable to pushing cleanup logic onto the scene stack, where it can leak across unrelated scenes.
+
+### Skill Check Difficulty Tuning
+
+For skills that matter across the game, set difficulty to create a meaningful progression curve. The formula is `Charm + Skill - Difficulty`:
+
+| Difficulty | Early (C10 S5) | Mid (C25 S20) | Late (C40 S60) |
+|------------|----------------|----------------|-----------------|
+| 20 | ~0% | ~25% | ~80% |
+| 30 | ~0% | ~15% | ~70% |
+| 40 | ~0% | ~5% | ~60% |
+
+Gate the option itself with `hasStat` to prevent zero-skill attempts:
+
+```typescript
+gatedBranch(hasStat('Flirtation', 1), 'Flirt back',
+  skillCheck('Flirtation', 20, successContent, failureContent),
+)
+```
+
 ## Writing Guidelines
 
 Rules for authoring narrative content and random events.
+
+### Agency and Escalation
+
+When writing romantic or social escalation, the **NPC should drive the escalation** and the **player chooses how to respond**. Frame choices as resistance/acceptance rather than player-initiated pursuit:
+
+```typescript
+// BAD — player initiates
+exit('Make your move', 'You lean in and kiss him.')
+
+// GOOD — NPC initiates, player responds
+exit('Stay a while longer...',
+  'He turns to face you and brushes a strand of hair from your face.',
+  '"I\'ve been wanting to do this all evening," he murmurs, and leans in.',
+  choice(
+    branch('Let him', skillCheck('Flirtation', 30, ...)),
+    branch('Turn away', 'You put a gentle hand on his chest.'),
+  ),
+)
+```
+
+This creates a "do you resist temptation" dynamic rather than a goal-oriented pursuit.
 
 ### Player Speech
 
@@ -664,6 +780,20 @@ For `onWait` hooks (fire every 10-minute chunk during `wait()`):
 - **< 10%**: Significant events with lasting consequences
 
 A 30-minute wait processes 3 chunks, so a 20% trigger chance gives roughly a 50% chance of firing at least once per wait.
+
+### Exemplar: Hotel Bar Patron (`src/story/Hotel.ts`)
+
+The bar patron encounter demonstrates most DSL features working together in a complete random event. Use it as a reference:
+
+- **Random encounter trigger**: `onWait` with 20% chance per chunk
+- **Anonymous NPC**: varied descriptions via `random()`, no name
+- **Branching flow**: `scenes()` → `choice()` → `branch()` with nested `scenes()`
+- **Skill gating**: `gatedBranch(hasStat('Flirtation', 1), ...)` prevents zero-skill attempts
+- **Skill checks with progression**: `skillCheck('Flirtation', 20)` for flirting, difficulty 30 for kissing
+- **Repeatable menus**: garden/pool/Room 533 use `menu()` with `branch()` + `exit()`
+- **Costume changes**: pool path uses `saveOutfit`/`changeOutfit`/`wearOutfit` with `_before-pool`
+- **Parameterised farewell**: `patronKissAttempt(farewell)` accepts path-specific cleanup
+- **NPC-initiates escalation**: patron leans in, player responds with "Let him" / "Turn away"
 
 ## Items
 

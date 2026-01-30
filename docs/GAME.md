@@ -154,6 +154,17 @@ Rolls d100 against `basestat + skill - difficulty` (or `basestat - difficulty` f
 - `removeItem(spec, count)` -- Reduces stack or removes entirely
 - `countItem(id)` / `hasItem(id)` -- Query by ID
 
+### Outfits
+
+Players can save and restore named outfit configurations:
+
+- `player.saveOutfit(name)` — snapshots currently worn items
+- `player.wearOutfit(name)` — strips all and re-wears the saved items
+- `player.deleteOutfit(name)` — removes a saved outfit
+- `player.outfits` — record of saved outfits (serialised)
+
+Scripts use temporary saves (prefixed `_`) for costume changes during scenes. Player-created outfits use the outfit management UI.
+
 ### Timers
 
 Named timestamps (`lastSleep`, `lastEat`, etc.) recorded via `player.timers.set(name, game.time)`. Used by predicates like `timeElapsed(timer, minutes)` to gate content on cooldowns.
