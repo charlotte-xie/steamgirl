@@ -59,13 +59,14 @@ export interface NPCDefinition {
   pronouns?: Pronouns
   /** Faction this NPC belongs to (e.g. 'school', 'lowtown'). Informational — gating uses hasReputation(). */
   faction?: string
-  // Optional generate function that initializes the NPC instance (NPC is already constructed)
+  /** Optional generate function that initializes the NPC instance (NPC is already constructed). */
   generate?: (game: Game, npc: NPC) => void
-  // Script to run when player approaches this NPC for the first time
+  /** Script to run when player approaches this NPC for the first time. */
   onFirstApproach?: Script
-  // Script to run when player approaches this NPC (used after first approach, or if no onFirstApproach)
+  /** Script to run when player approaches this NPC (used after first approach, or if no onFirstApproach) */
   onApproach?: Script
-  // Script to run when the hour changes (for NPC movement)
+
+  /** Script to periodically for NPC movement (typically hourly) */
   onMove?: Script
   /**
    * Called when a NPC has a chance to approach the player (e.g. waiting).
