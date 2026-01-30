@@ -75,8 +75,8 @@ registerNPC('prof-lucienne-vael', {
   onApproach: (game: Game) => {
     const npc = game.npc
     game.add('Professor Vael looks up from a sheaf of notes covered in luminous diagrams.')
-    npc.say('"Yes? Do you have a question about the coursework?"')
-    npc.leaveOption('"Never mind, Professor."', '"Hmm. Well, come back if you think of something."')
+    npc.say('Yes? Do you have a question about the coursework?')
+    npc.leaveOption('You shake your head apologetically.', 'Hmm. Well, come back if you think of something.')
   },
 })
 
@@ -100,8 +100,8 @@ registerNPC('prof-harland-greaves', {
   onApproach: (game: Game) => {
     const npc = game.npc
     game.add('Professor Greaves wipes his hands on a rag and gives you a direct look.')
-    npc.say('"Need something? If it\'s about the coursework, speak up."')
-    npc.leaveOption('"Nothing, sir. Sorry to bother you."', '"No bother. Just don\'t stand around idle — there\'s always something to fix."')
+    npc.say('Need something? If it\'s about the coursework, speak up.')
+    npc.leaveOption('You tell him it\'s nothing and apologise for the interruption.', 'No bother. Just don\'t stand around idle — there\'s always something to fix.')
   },
 })
 
@@ -127,8 +127,8 @@ registerNPC('prof-nicholas-denver', {
   onApproach: (game: Game) => {
     const npc = game.npc
     game.add('Professor Denver looks up from a dense page of equations, blinking as though remembering where he is.')
-    npc.say('"Ah — yes? Forgive me, I was rather deep in Aldenmere\'s proof of resonance decay. Fascinating, if you have the patience for it."')
-    npc.leaveOption('"I\'ll let you get back to it, Professor."', '"Quite right. Where was I..." He is already reading again before you turn away.')
+    npc.say('Ah — yes? Forgive me, I was rather deep in Aldenmere\'s proof of resonance decay. Fascinating, if you have the patience for it.')
+    npc.leaveOption('You tell him you\'ll let him get back to it.', 'Quite right. Where was I...')
   },
 })
 
@@ -155,7 +155,7 @@ registerNPC('prof-eleanor-hurst', {
   onApproach: (game: Game) => {
     const npc = game.npc
     game.add('Professor Hurst regards you with calm, appraising eyes, her teacup held perfectly still.')
-    npc.say('"Good day. Is there something on your mind, or are you simply passing through?"')
-    npc.leaveOption('"Just passing through, Professor."', '"Very well. But do consider — why are you passing through? One ought to know." A faint smile crosses her lips.')
+    npc.say('Good day. Is there something on your mind, or are you simply passing through?')
+    npc.leaveOption('You tell her you\'re just passing through.', 'Very well. But do consider — why are you passing through? One ought to know.')
   },
 })

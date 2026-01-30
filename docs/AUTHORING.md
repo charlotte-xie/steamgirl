@@ -1,659 +1,263 @@
 # Content Authoring
 
-Guide to adding narrative content, locations, NPCs, items, and quests to the game. All content lives in `src/story/` and registers itself via global registration functions at import time.
+Guide to writing narrative content for SteamGirl. For the scripting API reference, see [SCRIPTING.md](./SCRIPTING.md).
 
-## Quick Start
+## Writing Rules
 
-To add a new area:
+### Player Speech
 
-1. Create a file in `src/story/` (e.g., `MyArea.ts`)
-2. Register locations, NPCs, items, cards, and scripts
-3. Import the file in `src/story/World.ts` in the correct dependency order
+Never quote the player's dialogue directly. Narrate what the player says or does in third person:
 
-```typescript
-// src/story/MyArea.ts
-import { registerLocation } from '../model/Location'
-import { registerNPC } from '../model/NPC'
-import { makeScripts } from '../model/Scripts'
+```
+BAD:  "I think I'll stay here. But thank you for the drink."
+BAD:  "Just passing through, Professor."
 
-registerLocation('my-location', {
-  name: 'My Location',
-  description: 'A quiet corner of Aetheria.',
-  image: '/images/my-location.jpg',
-  links: [{ dest: 'city-centre', time: 5 }],
-  activities: [
-    { name: 'Rest', symbol: 'R', script: 'relaxAtLocation' },
-  ],
-})
+GOOD: You tell him you'll stay, but thank him for the drink.
+GOOD: You tell her you're just passing through.
+GOOD: You decline with a polite smile.
 ```
 
-Then in `World.ts`:
+This applies everywhere -- `text()`, `leaveOption` departure text, branch labels. The player's voice belongs to the player.
+
+### NPC Speech
+
+Use `say()` for NPC dialogue. Do not include quotation marks -- the speech formatting handles that:
+
 ```typescript
-import './MyArea'  // After modules it depends on
+// BAD
+say('"Welcome to Aetheria," she says.')
+
+// GOOD
+say('Welcome to Aetheria.')
+'She gestures towards the courtyard.'
 ```
 
-## Registration Functions
+Separate narration from dialogue. Keep narration in plain strings; keep speech in `say()`.
+
+### Anonymous NPCs
+
+Do not name random encounter NPCs (bar patrons, passers-by, vendors). Named strangers feel absurd on repeat. Use descriptions with `random()` for variety:
+
+```typescript
+random(
+  'A well-dressed man in a tailored waistcoat takes the neighbouring seat.',
+  'A gentleman with silver-streaked hair settles beside you.',
+  'A broad-shouldered man with silver cufflinks catches the barman\'s eye.',
+)
+```
+
+### Agency and Escalation
+
+When writing scenes where the player has relatively free choice (menus, date activities, social encounters), offer a mix of **passive** and **active** options:
+
+- **Passive options** -- the player goes along with something; the NPC drives the escalation. The player accepts, resists, or observes.
+- **Active options** -- the player pursues a goal (romance, persuasion, information). The player initiates; the NPC reacts.
+
+Good scenes offer both paths so the player can shape the dynamic:
+
+```typescript
+menu(
+  // Active -- player pursues
+  when(hasStat('Flirtation', 1),
+    branch('Flirt', skillCheck('Flirtation', 20, flirtSuccess, flirtFail)),
+  ),
+  branch('Ask about his work', 'He talks about the shipping business...'),
+
+  // Passive -- NPC drives, player responds
+  exit('Stay a while longer...',
+    'He turns to face you and brushes a strand of hair from your face.',
+    choice(
+      branch('Let him', skillCheck('Flirtation', 30, ...)),
+      branch('Turn away', 'You put a gentle hand on his chest.'),
+    ),
+  ),
+  exit('Call it a night', 'You tell him you should go.'),
+)
+```
+
+This doesn't apply to direct responses -- answering a question, reacting to a threat, or replying to an NPC who just said something. In those cases, write the natural response options.
+
+### Repeatability
+
+Random events will fire multiple times. Design accordingly:
+
+- Use `random()` for varied descriptions, dialogue, and flavour
+- Avoid one-off revelations or unique items in repeatable events
+- Don't reference previous occurrences ("back again?")
+- For truly one-off events, gate with a card, timer, or flag
+
+### British English
+
+Use British/International English throughout to maintain the Victorian aesthetic: colour, honour, realise, behaviour, travelling.
+
+## Content Structure
+
+All content lives in `src/story/` and registers itself at import time. Import order matters in `src/story/World.ts` -- modules must come after their dependencies.
+
+### Registration
 
 | Function | What it registers |
 |----------|------------------|
-| `registerLocation(id, definition)` | Locations with links, activities, hooks |
-| `registerNPC(id, definition)` | NPCs with dialogue, schedules, scripts |
-| `registerCardDefinition(id, definition)` | Quests, effects, traits, tasks |
-| `registerItemDefinition(id, definition)` | Inventory items and clothing |
-| `registerFaction(id, definition)` | Factions with name, description, reputation list |
-| `registerReputation(id, definition)` | Reputation tracks with faction, colours |
-| `makeScript(name, fn)` | Single named script |
-| `makeScripts({ name: fn, ... })` | Multiple scripts at once |
+| `registerLocation(id, def)` | Locations with links, activities, hooks |
+| `registerNPC(id, def)` | NPCs with dialogue, schedules, scripts |
+| `registerCardDefinition(id, def)` | Quests, effects, traits, tasks |
+| `registerItemDefinition(id, def)` | Items and clothing |
+| `registerFaction(id, def)` | Factions with reputation tracks |
+| `makeScripts({...})` | Named scripts |
 
-## World.ts and Dependency Order
+### Naming Conventions
 
-`src/story/World.ts` imports all story modules. **Order matters** -- modules must be imported after anything they depend on:
-
-```typescript
-import './Effects'      // Effect definitions first
-import './items'        // Item definitions
-import './Utility'      // Shared utility scripts
-import './Start'        // Initial setup (depends on Effects, items)
-import './Subway'       // Transport network
-import './City'         // City locations (depends on Subway links)
-import './Market'       // Shops (depends on items)
-// ... more area modules
-```
+- **IDs**: kebab-case (`npc-barkeeper`, `blouse-silk`, `find-lodgings`)
+- **Script names**: camelCase (`enterTavern`, `onBuyDrink`)
 
 ## Locations
-
-### Definition
 
 ```typescript
 registerLocation('tavern', {
   name: 'The Rusty Cog',
   description: 'A smoky tavern filled with the clink of glasses.',
   image: '/images/tavern.jpg',
-  nightImage: '/images/tavern-night.jpg',    // Optional night variant
-  mainLocation: true,                         // Shows under "Travel" in nav
-  secret: true,                               // Starts undiscovered
+  nightImage: '/images/tavern-night.jpg',
+  mainLocation: true,       // Shows under "Travel"
+  secret: true,             // Starts undiscovered
 
-  links: [...],          // Navigation to other locations
-  activities: [...],     // Actions available here
+  links: [
+    { dest: 'city-centre', time: 10, travel: true },
+    { dest: 'back-alley', time: 2, checkAccess: (g) => g.hourOfDay < 6 ? 'Closed' : null },
+  ],
 
-  onFirstArrive: script, // First visit only
-  onArrive: script,      // Every visit
-  onRelax: script,       // When player rests
-  onWait: script,        // Each 10-min chunk during wait (can interrupt)
+  activities: [
+    { name: 'Have a drink', symbol: 'D', script: 'orderDrink', condition: (g) => g.hourOfDay >= 18 },
+  ],
+
+  onFirstArrive: seq('The door creaks...', discoverLocation('back-alley')),
+  onArrive: (g) => { g.add('The tavern is busy tonight.') },
+  onWait: (g) => { /* random events during wait */ },
 })
-```
-
-### Links
-
-Links define how locations connect. They appear in the navigation overlay.
-
-```typescript
-links: [
-  {
-    dest: 'city-centre',
-    time: 10,                    // Minutes to travel
-    label: 'Head to the city',   // Override destination name in nav
-    travel: true,                // Show under "Travel" instead of "Places"
-    cost: 3,                     // Krona cost (display hint)
-    imageLocation: 'city',       // Use different location's image for thumbnail
-    checkAccess: (game) => {
-      if (game.hourOfDay < 6) return 'The gates are closed at night'
-      return null                // null = access granted
-    },
-    onFollow: (game) => {
-      // Runs before travel -- can create a scene to cancel
-      game.add('You set off down the road...')
-    },
-  },
-]
-```
-
-### Activities
-
-Activities are actions available at a location, shown as thumbnails in the activity overlay.
-
-```typescript
-activities: [
-  {
-    name: 'Hang at Bar',
-    symbol: 'B',                 // Single character or short text
-    image: '/images/bar.jpg',    // Optional image
-    label: 'Have a drink',       // Display label (defaults to name)
-    condition: (game) => game.hourOfDay >= 18,  // When to show
-    script: (game) => {
-      game.run('wait', { minutes: 30 })
-      if (!game.inScene) {
-        game.add('You enjoy a quiet drink.')
-      }
-    },
-  },
-]
 ```
 
 ### Event Hooks
 
-- **`onFirstArrive`** -- Runs once on first visit. Good for discovery scenes.
-- **`onArrive`** -- Runs every visit. Good for ambient descriptions.
-- **`onRelax`** -- Runs when the player chooses to relax. Falls back to a generic message.
-- **`onWait`** -- Runs each 10-minute chunk during `wait()`. If it creates a scene (adds options), the wait stops. Good for ambient events.
+- **`onFirstArrive`** -- first visit only (discovery scenes)
+- **`onArrive`** -- every visit (ambient description)
+- **`onRelax`** -- player rests here
+- **`onWait`** -- each 10-minute chunk during `wait()`. Creates a scene to interrupt
 
 ## NPCs
 
-### Definition
+NPCs are significant, persistent non-player characters (usually named). 
+
+When writing for NPCs, be sure to tailor speech / behaviour to context (previous interactions, story events passed etc.) It may be useful to add helper functions / re-usable subsequences to npc.scripts.
 
 ```typescript
 registerNPC('barkeeper', {
   name: 'Martha',
-  uname: 'barkeeper',                       // Shown before name is learned
+  uname: 'barkeeper',
   description: 'A stout woman with...',
-  image: '/images/npcs/Martha.jpg',
-  speechColor: '#c49bd4',                    // Dialogue colour
+  image: '/images/npcs/martha.jpg',
+  speechColor: '#c49bd4',
 
-  generate: (game, npc) => {
-    npc.location = 'tavern'                  // Initial position
-  },
+  generate: (game, npc) => { npc.location = 'tavern' },
 
-  onFirstApproach: seq(                      // First conversation
+  onFirstApproach: seq(
     say('Welcome, stranger.'),
     learnNpcName(),
     option('Ask about the tavern', 'onAskTavern'),
     npcLeaveOption(),
   ),
 
-  onApproach: seq(                           // Subsequent conversations
+  onApproach: seq(
     say('Back again?'),
     option('Buy a drink', 'onBuyDrink'),
     npcLeaveOption(),
   ),
 
-  onMove: (game) => {                        // Called when hour changes
-    game.getNPC('barkeeper').followSchedule(game, [
-      [10, 23, 'tavern'],                   // 10am--11pm
-    ])
-  },
+  onMove: (g) => { g.getNPC('barkeeper').followSchedule(g, [[10, 23, 'tavern']]) },
 
-  onWait: (game) => {                        // During wait() if present
-    // Can create scene to interrupt wait
-  },
-
-  scripts: {                                 // NPC-specific interaction scripts
-    // Pure DSL -- simple interactions
+  scripts: {
+    // DSL -- simple interactions
     onBuyDrink: seq(
       say('What\'ll it be?'),
       option('Sweet wine (5 Kr)', 'onOrderWine'),
-      npcLeaveOption('Nothing, thanks.', 'Suit yourself.'),
+      npcLeaveOption('You change your mind.', 'Suit yourself.'),
     ),
 
-    // DSL -- random flavour with options
-    roomChat: seq(
-      random(
-        say('Have you seen the bathroom? Claw-footed tub!'),
-        say('The view from up here -- magnificent.'),
-      ),
-      option('Chat', 'roomChat'),
-      option('Leave', 'leaveRoom'),
-      npcLeaveOption(),
-    ),
-
-    // DSL -- multi-scene sequence (tour, date, etc.)
+    // DSL -- multi-scene sequence
     tour: scenes(
-      scene(
-        hideNpcImage(),
-        'You set off together.',
-        move('default'), timeLapse(15),
-        say('Here we are -- the heart of Aetheria.'),
-      ),
-      scene(
-        showNpcImage(),
-        say('I hope that helps!'),
-        npcLeaveOption('You thank him and he leaves.'),
-      ),
+      scene(hideNpcImage(), 'You set off together.', move('market', 15)),
+      scene(showNpcImage(), say('I hope that helps!'), npcLeaveOption()),
     ),
 
-    // Imperative -- complex logic with skill checks
+    // Imperative -- complex logic
     flirt: (game: Game) => {
       const npc = game.getNPC('barkeeper')
       if (npc.affection >= 30) {
-        game.run(addNpcStat('affection', 2, { npc: 'barkeeper', max: 40 }))
-        game.run(say('You\'re one of a kind, you know that?'))
-      } else {
-        game.run(addNpcStat('affection', 3, { npc: 'barkeeper', max: 30 }))
-        game.run(seq(
-          'You lean closer and compliment his ale selection.',
-          say('Oh! Well, I -- thank you.'),
-        ))
+        game.run(say('You\'re one of a kind.'))
       }
     },
   },
 })
 ```
 
-### Scheduling
-
-`followSchedule` takes an array of `[startHour, endHour, locationId]` tuples. It handles midnight wrap-around (e.g., `[22, 2, 'tavern']` means 10pm to 2am). NPCs not matching any schedule entry are set to `location = null` (not present anywhere).
-
 ### NPC Stats
 
-NPCs track relationship data automatically:
+Standard:
+- `npc.approachCount` -- auto-incremented on approach
+- `npc.nameKnown` -- set via `learnNpcName()`
+- `npc.affection` -- relationship, modified by scripts
 
-- `npc.approachCount` -- Incremented each time the player approaches
-- `npc.nameKnown` -- Set to 1 via `learnNpcName()` when the player learns their name
-- `npc.affection` -- Relationship value, modified by scripts
+NPCs may define custom stats, e.g. to record story advancement on a particular path
 
-### NPC-Specific Scripts
+### leaveOption
 
-Scripts in the `scripts` record can be **pure DSL** (Instructions), **imperative** (ScriptFn functions), or **mixed**. Use whatever fits the complexity:
-
-- **Pure DSL** (`seq(...)`, `scenes(...)`) -- for dialogue, sequences, and branching
-- **Imperative** (`(game: Game) => { ... }`) -- for skill checks, affection-gated logic, loops
-
-The `option()` DSL helper auto-resolves script names against the current scene NPC's scripts, so `option('Chat', 'onChat')` looks for the NPC's `onChat` script first, then falls back to the global registry.
-
-## Scripting
-
-Content can be authored using imperative TypeScript or the declarative DSL. Both produce the same result -- the DSL compiles to `[scriptName, params]` tuples.
-
-### Imperative Style
-
-Direct access to the game object. Best for complex logic:
+`npc.leaveOption(departureText?, npcReply?, label?)` -- departure text is narrated player action, reply goes through `npc.say()`:
 
 ```typescript
-makeScript('myScript', (game, params) => {
-  if (game.player.countItem('crown') >= 10) {
-    game.add('You can afford it.')
-    game.addOption('buy', {}, 'Buy')
-  } else {
-    game.add('You can\'t afford it.')
-  }
-  game.addOption('endScene', {}, 'Leave')
+npc.leaveOption('You tell her you\'ll come back later.', 'Do come again.')
+```
+
+## Quests and Effects
+
+See [CARDS.md](./CARDS.md). Quick example:
+
+```typescript
+registerCardDefinition('find-lodgings', {
+  name: 'Find Lodgings',
+  type: 'Quest',
+  afterUpdate: (game) => {
+    if (game.currentLocation === 'bedroom') game.completeQuest('find-lodgings')
+  },
 })
 ```
 
-### Declarative DSL
+## Items and Clothing
 
-JSON-serialisable instructions. Best for narrative sequences. Plain strings are auto-wrapped in `text()`:
-
-```typescript
-seq(
-  'You enter the room.',          // String auto-wrapped to text()
-  when(hasItem('key'), 'The door is unlocked!'),
-  say('Welcome.'),
-  option('Ask about the key', 'onAskKey'),
-  npcLeaveOption('You nod and leave.', 'Goodbye.'),
-)
-```
-
-### DSL Reference
-
-#### Content
-
-| Helper | Purpose |
-|--------|---------|
-| `text(...parts)` | Add narrative text. Parts can be strings or Instructions (`playerName()`, `npcName()`) |
-| `say(...parts)` | NPC dialogue in the scene NPC's speech colour. Same part types as `text()` |
-| `playerName()` | Inline player name (for use inside `text()` or `say()`) |
-| `npcName(npcId?)` | Inline NPC name with speech colour (uses scene NPC if omitted) |
-| `paragraph(...content)` | Formatted paragraph with optional `hl()` highlights |
-| `option(label, script?, params?)` | Fire-and-forget button — runs a script, no automatic return |
-| `npcLeaveOption(text?, reply?, label?)` | Standard conversation exit |
-| `npcInteract(script, params?)` | Run a named script on the scene NPC |
-
-#### Control Flow
-
-| Helper | Purpose |
-|--------|---------|
-| `seq(...elements)` | Execute in sequence. Strings become `text()` |
-| `when(condition, ...then)` | Conditional block. Then elements can be strings |
-| `unless(condition, ...then)` | Inverted conditional |
-| `cond(condition, then, condition, then, ..., default?)` | Multi-branch (Lisp-style) |
-| `random(...children)` | Pick one at random. Strings become `text()` |
-| `skillCheck(skill, difficulty, onSuccess?, onFailure?)` | Stat roll. Callbacks are single elements (use `seq()` to group) |
-
-#### Scene Composition
-
-| Helper | Purpose |
-|--------|---------|
-| `scenes(...pages)` | Multi-page sequence with auto Continue buttons |
-| `scene(...elements)` | Group elements into a single page (compiles to `seq()`) |
-| `branch(label, ...elements)` | Story choice with auto-resume. Use `scenes()` for multi-page branches |
-| `choice(...branches, ...epilogue)` | Branches with shared ending instructions |
-| `gatedBranch(condition, label, ...elements)` | Branch that only appears when condition is met |
-
-#### Actions
-
-| Helper | Purpose |
-|--------|---------|
-| `move(location, minutes?)` | Instant teleport (optionally advance time after) |
-| `go(location, minutes?)` | Travel with link checks, time, and arrival hooks |
-| `timeLapse(minutes)` | Advance time |
-| `timeLapseUntil(hourOfDay)` | Advance to specific hour (e.g. `10.25` for 10:15am) |
-| `setNpc(npcId)` | Set scene NPC for speech colour |
-| `hideNpcImage()` / `showNpcImage()` | Toggle NPC portrait |
-| `learnNpcName()` | Mark scene NPC's name as known |
-| `addItem(item, count?)` | Give item to player |
-| `removeItem(item, count?)` | Take item from player |
-| `addStat(stat, change, options?)` | Modify stat (options: `max`, `min`, `chance`, `hidden`) |
-| `addNpcStat(stat, change, options?)` | Modify NPC stat (options: `npc`, `max`, `min`, `hidden`). Uses scene NPC if `npc` omitted |
-| `moveNpc(npc, location)` | Move an NPC (pass `null` to clear) |
-| `recordTime(timer)` | Store current time for cooldowns |
-| `discoverLocation(location, text?, colour?)` | Reveal a hidden location |
-| `addQuest(questId, args?)` | Add quest card |
-| `completeQuest(questId)` | Mark quest complete |
-| `addEffect(effectId, args?)` | Add effect card |
-| `eatFood(quantity)` | Set lastEat timer and reduce hunger |
-| `saveOutfit(name)` | Save current worn items for later restoration |
-| `wearOutfit(name, { delete? })` | Restore a saved outfit. `delete: true` removes the save afterwards |
-| `changeOutfit(items)` | Strip all and wear a list of items |
-
-#### Predicates
-
-| Helper | Purpose |
-|--------|---------|
-| `hasItem(item, count?)` | Check inventory |
-| `hasStat(stat, min?, max?)` | Check stat range |
-| `inLocation(location)` | Check current location |
-| `inScene()` | Check if scene has options |
-| `npcStat(stat, options?)` | Check NPC stat (options: `npc`, `min`, `max`). Defaults to scene NPC, stat > 0 |
-| `hasCard(cardId)` | Check for card |
-| `cardCompleted(cardId)` | Check quest completion |
-| `locationDiscovered(location)` | Check if location is discovered |
-| `hourBetween(from, to)` | Check time of day (supports wrap-around) |
-| `timeElapsed(timer, minutes)` | Check cooldown |
-| `debug()` | True when debug mode is enabled |
-| `not(pred)` / `and(...preds)` / `or(...preds)` | Logic combinators |
-
-## Multi-Scene Sequences
-
-The `scenes()` helper chains multiple pages with automatic Continue buttons. Use `scene()` to group elements into readable pages (it compiles to `seq()`). Plain strings auto-wrap to `text()`:
+See [CLOTHING.md](./CLOTHING.md). Quick example:
 
 ```typescript
-scripts: {
-  tour: scenes(
-    scene(
-      hideNpcImage(),
-      'You set off together through the crowded streets.',
-      move('default'), timeLapse(15),
-      say('Here we are -- the heart of Aetheria.'),
-    ),
-    scene(
-      discoverLocation('school'),
-      move('school'), timeLapse(15),
-      say('The University -- you\'ll study here.'),
-    ),
-    scene(
-      showNpcImage(),
-      say('I hope that helps!'),
-      addNpcStat('affection', 1, { hidden: true }),
-      npcLeaveOption('You thank Rob and he leaves.'),
-    ),
-  ),
-}
+registerItemDefinition('blouse-silk', extendItem('base-top', {
+  name: 'silk blouse',
+  description: 'A fine silk blouse with mother-of-pearl buttons.',
+  calcStats: (player) => { player.modifyStat('Charm', 3) },
+}))
 ```
 
-Each page runs its instructions, then a Continue button is added if more pages follow. If a page adds its own options (like `npcLeaveOption`), no Continue button is added.
+## Stat Gains from Events
 
-### Branching Within Scenes
+Be sparing with stat gains from repeatable events:
 
-Use `branch()` inside a scene page to offer player choices. When a scene contains branches, the outer `scenes()` sequence resumes after the chosen branch completes:
+- **Chance**: `0.3--0.5` for most random event gains
+- **Amount**: +1 typical; +2 only for significant interactions
+- **Max cap**: `max: 35--40` from random encounters. Story quests and training reach higher
+- **Mood/meters**: Cap at `85--90` from passive activities
 
 ```typescript
-scenes(
-  scene(
-    say('I\'m glad you came tonight.'),
-    'He moves a little closer on the bench.',
-  ),
-  scene(
-    say('It\'s nicer with company.'),
-    branch('Lean against him',
-      'You lean into his shoulder. He relaxes.',
-      addNpcStat('affection', 3, { max: 45 }),
-      say('This is... really nice.'),
-    ),
-    branch('Stay where you are',
-      'You keep a comfortable distance.',
-      say('It\'s peaceful here, isn\'t it?'),
-    ),
-  ),
-  scene(
-    'You sit together in the quiet.',
-    say('I had a lovely time tonight.'),
-  ),
-)
+addStat('Flirtation', 1, { max: 35, chance: 0.4 })
 ```
 
-The final scene runs after whichever branch the player picks. Threading happens automatically -- authors don't need to manage it.
+### Skill Check Difficulty
 
-For **multi-page branches**, wrap the content in `scenes()`:
-
-```typescript
-branch('Go to the hidden garden', scenes(
-  scene(
-    hideNpcImage(),
-    'Rob leads you along a narrow path.',
-    move('lake', 10),
-  ),
-  scene(
-    showNpcImage(),
-    'You step into a hidden garden.',
-    say('I\'ve never shown anyone before.'),
-    addNpcStat('affection', 3, { max: 50 }),
-  ),
-))
-```
-
-### Choices with Shared Epilogue
-
-When multiple branches share ending instructions, use `choice()` to avoid duplicating them:
-
-```typescript
-// Without choice(): endDate() duplicated in every branch
-branch('Kiss him', 'You kiss.', endDate()),
-branch('Not tonight', 'You decline.', endDate()),
-
-// With choice(): endDate() written once
-choice(
-  branch('Kiss him', 'You kiss.'),
-  branch('Not tonight', 'You decline.'),
-  endDate(),  // shared -- runs at the end of whichever branch is chosen
-)
-```
-
-Branches become player options; non-branch instructions form the shared epilogue, merged into the **last page** of each branch (no extra Continue click). Convention: list branches first, then epilogue instructions.
-
-### Conditional Branches
-
-Use `gatedBranch()` to show an option only when a condition is met. If the condition is false at runtime, the option simply doesn't appear:
-
-```typescript
-choice(
-  gatedBranch(npcStat('affection', { min: 35 }),
-    'Go to the hidden garden', scenes(...gardenPath())),
-  branch('Walk to the pier', scenes(...pierPath())),
-  endDate(),
-)
-```
-
-`gatedBranch()` works inside `choice()` -- the shared epilogue is threaded through correctly.
-
-For complex branching, the alternative is `cond()` with explicit `seq()` blocks:
-
-```typescript
-scene(
-  say('Shall we walk a bit further?'),
-  cond(
-    npcStat('affection', { min: 35 }),
-    seq(
-      'He hesitates, then lowers his voice.',
-      say('There\'s a place I\'ve never shown anyone...'),
-      branch('Go to the hidden garden', robGardenPath()),
-      branch('Stick to the pier', robPierPath()),
-    ),
-    seq(
-      say('The pier\'s lovely at night. Come on.'),
-      branch('Walk to the pier', robPierPath()),
-    ),
-  ),
-)
-```
-
-### Helper Functions for Branching Paths
-
-For date scenes with multiple routes, extract paths into functions. Complete paths return `Instruction` (a `scenes()` call); shared fragments return `Instruction[]` for spreading:
-
-```typescript
-/** Complete path — returns scenes() directly. */
-function robPierPath(): Instruction {
-  return scenes(
-    scene(hideNpcImage(), 'You follow the lakeside path.', move('pier', 10)),
-    scene(showNpcImage(), say('I brought you something.')),
-    ...robWalkHome(),  // spread shared fragment
-  )
-}
-
-/** Shared fragment — returns Instruction[] for spreading. */
-function robWalkHome(): Instruction[] {
-  return [
-    scene(hideNpcImage(), 'Rob walks you home.', move('backstreets', 20)),
-    scene(showNpcImage(), say('I had a lovely time tonight.'), endDate()),
-  ]
-}
-```
-
-Complete paths pass directly to `branch()` — no wrapping needed:
-
-### Repeatable Menus
-
-Use `menu()` to present a set of options that the player can choose from repeatedly. Non-exit branches loop back to re-present the menu after their content plays out. Exit branches break out of the loop.
-
-```typescript
-text('He settles beside you. The evening stretches ahead.'),
-menu(
-  branch('Kiss him',
-    random('The kiss is slow and deliberate...', 'He cups your face...'),
-    addStat('Arousal', 5, { max: 100 }),
-  ),
-  branch('Have a drink',
-    random('He refills your glass...', 'He produces champagne...'),
-    run('consumeAlcohol', { amount: 20 }),
-  ),
-  branch('Chat',
-    random('He tells you about his travels...', 'You talk about Aetheria...'),
-    addStat('Charm', 1, { max: 40, chance: 0.3 }),
-  ),
-  exit('Call it a night',
-    'You tell him you should go. He walks you to the door.',
-    move('hotel'),
-  ),
-)
-```
-
-Gate menu entries with `when()` — conditions are **re-evaluated each time** the menu is shown, so options can appear or disappear based on changing game state:
-
-```typescript
-menu(
-  when(hasStat('Flirtation', 20),
-    branch('Kiss him', ...),
-  ),
-  branch('Have a drink', ...),
-  when(hasStat('Arousal', 50),
-    exit('Things escalate...', ...),
-  ),
-  exit('Leave', ...),
-)
-```
-
-Between each action, the player sees a "Continue" button before the menu reappears.
-
-### Quick Reference
-
-| Helper | Returns | Purpose |
-|--------|---------|---------|
-| `scenes(...pages)` | `Instruction` | Multi-page sequence with Continue buttons |
-| `scene(...elements)` | `Instruction` | Group elements into a single page (alias for `seq`) |
-| `branch(label, ...elements)` | `Instruction` | Story choice with auto-resume (use `scenes()` for multi-page) |
-| `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
-| `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
-| `menu(...entries)` | `Instruction` | Repeatable choice loop (`branch` loops, `exit` breaks) |
-| `exit(label, ...elements)` | `Instruction` | Terminal branch inside `menu()` |
-| `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
-
-## Patterns
-
-### Costume Changes
-
-Save and restore outfits when a scene temporarily changes the player's clothes:
-
-```typescript
-// Save before changing
-saveOutfit('_before-pool'),
-changeOutfit(['bikini-top', 'bikini-bottom']),
-
-// Restore when leaving (delete: true cleans up the save)
-wearOutfit('_before-pool', { delete: true }),
-```
-
-Convention: prefix temporary saves with `_` to distinguish them from player-created outfits.
-
-For locations where the player can change manually (not during a scripted scene), use activity scripts with conditions:
-
-```typescript
-activities: [
-  {
-    name: 'Change into Swimwear',
-    condition: (g) => g.player.hasItem('bikini-top') && !g.player.getWornItems().some(i => i.id === 'bikini-top'),
-    script: (g) => {
-      g.player.saveOutfit('_before-pool')
-      g.player.stripAll()
-      g.player.wearItem('bikini-top')
-      g.player.wearItem('bikini-bottom')
-      g.player.calcStats()
-    },
-  },
-  {
-    name: 'Get Dressed',
-    condition: (g) => !!g.player.outfits['_before-pool'],
-    script: (g) => {
-      g.player.wearOutfit('_before-pool')
-      g.player.deleteOutfit('_before-pool')
-      g.player.calcStats()
-    },
-  },
-]
-```
-
-### Parameterised Scenes
-
-Extract reusable scene fragments that accept parameters. This avoids duplicating shared logic and prevents scene stack pollution:
-
-```typescript
-// Farewell varies by path — pass it as a parameter
-function kissAttempt(farewell: Instruction): Instruction {
-  return choice(
-    branch('Let him',
-      skillCheck('Flirtation', 30,
-        seq('The kiss lands.', roomInvite()),
-        seq('Awkward moment.', farewell),
-      ),
-    ),
-    branch('Turn away', 'You step back.', farewell),
-  )
-}
-
-// Each path provides its own farewell
-function gardenPath(): Instruction {
-  return seq(patronMenu(), kissAttempt(gardenFarewell()))
-}
-
-function poolPath(): Instruction {
-  return seq(patronMenu(), kissAttempt(poolFarewell()))
-}
-```
-
-This pattern is preferable to pushing cleanup logic onto the scene stack, where it can leak across unrelated scenes.
-
-### Skill Check Difficulty Tuning
-
-For skills that matter across the game, set difficulty to create a meaningful progression curve. The formula is `Charm + Skill - Difficulty`:
+Formula: `Charm + Skill - Difficulty`. Set difficulty to create meaningful progression:
 
 | Difficulty | Early (C10 S5) | Mid (C25 S20) | Late (C40 S60) |
 |------------|----------------|----------------|-----------------|
@@ -661,7 +265,7 @@ For skills that matter across the game, set difficulty to create a meaningful pr
 | 30 | ~0% | ~15% | ~70% |
 | 40 | ~0% | ~5% | ~60% |
 
-Gate the option itself with `hasStat` to prevent zero-skill attempts:
+Gate the option itself to prevent zero-skill attempts:
 
 ```typescript
 gatedBranch(hasStat('Flirtation', 1), 'Flirt back',
@@ -669,358 +273,77 @@ gatedBranch(hasStat('Flirtation', 1), 'Flirt back',
 )
 ```
 
-## Writing Guidelines
-
-Rules for authoring narrative content and random events.
-
-### Agency and Escalation
-
-When writing romantic or social escalation, the **NPC should drive the escalation** and the **player chooses how to respond**. Frame choices as resistance/acceptance rather than player-initiated pursuit:
-
-```typescript
-// BAD — player initiates
-exit('Make your move', 'You lean in and kiss him.')
-
-// GOOD — NPC initiates, player responds
-exit('Stay a while longer...',
-  'He turns to face you and brushes a strand of hair from your face.',
-  '"I\'ve been wanting to do this all evening," he murmurs, and leans in.',
-  choice(
-    branch('Let him', skillCheck('Flirtation', 30, ...)),
-    branch('Turn away', 'You put a gentle hand on his chest.'),
-  ),
-)
-```
-
-This creates a "do you resist temptation" dynamic rather than a goal-oriented pursuit.
-
-### Player Speech
-
-Never write the player's dialogue directly. Always narrate what the player says in third person:
-
-```
-// BAD — puts words in the player's mouth
-text('"Perhaps I\'m exactly who you\'d want to meet," you say.')
-
-// GOOD — narrates the player's action
-text('You hold his gaze and let a slow smile play across your lips.')
-text('You steer the conversation to safer waters.')
-text('You decline with a polite smile.')
-```
-
-### Anonymous NPCs
-
-Do not give names to random encounter NPCs (e.g. bar patrons, passers-by, market vendors). Named NPCs imply a relationship the player can return to. If the same event fires twice, a named stranger feels absurd. Use descriptions instead:
-
-```
-// BAD — named stranger in a repeatable event
-text('"I\'m Edmund," he says.')
-
-// GOOD — anonymous, works on repeat
-text('A well-dressed man in a tailored waistcoat slides onto the stool beside you.')
-text('A gentleman with silver-streaked hair takes the neighbouring seat.')
-```
-
-Use `random()` to vary the stranger's description so repeat encounters feel fresh.
-
-### Repeatability
-
-Consider whether an interaction makes sense if it fires multiple times. Random events will repeat — the player may sit at the same bar dozens of times. Design accordingly:
-
-- Use `random()` for varied opening descriptions, dialogue, and flavour text
-- Avoid one-off revelations or unique items in repeatable events
-- Don't reference previous occurrences of the same event ("back again?")
-- For truly one-off events, gate them with a card, timer, or flag
-
-### Randomness and Variety
-
-Add variety through multiple layers:
-
-```typescript
-// Vary the approach
-random(
-  text('A gentleman in a velvet jacket takes the neighbouring stool.'),
-  text('A broad-shouldered man with silver cufflinks settles beside you.'),
-  text('A man in an impeccable suit catches the barman\'s eye.'),
-)
-
-// Vary the conversation
-random(
-  text('The conversation turns to the city\'s theatre scene.'),
-  text('He mentions a new exhibition at the museum.'),
-)
-```
-
-Also vary which options are available using `gatedBranch()` or `when()` so the player sees different choices depending on their stats or circumstances.
-
-### Stat Gains from Random Events
-
-Be sparing with stat gains from repeatable events. Set appropriate maximums to prevent grinding:
-
-```typescript
-// GOOD — low gain, low chance, capped well below endgame values
-addStat('Flirtation', 1, { max: 35, chance: 0.4 })
-
-// BAD — high gain, no cap, guaranteed
-addStat('Flirtation', 5)
-```
-
-Guidelines:
-- **Chance**: Use `chance: 0.3–0.5` for most random event gains
-- **Amount**: +1 per event is typical; +2 only for significant interactions
-- **Max cap**: Set `max` to prevent stats being grindable past ~35–40 from random bar encounters. Story quests and dedicated training should be the path to higher stats
-- **Mood/meters**: Cap at 85–90 from passive activities (the last stretch should require real effort)
-
 ### Event Trigger Rates
 
-For `onWait` hooks (fire every 10-minute chunk during `wait()`):
+For `onWait` hooks (fire every 10-minute chunk):
 
-- **10–15%**: Ambient flavour text (doesn't interrupt the wait)
-- **15–25%**: Minor encounters (interrupts wait, creates a scene)
+- **10--15%**: Ambient flavour (doesn't interrupt)
+- **15--25%**: Minor encounters (creates a scene)
 - **< 10%**: Significant events with lasting consequences
 
-A 30-minute wait processes 3 chunks, so a 20% trigger chance gives roughly a 50% chance of firing at least once per wait.
+## Patterns
 
-### Exemplar: Hotel Bar Patron (`src/story/Hotel.ts`)
+### Costume Changes
 
-The bar patron encounter demonstrates most DSL features working together in a complete random event. Use it as a reference:
-
-- **Random encounter trigger**: `onWait` with 20% chance per chunk
-- **Anonymous NPC**: varied descriptions via `random()`, no name
-- **Branching flow**: `scenes()` → `choice()` → `branch()` with nested `scenes()`
-- **Skill gating**: `gatedBranch(hasStat('Flirtation', 1), ...)` prevents zero-skill attempts
-- **Skill checks with progression**: `skillCheck('Flirtation', 20)` for flirting, difficulty 30 for kissing
-- **Repeatable menus**: garden/pool/Room 533 use `menu()` with `branch()` + `exit()`
-- **Costume changes**: pool path uses `saveOutfit`/`changeOutfit`/`wearOutfit` with `_before-pool`
-- **Parameterised farewell**: `patronKissAttempt(farewell)` accepts path-specific cleanup
-- **NPC-initiates escalation**: patron leans in, player responds with "Let him" / "Turn away"
-
-## Items
-
-### Clothing Items
-
-Extend a base template to inherit position/layer settings:
+Save/restore outfits when a scene changes the player's clothes:
 
 ```typescript
-import { registerItemDefinition, extendItem } from '../model/Item'
-
-registerItemDefinition('blouse-silk', extendItem('base-top', {
-  name: 'silk blouse',
-  description: 'A fine silk blouse with mother-of-pearl buttons.',
-  calcStats: (player) => {
-    player.modifyStat('Charm', 3)
-  },
-}))
+saveOutfit('_before-pool'),
+changeOutfit(['bikini-top', 'bikini-bottom']),
+// ... scene content ...
+wearOutfit('_before-pool', { delete: true }),
 ```
 
-See [CLOTHING.md](./CLOTHING.md) for the full list of base templates and the position/layer system.
+Prefix temporary saves with `_` to distinguish from player-created outfits. Ensure **every exit path** restores.
 
-### Consumables
+### Parameterised Scenes
+
+When branching paths share logic but differ in cleanup, extract the shared structure:
 
 ```typescript
-registerItemDefinition('healing-tea', {
-  name: 'healing tea',
-  category: 'Consumables',
-  stackable: true,
-  onConsume: (game) => {
-    game.run('addStat', { stat: 'Energy', change: 20 })
-  },
-})
-```
-
-### Components and Other Items
-
-```typescript
-registerItemDefinition('brass-cog', {
-  name: 'brass cog',
-  category: 'Components',
-  stackable: true,
-  description: 'A small brass cogwheel.',
-})
-```
-
-### Item File Organisation
-
-Items are organised by body area in `src/story/items/`:
-
-```
-items/
-├── index.ts            # Central import
-├── base-templates.ts   # Base garment types (positions/layers)
-├── torso.ts            # Blouses, shirts, vests
-├── legwear.ts          # Skirts, trousers
-├── dresses.ts          # Full dresses
-├── footwear.ts         # Boots, shoes, stockings
-├── outerwear.ts        # Jackets, corsets, coats
-├── headwear.ts         # Hats, masks, eyewear
-├── accessories.ts      # Jewellery, belts, gloves
-├── undergarments.ts    # Bras, panties, chemises
-├── components.ts       # Mechanical parts
-└── special.ts          # School uniforms, cursed items
-```
-
-## Quests
-
-Quests are cards with an `afterUpdate` hook that checks completion conditions after every action:
-
-```typescript
-registerCardDefinition('find-lodgings', {
-  name: 'Find Lodgings',
-  description: 'Check into your lodgings in the backstreets.',
-  type: 'Quest',
-  afterUpdate: (game) => {
-    if (game.currentLocation === 'bedroom') {
-      game.completeQuest('find-lodgings')
-    }
-  },
-})
-
-// Add the quest during gameplay:
-game.addQuest('find-lodgings')
-```
-
-Quests can also fail:
-
-```typescript
-afterUpdate: (game) => {
-  const quest = game.player.cards.find(c => c.id === 'attend-university')
-  if (!quest || quest.completed || quest.failed) return
-
-  if (game.date >= deadline && !attended) {
-    quest.failed = true
-    game.add({ type: 'text', text: 'You missed the deadline.', color: '#ef4444' })
-  }
+function kissAttempt(farewell: Instruction): Instruction {
+  return choice(
+    branch('Let him', skillCheck('Flirtation', 30, successPath, seq(awkwardText, farewell))),
+    branch('Turn away', rejectionText, farewell),
+  )
 }
+
+gardenPath() → kissAttempt(gardenFarewell())
+poolPath()   → kissAttempt(poolFarewell())
 ```
 
-See [CARDS.md](./CARDS.md) for the full card system documentation.
+### Repeatable Menus
 
-## Effects
-
-Effects are cards with `onTime` and `calcStats` hooks:
+`menu()` loops until an `exit()` branch is chosen. Gate entries with `when()` -- conditions re-evaluate each display:
 
 ```typescript
-registerCardDefinition('intoxicated', {
-  name: 'Intoxicated',
-  type: 'Effect',
-  color: '#9333ea',
-  onTime: (game, card, seconds) => {
-    // Tick down over time, self-remove when expired
-  },
-  calcStats: (player, card) => {
-    // Apply stat bonuses/penalties based on card state
-  },
-})
-```
-
-See [CARDS.md](./CARDS.md) for full examples.
-
-## Shops
-
-Define a shop as an array of item/price pairs and activate it via a script:
-
-```typescript
-const SHOP_ITEMS: ShopItemEntry[] = [
-  { itemId: 'blouse-white', price: 20 },
-  { itemId: 'dress-evening', price: 80 },
-]
-
-makeScripts({
-  enterMyShop: (game) => {
-    game.scene.shop = {
-      name: "The Boutique",
-      npcId: 'shopkeeper',      // Optional -- shows NPC portrait
-      items: SHOP_ITEMS,
-    }
-  },
-})
-```
-
-The shop UI handles purchasing automatically (deducts Krona, adds item to inventory).
-
-## Common Gating Patterns
-
-### By Stats or Skills
-
-```typescript
-// DSL predicate
-when(hasStat('Charm', 30), option('Flatter', 'onFlatter'))
-
-// Skill check with success/failure branches (use seq() for multiple elements)
-skillCheck('Flirtation', 20,
-  say('You charm them effortlessly.'),
-  say('Your attempt falls flat.'),
+menu(
+  branch('Kiss him', random('The kiss is slow...', 'He cups your face...')),
+  branch('Have a drink', run('consumeAlcohol', { amount: 20 })),
+  when(hasStat('Arousal', 50), exit('Things escalate...', escalationContent)),
+  exit('Call it a night', 'You tell him you should go.'),
 )
 ```
 
-### By Items
+## Exemplar: Hotel Bar Patron
 
-```typescript
-when(hasItem('room-key'), text('You unlock the door.'))
-```
+`src/story/Hotel.ts` demonstrates most features working together in a complete random event:
 
-### By Time of Day
-
-```typescript
-// Activity condition
-condition: (game) => game.hourOfDay >= 21
-
-// Link access
-checkAccess: (game) => game.hourOfDay < 7 ? 'Closed at night' : null
-```
-
-### By Quest State
-
-```typescript
-when(cardCompleted('find-lodgings'), text('You feel settled in.'))
-when(not(hasCard('main-quest')), addQuest('main-quest'))
-```
-
-### By NPC Relationship
-
-```typescript
-// Imperative
-if (npc.affection >= 20) {
-  npc.say('I trust you enough to tell you...')
-}
-
-// DSL
-when(npcStat('affection', { npc: 'barkeeper', min: 10 }), option('Ask a favour', 'onFavour'))
-```
-
-### By Cooldown Timer
-
-```typescript
-// Record a timer
-recordTime('lastMeal')
-
-// Gate on elapsed time
-when(timeElapsed('lastMeal', 360), text('You feel hungry.'))
-```
-
-## Images and Assets
-
-All image paths should be absolute from the project root and passed through `assetUrl()` in components. In content definitions, just use the path string:
-
-```typescript
-image: '/images/locations/tavern.jpg'
-```
-
-## Naming Conventions
-
-- **IDs**: kebab-case (`npc-barkeeper`, `blouse-silk`, `find-lodgings`)
-- **Script names**: camelCase (`enterTavern`, `onBuyDrink`)
-- **Text**: British/International English to maintain the Victorian aesthetic
+- **Random trigger**: `onWait` with 20% chance per chunk
+- **Anonymous NPC**: varied descriptions via `random()`
+- **Branching**: `scenes()` → `choice()` → `branch()` with nested `scenes()`
+- **Skill gating**: `gatedBranch(hasStat('Flirtation', 1), ...)`
+- **Repeatable menus**: garden/pool/room use `menu()` with `branch()` + `exit()`
+- **Costume changes**: pool path with `saveOutfit`/`changeOutfit`/`wearOutfit`
+- **Parameterised farewell**: `patronKissAttempt(farewell)` with path-specific cleanup
+- **NPC-initiates escalation**: patron leans in, player responds
 
 ## Key Source Files
 
 | File | Purpose |
 |------|---------|
 | `src/story/World.ts` | Central import point (dependency order) |
-| `src/story/Start.ts` | Game initialisation, tutorial quests |
-| `src/story/Effects.ts` | Effect card definitions |
+| `src/model/ScriptDSL.ts` | DSL helper functions |
+| `src/model/Scripts.ts` | Core scripts and registry |
+| `src/story/Hotel.ts` | Exemplar: random events, branching, menus |
 | `src/story/items/` | Item and clothing definitions |
-| `src/story/Market.ts` | Shop inventories and shopkeeper NPCs |
-| `src/story/[Area].ts` | Location-specific content (City, Tavern, School, etc.) |
-| `src/model/ScriptDSL.ts` | All DSL helper functions |
-| `src/model/Scripts.ts` | Core scripts and script registry |

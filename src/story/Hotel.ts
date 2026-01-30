@@ -415,7 +415,7 @@ function patronOuting(): Instruction {
         ),
       ),
       branch('Decline gracefully',
-        text('You smile but shake your head. "I think I\'ll stay here. But thank you — for the drink, and the conversation."'),
+        text('You smile but shake your head. You tell him you\'ll stay here, but thank him for the drink and the conversation.'),
         text('He nods, not offended. "The pleasure was entirely mine." He settles his bill and leaves you to the quiet hum of the bar.'),
         addStat('Mood', 2, { max: 85 }),
       ),

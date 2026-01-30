@@ -403,10 +403,10 @@ registerNPC('spice-dealer', {
       const elvis = g.npcs.get('elvis-crowe')
       g.add('You lean in conspiratorially.')
       if ((jonny?.nameKnown ?? 0) > 0) {
-        g.npc.option('"I know Jonny Elric"', 'bragJonny')
+        g.npc.option('Mention Jonny Elric', 'bragJonny')
       }
       if ((elvis?.nameKnown ?? 0) > 0) {
-        g.npc.option('"I know Elvis Crowe"', 'bragElvis')
+        g.npc.option('Mention Elvis Crowe', 'bragElvis')
       }
       g.npc.leaveOption('You think better of it.')
     },
@@ -509,9 +509,9 @@ function timmyDateScene(): Instruction[] {
     ),
     scene(
       showNpcImage(),
-      say('"Right. So. I thought I\'d show you my Lowtown. The real one — not the version the constables see."'),
+      say('Right. So. I thought I\'d show you my Lowtown. The real one — not the version the constables see.'),
       'He leads you down a narrow passage between two leaning buildings. The brickwork is damp and the air smells of iron and old smoke.',
-      say('"This is where I started. Slept rough here for three months after I lost the docks job. Cold as anything, but nobody bothers you."'),
+      say('This is where I started. Slept rough here for three months after I lost the docks job. Cold as anything, but nobody bothers you.'),
     ),
     scene(
       hideNpcImage(),
@@ -521,28 +521,28 @@ function timmyDateScene(): Instruction[] {
     scene(
       showNpcImage(),
       'You emerge onto a flat rooftop. The city stretches out below — smokestacks and spires, gaslight and shadow. It\'s beautiful in a broken kind of way.',
-      say('"Best view in Lowtown. Nobody comes up here but me."'),
+      say('Best view in Lowtown. Nobody comes up here but me.'),
       branch('It\'s beautiful',
         'You stand at the edge, taking it all in. Timmy watches you watch the city.',
-        say('"Yeah. It is. I come up here when things get... you know. Too much."'),
+        say('Yeah. It is. I come up here when things get... you know. Too much.'),
         addNpcStat('affection', 5, { max: 50 }),
       ),
       branch('You come here alone?',
-        say('"Always. Well. Until now."'),
+        say('Always. Well. Until now.'),
         'He looks away, embarrassed by his own honesty.',
         addNpcStat('affection', 3, { max: 50 }),
       ),
     ),
     scene(
       'You sit on the rooftop edge together, legs dangling over the alley below. The city hums and clanks beneath you.',
-      say('"I know what people think of me. Shady Timmy, the spice bloke. But I look after people. The ones nobody else gives a toss about."'),
+      say('I know what people think of me. Shady Timmy, the spice bloke. But I look after people. The ones nobody else gives a toss about.'),
       branch('I know you do',
-        say('"You... you really think so?"'),
+        say('You... you really think so?'),
         'His mechanical hand reaches toward yours, hesitates, then withdraws.',
         addNpcStat('affection', 5, { max: 55 }),
       ),
       branch('That\'s what you tell yourself',
-        say('"Maybe. But it\'s true. You don\'t see what I see down here."'),
+        say('Maybe. But it\'s true. You don\'t see what I see down here.'),
         'His expression hardens, but only for a moment.',
         addNpcStat('affection', 2, { max: 55 }),
       ),
@@ -550,9 +550,9 @@ function timmyDateScene(): Instruction[] {
     scene(
       showNpcImage(),
       'Timmy walks you back down to the street. The gas lamps cast long shadows.',
-      say('"Thanks for... you know. Coming. I don\'t really do this."'),
+      say('Thanks for... you know. Coming. I don\'t really do this.'),
       'His mechanical hand clicks softly as he gives an awkward wave.',
-      npcLeaveOption('"Night. Be safe out there."'),
+      npcLeaveOption('Night. Be safe out there.'),
       endDate(),
     ),
   ]

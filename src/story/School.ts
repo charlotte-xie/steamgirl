@@ -224,8 +224,8 @@ const socialiseCourtyard: Instruction[] = [
 // Scene 1: Start induction at university grounds
 const universityInduction: Instruction[] = [
   text('You approach the university administration office, where a stern-looking administrator with mechanical spectacles reviews your acceptance letter.'),
-  say('"Ah, you\'re the new student," she says, her voice carrying the precision of well-oiled gears. "Welcome to the University of Aetheria. Your induction begins now."'),
-  say('"Follow me, and I\'ll show you the facilities." She leads you through the grand entrance.'),
+  say('Ah, you\'re the new student. Welcome to the University of Aetheria. Your induction begins now.'),
+  text('She leads you through the grand entrance.'),
   discoverLocation('hallway'),
   option('Follow the Administrator', 'inductionHallway'),
 ]
@@ -234,7 +234,7 @@ const universityInduction: Instruction[] = [
 const inductionHallway: Instruction[] = [
   move('hallway'),
   text('You step into the university hallways. The corridors stretch before you, lined with brass fixtures and mechanical displays.'),
-  say('"These are the main hallways," the administrator explains. "They connect all the important areas of the university."'),
+  say('These are the main hallways. They connect all the important areas of the university.'),
   text('As you walk, you notice the intricate clockwork mechanisms embedded in the walls, the gentle hum of steam pipes, and the scholarly atmosphere that permeates every corner.'),
   option('Continue the Tour', 'inductionGreatHall'),
 ]
@@ -243,7 +243,7 @@ const inductionHallway: Instruction[] = [
 const inductionGreatHall: Instruction[] = [
   move('great-hall'),
   text('The administrator leads you into the Great Hall. The dining hall stretches before you, with long tables and brass chandeliers overhead.'),
-  say('"This is where students gather for meals," she explains. "Breakfast, lunch, and dinner are served here daily. It\'s also a popular place for students to socialize and discuss their studies."'),
+  say('This is where students gather for meals. Breakfast, lunch, and dinner are served here daily. It\'s also a popular place for students to socialise and discuss their studies.'),
   text('You can see steam-powered serving mechanisms moving along tracks on the ceiling, ready to deliver meals to the tables below.'),
   option('Continue the Tour', 'inductionClassroom'),
 ]
@@ -252,7 +252,7 @@ const inductionGreatHall: Instruction[] = [
 const inductionClassroom: Instruction[] = [
   move('classroom'),
   text('Next, the administrator shows you a lecture hall. Rows of desks face a brass lectern and mechanical projection devices.'),
-  say('"This is where you\'ll attend lectures on the mechanical arts, steam engineering, and clockwork theory," she says. "Pay attention during your classes—knowledge here is both practical and essential."'),
+  say('This is where you\'ll attend lectures on the mechanical arts, steam engineering, and clockwork theory. Pay attention during your classes — knowledge here is both practical and essential.'),
   text('The walls are lined with diagrams of complex mechanisms, and you can see various steam-powered teaching aids ready for demonstrations.'),
   option('Finish the Tour', 'inductionComplete'),
 ]
@@ -261,8 +261,8 @@ const inductionClassroom: Instruction[] = [
 const inductionComplete: Instruction[] = [
   move('hallway'),
   text('The administrator brings you back to the main hallways.'),
-  say('"You now have full access to the university facilities," she continues. "Remember, the university is open Monday through Friday, from 7am to 9pm. Make the most of your time here."'),
-  say('"The courtyard is also available for relaxation between classes. Explore at your leisure—these halls are now yours to use."'),
+  say('You now have full access to the university facilities. Remember, the university is open Monday through Friday, from 7am to 9pm. Make the most of your time here.'),
+  say('The courtyard is also available for relaxation between classes. Explore at your leisure — these halls are now yours to use.'),
   text('With that, she hands you a small brass key and departs, leaving you to explore the university on your own.'),
   timeLapseUntil(10.25),
   completeQuest('attend-university'),
