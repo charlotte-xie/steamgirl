@@ -47,8 +47,8 @@ const icons: Record<string, () => JSX.Element> = {
 
   trousers: () => (
     <svg {...svgProps}>
-      {/* Trousers */}
-      <path d="M6 4 L14 4 L14 9 L13 17 L11 17 L10 10 L9 17 L7 17 L6 9Z" fill="currentColor" fillOpacity="0.15" />
+      {/* Trousers — straight legs */}
+      <path d="M6 4 L14 4 L14 17 L11 17 L10 10 L9 17 L6 17Z" fill="currentColor" fillOpacity="0.15" />
       <path d="M6 4 L14 4" strokeWidth="2" />
     </svg>
   ),
@@ -63,30 +63,33 @@ const icons: Record<string, () => JSX.Element> = {
 
   underwear: () => (
     <svg {...svgProps}>
-      {/* Bra / underwear */}
-      <path d="M4 9 C4 6 7 5 10 7 C13 5 16 6 16 9" />
-      <path d="M4 9 L5 10 L10 9 L15 10 L16 9" fill="currentColor" fillOpacity="0.15" />
+      {/* Bra — cups with straps */}
+      <path d="M7 5 L5 8" />
+      <path d="M13 5 L15 8" />
+      <path d="M4 12 Q4 8 7 8 Q10 8 10 10 Q10 8 13 8 Q16 8 16 12" fill="currentColor" fillOpacity="0.15" />
+      <path d="M4 12 L16 12" />
     </svg>
   ),
 
   knickers: () => (
     <svg {...svgProps}>
-      {/* Panties */}
-      <path d="M5 7 L15 7 L15 10 L13 16 L10 12 L7 16 L5 10Z" fill="currentColor" fillOpacity="0.15" />
+      {/* Panties — rectangle with concave leg cutouts at bottom corners */}
+      <path d="M5 6 L15 6 L15 10 Q12 10 11 16 L9 16 Q8 10 5 10Z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M5 6 L15 6" strokeWidth="2" />
     </svg>
   ),
 
   footwear: () => (
     <svg {...svgProps}>
       {/* Boot */}
-      <path d="M8 4 L12 4 L12 12 L16 14 L16 16 L6 16 L6 14 L8 12Z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M6 4 L12 4 L12 12 L16 14 L16 16 L6 16 L6 14 L7 12Z" fill="currentColor" fillOpacity="0.15" />
     </svg>
   ),
 
   socks: () => (
     <svg {...svgProps}>
-      {/* Sock */}
-      <path d="M8 3 L12 3 L12 12 L14 15 L12 17 L8 17 L7 14 L8 12Z" fill="currentColor" fillOpacity="0.15" />
+      {/* Sock — straight tube, foot slopes down to semicircle toe */}
+      <path d="M7 3 L12 3 L12 11 L16 13 A3 3 0 0 1 16 17 L7 15Z" fill="currentColor" fillOpacity="0.15" />
     </svg>
   ),
 
@@ -142,8 +145,8 @@ const icons: Record<string, () => JSX.Element> = {
 
   corset: () => (
     <svg {...svgProps}>
-      {/* Corset */}
-      <path d="M6 4 L14 4 L15 10 L14 16 L6 16 L5 10Z" fill="currentColor" fillOpacity="0.15" />
+      {/* Corset — pinched waist */}
+      <path d="M6 4 L14 4 L13 7 Q10 11 13 14 L14 16 L6 16 L7 14 Q10 11 7 7Z" fill="currentColor" fillOpacity="0.15" />
       <path d="M10 5 L10 15" strokeDasharray="2 2" />
     </svg>
   ),
@@ -157,8 +160,8 @@ const icons: Record<string, () => JSX.Element> = {
 
   belt: () => (
     <svg {...svgProps}>
-      {/* Belt */}
-      <path d="M2 9 L18 9 L18 13 L2 13Z" fill="currentColor" fillOpacity="0.15" />
+      {/* Belt — narrow enough to sit inside a dress waist */}
+      <path d="M5 9 L15 9 L15 13 L5 13Z" fill="currentColor" fillOpacity="0.15" />
       <rect x="8" y="8" width="4" height="6" rx="0.5" stroke="currentColor" fill="none" strokeWidth="1.5" />
     </svg>
   ),
@@ -245,4 +248,10 @@ export type ItemIconName = keyof typeof icons
 
 export function getItemIcon(name: string): (() => JSX.Element) | undefined {
   return icons[name]
+}
+
+// Accept HMR updates without propagating to parent modules,
+// which would cause the game to reset via a full page reload.
+if (import.meta.hot) {
+  import.meta.hot.accept()
 }
