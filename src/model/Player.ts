@@ -422,6 +422,23 @@ export class Player {
   }
 
   /**
+   * Add an outfit's items on top of what is currently worn (no strip).
+   * Items that conflict with existing worn items will swap them out.
+   * @param name - The name of the outfit to add
+   * @returns true if outfit exists, false otherwise
+   */
+  addOutfit(name: string): boolean {
+    const itemIds = getOutfitItems(this.outfits, name)
+    if (itemIds.length === 0 && !(name in this.outfits)) return false
+
+    for (const itemId of itemIds) {
+      this.wearItem(itemId)
+    }
+
+    return true
+  }
+
+  /**
    * Apply a temporary modifier to a stat. The stat can go outside 0-100 during calculation,
    * but will be bounded when calcStats completes. This is used by calcStats callbacks
    * (items, effects) to apply bonuses/penalties that reset each time stats are recalculated.

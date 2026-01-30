@@ -59,12 +59,33 @@ export function OutfitManagement() {
     }
   }
 
+  const handleAdd = () => {
+    if (selectedOutfit) {
+      player.addOutfit(selectedOutfit)
+      player.calcStats()
+      refresh()
+    }
+  }
+
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
   const handleDelete = () => {
+    if (selectedOutfit) {
+      setConfirmDelete(true)
+    }
+  }
+
+  const handleConfirmDelete = () => {
     if (selectedOutfit) {
       player.deleteOutfit(selectedOutfit)
       setSelectedOutfit(null)
+      setConfirmDelete(false)
       refresh()
     }
+  }
+
+  const handleCancelDelete = () => {
+    setConfirmDelete(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -123,13 +144,20 @@ export function OutfitManagement() {
           <Button onClick={handleConfirmSave} disabled={!newName.trim()}>{nameMatchesExisting ? 'Update' : 'Save'}</Button>
           <Button onClick={handleCancelSave}>Cancel</Button>
         </div>
+      ) : confirmDelete ? (
+        <div className="outfit-actions">
+          <span>Delete {selectedOutfit}?</span>
+          <Button onClick={handleConfirmDelete}>Confirm</Button>
+          <Button onClick={handleCancelDelete}>Cancel</Button>
+        </div>
       ) : (
         <div className="outfit-actions">
-          <Button onClick={handleSaveAs}>Save As...</Button>
-          <Button onClick={handleUpdate} disabled={!selectedOutfit}>Update</Button>
-          <Button onClick={handleWear} disabled={!selectedOutfit || inScene} title={sceneTooltip}>Wear</Button>
-          <Button onClick={handleStrip} disabled={inScene} title={sceneTooltip}>Strip</Button>
-          <Button onClick={handleDelete} disabled={!selectedOutfit}>Delete</Button>
+          <Button onClick={handleWear} disabled={!selectedOutfit || inScene} title={inScene ? sceneTooltip : selectedOutfit ? `Strip and wear the ${selectedOutfit} outfit` : 'Select an outfit to wear'}>Wear</Button>
+          <Button onClick={handleAdd} disabled={!selectedOutfit || inScene} title={inScene ? sceneTooltip : selectedOutfit ? `Add the clothes in ${selectedOutfit} to what you are currently wearing` : 'Select an outfit to add'}>Add</Button>
+          <Button onClick={handleStrip} disabled={inScene} title={inScene ? sceneTooltip : 'Remove all worn clothes'}>Strip</Button>
+          <Button onClick={handleSaveAs} title="Save current clothes as a new outfit">Save As...</Button>
+          <Button onClick={handleUpdate} disabled={!selectedOutfit} title={selectedOutfit ? `Update ${selectedOutfit} to match current clothes` : 'Select an outfit to update'}>Update</Button>
+          <Button onClick={handleDelete} disabled={!selectedOutfit} title={selectedOutfit ? `Delete the ${selectedOutfit} outfit` : 'Select an outfit to delete'}>Delete</Button>
         </div>
       )}
     </div>
