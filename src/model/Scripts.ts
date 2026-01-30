@@ -123,25 +123,67 @@ function resolveParts(game: Game, parts: (string | Instruction)[]): (string | In
   return result
 }
 
-/** Resolve a single interpolation expression. Calls the named script and returns its result, or red error text. */
+/**
+ * A TextAccessor is returned by a script to support chaining.
+ * When {a:b:c} is evaluated, script 'a' returns an accessor,
+ * then accessor.resolve(game, 'b:c') is called with the rest of the expression.
+ * With no remaining expression, resolve(game, '') is called for a default value.
+ */
+export interface TextAccessor {
+  resolve(game: Game, rest: string): unknown
+}
+
+function isTextAccessor(value: unknown): value is TextAccessor {
+  return value != null && typeof value === 'object' && 'resolve' in value
+    && typeof (value as TextAccessor).resolve === 'function'
+}
+
+function isContent(value: unknown): value is InlineContent {
+  return value != null && typeof value === 'object' && 'type' in value
+}
+
+function interpolationError(expression: string): InlineContent {
+  return { type: 'text', text: `{${expression}}`, color: '#ff4444' }
+}
+
+/**
+ * Resolve a single interpolation expression. The first colon splits the script name
+ * from the rest of the expression. If the script returns a TextAccessor, the rest
+ * is passed to accessor.resolve(game, rest). Instructions are unwrapped iteratively.
+ */
 function resolveExpression(game: Game, expression: string): string | InlineContent {
   if (!expression) {
     return { type: 'text', text: '{}', color: '#ff4444' }
   }
-  const scriptFn = getScript(expression)
+
+  const colonIndex = expression.indexOf(':')
+  const scriptName = (colonIndex === -1 ? expression : expression.slice(0, colonIndex)).trim()
+  const rest = colonIndex === -1 ? '' : expression.slice(colonIndex + 1)
+
+  const scriptFn = getScript(scriptName)
   if (!scriptFn) {
-    return { type: 'text', text: `{${expression}}`, color: '#ff4444' }
+    return interpolationError(expression)
   }
-  let resolved: unknown = game.run(expression)
-  for (let i = 0; isInstruction(resolved); i++) {
-    if (i >= 1000) throw new Error(`Interpolation exceeded 1000 iterations resolving {${expression}}`)
-    resolved = game.run(resolved)
+
+  let resolved: unknown = game.run(scriptName)
+
+  // Unwrap Instructions and chain through TextAccessors
+  for (let i = 0; i < 1000; i++) {
+    if (isInstruction(resolved)) {
+      resolved = game.run(resolved)
+    } else if (isTextAccessor(resolved)) {
+      resolved = resolved.resolve(game, rest)
+    } else {
+      break
+    }
   }
+  if (isInstruction(resolved) || isTextAccessor(resolved)) {
+    throw new Error(`Interpolation exceeded 1000 iterations resolving {${expression}}`)
+  }
+
   if (typeof resolved === 'string') return resolved
-  if (resolved && typeof resolved === 'object' && 'type' in resolved) {
-    return resolved as InlineContent
-  }
-  return ''
+  if (isContent(resolved)) return resolved
+  return interpolationError(expression)
 }
 
 /**
