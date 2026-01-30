@@ -1,5 +1,5 @@
 import { Game } from "./Game"
-import { makeScript, parseArgs, type Accessor, type Script } from "./Scripts"
+import { makeScript, parseArgs, interpolateString, type Accessor, type Script } from "./Scripts"
 import { type InlineContent, speech } from "./Format"
 import { capitalise } from "./Text"
 import { getFaction } from "./Faction"
@@ -178,9 +178,15 @@ export class NPC {
     return this.template.pronouns ?? PRONOUNS.they
   }
 
-  /** Makes this NPC say something. Uses the NPC's speech color. Returns this for fluent chaining. */
+  /** Makes this NPC say something. Uses the NPC's speech color. Supports {interpolation}. Returns this for fluent chaining. */
   say(dialogText: string): this {
-    this.game.add(speech(dialogText, this.template.speechColor))
+    let text = dialogText
+    if (dialogText.includes('{')) {
+      text = interpolateString(this.game, dialogText)
+        .map(part => typeof part === 'string' ? part : part.text)
+        .join('')
+    }
+    this.game.add(speech(text, this.template.speechColor))
     return this
   }
 

@@ -195,7 +195,7 @@ function resolveExpression(game: Game, expression: string): string | InlineConte
  * Each {name} calls game.run(name) and uses the result as text content.
  * Use {{ and }} for literal braces. Unknown scripts produce red error text.
  */
-function interpolateString(game: Game, template: string): (string | InlineContent)[] {
+export function interpolateString(game: Game, template: string): (string | InlineContent)[] {
   const result: (string | InlineContent)[] = []
   let i = 0
   let literal = ''
