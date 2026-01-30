@@ -88,7 +88,7 @@ export type ScriptRef = string | Instruction
 // CORE SCRIPTS - Generic scripts that are part of the scripting system
 // ============================================================================
 
-/** Execute an instruction and return its result */
+/** Destructure and execute an instruction and return its result */
 function exec(game: Game, instruction: Instruction): unknown {
   const [scriptName, params] = instruction
   return game.run(scriptName, params)
@@ -106,7 +106,12 @@ function resolveParts(game: Game, parts: (string | Instruction)[]): (string | In
   const result: (string | InlineContent)[] = []
   for (const part of parts) {
     if (typeof part === 'string') {
-      result.push(part)
+      // Fast path: no braces means no interpolation needed
+      if (!part.includes('{')) {
+        result.push(part)
+      } else {
+        result.push(...interpolateString(game, part))
+      }
     } else if (isInstruction(part)) {
       const resolved = exec(game, part)
       // If the instruction returned InlineContent, add it
@@ -115,6 +120,80 @@ function resolveParts(game: Game, parts: (string | Instruction)[]): (string | In
       }
     }
   }
+  return result
+}
+
+/**
+ * Parse and resolve {scriptName} expressions in a template string.
+ * Each {name} calls game.run(name) and uses the result as text content.
+ * Use {{ and }} for literal braces. Unknown scripts produce red error text.
+ */
+function interpolateString(game: Game, template: string): (string | InlineContent)[] {
+  const result: (string | InlineContent)[] = []
+  let i = 0
+  let literal = ''
+
+  while (i < template.length) {
+    const ch = template[i]
+
+    // Escaped braces: {{ → {, }} → }
+    if (ch === '{' && template[i + 1] === '{') {
+      literal += '{'
+      i += 2
+      continue
+    }
+    if (ch === '}' && template[i + 1] === '}') {
+      literal += '}'
+      i += 2
+      continue
+    }
+
+    // Start of expression
+    if (ch === '{') {
+      const end = template.indexOf('}', i + 1)
+      if (end === -1) {
+        // No closing brace — treat as literal
+        literal += ch
+        i++
+        continue
+      }
+
+      // Flush accumulated literal text
+      if (literal) {
+        result.push(literal)
+        literal = ''
+      }
+
+      const scriptName = template.slice(i + 1, end).trim()
+      if (!scriptName) {
+        result.push({ type: 'text', text: '{}', color: '#ff4444' })
+      } else {
+        const scriptFn = getScript(scriptName)
+        if (!scriptFn) {
+          result.push({ type: 'text', text: `{${scriptName}}`, color: '#ff4444' })
+        } else {
+          const resolved = game.run(scriptName)
+          if (typeof resolved === 'string') {
+            result.push(resolved)
+          } else if (resolved && typeof resolved === 'object' && 'type' in resolved) {
+            result.push(resolved as InlineContent)
+          }
+        }
+      }
+
+      i = end + 1
+      continue
+    }
+
+    literal += ch
+    i++
+  }
+
+  // Flush remaining literal
+  if (literal) {
+    result.push(literal)
+  }
+
   return result
 }
 
@@ -799,6 +878,12 @@ const coreScripts: Record<string, ScriptFn> = {
 
   /** Return the player's name as InlineContent */
   playerName: (game: Game): InlineContent => {
+    const name = game.player.name || 'Elise'
+    return { type: 'text', text: name, color: '#e0b0ff' }
+  },
+
+  /** Short alias for playerName — for use in text interpolation: {pc} */
+  pc: (game: Game): InlineContent => {
     const name = game.player.name || 'Elise'
     return { type: 'text', text: name, color: '#e0b0ff' }
   },

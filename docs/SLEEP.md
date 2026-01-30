@@ -4,7 +4,7 @@ The sleep system handles rest and energy restoration. Implementation is in `src/
 
 ## Overview
 
-Sleep restores Energy over time. The rate of restoration and constraints depend on the sleep context (nap vs full sleep) and environment (bed quality).
+Sleep restores Energy meter over time. The rate of restoration and constraints depend on the sleep context (nap vs full sleep) and environment (bed quality).
 
 ## Energy Restoration
 

@@ -3,7 +3,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, playerName, learnNpcName, discoverLocation } from '../model/ScriptDSL'
+import { text, say, scene, scenes, move, timeLapse, hideNpcImage, addItem, addQuest, learnNpcName, discoverLocation } from '../model/ScriptDSL'
 import { takeWash, freshenUp, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
@@ -18,7 +18,7 @@ registerNPC('landlord', {
       // Scene 1: Landlord greets on backstreet and introduces himself
       scene(
         text('A weathered figure steps out from a doorway.'),
-        say(playerName(), ", I presume? Gerald Moss—I'm your landlord. Pleasure to meet you. You're all paid up for two weeks. Let me show you around."),
+        say("{pc}, I presume? Gerald Moss—I'm your landlord. Pleasure to meet you. You're all paid up for two weeks. Let me show you around."),
         learnNpcName(),
         timeLapse(5),
       ),
