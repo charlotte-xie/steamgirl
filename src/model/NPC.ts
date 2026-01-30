@@ -316,8 +316,11 @@ class NPCAccessor implements Accessor {
         if (!faction) return factionId
         return { type: 'text' as const, text: faction.name, color: faction.colour }
       }
-      default:
-        throw new Error(`Unknown NPC accessor property: ${rest}`)
+      default: {
+        const script = npc.template.scripts?.[rest]
+        if (!script) throw new Error(`Unknown NPC accessor property: ${rest}`)
+        return script
+      }
     }
   }
 

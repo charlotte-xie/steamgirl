@@ -383,8 +383,8 @@ export class Game {
     }
     resolved = resolved.resolve(this, rest)
 
-    // If there are outer params and the result is runnable, run it
-    if (Object.keys(params).length > 0) {
+    // If the result is a runnable script, run it (with outer params if provided)
+    if (isScriptFn(resolved) || isInstruction(resolved)) {
       return this.run(resolved as Script, params)
     }
     return resolved

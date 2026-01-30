@@ -38,6 +38,38 @@ say('Welcome to Aetheria.')
 
 Separate narration from dialogue. Keep narration in plain strings; keep speech in `say()`.
 
+### Text Interpolation
+
+Use `{expression}` in strings to insert dynamic content. Interpolation works in both `text()` and `say()`:
+
+```typescript
+// Player name (coloured)
+text('{pc} steps forward.')
+say('Welcome, {pc}.')
+
+// NPC name and pronouns
+text('{npc} looks up. {npc:He} seems tired.')
+say('Ask {npc:him} yourself.')
+
+// Specific NPC by ID (when scene NPC is someone else)
+text('{npc(barkeeper)} waves from across the room.')
+
+// NPC faction
+text('{npc:faction} loyalties run deep here.')
+```
+
+Use `{{` and `}}` for literal braces. Unknown expressions show as red error text so mistakes are easy to spot.
+
+Prefer interpolation over DSL helpers like `playerName()` and `npcName()` — it's more readable and supports pronouns, factions, and NPC-local scripts:
+
+```typescript
+// Before
+text('You catch ', npcName(), '\'s eye.')
+
+// After
+text('You catch {npc}\'s eye. {npc:He} smiles.')
+```
+
 ### Anonymous NPCs
 
 Do not name random encounter NPCs (bar patrons, passers-by, vendors). Named strangers feel absurd on repeat. Use descriptions with `random()` for variety:

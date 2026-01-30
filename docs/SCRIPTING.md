@@ -37,8 +37,8 @@ seq(text('You enter the room.'), say('Welcome!'))
 
 | Builder | Description |
 |---------|-------------|
-| `text(...parts)` | Narrative text. Parts: strings or Instructions (`playerName()`, `npcName()`) |
-| `say(...parts)` | NPC speech in scene NPC's colour. Do not include quotation marks |
+| `text(...parts)` | Narrative text. Parts: strings (with `{interpolation}`) or Instructions |
+| `say(...parts)` | NPC speech in scene NPC's colour. Supports `{interpolation}`. Do not include quotation marks |
 | `paragraph(...content)` | Formatted paragraph with `hl()` highlights |
 | `playerName()` / `npcName(npc?)` | Inline name with colour (for use inside `text()` or `say()`) |
 | `option(label, script?, params?)` | Fire-and-forget button |
@@ -255,6 +255,95 @@ onWait: (game: Game) => {
 ```
 
 NPC hooks fire before location hooks. A 30-minute wait = 3 chunks = 3 chances for events.
+
+## Text Interpolation
+
+Strings passed to `text()` and `say()` support `{expression}` interpolation. Each expression is resolved via `game.run()` and the result is inlined as text or styled `InlineContent`.
+
+### Syntax
+
+```
+{scriptName}            → game.run('scriptName')
+{npc}                   → NPC accessor default (display name with colour)
+{npc:he}                → NPC accessor with property (pronoun)
+{npc(barkeeper)}        → NPC accessor with explicit NPC ID
+{npc(barkeeper):faction} → Accessor with ID and property
+{{literal}}             → Escaped to literal { }
+```
+
+Unknown or erroring expressions produce red error text: `{unknownScript}` in `#ff4444`. This makes authoring mistakes easy to spot at runtime.
+
+### Built-in Expressions
+
+| Expression | Result |
+|------------|--------|
+| `{pc}` | Player name (purple `InlineContent`) |
+| `{playerName}` | Same as `{pc}` |
+| `{npc}` | Scene NPC display name (coloured) |
+| `{npc:name}` | Explicit NPC name |
+| `{npc:he}` / `{npc:him}` / `{npc:his}` | NPC pronouns (lowercase) |
+| `{npc:He}` / `{npc:Him}` / `{npc:His}` | NPC pronouns (capitalised) |
+| `{npc:faction}` | NPC faction name (coloured), or `unaffiliated` |
+| `{npc:scriptName}` | Run an NPC-local script (from `NPCDefinition.scripts`) |
+| `{npc(id)}` | Specific NPC name by ID (no scene NPC required) |
+| `{npc(id):property}` | Any of the above on a specific NPC |
+
+### How It Works
+
+1. `resolveParts()` detects `{` in string parts and calls `interpolateString()`
+2. `interpolateString()` parses `{expression}` tokens (handling `{{ }}` escapes)
+3. Each expression is passed to `resolveExpression()` → `game.run(expression)`
+4. `game.run()` detects `:` or `(` in the script name, splits into script + rest, runs the script, and chains through the `Accessor` interface
+
+### Accessor Interface
+
+Scripts can return an `Accessor` to support expression chaining in `game.run()`:
+
+```typescript
+export interface Accessor {
+  default(game: Game): unknown    // Called when no rest: game.run('npc')
+  resolve(game: Game, rest: string): unknown  // Called with rest: game.run('npc:he') → resolve(game, 'he')
+}
+```
+
+When `game.run('npc:he')` is called:
+1. Script name `npc` is extracted, `:he` is the rest
+2. `npc` script runs, returns an `NPCAccessor`
+3. `accessor.resolve(game, 'he')` is called with the colon stripped
+4. If the accessor returns a `Script` (function or instruction), `game.run` executes it with the outer params
+
+Args are parsed by the accessor itself via `parseArgs(rest)`:
+
+```typescript
+// game.run('npc(barkeeper):faction')
+// Script 'npc' runs → NPCAccessor (scene NPC)
+// rest = '(barkeeper):faction'
+// NPCAccessor.resolve calls parseArgs → { argline: 'barkeeper', tail: 'faction' }
+// Creates new NPCAccessor for barkeeper, resolves 'faction'
+```
+
+### Adding Custom Accessors
+
+Register a script that returns an `Accessor`. Place the accessor class in the relevant domain file (e.g. `NPC.ts` for `NPCAccessor`):
+
+```typescript
+// In NPC.ts
+class NPCAccessor implements Accessor {
+  default(game: Game): InlineContent { return this.nameContent() }
+  resolve(game: Game, rest: string): unknown {
+    switch (rest) {
+      case 'name': return this.nameContent()
+      case 'he': return this.npc.pronouns.subject
+      // ...
+    }
+  }
+}
+
+makeScript('npc', (game: Game): Accessor => {
+  const npcId = game.scene.npc
+  return new NPCAccessor(npcId ? game.getNPC(npcId) : undefined)
+})
+```
 
 ## Core Scripts
 

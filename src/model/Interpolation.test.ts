@@ -1,7 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import type { InlineContent } from './Format'
+import { registerNPC, PRONOUNS } from './NPC'
 import '../story/World'
+
+registerNPC('test-npc', {
+  name: 'Alice',
+  uname: 'mysterious stranger',
+  speechColor: '#aabbcc',
+  pronouns: PRONOUNS.she,
+  scripts: {
+    greetingText: () => 'Hello from Alice',
+    styledGreeting: (): InlineContent => ({ type: 'text', text: 'Greetings!', color: '#00ff00' }),
+  },
+})
 
 describe('Text Interpolation', () => {
   function getResolvedParts(game: Game, template: string): (string | InlineContent)[] {
@@ -174,11 +186,84 @@ describe('Text Interpolation', () => {
       expect(parts[0]).toEqual({ type: 'text', text: 'Lowtown', color: '#6b5b6b' })
     })
 
+    it('{npc:name} returns display name explicitly', () => {
+      const game = npcGame()
+      const parts = getResolvedParts(game, '{npc:name}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toEqual({ type: 'text', text: 'Rob Hayes', color: '#94a3b8' })
+    })
+
+    it('{npc:Him} and {npc:His} return capitalised pronouns', () => {
+      const game = new Game()
+      game.scene.npc = 'test-npc'
+      expect(getResolvedParts(game, '{npc:Him}')[0]).toBe('Her')
+      expect(getResolvedParts(game, '{npc:His}')[0]).toBe('Her')
+    })
+
+    it('{npc} with no scene NPC produces red error', () => {
+      const game = new Game()
+      const parts = getResolvedParts(game, '{npc}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toEqual({ type: 'text', text: '{npc}', color: '#ff4444' })
+    })
+
+    it('{npc:faction} returns "unaffiliated" when NPC has no faction', () => {
+      const game = new Game()
+      game.scene.npc = 'test-npc'
+      const parts = getResolvedParts(game, '{npc:faction}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toBe('unaffiliated')
+    })
+
+    it('{npc:scriptName} runs NPC-local script returning string', () => {
+      const game = new Game()
+      game.scene.npc = 'test-npc'
+      const parts = getResolvedParts(game, '{npc:greetingText}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toBe('Hello from Alice')
+    })
+
+    it('{npc:scriptName} runs NPC-local script returning InlineContent', () => {
+      const game = new Game()
+      game.scene.npc = 'test-npc'
+      const parts = getResolvedParts(game, '{npc:styledGreeting}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toEqual({ type: 'text', text: 'Greetings!', color: '#00ff00' })
+    })
+
+    it('{npc(test-npc):greetingText} runs script on specific NPC', () => {
+      const game = new Game()
+      const parts = getResolvedParts(game, '{npc(test-npc):greetingText}')
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toBe('Hello from Alice')
+    })
+
     it('{npc:unknown} produces red error', () => {
       const game = npcGame()
       const parts = getResolvedParts(game, '{npc:unknown}')
       expect(parts).toHaveLength(1)
       expect(parts[0]).toEqual({ type: 'text', text: '{npc:unknown}', color: '#ff4444' })
+    })
+  })
+
+  describe('game.run expression syntax', () => {
+    it('game.run("npc:he") resolves accessor chain', () => {
+      const game = new Game()
+      game.scene.npc = 'test-npc'
+      expect(game.run('npc:he')).toBe('she')
+    })
+
+    it('game.run("npc(tour-guide):name") resolves specific NPC', () => {
+      const game = new Game()
+      game.getNPC('tour-guide').stats.set('nameKnown', 1)
+      const result = game.run('npc(tour-guide):name') as InlineContent
+      expect(result.text).toBe('Rob Hayes')
+    })
+
+    it('game.run("npc:scriptName") returns and runs NPC-local script', () => {
+      const game = new Game()
+      game.scene.npc = 'test-npc'
+      expect(game.run('npc:greetingText')).toBe('Hello from Alice')
     })
   })
 })
