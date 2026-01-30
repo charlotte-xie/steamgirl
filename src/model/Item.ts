@@ -85,6 +85,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A currency used throughout the city.',
     category: 'Valuables',
     icon: 'money',
+    colour: '#c0a040',
     stackable: true,
   },
   'pocket-watch': {
@@ -92,18 +93,21 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A fine brass pocket watch with intricate gears.',
     category: 'Valuables',
     icon: 'gem',
+    colour: '#b0903a',
   },
   'room-key': {
     name: 'room key',
     description: 'A brass key to your lodgings in the backstreets.',
     category: 'Special',
     icon: 'key',
+    colour: '#908070',
   },
   'test-item': {
     name: 'test item',
     description: 'A test item for testing purposes.',
     category: 'Special',
     icon: 'star',
+    colour: '#5a9090',
   },
   'sweet-wine': {
     name: 'sweet wine',
@@ -111,6 +115,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A bottle of sweet wine with an intoxicating aroma.',
     category: 'Consumables',
     icon: 'drink',
+    colour: '#8a6070',
     onConsume: (game: Game, _params: {}) => {
       consumeAlcohol(game, 60)
       eatFood(game, 20)
@@ -121,6 +126,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A formal letter with an official seal.',
     category: 'Special',
     icon: 'scroll',
+    colour: '#b09870',
     onExamine: (game: Game, _params: {}) => {
       game.clearScene()
       game.add([
@@ -144,18 +150,21 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A charming mechanical toy that moves when wound. The gears inside click and whir with precision.',
     category: 'Valuables',
     icon: 'cog',
+    colour: '#a08050',
   },
   'lucky-charm': {
     name: 'lucky charm',
     description: 'A small mechanical charm made of brass gears and cogs. It feels warm to the touch.',
     category: 'Special',
     icon: 'star',
+    colour: '#b0903a',
   },
   'magic-potion': {
     name: 'magic potion',
     description: 'A mysterious potion that glimmers with an otherworldly light. Drinking it may enhance your abilities.',
     category: 'Consumables',
     icon: 'potion',
+    colour: '#8868a8',
     onConsume: (game: Game, _params: {}) => {
       // Add +5 to all main stats with 50% chance each
       const mainStats = ['Agility', 'Perception', 'Wits', 'Charm', 'Willpower', 'Strength']
@@ -173,6 +182,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A vibrant, fizzy drink that promises to lift your spirits and add some excitement.',
     category: 'Consumables',
     icon: 'drink',
+    colour: '#c08050',
     onConsume: (game: Game, _params: {}) => {
       // Add +10 Mood and +15 Arousal
       game.run('addStat', { stat: 'Mood', change: 10 })
@@ -185,6 +195,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     description: 'A strange compound that lifts the spirits. Unpredictable side effects.',
     category: 'Consumables',
     icon: 'potion',
+    colour: '#a07848',
     onConsume: (game: Game, _params: {}) => {
       game.run('addStat', { stat: 'Mood', change: 5, max: 100 })
       if (Math.random() < 0.5) consumeAlcohol(game, 60)

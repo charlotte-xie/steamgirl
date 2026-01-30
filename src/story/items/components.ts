@@ -11,6 +11,7 @@ registerItemDefinition('brass-cog', {
   description: 'A well-machined brass cog with smooth teeth. A fundamental building block of any mechanism.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -19,6 +20,7 @@ registerItemDefinition('brass-trinket', {
   description: 'A small, intricate brass trinket with delicate gears that catch the light.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -27,6 +29,7 @@ registerItemDefinition('copper-wire', {
   description: 'A coil of fine copper wire, essential for electrical and aetherical work.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -35,6 +38,7 @@ registerItemDefinition('spring-coil', {
   description: 'A tightly wound steel spring, useful in all manner of clockwork mechanisms.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -43,6 +47,7 @@ registerItemDefinition('steam-whistle', {
   description: 'A small brass whistle that emits a high-pitched steam-powered sound when blown.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -51,6 +56,7 @@ registerItemDefinition('lens-ground', {
   description: 'A carefully ground glass lens with brass mounting. Used in optical and aetherical instruments.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -59,6 +65,7 @@ registerItemDefinition('pressure-gauge', {
   description: 'A small dial gauge for measuring steam pressure. The brass casing is finely engraved.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -67,6 +74,7 @@ registerItemDefinition('mysterious-gear', {
   description: 'An unusual gear of unknown origin. It seems to be part of something larger.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -75,6 +83,7 @@ registerItemDefinition('aether-valve', {
   description: 'A precision-machined valve for regulating the flow of aetherical energy.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })
 
@@ -83,5 +92,6 @@ registerItemDefinition('glowing-crystal', {
   description: 'A crystal that glows with a soft inner light, wrapped in brass wire and gears.',
   category: 'Components',
   icon: 'cog',
+  colour: '#a08050',
   stackable: true,
 })

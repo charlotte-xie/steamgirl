@@ -181,13 +181,12 @@ export const startScripts = {
       g.run('gainItem', { item: 'steam-bra' })
       g.run('gainItem', { item: 'steam-stockings' })
       g.run('gainItem', { item: 'gloves-cursed' })
+      // Tinted colour variants (a random selection)
       g.run('gainItem', { item: 'bra-black' })
-      g.run('gainItem', { item: 'bra-pink' })
-      g.run('gainItem', { item: 'panties-black' })
-      g.run('gainItem', { item: 'panties-pink' })
-      g.run('gainItem', { item: 'socks-black' })
+      g.run('gainItem', { item: 'panties-red' })
       g.run('gainItem', { item: 'socks-navy' })
-      g.run('gainItem', { item: 'socks-red' })
+      g.run('gainItem', { item: 'tied-shirt-pink' })
+      g.run('gainItem', { item: 'socks-grey' })
       pc.outfits['Bikini'] = {
         items: [
           'bikini-top',

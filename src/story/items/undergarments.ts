@@ -2,7 +2,8 @@
  * undergarments.ts - Chemises, bras, drawers, and other underclothing.
  */
 
-import { registerItemDefinition, extendItem, tintedItem } from '../../model/Item'
+import { registerItemDefinition, extendItem } from '../../model/Item'
+import { registerColourVariants } from './colours'
 
 // ============================================================================
 // CHEST - UNDER LAYER (bras, chemises)
@@ -73,39 +74,19 @@ registerItemDefinition(
 )
 
 // ============================================================================
-// TINTED VARIANTS
+// COLOUR VARIANTS (generated from colour table)
 // ============================================================================
 
-registerItemDefinition(
-  'bra-black',
-  tintedItem('bra-cotton', '#222222', {
-    name: 'black bra',
-    description: 'A sleek black undergarment. Simple and flattering.',
-  })
+registerColourVariants(
+  'bra-cotton', 'bra', 'bra',
+  c => `A ${c} cotton bra. Simple and supportive.`,
+  'bra-cotton',
 )
 
-registerItemDefinition(
-  'bra-pink',
-  tintedItem('bra-cotton', '#f2a0b0', {
-    name: 'blush bra',
-    description: 'A soft pink undergarment with a delicate feminine charm.',
-  })
-)
-
-registerItemDefinition(
-  'panties-black',
-  tintedItem('panties-cotton', '#222222', {
-    name: 'black panties',
-    description: 'Simple black undergarments. Practical and elegant.',
-  })
-)
-
-registerItemDefinition(
-  'panties-pink',
-  tintedItem('panties-cotton', '#f2a0b0', {
-    name: 'blush panties',
-    description: 'Soft pink undergarments with a gentle rosy hue.',
-  })
+registerColourVariants(
+  'panties-cotton', 'panties', 'panties',
+  c => `Simple ${c} cotton panties.`,
+  'panties-cotton',
 )
 
 // ============================================================================

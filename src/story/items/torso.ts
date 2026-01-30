@@ -3,6 +3,7 @@
  */
 
 import { registerItemDefinition, extendItem } from '../../model/Item'
+import { registerColourVariants } from './colours'
 
 registerItemDefinition(
   'blouse-silk',
@@ -62,11 +63,21 @@ registerItemDefinition(
 registerItemDefinition(
   'tied-shirt',
   extendItem('base-vest', {
-    name: 'tied shirt',
+    name: 'white tied shirt',
     description: 'A white shirt tied in a knot at the front, leaving the belly exposed.',
     image: '/images/steamgirl/TiedShirt.PNG',
     calcStats: (player) => {
       player.modifyStat('Charm', 2)
     },
   })
+)
+
+// ============================================================================
+// COLOUR VARIANTS (generated from colour table)
+// ============================================================================
+
+registerColourVariants(
+  'tied-shirt', 'tied-shirt', 'tied shirt',
+  c => `A ${c} shirt tied in a knot at the front, leaving the belly exposed.`,
+  'tied-shirt',
 )

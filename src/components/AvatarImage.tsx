@@ -28,7 +28,7 @@ export const AvatarImage = forwardRef<HTMLDivElement>(function AvatarImage(_, re
         <img key={src} className="avatar-layer" src={assetUrl(src)} alt="" />
       ))}
       {clothingLayers.map(item => {
-        const tint = item.template.imageTint ?? item.template.colour
+        const tint = item.template.imageTint
         const imageSrc = assetUrl(item.template.image!)
         return tint ? (
           <div key={item.id} className="avatar-layer avatar-tint">
