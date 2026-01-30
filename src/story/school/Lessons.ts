@@ -1,7 +1,9 @@
 import { Game } from '../../model/Game'
+import type { Instruction } from '../../model/Scripts'
 import type { Card, CardDefinition, Reminder } from '../../model/Card'
 import { registerCardDefinition } from '../../model/Card'
 import { makeScripts } from '../../model/Scripts'
+import { text, random, timeLapse, timeLapseUntil, run, seq, scenes, scene, choice, branch } from '../../model/ScriptDSL'
 
 /** Pick a random element from an array. */
 function pick<T>(arr: T[]): T {
@@ -224,6 +226,7 @@ interface LessonFlavour {
   intro: string[]
   middle: string[][]  // one array per middle phase
   conclusion: string[]
+  lateArrival?: Instruction
 }
 
 const LESSON_FLAVOUR: Record<string, LessonFlavour> = {
@@ -250,6 +253,11 @@ const LESSON_FLAVOUR: Record<string, LessonFlavour> = {
       'As the lesson ends, the professor extinguishes the demonstration apparatus with a wave of her hand. "Practice your focusing exercises," she calls out as students begin to leave.',
       'The crystal spheres are carefully packed away as the lecture concludes. You feel you understand the fundamentals a little better now.',
     ],
+    lateArrival: random(
+      'Professor Vael pauses mid-sentence and fixes you with a sharp look over her brass spectacles. "How good of you to join us. Do try to be punctual."',
+      'The class turns to watch as you slip through the door. Professor Vael\'s expression is icy. "Late again? Take your seat. Quietly."',
+      'Professor Vael doesn\'t break stride, but her voice gains a pointed edge. "I trust you have a compelling reason for your tardiness. No? Then sit down."',
+    ),
   },
   'lesson-basic-mechanics': {
     intro: [
@@ -274,20 +282,12 @@ const LESSON_FLAVOUR: Record<string, LessonFlavour> = {
       'Tools are returned to their racks as the session ends. The instructor nods approvingly at your workbench. "Not bad for a beginner."',
       'You pack away your tools, satisfied with the small mechanism now ticking steadily on your bench. The fundamentals are starting to click.',
     ],
+    lateArrival: random(
+      'Professor Greaves looks up from the workbench and grunts. "You\'re late. Grab your tools and catch up. I won\'t be repeating myself."',
+      'The instructor gives you a hard look as you enter. "In a real workshop, late means someone else gets your job. Sit down."',
+      'Greaves shakes his head as you take your seat. "Punctuality is a form of precision. Remember that."',
+    ),
   },
-}
-
-const LATE_ARRIVAL_FLAVOUR: Record<string, string[]> = {
-  'prof-lucienne-vael': [
-    'Professor Vael pauses mid-sentence and fixes you with a sharp look over her brass spectacles. "How good of you to join us. Do try to be punctual."',
-    'The class turns to watch as you slip through the door. Professor Vael\'s expression is icy. "Late again? Take your seat. Quietly."',
-    'Professor Vael doesn\'t break stride, but her voice gains a pointed edge. "I trust you have a compelling reason for your tardiness. No? Then sit down."',
-  ],
-  'prof-harland-greaves': [
-    'Professor Greaves looks up from the workbench and grunts. "You\'re late. Grab your tools and catch up. I won\'t be repeating myself."',
-    'The instructor gives you a hard look as you enter. "In a real workshop, late means someone else gets your job. Sit down."',
-    'Greaves shakes his head as you take your seat. "Punctuality is a form of precision. Remember that."',
-  ],
 }
 
 const LATE_ARRIVAL_GENERIC = [
@@ -302,6 +302,60 @@ const EARLY_ARRIVAL_FLAVOUR = [
 ]
 
 // ============================================================================
+// DSL LESSON FLOW
+// ============================================================================
+
+/** Build the 4-phase lesson as a declarative scenes() flow. */
+function lessonFlow(lessonId: string, lessonName: string, endParams: Record<string, unknown>): Instruction {
+  const f = LESSON_FLAVOUR[lessonId]
+  return scenes(
+    scene(
+      f ? random(...f.intro) : text(`The ${lessonName} lecture begins.`),
+      timeLapse(PHASE_DURATION),
+    ),
+    scene(
+      f ? random(...f.middle[0]) : text(`The ${lessonName} lecture continues.`),
+      timeLapse(PHASE_DURATION),
+    ),
+    scene(
+      f ? random(...f.middle[1]) : text(`The ${lessonName} lecture continues.`),
+      timeLapse(PHASE_DURATION),
+    ),
+    scene(
+      f ? random(...f.conclusion) : text(`The ${lessonName} lecture concludes.`),
+      timeLapse(PHASE_DURATION),
+      run('endLesson', endParams),
+    ),
+  )
+}
+
+/** Build the remaining phases from a given phase index (1-based, for late joins). */
+function lessonFlowFrom(phase: number, lessonId: string, lessonName: string, endParams: Record<string, unknown>): Instruction {
+  const f = LESSON_FLAVOUR[lessonId]
+  const allPhases = [
+    scene(
+      f ? random(...f.intro) : text(`The ${lessonName} lecture begins.`),
+      timeLapse(PHASE_DURATION),
+    ),
+    scene(
+      f ? random(...f.middle[0]) : text(`The ${lessonName} lecture continues.`),
+      timeLapse(PHASE_DURATION),
+    ),
+    scene(
+      f ? random(...f.middle[1]) : text(`The ${lessonName} lecture continues.`),
+      timeLapse(PHASE_DURATION),
+    ),
+    scene(
+      f ? random(...f.conclusion) : text(`The ${lessonName} lecture concludes.`),
+      timeLapse(PHASE_DURATION),
+      run('endLesson', endParams),
+    ),
+  ]
+  const remaining = allPhases.slice(phase - 1)
+  return remaining.length === 1 ? remaining[0] : scenes(...remaining)
+}
+
+// ============================================================================
 // SCRIPTS
 // ============================================================================
 
@@ -313,7 +367,7 @@ const lessonScripts = {
     }
   },
 
-  /** Attend the next available lesson. Moves to classroom and shows early arrival or starts directly. */
+  /** Attend the next available lesson. Moves to classroom and routes to early/on-time/late. */
   attendLesson: (g: Game) => {
     const next = getNextLesson(g)
     if (!next) {
@@ -324,50 +378,45 @@ const lessonScripts = {
     const quest = g.player.cards.find(c => c.id === next.id)
     if (!quest) return
 
-    // Move to classroom
-    g.run('move', { location: 'classroom' })
-
     const timing = TIMETABLE[next.id]
-    const lessonData = { lessonId: next.id, lessonName: next.name, startHour: next.slot.startHour, npcId: timing?.npc }
+    const endParams = { lessonId: next.id, lessonName: next.name, startHour: next.slot.startHour, npcId: timing?.npc }
 
-    // Check if early (before lesson start)
     if (g.hourOfDay < next.slot.startHour) {
+      // Early — show arrival text and offer choices that all lead into the lesson
+      g.run('move', { location: 'classroom' })
       g.add(pick(EARLY_ARRIVAL_FLAVOUR))
       g.add({ type: 'text', text: `${next.name} begins at ${formatHour(next.slot.startHour)}.`, color: '#d0b691' })
-      g.addOption('lessonEarlyWait', lessonData, 'Wait quietly')
-      g.addOption('lessonEarlyStudy', lessonData, 'Study your notes')
-      g.addOption('lessonEarlySocialise', lessonData, 'Chat with classmates')
+      g.run(seq(
+        choice(
+          branch('Wait quietly',
+            timeLapseUntil(next.slot.startHour),
+            'You sit quietly and wait, watching students file in as the start time approaches.',
+            'The lecturer arrives and begins setting up.',
+          ),
+          branch('Study your notes',
+            timeLapseUntil(next.slot.startHour),
+            'You review your notes from previous sessions, refreshing the key concepts in your mind.',
+            'The lecturer arrives and begins setting up.',
+          ),
+          branch('Chat with classmates',
+            timeLapseUntil(next.slot.startHour),
+            'You chat with nearby students, swapping impressions of the course and comparing notes.',
+            'The lecturer arrives and begins setting up.',
+          ),
+        ),
+        run('lessonBegin', endParams),
+        lessonFlow(next.id, next.name, endParams),
+      ))
     } else if (g.hourOfDay <= next.slot.startHour + 0.25) {
-      // At or very close to start time — on time
-      g.run('lessonStart', lessonData)
+      // On time
+      g.run('move', { location: 'classroom' })
+      g.run('lessonBegin', endParams)
+      g.run(lessonFlow(next.id, next.name, endParams))
     } else {
-      // Past start time — late arrival with scolding
-      g.run('lessonLateStart', lessonData)
+      // Late
+      g.run('move', { location: 'classroom' })
+      g.run('lessonLateStart', endParams)
     }
-  },
-
-  /** Early arrival: wait quietly until the lesson starts. */
-  lessonEarlyWait: (g: Game, p: Record<string, unknown>) => {
-    g.run('timeLapse', { untilTime: p.startHour })
-    g.add('You sit quietly and wait, watching students file in as the start time approaches.')
-    g.add('The lecturer arrives and begins setting up.')
-    g.addOption('lessonStart', p, 'Start Lesson')
-  },
-
-  /** Early arrival: study notes until the lesson starts. */
-  lessonEarlyStudy: (g: Game, p: Record<string, unknown>) => {
-    g.run('timeLapse', { untilTime: p.startHour })
-    g.add('You review your notes from previous sessions, refreshing the key concepts in your mind.')
-    g.add('The lecturer arrives and begins setting up.')
-    g.addOption('lessonStart', p, 'Start Lesson')
-  },
-
-  /** Early arrival: socialise with classmates until the lesson starts. */
-  lessonEarlySocialise: (g: Game, p: Record<string, unknown>) => {
-    g.run('timeLapse', { untilTime: p.startHour })
-    g.add('You chat with nearby students, swapping impressions of the course and comparing notes.')
-    g.add('The lecturer arrives and begins setting up.')
-    g.addOption('lessonStart', p, 'Start Lesson')
   },
 
   /**
@@ -378,7 +427,6 @@ const lessonScripts = {
     const startHour = p.startHour as number
     const lessonName = p.lessonName as string
 
-    // Set time to exact start — the player was here on time
     if (g.hourOfDay > startHour) {
       const d = g.date
       d.setHours(Math.floor(startHour), (startHour % 1) * 60, 0, 0)
@@ -386,7 +434,30 @@ const lessonScripts = {
     }
 
     g.add(`The ${lessonName} lecture is about to begin.`)
-    g.addOption('lessonStart', p, 'Start Lesson')
+    g.addOption('lessonBeginAndFlow', p, 'Start Lesson')
+  },
+
+  /** Set up lesson state: mark in-progress, move professor to classroom, set scene NPC. */
+  lessonBegin: (g: Game, p: Record<string, unknown>) => {
+    const lessonId = p.lessonId as string
+    const npcId = p.npcId as string | undefined
+
+    const quest = g.player.cards.find(c => c.id === lessonId)
+    if (quest) quest.inLesson = true
+
+    if (npcId) {
+      const prof = g.getNPC(npcId)
+      prof.location = 'classroom'
+      g.scene.npc = npcId
+    }
+  },
+
+  /** Combined begin + flow for auto-start (needs to push the full flow as a single option target). */
+  lessonBeginAndFlow: (g: Game, p: Record<string, unknown>) => {
+    const lessonId = p.lessonId as string
+    const lessonName = p.lessonName as string
+    g.run('lessonBegin', p)
+    g.run(lessonFlow(lessonId, lessonName, p))
   },
 
   /**
@@ -396,146 +467,36 @@ const lessonScripts = {
   lessonLateStart: (g: Game, p: Record<string, unknown>) => {
     const lessonId = p.lessonId as string
     const lessonName = p.lessonName as string
-    const npcId = p.npcId as string | undefined
     const startHour = p.startHour as number
     const flavour = LESSON_FLAVOUR[lessonId]
 
-    // Mark lesson in progress
-    const quest = g.player.cards.find(c => c.id === lessonId)
-    if (quest) quest.inLesson = true
+    // Set up lesson state
+    g.run('lessonBegin', p)
 
-    // Move the professor to the classroom
-    if (npcId) {
-      const prof = g.getNPC(npcId)
-      prof.location = 'classroom'
-      g.scene.npc = npcId
-    }
+    // Scolding — use lesson-specific DSL script or generic fallback
+    const lateScript = flavour?.lateArrival ?? random(...LATE_ARRIVAL_GENERIC)
+    g.run(lateScript)
 
-    // Scolding
-    const profFlavour = npcId ? LATE_ARRIVAL_FLAVOUR[npcId] : undefined
-    if (profFlavour) {
-      g.add(pick(profFlavour))
-    } else {
-      g.add(pick(LATE_ARRIVAL_GENERIC))
-    }
+    g.add({ type: 'text', text: 'You take your seat and try to follow along.', color: '#d0b691' })
 
-    // Determine which phase the player joins based on elapsed time
+    // Determine which phase to join based on elapsed time
     const elapsedMinutes = (g.hourOfDay - startHour) * 60
     const currentPhase = Math.min(Math.floor(elapsedMinutes / PHASE_DURATION) + 1, 4)
 
-    g.add({ type: 'text', text: `You take your seat and try to follow along.`, color: '#d0b691' })
-
-    // Jump to the appropriate phase's continuation
-    if (currentPhase <= 1) {
-      // Still in phase 1 — show intro text and continue normally
-      if (flavour) {
-        g.add(pick(flavour.intro))
-      }
-      g.timeLapse(PHASE_DURATION)
-      g.addOption('lessonPhase2', p, 'Continue')
-    } else if (currentPhase === 2) {
-      if (flavour) {
-        g.add(pick(flavour.middle[0]))
-      } else {
-        g.add(`The ${lessonName} lecture continues.`)
-      }
-      g.timeLapse(PHASE_DURATION)
-      g.addOption('lessonPhase3', p, 'Continue')
-    } else if (currentPhase === 3) {
-      if (flavour) {
-        g.add(pick(flavour.middle[1]))
-      } else {
-        g.add(`The ${lessonName} lecture continues.`)
-      }
-      g.timeLapse(PHASE_DURATION)
-      g.addOption('lessonPhase4', p, 'Continue')
-    } else {
-      // Phase 4 or beyond — just catch the conclusion
-      if (flavour) {
-        g.add(pick(flavour.conclusion))
+    if (currentPhase >= 4) {
+      // Past the last phase — just run endLesson
+      const f = LESSON_FLAVOUR[lessonId]
+      if (f) {
+        g.add(pick(f.conclusion))
       } else {
         g.add(`The ${lessonName} lecture concludes.`)
       }
       g.timeLapse(PHASE_DURATION)
       g.run('endLesson', p)
-    }
-  },
-
-  /** Begin the lesson proper — phase 1 of 4. */
-  lessonStart: (g: Game, p: Record<string, unknown>) => {
-    const lessonId = p.lessonId as string
-    const lessonName = p.lessonName as string
-    const npcId = p.npcId as string | undefined
-    const flavour = LESSON_FLAVOUR[lessonId]
-
-    // Mark lesson in progress to suppress reminders
-    const quest = g.player.cards.find(c => c.id === lessonId)
-    if (quest) quest.inLesson = true
-
-    // Move the professor to the classroom for the duration
-    if (npcId) {
-      const prof = g.getNPC(npcId)
-      prof.location = 'classroom'
-      g.scene.npc = npcId
-    }
-
-    // Phase 1: Introduction
-    if (flavour) {
-      g.add(pick(flavour.intro))
     } else {
-      g.add(`The ${lessonName} lecture begins.`)
+      // Join at the current phase and play remaining phases via DSL
+      g.run(lessonFlowFrom(currentPhase, lessonId, lessonName, p))
     }
-    g.timeLapse(PHASE_DURATION)
-
-    g.addOption('lessonPhase2', p, 'Continue')
-  },
-
-  /** Lesson phase 2. */
-  lessonPhase2: (g: Game, p: Record<string, unknown>) => {
-    const lessonId = p.lessonId as string
-    const lessonName = p.lessonName as string
-    const flavour = LESSON_FLAVOUR[lessonId]
-
-    if (flavour) {
-      g.add(pick(flavour.middle[0]))
-    } else {
-      g.add(`The ${lessonName} lecture continues.`)
-    }
-    g.timeLapse(PHASE_DURATION)
-
-    g.addOption('lessonPhase3', p, 'Continue')
-  },
-
-  /** Lesson phase 3. */
-  lessonPhase3: (g: Game, p: Record<string, unknown>) => {
-    const lessonId = p.lessonId as string
-    const lessonName = p.lessonName as string
-    const flavour = LESSON_FLAVOUR[lessonId]
-
-    if (flavour) {
-      g.add(pick(flavour.middle[1]))
-    } else {
-      g.add(`The ${lessonName} lecture continues.`)
-    }
-    g.timeLapse(PHASE_DURATION)
-
-    g.addOption('lessonPhase4', p, 'Continue')
-  },
-
-  /** Lesson phase 4: conclusion. */
-  lessonPhase4: (g: Game, p: Record<string, unknown>) => {
-    const lessonId = p.lessonId as string
-    const lessonName = p.lessonName as string
-    const flavour = LESSON_FLAVOUR[lessonId]
-
-    if (flavour) {
-      g.add(pick(flavour.conclusion))
-    } else {
-      g.add(`The ${lessonName} lecture concludes.`)
-    }
-    g.timeLapse(PHASE_DURATION)
-
-    g.run('endLesson', p)
   },
 
   /** Lesson cleanup: timeLapse to end, clear flags, increment attendance. */
@@ -553,7 +514,6 @@ const lessonScripts = {
     // Clear in-progress flag and increment attendance
     quest.inLesson = false
     quest.attended = ((quest.attended as number) ?? 0) + 1
-    const attended = quest.attended as number
 
     // Release the professor back to their normal schedule
     if (npcId) {
@@ -562,8 +522,6 @@ const lessonScripts = {
       if (profDef.onMove) g.run(profDef.onMove)
       g.scene.npc = undefined
     }
-
-    g.add({ type: 'text', text: `(${attended}/${LESSONS_REQUIRED} sessions attended)`, color: '#d0b691' })
   },
 }
 
