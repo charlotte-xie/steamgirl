@@ -217,9 +217,9 @@ export class Game {
     return npc
   }
 
-  /** Add an option button to the current scene that runs a script. */
-  addOption(scriptName: string, params: {} = {}, label?: string): Game {
-    this.scene.options.push({ type: 'button', script: [scriptName, params], label })
+  /** Add an option button to the current scene. Action is a string expression or Instruction. */
+  addOption(action: string | Instruction, label?: string): Game {
+    this.scene.options.push({ type: 'button', action, label })
     return this;
   }
 
@@ -236,7 +236,7 @@ export class Game {
       this.scene.content.push({ type: 'paragraph', content: [{ type: 'text', text: item }] })
     } else if (Array.isArray(item)) {
       item.forEach(i => this.add(i))
-    } else if ('script' in item) {
+    } else if ('action' in item) {
       // It's a SceneOptionItem
       this.scene.options.push(item)
     } else {
@@ -260,11 +260,11 @@ export class Game {
   /**
    * Implement a player action by running a script.
    * - Clears the current scene
-   * - Runs the script for the player action
+   * - Runs the action (string expression or Instruction)
    * - Updates player state (handled by script)
    * - Catches errors and displays them gracefully to the player
    */
-  takeAction(scriptName: string, params: {} = {}): void {
+  takeAction(action: string | Instruction): void {
     // Record the time of this action
     this.player.setTimer('lastAction', this.time)
 
@@ -272,17 +272,13 @@ export class Game {
     this.clearScene()
 
     // Non-scene-management actions abandon the scene stack
-    if (scriptName !== 'advanceScene') {
+    const actionName = typeof action === 'string' ? action : action[0]
+    if (actionName !== 'advanceScene') {
       this.scene.stack = []
     }
 
     try {
-      // Get and run the script (may modify game state)
-      const script = getScript(scriptName)
-      if (!script) {
-        throw new Error(`Player action script not found: ${scriptName}`)
-      }
-      script(this, params)
+      this.run(action)
     } catch (error) {
       // Display a graceful error message to the player
       // Don't clear scene - preserve any content that was added before the error
@@ -291,7 +287,6 @@ export class Game {
       this.add('')
       const message = error instanceof Error ? error.message : String(error)
       this.add({ type: 'paragraph', content: [{ type: 'text', text: message, color: '#ff6b6b' }] })
-      // TODO any cleanup?
     }
   }
 
@@ -611,15 +606,22 @@ export class Game {
     // Handle scene deserialization - migrate old format or use new format
     if (data.scene) {
       if ('type' in data.scene && data.scene.type === 'story') {
-        // New format
-        game.scene = data.scene as SceneData
+        // New format — migrate any old 'script' options to 'action'
+        const scene = data.scene as SceneData
+        scene.options = (scene.options ?? []).map((opt: Record<string, unknown>) => {
+          if ('script' in opt && !('action' in opt)) {
+            return { type: opt.type, action: opt.script, label: opt.label }
+          }
+          return opt
+        }) as SceneData['options']
+        game.scene = scene
       } else if ('dialog' in data.scene || 'next' in data.scene) {
         // Old format - migrate to new format
         const oldScene = data.scene as { dialog?: string; next?: string }
         game.scene = {
           type: 'story',
           content: oldScene.dialog ? [{ type: 'text', text: oldScene.dialog }] : [],
-          options: oldScene.next ? [{ type: 'button', script: [oldScene.next, {}] }] : [],
+          options: oldScene.next ? [{ type: 'button', action: oldScene.next }] : [],
           stack: [],
         }
       }

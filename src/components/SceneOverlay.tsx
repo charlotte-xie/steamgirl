@@ -1,8 +1,7 @@
 import { Button } from './Button'
 import { Panel } from './Panel'
 import { useGame } from '../context/GameContext'
-import type { SceneData, SceneOptionItem } from '../model/Game'
-import { getScript } from '../model/Scripts'
+import type { SceneData } from '../model/Game'
 import { renderScene } from './Content'
 import { getNPCDefinition } from '../model/NPC'
 import { assetUrl } from '../utils/assetUrl'
@@ -13,16 +12,6 @@ interface SceneOverlayProps {
 
 export function SceneOverlay({ scene }: SceneOverlayProps) {
   const { game, runScript, dismissScene } = useGame()
-
-  const handleOption = (option: SceneOptionItem) => {
-    if (option.type === 'button') {
-      const [scriptName, params] = option.script
-      const script = getScript(scriptName)
-      if (script) {
-        runScript(scriptName, params)
-      }
-    }
-  }
 
   const inScene = game.inScene
   const npcId = scene.npc
@@ -41,14 +30,11 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
         <div className="scene-actions">
             {scene.options.map((option, index) => {
               if (option.type === 'button') {
-                const [scriptName] = option.script
-                const scriptExists = getScript(scriptName) !== undefined
                 const buttonLabel = option.label || 'Continue'
                 return (
                   <Button
                     key={index}
-                    onClick={() => handleOption(option)}
-                    disabled={!scriptExists}
+                    onClick={() => runScript(option.action)}
                   >
                     {buttonLabel}
                   </Button>

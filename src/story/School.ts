@@ -8,9 +8,9 @@ import {
   option,
   move,
   discoverLocation,
-  timeLapseUntil,
+  timeUntil,
   completeQuest,
-  timeLapse,
+  time,
   addStat,
   eatFood,
   random,
@@ -185,25 +185,25 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // ============================================================================
 
 const socialiseGreatHall: Instruction[] = [
-  timeLapse(30),
+  time(30),
   text('You mingle with other students in the Great Hall.'),
   addStat('Mood', 1, { max: 80, chance: 0.5 }),
 ]
 
 const breakfastGreatHall: Instruction[] = [
-  timeLapse(15),
+  time(15),
   text('You have breakfast in the Great Hall.'),
   eatFood(100),
 ]
 
 const lunchGreatHall: Instruction[] = [
-  timeLapse(30),
+  time(30),
   text('You have lunch in the Great Hall.'),
   eatFood(100),
 ]
 
 const studyLibrary: Instruction[] = [
-  timeLapse(60),
+  time(60),
   text('You spend an hour studying in the library.'),
   random(
     addStat('Aetherics', 1),
@@ -212,7 +212,7 @@ const studyLibrary: Instruction[] = [
 ]
 
 const socialiseCourtyard: Instruction[] = [
-  timeLapse(30),
+  time(30),
   text('You chat with others in the courtyard.'),
   addStat('Mood', 1, { max: 80, chance: 0.5 }),
 ]
@@ -264,7 +264,7 @@ const inductionComplete: Instruction[] = [
   say('You now have full access to the university facilities. Remember, the university is open Monday through Friday, from 7am to 9pm. Make the most of your time here.'),
   say('The courtyard is also available for relaxation between classes. Explore at your leisure — these halls are now yours to use.'),
   text('With that, she hands you a small brass key and departs, leaving you to explore the university on your own.'),
-  timeLapseUntil(10.25),
+  timeUntil(10.25),
   completeQuest('attend-university'),
   run('enrollLessons'),
 ]

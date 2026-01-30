@@ -72,7 +72,7 @@ function InlinePart({ part }: { part: InlineContent }): ReactNode {
 
     if (part.hoverText) {
       return (
-        <Tooltip content={<div style={{ margin: 0 }}>{part.hoverText}</div>}>
+        <Tooltip content={<span style={{ margin: 0 }}>{part.hoverText}</span>}>
           {highlightSpan}
         </Tooltip>
       )

@@ -122,7 +122,7 @@ export function Clock() {
                 type="button"
                 className="clock-wait-btn"
                 disabled={inScene}
-                onClick={() => runScript('wait', { minutes, text: 'You wait for a while.' })}
+                onClick={() => runScript(['wait', { minutes, text: 'You wait for a while.' }])}
                 title={`Wait ${minutes} minute${minutes === 1 ? '' : 's'}`}
               >
                 {label}

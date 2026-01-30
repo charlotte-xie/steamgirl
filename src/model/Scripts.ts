@@ -729,10 +729,10 @@ const coreScripts: Record<string, ScriptFn> = {
 
       if (entry.isExit) {
         // Exit: push content only — no loop back
-        game.addOption('advanceScene', { push: [entry.content] }, entry.label)
+        game.addOption(['advanceScene', { push: [entry.content] }], entry.label)
       } else {
         // Loop: push content then re-push the menu
-        game.addOption('advanceScene', { push: [entry.content, menuSelf] }, entry.label)
+        game.addOption(['advanceScene', { push: [entry.content, menuSelf] }], entry.label)
       }
     }
   },
@@ -956,62 +956,20 @@ const coreScripts: Record<string, ScriptFn> = {
 
   /**
    * Add an option button to the scene.
-   *
-   * Script resolution with namespace prefixes:
-   * - 'npc:scriptName' - explicitly call NPC script via interact
-   * - 'global:scriptName' - explicitly call global script
-   * - 'scriptName' (no prefix) - context-aware:
-   *   - If in NPC scene and NPC has this script, calls it via interact
-   *   - Otherwise uses global script
-   *
-   * If script is omitted, derives it from label (lowercase, non-alphanumeric removed).
+   * Action can be a string expression (resolved via game.run at click time)
+   * or an Instruction (executed directly at click time).
+   * If action is omitted, derives a script name from label.
    */
-  option: (game: Game, params: { label?: string; script?: string; params?: object }) => {
+  option: (game: Game, params: { label?: string; action?: string | Instruction }) => {
     const label = params.label
     if (!label) return
-
-    // Derive script name from label if not provided
-    const rawScript = params.script ?? label.toLowerCase().replace(/[^a-z0-9]/g, '')
-    const scriptParams = params.params ?? {}
-
-    // Parse namespace prefix
-    let namespace: 'npc' | 'global' | 'auto' = 'auto'
-    let scriptName = rawScript
-
-    if (rawScript.startsWith('npc:')) {
-      namespace = 'npc'
-      scriptName = rawScript.slice(4)
-    } else if (rawScript.startsWith('global:')) {
-      namespace = 'global'
-      scriptName = rawScript.slice(7)
-    }
-
-    // Resolve the script based on namespace and context
-    if (namespace === 'npc') {
-      // Explicit NPC script
-      game.addOption('interact', { script: scriptName, params: scriptParams }, label)
-    } else if (namespace === 'global') {
-      // Explicit global script
-      game.addOption(scriptName, scriptParams, label)
-    } else {
-      // Auto: check NPC context first
-      const npcId = game.scene.npc
-      if (npcId) {
-        const npc = game.getNPC(npcId)
-        if (npc.template.scripts?.[scriptName]) {
-          // NPC has this script - use interact
-          game.addOption('interact', { script: scriptName, params: scriptParams }, label)
-          return
-        }
-      }
-      // Fall back to global script
-      game.addOption(scriptName, scriptParams, label)
-    }
+    const action = params.action ?? label.toLowerCase().replace(/[^a-z0-9]/g, '')
+    game.addOption(action, label)
   },
 
   /** Standard NPC conversation leave option */
   npcLeaveOption: (game: Game, params: { text?: string; reply?: string; label?: string }) => {
-    game.addOption('endConversation', { text: params.text, reply: params.reply }, params.label ?? 'Leave')
+    game.addOption(['endConversation', { text: params.text, reply: params.reply }], params.label ?? 'Leave')
   },
 
   // -------------------------------------------------------------------------
@@ -1320,7 +1278,7 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!pages || pages.length === 0) return
     game.scene.stack.unshift(...pages)
     if (game.scene.options.length === 0) {
-      game.addOption('advanceScene', {}, 'Continue')
+      game.addOption('advanceScene', 'Continue')
     }
   },
 
@@ -1339,7 +1297,7 @@ const coreScripts: Record<string, ScriptFn> = {
       // Otherwise the page was a no-op — continue to next page
     }
     if (game.scene.options.length === 0 && game.scene.stack.length > 0) {
-      game.addOption('advanceScene', {}, 'Continue')
+      game.addOption('advanceScene', 'Continue')
     }
   },
 }

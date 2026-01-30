@@ -108,11 +108,10 @@ export const npcName = (npc?: string): Instruction =>
  * If script is omitted, derives it from label (lowercase, spaces removed).
  *
  * @param label - Button label shown to player (required)
- * @param script - Script name with optional namespace prefix (default: derived from label)
- * @param params - Parameters to pass to the script
+ * @param action - String expression or Instruction to run when clicked (default: derived from label)
  */
-export const option = (label: string, script?: string, params?: object): Instruction =>
-  run('option', { label, script, params: params ?? {} })
+export const option = (label: string, action?: string | Instruction): Instruction =>
+  run('option', { label, action: action ?? label.toLowerCase().replace(/[^a-z0-9]/g, '') })
 
 /** Standard NPC conversation leave option */
 export const npcLeaveOption = (text?: string, reply?: string, label = 'Leave'): Instruction =>
@@ -246,9 +245,7 @@ export const scene = (...elements: SceneElement[]): Instruction =>
  * @param rest - SceneElements to display when chosen (strings auto-wrap to text())
  */
 export function branch(label: string, ...rest: SceneElement[]): Instruction {
-  return option(label, 'global:advanceScene', {
-    push: [seq(...rest)],
-  })
+  return option(label, ['advanceScene', { push: [seq(...rest)] }])
 }
 
 // --- Branch detection & epilogue helpers (internal) ---
@@ -257,8 +254,10 @@ export function branch(label: string, ...rest: SceneElement[]): Instruction {
 function isBranchOption(instr: Instruction): boolean {
   const [name, params] = instr
   if (name !== 'option') return false
-  const script = (params as { script?: string }).script
-  return script === 'global:advanceScene' || script === 'advanceScene'
+  const action = (params as { action?: string | Instruction }).action
+  if (typeof action === 'string') return action === 'advanceScene'
+  if (Array.isArray(action)) return action[0] === 'advanceScene'
+  return false
 }
 
 /** True if instruction is a branch or a gated branch (when wrapping a single branch) */
@@ -275,8 +274,9 @@ function isBranchLike(instr: Instruction): boolean {
 /** Append epilogue to the last page of a branch option's push array */
 function appendEpilogueToBranch(instr: Instruction, epilogue: Instruction[]): Instruction {
   const [name, params] = instr
-  const p = params as { label: string; script: string; params: { push: Instruction[] } }
-  const push = p.params?.push ?? []
+  const p = params as { label: string; action: Instruction }
+  const advanceParams = (p.action[1] ?? {}) as { push?: Instruction[] }
+  const push = advanceParams.push ?? []
 
   const newPush = push.length === 0
     ? [seq(...epilogue)]
@@ -284,7 +284,7 @@ function appendEpilogueToBranch(instr: Instruction, epilogue: Instruction[]): In
       i === push.length - 1 ? seq(page, ...epilogue) : page
     )
 
-  return [name, { ...params, params: { ...p.params, push: newPush } }]
+  return [name, { ...params, action: ['advanceScene', { ...advanceParams, push: newPush }] }]
 }
 
 /** Append epilogue to a branch-like instruction (plain branch or gated branch) */
@@ -361,9 +361,10 @@ export function gatedBranch(
 /** Extract label and content from a branch option instruction */
 function extractBranchInfo(instr: Instruction): { label: string; content: Instruction } | null {
   if (!isBranchOption(instr)) return null
-  const params = instr[1] as { label?: string; params?: { push?: Instruction[] } }
+  const params = instr[1] as { label?: string; action?: Instruction }
   const label = params.label ?? ''
-  const push = (params.params?.push ?? []) as Instruction[]
+  const advanceParams = (Array.isArray(params.action) ? params.action[1] : {}) as { push?: Instruction[] }
+  const push = (advanceParams?.push ?? []) as Instruction[]
   return { label, content: push.length === 1 ? push[0] : run('seq', { instructions: push }) }
 }
 
@@ -520,7 +521,7 @@ export const go = (location: string, minutes?: number): Instruction =>
   run('go', { location, minutes })
 
 /** Advance game time */
-export const timeLapse = (minutes: number): Instruction =>
+export const time = (minutes: number): Instruction =>
   run('timeLapse', { minutes })
 
 /** Set the current scene's NPC (for dialogue scenes with a specific character) */
@@ -587,7 +588,7 @@ export const discoverLocation = (location: string, text?: string, colour?: strin
   run('discoverLocation', { location, text, colour })
 
 /** Advance time until a specific hour of day (e.g., 10.25 for 10:15am) */
-export const timeLapseUntil = (untilTime: number): Instruction =>
+export const timeUntil = (untilTime: number): Instruction =>
   run('timeLapse', { untilTime })
 
 /** Conditional lesson segment. Runs body if fewer than `minutes` have elapsed since lesson start.
@@ -701,7 +702,7 @@ export function registerDslScript(name: string, instructions: SceneElement[]): v
  *
  * @example
  * // Activity script
- * { script: script(timeLapse(10), random(text('A'), text('B'))) }
+ * { script: script(time(10), random(text('A'), text('B'))) }
  *
  * // In makeScripts
  * makeScripts({

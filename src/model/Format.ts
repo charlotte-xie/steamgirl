@@ -24,9 +24,9 @@ export type Content =
   // | { type: 'image'; src: string; alt?: string }
   // | { type: 'portrait'; npc: string; expression?: string }
 
-/** An option button in a scene */
+/** An option button in a scene. Action is a string expression (resolved via game.run) or an Instruction. */
 export type SceneOptionItem =
-  | { type: 'button'; script: Instruction; label?: string }
+  | { type: 'button'; action: string | Instruction; label?: string }
 
 // ============================================================================
 // CONTENT BUILDERS

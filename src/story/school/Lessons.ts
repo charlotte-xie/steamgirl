@@ -3,7 +3,7 @@ import type { Instruction } from '../../model/Scripts'
 import type { Card, CardDefinition, Reminder } from '../../model/Card'
 import { registerCardDefinition } from '../../model/Card'
 import { makeScripts } from '../../model/Scripts'
-import { random, timeLapseUntil, run, seq, scenes, choice, branch, lessonTime, say } from '../../model/ScriptDSL'
+import { random, timeUntil, run, seq, scenes, choice, branch, lessonTime, say } from '../../model/ScriptDSL'
 
 // ============================================================================
 // TIMETABLE STRUCTURE
@@ -345,17 +345,17 @@ const lessonScripts = {
       g.run(seq(
         choice(
           branch('Wait quietly',
-            timeLapseUntil(next.slot.startHour),
+            timeUntil(next.slot.startHour),
             'You sit quietly and wait, watching students file in as the start time approaches.',
             'The lecturer arrives and begins setting up.',
           ),
           branch('Study your notes',
-            timeLapseUntil(next.slot.startHour),
+            timeUntil(next.slot.startHour),
             'You review your notes from previous sessions, refreshing the key concepts in your mind.',
             'The lecturer arrives and begins setting up.',
           ),
           branch('Chat with classmates',
-            timeLapseUntil(next.slot.startHour),
+            timeUntil(next.slot.startHour),
             'You chat with nearby students, swapping impressions of the course and comparing notes.',
             'The lecturer arrives and begins setting up.',
           ),
@@ -390,7 +390,7 @@ const lessonScripts = {
     }
 
     g.add(`The ${lessonName} lecture is about to begin.`)
-    g.addOption('lessonBeginAndRun', p, 'Start Lesson')
+    g.addOption(['lessonBeginAndRun', p], 'Start Lesson')
   },
 
   /** Conditional lesson segment. Runs body if fewer than `minutes` have elapsed since lesson start.

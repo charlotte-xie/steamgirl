@@ -64,7 +64,7 @@ export function InventoryScreen({ onUseItem }: InventoryViewProps) {
 
   const handleDiscard = () => {
     if (selectedItem) {
-      runScript('loseItem', { item: selectedItem.id, number: 1 })
+      runScript(['loseItem', { item: selectedItem.id, number: 1 }])
       setSelectedItem(null)
     }
   }
@@ -146,7 +146,7 @@ export function InventoryScreen({ onUseItem }: InventoryViewProps) {
                     
                     disabled={inScene}
                     title={sceneTooltip}
-                    onClick={() => runScript('examineItem', { item: selectedItem.id })}
+                    onClick={() => runScript(['examineItem', { item: selectedItem.id }])}
                   >
                     Examine
                   </Button>
@@ -157,7 +157,7 @@ export function InventoryScreen({ onUseItem }: InventoryViewProps) {
                     disabled={inScene}
                     title={sceneTooltip}
                     onClick={() => {
-                      runScript('consumeItem', { item: selectedItem.id })
+                      runScript(['consumeItem', { item: selectedItem.id }])
                       onUseItem?.()
                     }}
                   >

@@ -198,8 +198,8 @@ registerNPC('spice-dealer', {
         && !(npc.stats.get('dateDeclined') ?? 0)) {
       game.add('Timmy shifts his weight from foot to foot, his mechanical hand clicking nervously. He seems to have something on his mind.')
       npc.say('Listen, I... I was thinking. D\'you fancy going for a walk sometime? Just the two of us. I know some spots.')
-      game.addOption('interact', { script: 'dateAccept' }, 'That sounds nice')
-      game.addOption('interact', { script: 'dateDecline' }, 'I don\'t think so')
+      game.addOption(['interact', { script: 'dateAccept' }], 'That sounds nice')
+      game.addOption(['interact', { script: 'dateDecline' }], 'I don\'t think so')
       return
     }
 
@@ -280,6 +280,8 @@ registerNPC('spice-dealer', {
         g.run('addNpcStat', { stat: 'affection', change: 2, max: 25, hidden: true })
       }
 
+      g.timeLapse(2)
+
       // Introduce on first purchase
       if (npc.nameKnown <= 0) {
         npc.nameKnown = 1
@@ -320,6 +322,7 @@ registerNPC('spice-dealer', {
       } else {
         npc.say('Save it. I\'m not buyin\'.')
       }
+      g.timeLapse(2)
     },
 
     spicePush: (g: Game) => {
@@ -343,8 +346,8 @@ registerNPC('spice-dealer', {
         npc.say('Come on. One more won\'t hurt. I thought we were mates?')
       }
 
-      g.addOption('interact', { script: 'acceptPush' }, 'Take the spice')
-      g.addOption('interact', { script: 'refusePush' }, 'No thanks')
+      g.addOption(['interact', { script: 'acceptPush' }], 'Take the spice')
+      g.addOption(['interact', { script: 'refusePush' }], 'No thanks')
     },
 
     acceptPush: (g: Game) => {
@@ -358,6 +361,7 @@ registerNPC('spice-dealer', {
 
       npc.say('There you go. You won\'t regret it.')
       g.add('His mechanical hand clicks with satisfaction.')
+      g.timeLapse(1)
     },
 
     refusePush: (g: Game) => {
@@ -365,6 +369,7 @@ registerNPC('spice-dealer', {
       npc.stats.set('pushCount', (npc.stats.get('pushCount') ?? 0) + 1)
       npc.say('Suit yourself. Offer stands.')
       g.add('He pockets the packet and melts back into the shadows, unbothered.')
+      g.timeLapse(1)
     },
 
     hangOut: (g: Game) => {
@@ -390,6 +395,7 @@ registerNPC('spice-dealer', {
         g.run('addNpcStat', { stat: 'affection', change: 2, max: 35, hidden: true })
       }
 
+      g.timeLapse(10)
       npc.stats.set('hangCount', hangCount + 1)
       npc.chat()
     },
@@ -436,6 +442,7 @@ registerNPC('spice-dealer', {
           g.run('addNpcStat', { stat: 'affection', change: -5, min: 0 })
         }
       }
+      g.timeLapse(2)
       npc.chat()
     },
 
@@ -464,6 +471,7 @@ registerNPC('spice-dealer', {
           g.run('addNpcStat', { stat: 'affection', change: -5, min: 0 })
         }
       }
+      g.timeLapse(2)
       npc.chat()
     },
 

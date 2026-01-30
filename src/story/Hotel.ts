@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
+import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
 import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
@@ -68,13 +68,13 @@ registerCardDefinition('suite-booking', suiteBookingCard)
 
 const addReceptionOptions = (g: Game) => {
   if (!g.player.hasCard('hotel-booking')) {
-    g.addOption('receptionBookRoom', {}, `Book a Room (${ROOM_PRICE} Kr)`)
+    g.addOption('receptionBookRoom', `Book a Room (${ROOM_PRICE} Kr)`)
   }
   if (!g.player.hasCard('suite-booking')) {
-    g.addOption('receptionBookSuite', {}, `Book the Suite (${SUITE_PRICE} Kr)`)
+    g.addOption('receptionBookSuite', `Book the Suite (${SUITE_PRICE} Kr)`)
   }
-  g.addOption('receptionAskWork', {}, 'Ask About Work')
-  g.addOption('receptionLeave', {}, 'Leave')
+  g.addOption('receptionAskWork', 'Ask About Work')
+  g.addOption('receptionLeave', 'Leave')
 }
 
 const receptionScripts = {
@@ -259,7 +259,7 @@ function patronGardenPath(): Instruction {
     move('hotel-garden', 5),
     'The lift opens onto the rooftop garden. The city stretches below, gaslights tracing the streets like scattered jewels. The air is cool and fragrant with night-blooming flowers.',
     '"Worth the trip, wouldn\'t you say?" He stands close, one hand resting lightly on the railing beside yours.',
-    timeLapse(10),
+    time(10),
     run('consumeAlcohol', { amount: 15 }),
     menu(
       branch('Talk',
@@ -269,7 +269,7 @@ function patronGardenPath(): Instruction {
           'He points out landmarks across the skyline — the university clock tower, the great chimney of the steamworks. You find yourself leaning into him as you look.',
           'He asks about your studies and listens with genuine curiosity. The night air is cool, and you stand close for warmth.',
         ),
-        timeLapse(10),
+        time(10),
         addStat('Charm', 1, { max: 40, chance: 0.3 }),
       ),
       branch('Have a drink',
@@ -278,7 +278,7 @@ function patronGardenPath(): Instruction {
           'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
         ),
         run('consumeAlcohol', { amount: 15 }),
-        timeLapse(5),
+        time(5),
       ),
       branch('Enjoy the view',
         random(
@@ -286,7 +286,7 @@ function patronGardenPath(): Instruction {
           'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
           'You watch an airship drift silently across the moon, its running lights winking red and green.',
         ),
-        timeLapse(10),
+        time(10),
         addStat('Mood', 2, { max: 85 }),
       ),
       exit('Call it a night',
@@ -347,7 +347,7 @@ function patronPoolPath(): Instruction {
         'You lower yourself into the heated water. It\'s blissfully warm — the hotel\'s boilers keep it at a perfect temperature.',
         'You dive in. The water is warm and silky, lit from below so it glows a deep aquamarine.',
       ),
-      timeLapse(10),
+      time(10),
       run('consumeAlcohol', { amount: 15 }),
       menu(
         branch('Swim',
@@ -356,7 +356,7 @@ function patronPoolPath(): Instruction {
             'You race him to the far end. He lets you win — or perhaps you\'re simply faster. Either way, you\'re both laughing.',
             'You float on your back, gazing up through the glass ceiling at the stars. He drifts beside you, close enough to touch.',
           ),
-          timeLapse(10),
+          time(10),
           addStat('Fitness', 1, { max: 50, chance: 0.2 }),
         ),
         branch('Talk',
@@ -366,7 +366,7 @@ function patronPoolPath(): Instruction {
             'You rest your arms on the pool\'s edge and talk. The warm water makes everything feel languid and easy.',
             'He describes the mechanical baths of Praag — heated by volcanic springs, with brass jets that massage your shoulders. "Nothing like this, though," he adds, looking at you.',
           ),
-          timeLapse(10),
+          time(10),
           addStat('Charm', 1, { max: 40, chance: 0.3 }),
         ),
         branch('Have a drink',
@@ -375,7 +375,7 @@ function patronPoolPath(): Instruction {
             'An attendant materialises with a tray of cocktails. You sip yours with your elbows propped on the marble edge.',
           ),
           run('consumeAlcohol', { amount: 15 }),
-          timeLapse(5),
+          time(5),
         ),
         exit('Get out',
           'You\'ve had enough swimming. You pull yourself up onto the marble edge, water streaming from your skin.',
@@ -454,7 +454,7 @@ const barPatronScene = scenes(
                   'The conversation turns playful. He\'s witty and attentive, and keeps finding excuses to touch your hand.',
                   'You trade barbs and compliments in equal measure. He laughs easily, charmed by your boldness.',
                 ),
-                timeLapse(30),
+                time(30),
                 run('consumeAlcohol', { amount: 20 }),
                 addStat('Flirtation', 1, { max: 40, chance: 0.4 }),
               ),
@@ -467,7 +467,7 @@ const barPatronScene = scenes(
                 'You try to catch his eye with a coy smile, but the delivery falls flat. He gives a polite laugh and changes the subject.',
                 'You attempt a witty remark, but it lands awkwardly. He smiles graciously and steers the conversation elsewhere.',
               ),
-              timeLapse(20),
+              time(20),
               addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
               'After a pleasant but unremarkable chat, he finishes his drink. "Well, it\'s been a pleasure. Do enjoy your evening."',
             ),
@@ -476,7 +476,7 @@ const barPatronScene = scenes(
         branch('Keep it casual',
           'You steer the conversation to safer waters — the city, the weather, a new exhibition at the museum.',
           'He seems genuine enough, and the chat is pleasant. After a while he finishes his drink and bids you a courteous good evening.',
-          timeLapse(20),
+          time(20),
           addStat('Mood', 3, { max: 85 }),
         ),
         branch('Excuse yourself',
@@ -514,7 +514,7 @@ const room533Scene = scenes(
         ),
         addStat('Arousal', 5, { max: 100 }),
         addStat('Flirtation', 1, { max: 40, chance: 0.3 }),
-        timeLapse(5),
+        time(5),
         random(
           'He draws back just far enough to look at you, slightly breathless. "You are full of surprises."',
           'When you finally pull apart, his eyes are bright. He runs a hand through his hair, composing himself.',
@@ -528,7 +528,7 @@ const room533Scene = scenes(
           'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
         ),
         run('consumeAlcohol', { amount: 20 }),
-        timeLapse(10),
+        time(10),
         random(
           'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
           'You clink glasses. The room feels cosier now, the city lights softening through the window.',
@@ -541,7 +541,7 @@ const room533Scene = scenes(
           'The conversation drifts to dreams and ambitions. He speaks carefully, choosing his words, and you realise he\'s more thoughtful than his polished exterior suggests.',
           'He asks about your life before Aetheria. You find yourself sharing more than you expected, drawn out by his quiet attentiveness. In turn, he tells you about growing up in the country — a different world from this gilded hotel room.',
         ),
-        timeLapse(15),
+        time(15),
         addStat('Charm', 1, { max: 40, chance: 0.3 }),
         addStat('Mood', 2, { max: 85 }),
       ),
@@ -571,7 +571,7 @@ const lightLunchScript = script(
     seq(
       removeItem('crown', 25),
       run('showPayment', { amount: 25 }),
-      timeLapse(30),
+      time(30),
       text('A waiter brings you a light but exquisite lunch — a salad of fresh greens, a delicate soup, and bread still warm from the oven. Every bite is perfect.'),
       eatFood(80),
       addStat('Mood', 3, { max: 90 }),
@@ -586,7 +586,7 @@ const fineDinnerScript = script(
     seq(
       removeItem('crown', 50),
       run('showPayment', { amount: 50 }),
-      timeLapse(90),
+      time(90),
       text('You are treated to a multi-course dinner that borders on the transcendent. Roast pheasant, seasonal vegetables, a cheese course, and a dessert so rich it ought to be illegal. The wine is excellent.'),
       eatFood(150),
       addStat('Mood', 10, { max: 100 }),
@@ -602,7 +602,7 @@ const takeTeaScript = script(
     seq(
       removeItem('crown', 10),
       run('showPayment', { amount: 10 }),
-      timeLapse(30),
+      time(30),
       text('A waiter brings you a pot of perfectly brewed tea and a tiered stand of finger sandwiches, scones with clotted cream, and tiny pastries. It\'s delightfully civilised.'),
       eatFood(40),
       addStat('Mood', 5, { max: 90 }),
@@ -612,7 +612,7 @@ const takeTeaScript = script(
 )
 
 const swimScript = script(
-  timeLapse(30),
+  time(30),
   random(
     text('You swim steady lengths in the warm water, feeling the tension leave your muscles.'),
     text('You float on your back, gazing up through the glass ceiling at the clouds drifting past.'),

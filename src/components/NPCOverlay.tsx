@@ -16,7 +16,7 @@ export function NPCOverlay() {
   }
 
   const handleNPCClick = (npcId: string) => {
-    runScript('approach', { npc: npcId })
+    runScript(['approach', { npc: npcId }])
   }
 
   return (

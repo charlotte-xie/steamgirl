@@ -87,16 +87,19 @@ registerNPC('elvis-crowe', {
     askTerritory: (g: Game) => {
       const npc = g.npc
       npc.say("These streets answer to me. You'd do well to remember that. Pay your respects, keep your head down, and we won't have a problem.")
+      g.timeLapse(1)
       npc.chat()
     },
     wordOnStreet: (g: Game) => {
       const npc = g.npc
       npc.say("Constables are jumpy. Timmy Bug's been moving product. And someone's been asking questions about the old mill. You didn't hear it from me.")
+      g.timeLapse(1)
       npc.chat()
     },
     work: (g: Game) => {
       const npc = g.npc
       npc.say("Maybe. I don't hand out errands to every face that walks up. Prove you're useful—or at least not a liability. Check back when you've got something to show.")
+      g.timeLapse(1)
       npc.chat()
     },
   },

@@ -45,7 +45,7 @@ import {
   npcLeaveOption, option,
   addNpcStat, addStat,
   npcStat,
-  timeLapse,
+  time,
   learnNpcName,
   scene, scenes,
   branch, menu, exit,
@@ -67,8 +67,8 @@ const TAVERN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         label: 'Gents',
         onFollow: (g: Game, _p: {}) => {
           g.add("You shouldn't be going in there... are you sure?")
-          g.addOption('enterGentsBathroom', {}, 'Enter Gents')
-          g.addOption('endScene', { text: 'You turn away.' }, 'Turn Away')
+          g.addOption('enterGentsBathroom', 'Enter Gents')
+          g.addOption(['endScene', { text: 'You turn away.' }], 'Turn Away')
         },
       },
       { dest: 'tavern-cellars', time: 1, label: 'Cellars' },
@@ -168,8 +168,8 @@ registerNPC('ivan-hess', {
     say('New in town, are you? After a drink? Or looking for something else?'),
     say("Either way, I'm your man. Ivan Hess at your service."),
     learnNpcName(),
-    option('Buy a Drink (10 Kr)', 'buyDrink'),
-    option('Just looking', 'onGeneralChat'),
+    option('Buy a Drink (10 Kr)', 'npc:buyDrink'),
+    option('Just looking', 'npc:onGeneralChat'),
     npcLeaveOption('You nod politely and step away from the bar.', 'Come back whenever you\'re thirsty.'),
   ),
 
@@ -249,17 +249,18 @@ registerNPC('ivan-hess', {
     // ----------------------------------------------------------------
 
     onGeneralChat: seq(
-      option('Buy a Drink (10 Kr)', 'buyDrink'),
-      option('Ask for gossip', 'gossip'),
-      option('Ask for work', 'work'),
+      option('Buy a Drink (10 Kr)', 'npc:buyDrink'),
+      option('Ask for gossip', 'npc:gossip'),
+      option('Ask for work', 'npc:work'),
       when(npcStat('affection', { min: 5 }),
-        option('Ask about the regulars', 'askRegulars'),
+        option('Ask about the regulars', 'npc:askRegulars'),
       ),
-      option('Leave', 'farewell'),
+      option('Leave', 'npc:farewell'),
     ),
 
     farewell: seq(
       'You step away from the bar.',
+      time(1),
       random(
         say("Don't be a stranger, {pc}."),
         say("Come back whenever you're thirsty."),
@@ -300,6 +301,7 @@ registerNPC('ivan-hess', {
           say("There you go. Mind the fumes from the still — we like our ale strong here."),
         ),
       ))
+      g.timeLapse(5)
 
       npc.chat()
     },
@@ -346,6 +348,7 @@ registerNPC('ivan-hess', {
           ),
         ),
       ))
+      g.timeLapse(3)
 
       npc.chat()
     },
@@ -357,16 +360,17 @@ registerNPC('ivan-hess', {
     work: (g: Game) => {
       const npc = g.npc
       const workCount = npc.stats.get('workCount') ?? 0
+      g.timeLapse(1)
 
       if (workCount === 0) {
         // First time — Ivan sizes you up
         npc.say("I could use someone to wash glasses and help when it gets busy. Pays a few krona, and you'll hear things. Interested?")
-        g.addOption('interact', { script: 'doWork' }, 'Roll up your sleeves')
+        g.addOption(['interact', { script: 'doWork' }], 'Roll up your sleeves')
         npc.leaveOption('You tell him you\'ll think about it.', "Fair enough. Offer stands.")
       } else {
         // Returning worker
         npc.say("Back for another shift, {pc}? Good. The glasses won't wash themselves.")
-        g.addOption('interact', { script: 'doWork' }, 'Get to work')
+        g.addOption(['interact', { script: 'doWork' }], 'Get to work')
         npc.leaveOption('You tell him not today.', "Suit yourself.")
       }
     },
@@ -379,7 +383,7 @@ registerNPC('ivan-hess', {
         scene(
           'Ivan tosses you a rag and nods toward the stack of dirty glasses behind the bar.',
           say("Start with those. Hot water's in the copper — mind the valve, it sticks."),
-          timeLapse(20),
+          time(20),
           random(
             'You roll up your sleeves and get to work. The water is scalding, the soap smells of lye, and the glasses are sticky with spilt ale.',
             'You settle into a rhythm — dunk, scrub, rinse, rack. The hot water turns your hands red. Ivan nods approvingly.',
@@ -389,7 +393,7 @@ registerNPC('ivan-hess', {
 
         // ── Stage 2: The rush ──
         scene(
-          timeLapse(30),
+          time(30),
           'The door swings open and a crowd of dockworkers pours in, still grimy from the shift. The tavern fills up fast.',
           say("Here we go. Keep the glasses coming, {pc}."),
           random(
@@ -417,7 +421,7 @@ registerNPC('ivan-hess', {
 
         // ── Stage 3: Overheard at the bar ──
         scene(
-          timeLapse(30),
+          time(30),
           'The rush settles into a steady hum. You wipe down tables and collect empties, ears open.',
           random(
             // Gossip about other NPCs
@@ -451,7 +455,7 @@ registerNPC('ivan-hess', {
 
         // ── Stage 4: Quiet spell ──
         scene(
-          timeLapse(20),
+          time(20),
           random(
             seq(
               'The crowd thins out. Ivan polishes a glass with slow, deliberate strokes.',
@@ -474,7 +478,7 @@ registerNPC('ivan-hess', {
               say("You're alright, though, {pc}. You know when to keep quiet."),
             ),
           ),
-          timeLapse(20),
+          time(20),
         ),
 
         // ── Stage 5: End of shift ──
@@ -508,6 +512,7 @@ registerNPC('ivan-hess', {
       g.run(addNpcStat('affection', 1, { max: 20, hidden: true }))
 
       g.add('You lean on the bar and ask Ivan about the people who drink here.')
+      g.timeLapse(5)
 
       g.run(menu(
         branch('The boss in the corner',

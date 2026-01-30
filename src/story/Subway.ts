@@ -146,9 +146,9 @@ const SUBWAY_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 }
 
 const addSlotMachineOptions = (g: Game) => {
-  g.addOption('slotMachinePlay', {}, 'Play (2 Kr)')
-  if (g.player.hasSkill('Aetherics', 1)) g.addOption('slotMachineHack', {}, 'Hack')
-  g.addOption('slotMachineLeave', {}, 'Leave')
+  g.addOption('slotMachinePlay', 'Play (2 Kr)')
+  if (g.player.hasSkill('Aetherics', 1)) g.addOption('slotMachineHack', 'Hack')
+  g.addOption('slotMachineLeave', 'Leave')
 }
 
 const slotMachineScripts = {

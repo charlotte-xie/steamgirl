@@ -1,5 +1,5 @@
 import { Game } from "./Game"
-import { makeScript, parseArgs, interpolateString, type Accessor, type Script } from "./Scripts"
+import { makeScript, parseArgs, interpolateString, type Accessor, type Instruction, type Script } from "./Scripts"
 import { type InlineContent, speech } from "./Format"
 import { capitalise } from "./Text"
 import { getFaction } from "./Faction"
@@ -192,7 +192,7 @@ export class NPC {
 
   /** Adds an option for an NPC interaction with this NPC. Returns this for fluent chaining. */
   option(label: string, npcInteractionName: string, params?: object): this {
-    this.game.addOption('interact', { script: npcInteractionName, params }, label)
+    this.game.addOption(['interact', { script: npcInteractionName, params }], label)
     return this
   }
 
@@ -204,13 +204,13 @@ export class NPC {
 
   /** Ends the conversation by adding an endConversation option. Returns this for fluent chaining. */
   leaveOption(text?: string, reply?: string, label: string = 'Leave'): this {
-    this.game.addOption('endConversation', { text, reply }, label)
+    this.game.addOption(['endConversation', { text, reply }], label)
     return this
   }
 
-  /** Adds a generic option (for non-NPC scripts). Returns this for fluent chaining. */
-  addOption(scriptName: string, params: {} = {}, label?: string): this {
-    this.game.addOption(scriptName, params, label)
+  /** Adds a generic option. Action is a string expression or Instruction. Returns this for fluent chaining. */
+  addOption(action: string | Instruction, label?: string): this {
+    this.game.addOption(action, label)
     return this
   }
 

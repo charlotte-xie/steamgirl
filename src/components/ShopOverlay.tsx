@@ -33,7 +33,7 @@ export function ShopOverlay({ shop }: ShopOverlayProps) {
   }
 
   const handleLeave = () => {
-    runScript('leaveShop', { text: 'You leave the shop.' })
+    runScript(['leaveShop', { text: 'You leave the shop.' }])
   }
 
   return (

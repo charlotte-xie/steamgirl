@@ -20,7 +20,7 @@ export function NavOverlay() {
         return
       }
     }
-    runScript('go', { location: link.dest, minutes: link.time })
+    runScript(['go', { location: link.dest, minutes: link.time }])
   }
 
   // Filter to discovered or alwaysShow, then split into Travel (both main) vs Places (rest)

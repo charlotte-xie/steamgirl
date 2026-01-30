@@ -5,7 +5,7 @@ import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
-import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option } from '../model/ScriptDSL'
+import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option, time } from '../model/ScriptDSL'
 import type { Specialty } from '../screens/NewCharacterScreen'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
@@ -38,9 +38,9 @@ registerNPC('automaton-greeter', {
   onApproach: seq(
     text('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting:'),
     say('Welcome to Ironspark Terminus. How may I assist you today?'),
-    option('Get directions', 'onGetDirections'),
-    option('Flirt', 'onFlirt'),
-    option('???', 'onGlitch'),
+    option('Get directions', 'npc:onGetDirections'),
+    option('Flirt', 'npc:onFlirt'),
+    option('???', 'npc:onGlitch'),
     npcLeaveOption('The automaton whirs softly as you depart.', 'Safe travels. May your gears never seize.', 'Say goodbye'),
   ),
   scripts: {
@@ -50,16 +50,19 @@ registerNPC('automaton-greeter', {
       text('It ticks thoughtfully.'),
       say('I am also told there is a serene lake to the east. The university overlooks it, and one can reach it from the market district. Steam rises from the surface—rather picturesque.'),
       discoverLocation('lake'),
+      time(1),
     ),
     onFlirt: skillCheck('Flirtation', 0,
       seq(
         text('The automaton\'s gears stutter. Its optics flicker.'),
         say('I am not programmed for such... input. My valves are operating at 102% capacity. How curious. Would you like a timetable?'),
         addStat('Flirtation', 1, { chance: 1, max: 5 }),
+        time(1),
       ),
       seq(
         text('The automaton inclines its head with mechanical precision.'),
         say('I am a hospitality unit. Is there something specific you require?'),
+        time(1),
       ),
     ),
     onGlitch: (g: Game) => {
@@ -213,10 +216,10 @@ export const startScripts = {
   start: (g: Game) => {
     g.add('The train exhales a long, wet hiss as it comes to a halt at the platform.')
       .add(p('You have travelled across the whole continent, and are finally here, in the city of ', highlight('Aetheria', '#fbbf24', 'Aetheria: The great steam-powered city of brass and gears, where mechanical marvels and Victorian elegance meet in a symphony of innovation and tradition.'), '.'))
-      .addOption('startPlatform', {}, 'Continue')
-      .addOption('skipIntro', {}, 'Skip Intro')
+      .addOption('startPlatform', 'Continue')
+      .addOption('skipIntro', 'Skip Intro')
     if (g.isDebug) {
-      g.addOption('schoolStart', {}, 'School Start')
+      g.addOption('schoolStart', 'School Start')
     }
   },
 
@@ -267,7 +270,7 @@ export const startScripts = {
     .add('You step onto the platform of Ironspark Terminus.')
     .add('Coal smoke curls around your ankles like fingers. The station cathedral looms above: brass vertebrae, glass skin revealing grinding intestines of gear and piston. Somewhere a valve releases steam that tastes faintly of iron and skin.')
     .add(p('You are here. Alone. The ', highlight('acceptance letter', '#fbbf24', 'You managed to get accepted by the most prestigious University in Aetheria! A remarkable achievement for a country girl like you.'), ' pressed against your chest is your only connection to this place.'))
-    .addOption('whatNow', {}, 'Continue')
+    .addOption('whatNow', 'Continue')
     g.addQuest('attend-university')
 
   },

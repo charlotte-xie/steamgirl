@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Game } from '../model/Game'
-import { getScript } from '../model/Scripts'
+import { getScript, type Instruction } from '../model/Scripts'
 import { GAME_SAVE, GAME_SAVE_AUTO, DEBUG_MODE } from '../constants/storage'
 import type { Specialty } from '../screens/NewCharacterScreen'
 
@@ -13,7 +13,7 @@ export type CharacterOptions = {
 type GameContextType = {
   game: Game
   setGame: (game: Game) => void
-  runScript: (name: string, params?: {}) => void
+  runScript: (action: string | Instruction) => void
   dismissScene: () => void
   initializeCharacter: (options: CharacterOptions) => void
   refresh: () => void
@@ -70,8 +70,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return <Navigate to="/start" replace />
   }
 
-  const runScript = (name: string, params: {} = {}) => {
-    game.takeAction(name, params)
+  const runScript = (action: string | Instruction) => {
+    game.takeAction(action)
     game.afterAction()
     setUpdateCounter((c) => c + 1)
     localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(game.toJSON()))

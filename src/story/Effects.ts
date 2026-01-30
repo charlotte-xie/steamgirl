@@ -140,7 +140,7 @@ export const starvingEffect: CardDefinition = {
     if (game.player.sleeping) {
       // Starving wakes the player - it's a danger condition
       game.add({ type: 'text', text: 'You have a gnawing ache in your stomach. Your body is demanding food.', color: '#ef4444' })
-      game.addOption('endScene', {}, 'Get up')
+      game.addOption('endScene', 'Get up')
     } else {
       game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: '#ef4444' })
     }

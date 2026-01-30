@@ -48,7 +48,7 @@ import {
   seq, when, random, cond,
   addNpcStat, moveNpc,
   discoverLocation, option, branch, scene, scenes,
-  move, timeLapse,
+  move, time,
   hideNpcImage, showNpcImage,
   hasStat, npcStat, skillCheck,
   run, 
@@ -106,7 +106,7 @@ registerNPC('tour-guide', {
     game.add('A man with a well-worn guidebook catches your eye and steps over with a warm smile.')
     npc.say("The name's Rob Hayes. I lead tours of the city for new arrivals. It takes about an hour and ends in the backstreets—handy if that's where you're headed. Fancy it?")
     npc.nameKnown = 1
-    game.addOption('interact', { script: 'tour' }, 'Accept')
+    game.addOption(['interact', { script: 'tour' }], 'Accept')
     npc.leaveOption(
       'You politely decline the invitation.',
       "Whenever you're ready. I'm usually here at the station.",
@@ -141,15 +141,15 @@ registerNPC('tour-guide', {
     }
 
     if (!tourDone) {
-      game.addOption('interact', { script: 'tour' }, 'Accept the tour')
+      game.addOption(['interact', { script: 'tour' }], 'Accept the tour')
     } else {
-      game.addOption('interact', { script: 'tour' }, 'Take another tour')
+      game.addOption(['interact', { script: 'tour' }], 'Take another tour')
     }
     if (game.player.hasCard('hotel-booking') && !hotelVisited) {
-      game.addOption('interact', { script: 'inviteToRoom' }, 'Invite to see your hotel room')
+      game.addOption(['interact', { script: 'inviteToRoom' }], 'Invite to see your hotel room')
     }
     if ((game.player.stats.get('Flirtation') ?? 0) >= 1) {
-      game.addOption('interact', { script: 'flirt' }, 'Flirt')
+      game.addOption(['interact', { script: 'flirt' }], 'Flirt')
     }
     npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
   },
@@ -166,12 +166,12 @@ registerNPC('tour-guide', {
           npcStat('affection', { min: 15 }),
           seq(
             'You set off together, Rob matching your pace. He keeps glancing at you with a warm, slightly nervous smile.',
-            move('default'), timeLapse(15),
+            move('default'), time(15),
             say('Here we are — the heart of Aetheria. I never get tired of this view. But it\'s nicer with company.'),
           ),
           seq(
             'You set off with Rob.',
-            move('default'), timeLapse(15),
+            move('default'), time(15),
             say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?'),
           ),
         ),
@@ -180,14 +180,14 @@ registerNPC('tour-guide', {
       // Imperial Hotel
       scene(
         discoverLocation('hotel'),
-        move('hotel'), timeLapse(5),
+        move('hotel'), time(5),
         'Rob takes you to an imposing brass-and-marble facade with gilt lettering above its revolving doors. You take a peek inside.',
         say('The Imperial Hotel. Very grand, very expensive — too expensive for most folks. But worth knowing about if you ever come into money.'),
       ),
       // University
       scene(
         discoverLocation('school'),
-        move('school'), timeLapse(15),
+        move('school'), time(15),
         say('The University - you\'ll be studying there you say? A fine institution.'),
         'Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.',
         discoverLocation('subway-university'),
@@ -196,7 +196,7 @@ registerNPC('tour-guide', {
       // Lake
       scene(
         discoverLocation('lake'),
-        move('lake'), timeLapse(18),
+        move('lake'), time(18),
         cond(
           npcStat('affection', { min: 15 }),
           seq(
@@ -211,7 +211,7 @@ registerNPC('tour-guide', {
       // Market
       scene(
         discoverLocation('market'),
-        move('market'), timeLapse(15),
+        move('market'), time(15),
         cond(
           npcStat('affection', { min: 15 }),
           seq(
@@ -225,7 +225,7 @@ registerNPC('tour-guide', {
       // Backstreets
       scene(
         discoverLocation('backstreets'),
-        move('backstreets'), timeLapse(15),
+        move('backstreets'), time(15),
         'The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.',
         cond(
           npcStat('affection', { min: 15 }),
@@ -308,11 +308,11 @@ registerNPC('tour-guide', {
         say('I wonder what the kitchens are like. Bet they do a proper breakfast.'),
         say('My flat has a window that looks onto a brick wall. This is... rather different.'),
       ),
-      option('Chat', 'interact', { script: 'roomChat' }),
+      option('Chat', 'npc:roomChat'),
       when(hasStat('Flirtation', 1),
-        option('Flirt', 'interact', { script: 'flirt' }),
+        option('Flirt', 'npc:flirt'),
       ),
-      option('Depart Room', 'interact', { script: 'leaveRoom' }),
+      option('Depart Room', 'npc:leaveRoom'),
       npcLeaveOption(),
     ),
 
@@ -415,6 +415,8 @@ registerNPC('tour-guide', {
         game.run(seq(...chosen))
       }
 
+      game.timeLapse(3)
+
       // Check date invitation conditions
       const canInvite = game.player.skillTest('Flirtation', 10)
         && npc.affection > 20
@@ -424,22 +426,22 @@ registerNPC('tour-guide', {
         // Rob asks the player on a date
         npc.say('I was thinking... would you fancy going for a walk tomorrow evening? Just the two of us. I know a lovely spot by the lake.')
         game.add('He looks at you hopefully, his ears going pink again.')
-        game.addOption('interact', { script: 'dateAccept' }, 'Accept the date')
-        game.addOption('interact', { script: 'dateDecline' }, 'Decline')
+        game.addOption(['interact', { script: 'dateAccept' }], 'Accept the date')
+        game.addOption(['interact', { script: 'dateDecline' }], 'Decline')
         npc.leaveOption()
       } else {
         // Re-show normal options depending on location
         if (game.currentLocation === 'dorm-suite') {
-          game.addOption('interact', { script: 'roomChat' }, 'Chat')
-          game.addOption('interact', { script: 'flirt' }, 'Flirt')
-          game.addOption('interact', { script: 'leaveRoom' }, 'Depart Room')
+          game.addOption(['interact', { script: 'roomChat' }], 'Chat')
+          game.addOption(['interact', { script: 'flirt' }], 'Flirt')
+          game.addOption(['interact', { script: 'leaveRoom' }], 'Depart Room')
           npc.leaveOption()
         } else {
-          game.addOption('interact', { script: 'tour' }, 'Accept the tour')
+          game.addOption(['interact', { script: 'tour' }], 'Accept the tour')
           if (game.player.hasCard('hotel-booking')) {
-            game.addOption('interact', { script: 'inviteToRoom' }, 'Invite to see your hotel room')
+            game.addOption(['interact', { script: 'inviteToRoom' }], 'Invite to see your hotel room')
           }
-          game.addOption('interact', { script: 'flirt' }, 'Flirt')
+          game.addOption(['interact', { script: 'flirt' }], 'Flirt')
           npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
         }
       }

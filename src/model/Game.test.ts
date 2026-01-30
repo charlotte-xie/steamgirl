@@ -385,8 +385,8 @@ describe('Game', () => {
       const option = game.scene.options[0]
       expect(option.type).toBe('button')
       expect(option.label).toBe('Test Option')
-      expect(option.script[0]).toBe('interact')
-      expect(option.script[1]).toEqual({ script: 'testScript', params: undefined })
+      expect(option.action[0]).toBe('interact')
+      expect(option.action[1]).toEqual({ script: 'testScript', params: undefined })
     })
 
     it('should allow npc.option() with params', () => {
@@ -410,7 +410,7 @@ describe('Game', () => {
       
       // Check that params were included
       const option = game.scene.options[0]
-      expect(option.script[1]).toEqual({ script: 'testScript', params: { value: 42 } })
+      expect(option.action[1]).toEqual({ script: 'testScript', params: { value: 42 } })
     })
 
     it('should allow npc.addOption() to add generic options', () => {
@@ -425,15 +425,15 @@ describe('Game', () => {
       const npc = game.getNPC('fluent-generic-npc')
       
       // Add a generic option (not an NPC interaction)
-      npc.addOption('endConversation', { text: 'Goodbye' }, 'Leave')
+      npc.addOption(['endConversation', { text: 'Goodbye' }], 'Leave')
       
       // Check that option was added
       expect(game.scene.options.length).toBe(1)
       const option = game.scene.options[0]
       expect(option.type).toBe('button')
       expect(option.label).toBe('Leave')
-      expect(option.script[0]).toBe('endConversation')
-      expect(option.script[1]).toEqual({ text: 'Goodbye' })
+      expect(option.action[0]).toBe('endConversation')
+      expect(option.action[1]).toEqual({ text: 'Goodbye' })
     })
 
     it('should allow npc.leaveOption() to add endConversation option', () => {
@@ -460,8 +460,8 @@ describe('Game', () => {
       const leaveOption = game.scene.options[2]
       expect(leaveOption.type).toBe('button')
       expect(leaveOption.label).toBe('Leave')
-      expect(leaveOption.script[0]).toBe('endConversation')
-      expect(leaveOption.script[1]).toEqual({ text: 'You step away.', reply: 'Goodbye!' })
+      expect(leaveOption.action[0]).toBe('endConversation')
+      expect(leaveOption.action[1]).toEqual({ text: 'You step away.', reply: 'Goodbye!' })
     })
 
     it('should allow npc.leaveOption() with custom label', () => {
@@ -482,8 +482,8 @@ describe('Game', () => {
       expect(game.scene.options.length).toBe(1)
       const leaveOption = game.scene.options[0]
       expect(leaveOption.label).toBe('Say Goodbye')
-      expect(leaveOption.script[0]).toBe('endConversation')
-      expect(leaveOption.script[1]).toEqual({ text: 'Farewell!', reply: 'See you later!' })
+      expect(leaveOption.action[0]).toBe('endConversation')
+      expect(leaveOption.action[1]).toEqual({ text: 'Farewell!', reply: 'See you later!' })
     })
 
     it('should allow npc.leaveOption() without parameters', () => {
@@ -504,8 +504,8 @@ describe('Game', () => {
       expect(game.scene.options.length).toBe(1)
       const leaveOption = game.scene.options[0]
       expect(leaveOption.label).toBe('Leave')
-      expect(leaveOption.script[0]).toBe('endConversation')
-      expect(leaveOption.script[1]).toEqual({ text: undefined, reply: undefined })
+      expect(leaveOption.action[0]).toBe('endConversation')
+      expect(leaveOption.action[1]).toEqual({ text: undefined, reply: undefined })
     })
 
     it('should allow npc.chat() to run onGeneralChat script', () => {
@@ -585,8 +585,8 @@ describe('Game', () => {
       expect(game.scene.options[0].label).toBe('Option 1')
       expect(game.scene.options[1].label).toBe('Option 2')
       expect(game.scene.options[2].label).toBe('Leave')
-      expect(game.scene.options[2].script[0]).toBe('endConversation')
-      expect(game.scene.options[2].script[1]).toEqual({ text: 'Goodbye!', reply: 'Farewell!' })
+      expect(game.scene.options[2].action[0]).toBe('endConversation')
+      expect(game.scene.options[2].action[1]).toEqual({ text: 'Goodbye!', reply: 'Farewell!' })
     })
 
     it('should use NPC speech color when say() is called', () => {
@@ -644,7 +644,7 @@ describe('Game', () => {
       onWait: (game: Game) => {
         npcWaitCount++
         game.add('The aggressive NPC accosts you!')
-        game.addOption('endConversation', {}, 'Back off')
+        game.addOption('endConversation', 'Back off')
       },
     })
 
@@ -666,7 +666,7 @@ describe('Game', () => {
       onWait: (game: Game) => {
         locationWaitCount++
         game.add('Something happens here!')
-        game.addOption('endScene', {}, 'Carry on')
+        game.addOption('endScene', 'Carry on')
       },
     })
 

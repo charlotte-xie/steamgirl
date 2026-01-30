@@ -277,10 +277,10 @@ makeScript('bedScene', (game: Game, params: BedParams) => {
   const quality = params.quality ?? 1.0
 
   game.add('You approach the bed.')
-  game.addOption('relax', { quality }, 'Relax')
-  game.addOption('sleep', { max: 60, quality }, 'Take a Nap')
-  game.addOption('sleep', { quality }, 'Go to Sleep')
-  game.addOption('endScene', {}, 'Never mind')
+  game.addOption(['relax', { quality }], 'Relax')
+  game.addOption(['sleep', { max: 60, quality }], 'Take a Nap')
+  game.addOption(['sleep', { quality }], 'Go to Sleep')
+  game.addOption('endScene', 'Never mind')
 })
 
 makeScript('relax', (game: Game, params: { quality?: number }) => {

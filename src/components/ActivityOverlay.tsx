@@ -26,7 +26,7 @@ export function ActivityOverlay() {
   }
 
   const handleActivityClick = (activity: LocationActivity) => {
-    runScript('runActivity', { activity: activity.name })
+    runScript(['runActivity', { activity: activity.name }])
   }
 
   return (

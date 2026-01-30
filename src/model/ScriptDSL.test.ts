@@ -39,7 +39,7 @@ import {
   addItem,
   removeItem,
   addStat,
-  timeLapse,
+  time,
   addQuest,
   completeQuest,
   addEffect,
@@ -120,18 +120,17 @@ describe('ScriptDSL', () => {
       })
 
       it('option() produces option instruction', () => {
-        expect(option('Click me', 'nextScript', { x: 1 })).toEqual(['option', { label: 'Click me', script: 'nextScript', params: { x: 1 } }])
-        expect(option('Next')).toEqual(['option', { label: 'Next', script: undefined, params: {} }])
+        expect(option('Click me', ['nextScript', { x: 1 }])).toEqual(['option', { label: 'Click me', action: ['nextScript', { x: 1 }] }])
+        expect(option('Next')).toEqual(['option', { label: 'Next', action: 'next' }])
       })
 
       it('branch() with inline instructions wraps in seq push', () => {
         const result = branch('Kiss him', text('You kiss.'), addStat('Charm', 5))
         expect(result).toEqual(['option', {
           label: 'Kiss him',
-          script: 'global:advanceScene',
-          params: {
+          action: ['advanceScene', {
             push: [seq(text('You kiss.'), addStat('Charm', 5))],
-          },
+          }],
         }])
       })
 
@@ -142,13 +141,12 @@ describe('ScriptDSL', () => {
         ))
         expect(result).toEqual(['option', {
           label: 'Go to garden',
-          script: 'global:advanceScene',
-          params: {
+          action: ['advanceScene', {
             push: [seq(scenes(
               scene(text('Scene 1')),
               scene(text('Scene 2')),
             ))],
-          },
+          }],
         }])
       })
 
@@ -283,8 +281,8 @@ describe('ScriptDSL', () => {
         expect(move('tavern')).toEqual(['move', { location: 'tavern' }])
       })
 
-      it('timeLapse() produces timeLapse instruction', () => {
-        expect(timeLapse(30)).toEqual(['timeLapse', { minutes: 30 }])
+      it('time() produces timeLapse instruction', () => {
+        expect(time(30)).toEqual(['timeLapse', { minutes: 30 }])
       })
 
       it('addStat() produces addStat instruction', () => {
@@ -415,16 +413,16 @@ describe('ScriptDSL', () => {
         const [, params] = result
         const instructions = (params as { instructions: Instruction[] }).instructions
 
-        // First branch (Kiss): push = [seq(seq(text('You kiss.')), addStat(...))]
+        // First branch (Kiss): action = ['advanceScene', { push: [seq(...)] }]
         const [, kissParams] = instructions[0]
-        const kissPush = (kissParams as any).params.push
+        const kissPush = (kissParams as any).action[1].push
         expect(kissPush).toEqual([
           seq(seq(text('You kiss.')), addStat('Charm', 5)),
         ])
 
-        // Second branch (Leave): push = [seq(seq(text('You leave.')), addStat(...))]
+        // Second branch (Leave): action = ['advanceScene', { push: [seq(...)] }]
         const [, leaveParams] = instructions[1]
-        const leavePush = (leaveParams as any).params.push
+        const leavePush = (leaveParams as any).action[1].push
         expect(leavePush).toEqual([
           seq(seq(text('You leave.')), addStat('Charm', 5)),
         ])
@@ -443,7 +441,7 @@ describe('ScriptDSL', () => {
         const [, params] = result
         const instructions = (params as { instructions: Instruction[] }).instructions
         const [, branchParams] = instructions[0]
-        const push = (branchParams as any).params.push
+        const push = (branchParams as any).action[1].push
 
         // Single push entry: seq(branch content, epilogue)
         expect(push).toHaveLength(1)
@@ -491,12 +489,12 @@ describe('ScriptDSL', () => {
         expect(whenName).toBe('when')
         // Inside the when, the branch should have epilogue merged
         const innerBranch = (whenParams as { then: Instruction[] }).then[0]
-        const innerPush = (innerBranch as any)[1].params.push
+        const innerPush = (innerBranch as any)[1].action[1].push
         expect(innerPush).toEqual([seq(seq(text('Gold!')), addStat('Charm', 1))])
 
         // Second instruction is the plain branch
         const [, defaultParams] = instructions[1]
-        const defaultPush = (defaultParams as any).params.push
+        const defaultPush = (defaultParams as any).action[1].push
         expect(defaultPush).toEqual([seq(seq(text('Normal.')), addStat('Charm', 1))])
       })
 
@@ -518,7 +516,7 @@ describe('ScriptDSL', () => {
           text('Hello'),
           when(and(hasItem('gold'), not(inScene())),
             say('Rich!'),
-            option('Next', 'next', { x: 1 })
+            option('Next', ['next', { x: 1 }])
           ),
           text(npcName(), ' greets ', playerName())
         ]
@@ -586,7 +584,7 @@ describe('ScriptDSL', () => {
         expect(game.run(inScene())).toBe(true)
         game.clearScene()
         expect(game.run(inScene())).toBe(false)
-        game.addOption('test', {}, 'Test')
+        game.addOption('test', 'Test')
         expect(game.run(inScene())).toBe(true)
       })
 
@@ -647,11 +645,11 @@ describe('ScriptDSL', () => {
       })
 
       it('option adds scene option', () => {
-        game.run(option('Click me', 'testScript', { foo: 'bar' }))
+        game.run(option('Click me', ['testScript', { foo: 'bar' }]))
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0]).toEqual({
           type: 'button',
-          script: ['testScript', { foo: 'bar' }],
+          action: ['testScript', { foo: 'bar' }],
           label: 'Click me'
         })
       })
@@ -945,7 +943,7 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 2
         const continueBtn1 = game.scene.options[0]
         game.clearScene()
-        game.run(continueBtn1.script)
+        game.run(continueBtn1.action)
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 2')
         expect(game.scene.options.length).toBe(1) // Continue to Scene 3
@@ -953,7 +951,7 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 3
         const continueBtn2 = game.scene.options[0]
         game.clearScene()
-        game.run(continueBtn2.script)
+        game.run(continueBtn2.action)
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3')
         expect(game.scene.options.length).toBe(0) // No more scenes
@@ -976,7 +974,7 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 2 (the branching scene)
         const continueBtn = game.scene.options[0]
         game.clearScene()
-        game.run(continueBtn.script)
+        game.run(continueBtn.action)
 
         // Scene 2 shows its content and two branch options
         expect(game.scene.content.length).toBe(1)
@@ -988,7 +986,7 @@ describe('ScriptDSL', () => {
         // Click Path A → branch pushes its pages, then pops and runs
         const pathA = game.scene.options[0]
         game.clearScene()
-        game.run(pathA.script)
+        game.run(pathA.action)
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A content')
         // Continue to Scene 3 (outer continuation on stack)
@@ -998,14 +996,14 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 3
         const cont3 = game.scene.options[0]
         game.clearScene()
-        game.run(cont3.script)
+        game.run(cont3.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
         expect(game.scene.options.length).toBe(1) // Continue to Scene 4
 
         // Click Continue → Scene 4
         const cont4 = game.scene.options[0]
         game.clearScene()
-        game.run(cont4.script)
+        game.run(cont4.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 4 — finale')
         expect(game.scene.options.length).toBe(0)
       })
@@ -1024,19 +1022,19 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 2
         const continueBtn = game.scene.options[0]
         game.clearScene()
-        game.run(continueBtn.script)
+        game.run(continueBtn.action)
         expect(game.scene.options.length).toBe(2)
 
         // Click Path B
         const pathB = game.scene.options[1]
         game.clearScene()
-        game.run(pathB.script)
+        game.run(pathB.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch B')
         expect(game.scene.options.length).toBe(1) // Continue
 
         const cont = game.scene.options[0]
         game.clearScene()
-        game.run(cont.script)
+        game.run(cont.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('After branch')
         expect(game.scene.options.length).toBe(0)
       })
@@ -1045,19 +1043,19 @@ describe('ScriptDSL', () => {
         game.clearScene()
         game.run(scenes(
           'Scene 1',
-          option('Custom action', 'someOtherScript', { foo: 'bar' }),
+          option('Custom action', ['someOtherScript', { foo: 'bar' }]),
           'Scene 3',
         ))
 
         // Click Continue → Scene 2
         const continueBtn = game.scene.options[0]
         game.clearScene()
-        game.run(continueBtn.script)
+        game.run(continueBtn.action)
 
         // Scene 2 has only the custom option — no Continue injected
         expect(game.scene.options.length).toBe(1)
         const opt = game.scene.options[0]
-        expect(opt.script).toEqual(['someOtherScript', { foo: 'bar' }])
+        expect(opt.action).toEqual(['someOtherScript', { foo: 'bar' }])
       })
 
       it('non-stack action clears the stack via takeAction', () => {
@@ -1066,7 +1064,7 @@ describe('ScriptDSL', () => {
         expect(game.scene.stack.length).toBe(1) // pages on stack
 
         // takeAction with a non-advanceScene script clears the stack
-        game.takeAction('endScene', {})
+        game.takeAction('endScene')
         expect(game.scene.stack.length).toBe(0)
       })
 
@@ -1086,10 +1084,10 @@ describe('ScriptDSL', () => {
         game.run(dateScene)
         const cont1 = game.scene.options[0]
         game.clearScene()
-        game.run(cont1.script) // Scene 2
+        game.run(cont1.action) // Scene 2
         const pathA1 = game.scene.options[0]
         game.clearScene()
-        game.run(pathA1.script) // Branch A
+        game.run(pathA1.action) // Branch A
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
         expect(game.scene.options.length).toBe(1) // Continue to Scene 3
 
@@ -1098,17 +1096,17 @@ describe('ScriptDSL', () => {
         game.run(dateScene)
         const cont2 = game.scene.options[0]
         game.clearScene()
-        game.run(cont2.script) // Scene 2
+        game.run(cont2.action) // Scene 2
         const pathA2 = game.scene.options[0]
         game.clearScene()
-        game.run(pathA2.script) // Branch A
+        game.run(pathA2.action) // Branch A
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
         // CRITICAL: still exactly 1 Continue, not corrupted by first playthrough
         expect(game.scene.options.length).toBe(1)
 
         const finalCont = game.scene.options[0]
         game.clearScene()
-        game.run(finalCont.script)
+        game.run(finalCont.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
         expect(game.scene.options.length).toBe(0)
       })
@@ -1121,7 +1119,7 @@ describe('ScriptDSL', () => {
 
         const pathA = game.scene.options[0]
         game.clearScene()
-        game.run(pathA.script)
+        game.run(pathA.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
         expect(game.scene.options.length).toBe(0) // No outer continuation
       })
@@ -1141,14 +1139,14 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 2
         const cont = game.scene.options[0]
         game.clearScene()
-        game.run(cont.script)
+        game.run(cont.action)
         expect(game.scene.options.length).toBe(2)
         expect(game.scene.options[0].label).toBe('Path A')
 
         // Click Path A
         const pathA = game.scene.options[0]
         game.clearScene()
-        game.run(pathA.script)
+        game.run(pathA.action)
         // Two content items from inline branch
         expect(game.scene.content.length).toBe(2)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A content')
@@ -1158,7 +1156,7 @@ describe('ScriptDSL', () => {
 
         const cont3 = game.scene.options[0]
         game.clearScene()
-        game.run(cont3.script)
+        game.run(cont3.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
       })
 
@@ -1176,28 +1174,28 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 2
         const cont = game.scene.options[0]
         game.clearScene()
-        game.run(cont.script)
+        game.run(cont.action)
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Garden path')
 
         // Click Garden path → Garden scene 1
         const garden = game.scene.options[0]
         game.clearScene()
-        game.run(garden.script)
+        game.run(garden.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Garden scene 1')
         expect(game.scene.options.length).toBe(1) // Continue
 
         // Continue → Garden scene 2
         const cont2 = game.scene.options[0]
         game.clearScene()
-        game.run(cont2.script)
+        game.run(cont2.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Garden scene 2')
         expect(game.scene.options.length).toBe(1) // Continue to After garden
 
         // Continue → After garden
         const cont3 = game.scene.options[0]
         game.clearScene()
-        game.run(cont3.script)
+        game.run(cont3.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('After garden')
         expect(game.scene.options.length).toBe(0)
       })
@@ -1217,7 +1215,7 @@ describe('ScriptDSL', () => {
         // Continue should still work after restore
         const continueBtn = restored.scene.options[0]
         restored.clearScene()
-        restored.run(continueBtn.script)
+        restored.run(continueBtn.action)
         expect((restored.scene.content[0] as any).content[0].text).toBe('Scene 2')
       })
 
@@ -1258,7 +1256,7 @@ describe('ScriptDSL', () => {
         // Click Kiss — should show branch content AND epilogue on same page
         const kiss = game.scene.options[0]
         game.clearScene()
-        game.run(kiss.script)
+        game.run(kiss.action)
         expect(game.scene.content.length).toBe(2) // 'You kiss.' + 'Shared ending.'
         expect((game.scene.content[0] as any).content[0].text).toBe('You kiss.')
         expect((game.scene.content[1] as any).content[0].text).toBe('Shared ending.')
@@ -1285,7 +1283,7 @@ describe('ScriptDSL', () => {
         expect(game.scene.options.length).toBe(1)
         const cont1 = game.scene.options[0]
         game.clearScene()
-        game.run(cont1.script)
+        game.run(cont1.action)
 
         // Scene 2 — two branch options
         expect(game.scene.options.length).toBe(2)
@@ -1293,7 +1291,7 @@ describe('ScriptDSL', () => {
         // Click Path A
         const pathA = game.scene.options[0]
         game.clearScene()
-        game.run(pathA.script)
+        game.run(pathA.action)
 
         // Branch A content + epilogue on same page
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
@@ -1304,7 +1302,7 @@ describe('ScriptDSL', () => {
         // Click Continue → Scene 3
         const cont3 = game.scene.options[0]
         game.clearScene()
-        game.run(cont3.script)
+        game.run(cont3.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
         expect(game.scene.options.length).toBe(0)
       })
@@ -1345,7 +1343,7 @@ describe('ScriptDSL', () => {
         // Click Rich path
         const richPath = game.scene.options[0]
         game.clearScene()
-        game.run(richPath.script)
+        game.run(richPath.action)
         expect(game.scene.content.length).toBe(2)
         expect((game.scene.content[0] as any).content[0].text).toBe('Gold!')
         expect((game.scene.content[1] as any).content[0].text).toBe('Epilogue.')
@@ -1366,10 +1364,10 @@ describe('ScriptDSL', () => {
         game.run(dateScene)
         const cont1 = game.scene.options[0]
         game.clearScene()
-        game.run(cont1.script) // Scene 2 — branch options
+        game.run(cont1.action) // Scene 2 — branch options
         const a1 = game.scene.options[0]
         game.clearScene()
-        game.run(a1.script)
+        game.run(a1.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Path A')
         expect((game.scene.content[1] as any).content[0].text).toBe('Shared.')
         expect(game.scene.options.length).toBe(1) // Continue to After
@@ -1379,10 +1377,10 @@ describe('ScriptDSL', () => {
         game.run(dateScene)
         const cont2 = game.scene.options[0]
         game.clearScene()
-        game.run(cont2.script)
+        game.run(cont2.action)
         const a2 = game.scene.options[0]
         game.clearScene()
-        game.run(a2.script)
+        game.run(a2.action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Path A')
         expect((game.scene.content[1] as any).content[0].text).toBe('Shared.')
         expect(game.scene.options.length).toBe(1) // Still exactly 1
@@ -1402,8 +1400,8 @@ describe('ScriptDSL', () => {
           cond(
             hasItem('crown', 5), seq(
               say('What can I get you?'),
-              option('Buy an ale', 'buyAle', { price: 2 }),
-              option('Buy wine', 'buyWine', { price: 5 })
+              option('Buy an ale', ['buyAle', { price: 2 }]),
+              option('Buy wine', ['buyWine', { price: 5 }])
             ),
             say('Come back when you have coin.')
           ),
@@ -1451,7 +1449,7 @@ describe('ScriptDSL', () => {
         ))
 
         // Click "Drink"
-        const drinkScript = game.scene.options[0].script
+        const drinkScript = game.scene.options[0].action
         expect(game.scene.options[0].label).toBe('Drink')
         game.clearScene()
         game.run(drinkScript)
@@ -1462,7 +1460,7 @@ describe('ScriptDSL', () => {
         expect(game.scene.options[0].label).toBe('Continue')
 
         // Click Continue — menu re-appears
-        const continueScript = game.scene.options[0].script
+        const continueScript = game.scene.options[0].action
         game.clearScene()
         game.run(continueScript)
 
@@ -1481,7 +1479,7 @@ describe('ScriptDSL', () => {
         const leaveOption = game.scene.options[1]
         expect(leaveOption.label).toBe('Leave')
         game.clearScene()
-        game.run(leaveOption.script)
+        game.run(leaveOption.action)
 
         // Exit content runs, no Continue button (stack is empty)
         expect(game.scene.content.length).toBeGreaterThan(0)
@@ -1557,12 +1555,12 @@ describe('ScriptDSL', () => {
         expect(game.scene.options).toHaveLength(2)
 
         // Click "Kiss" to raise Arousal
-        const kissScript = game.scene.options[0].script
+        const kissScript = game.scene.options[0].action
         game.clearScene()
         game.run(kissScript)
 
         // Continue back to menu
-        const continueScript = game.scene.options[0].script
+        const continueScript = game.scene.options[0].action
         game.clearScene()
         game.run(continueScript)
 

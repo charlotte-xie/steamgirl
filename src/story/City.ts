@@ -1,7 +1,7 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { script, seq, random, text, timeLapse, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
+import { script, seq, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
 
 // Location definitions for the city of Aetheria
@@ -20,7 +20,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Explore',
         script: script(
-          timeLapse(10),
+          time(10),
           cond(
             // Discover the Subway
             and(not(locationDiscovered('subway-terminus')), skillCheck('Perception', 0)),
@@ -83,7 +83,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Explore',
         script: script(
-          timeLapse(8),
+          time(8),
           cond(
             // Discover the Market
             and(not(locationDiscovered('market')), skillCheck('Perception', 0)),
@@ -159,7 +159,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Explore',
         script: script(
-          timeLapse(5),
+          time(5),
           cond(
             // Discover Lowtown
             and(not(locationDiscovered('lowtown')), skillCheck('Perception', 0)),
@@ -260,7 +260,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Explore',
         script: script(
-          timeLapse(3),
+          time(3),
           cond(
             // Discover the Lake
             and(not(locationDiscovered('lake')), skillCheck('Perception', 0)),

@@ -10,7 +10,7 @@ import { Item } from '../model/Item'
 import { registerItemDefinition } from '../model/Item'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, option, seq, random, timeLapse, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, script, run } from '../model/ScriptDSL'
+import { text, option, seq, random, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, script, run } from '../model/ScriptDSL'
 import { eatFood, consumeAlcohol } from './Effects'
 
 // ============================================================================
@@ -248,11 +248,11 @@ makeScripts({
     game.add('"Try your luck at the Lucky Dip!" she calls, gesturing to a large brass barrel filled with mysterious items. "Just 5 Krona for a chance at something special!"')
 
     if (crownCount >= 5) {
-      game.addOption('luckyDipPay', {}, 'Pay 5 Krona')
-      game.addOption('luckyDipQuit', {}, 'Walk Away')
+      game.addOption('luckyDipPay', 'Pay 5 Krona')
+      game.addOption('luckyDipQuit', 'Walk Away')
     } else {
       game.add('Sadly, you don\'t have the coins to play this game. The vendor looks disappointed but smiles understandingly.')
-      game.addOption('luckyDipQuit', {}, 'Walk Away')
+      game.addOption('luckyDipQuit', 'Walk Away')
     }
   },
 
@@ -305,7 +305,7 @@ const marketLocation: LocationDefinition = {
     {
       name: 'Explore',
       script: script(
-        timeLapse(10),
+        time(10),
         cond(
           // Discover the Lake
           and(not(locationDiscovered('lake')), skillCheck('Perception', 0)),

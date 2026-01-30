@@ -121,8 +121,8 @@ export function standardGreeting(greeting?: string, goLabel?: string): Script {
     const npc = game.npc
     npc.say(greeting ?? 'You came! Shall we go?')
     const label = goLabel ?? `Go with ${npc.pronouns.object}`
-    game.addOption('dateCancel', { npc: game.scene.npc }, 'Cancel the date')
-    game.addOption('dateStart', { npc: game.scene.npc }, label)
+    game.addOption(['dateCancel', { npc: game.scene.npc }], 'Cancel the date')
+    game.addOption(['dateStart', { npc: game.scene.npc }], label)
   }
 }
 

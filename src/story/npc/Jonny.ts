@@ -146,8 +146,8 @@ registerNPC('jonny-elric', {
       if (Math.random() < 0.3) {
         game.add('Jonny adjusts his monocle and gives you an appraising look. Something close to a smile crosses his face.')
         npc.say('Fancy doing a round with me? Could use the company.')
-        game.addOption('interact', { script: 'roundAccept' }, 'Join him')
-        game.addOption('interact', { script: 'roundDecline' }, 'Not right now')
+        game.addOption(['interact', { script: 'roundAccept' }], 'Join him')
+        game.addOption(['interact', { script: 'roundDecline' }], 'Not right now')
         npc.leaveOption(undefined, 'Suit yourself.')
         return
       }
@@ -236,11 +236,11 @@ registerNPC('jonny-elric', {
 
       const tourDone = npc.stats.get('tourDone') ?? 0
       if (npc.affection >= 5 && !tourDone) {
-        game.addOption('interact', { script: 'askWhatHeDoes' }, 'What do you actually do?')
+        game.addOption(['interact', { script: 'askWhatHeDoes' }], 'What do you actually do?')
       }
       const cellarsDone = npc.stats.get('cellarsDone') ?? 0
       if (npc.affection > 30 && !cellarsDone) {
-        game.addOption('interact', { script: 'cellarInvite' }, 'You mentioned work...')
+        game.addOption(['interact', { script: 'cellarInvite' }], 'You mentioned work...')
       }
 
       npc.leaveOption('You back away slowly.', 'Mind how you go.')
@@ -249,18 +249,21 @@ registerNPC('jonny-elric', {
     askElvis: (game: Game) => {
       const npc = game.npc
       npc.say('Elvis and me go way back. I handle the rough stuff. He does the thinking. You want to talk to the boss, you find him — I\'m not a messenger.')
+      game.timeLapse(1)
       npc.chat()
     },
 
     askTerritory: (game: Game) => {
       const npc = game.npc
       npc.say('Same as always. Elvis\'s word is law down here. I make sure people remember it.')
+      game.timeLapse(1)
       npc.chat()
     },
 
     work: (game: Game) => {
       const npc = game.npc
       npc.say('Maybe. You look like you could hold your own. But I don\'t hire strangers. Earn Elvis\'s nod first — then we\'ll talk.')
+      game.timeLapse(1)
       npc.chat()
     },
 
@@ -279,9 +282,10 @@ registerNPC('jonny-elric', {
       npc.say('What do I do? I keep the peace. My way.')
       game.add('He polishes his monocle on his sleeve, studying you.')
       npc.say('Tell you what — come with me tomorrow evening. I\'ll show you how things work around here. Consider it... an education.')
+      game.timeLapse(2)
       game.add('His mouth twitches — almost a smile.')
-      game.addOption('interact', { script: 'tourAccept' }, 'Accept')
-      game.addOption('interact', { script: 'tourDecline' }, 'Decline')
+      game.addOption(['interact', { script: 'tourAccept' }], 'Accept')
+      game.addOption(['interact', { script: 'tourDecline' }], 'Decline')
       npc.leaveOption()
     },
 
@@ -348,8 +352,8 @@ registerNPC('jonny-elric', {
       npc.say('There\'s something I need to talk about. Both of you. Tonight. The cellars under the Copper Pot.')
       game.add('His expression is unreadable, but there\'s a tension beneath the surface that\'s new.')
       npc.say('Be there at eleven. And keep your mouth shut about it.')
-      game.addOption('interact', { script: 'cellarAccept' }, 'I\'ll be there.')
-      game.addOption('interact', { script: 'cellarDecline' }, 'I don\'t want to get involved.')
+      game.addOption(['interact', { script: 'cellarAccept' }], 'I\'ll be there.')
+      game.addOption(['interact', { script: 'cellarDecline' }], 'I don\'t want to get involved.')
       npc.leaveOption()
     },
 
@@ -402,7 +406,7 @@ registerNPC('jonny-elric', {
       game.add('Elvis looks at you, then at Jonny.')
       game.add({ type: 'text', text: '"What\'s this about, Jonny?"', color: '#8b7355' })
 
-      game.addOption('interact', { script: 'cellarScene2' }, 'Continue')
+      game.addOption(['interact', { script: 'cellarScene2' }], 'Continue')
     },
 
     cellarScene2: (game: Game) => {
@@ -418,7 +422,7 @@ registerNPC('jonny-elric', {
 
       jonny.say('And I respect that. But the world\'s changing. Steam barons, new money, constables getting bolder. We either grow or we get swallowed.')
 
-      game.addOption('interact', { script: 'cellarScene3' }, 'Continue')
+      game.addOption(['interact', { script: 'cellarScene3' }], 'Continue')
     },
 
     cellarScene3: (game: Game) => {
@@ -427,9 +431,9 @@ registerNPC('jonny-elric', {
       game.add({ type: 'text', text: '"And where does she fit in?"', color: '#8b7355' })
       game.add('Both men turn to look at you. The weight of the moment settles on your shoulders.')
 
-      game.addOption('interact', { script: 'cellarBackJonny' }, 'Jonny\'s right. You need to expand.')
-      game.addOption('interact', { script: 'cellarBackElvis' }, 'Elvis built this. Respect that.')
-      game.addOption('interact', { script: 'cellarMediate' }, 'You\'re stronger together than apart.')
+      game.addOption(['interact', { script: 'cellarBackJonny' }], 'Jonny\'s right. You need to expand.')
+      game.addOption(['interact', { script: 'cellarBackElvis' }], 'Elvis built this. Respect that.')
+      game.addOption(['interact', { script: 'cellarMediate' }], 'You\'re stronger together than apart.')
     },
 
     cellarBackJonny: (game: Game) => {
