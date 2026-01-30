@@ -1,26 +1,33 @@
 :root {
-  /* Metallic colors (brass/copper palette) */
+  /** Brass is for prominent borders and features, goldish yellow. */
   --brass-light: #d4a853; /* Prominent borders / brass features */
   --brass-mid: #b8860b;
   --brass-dark: #8b6914;
+
+  /** Copper is for secondary accents, hover states, soft backgrounds, brass components on top of it. */
   --copper-light: #b67f4c;
   --copper-mid: #8d542b;
   --copper-dark: #3a2519;
+
+  /** Iron grey - use for disabled variant for Brass buttons. */
   --iron-light: #8a8a8a;
   --iron-mid: #5a5a5a;
   --iron-dark: #3a3a3a;
+
   --leather-light: #4d1d2d;
   --leather-mid: #2b070d;
   --leather-dark: #1a0408;
 
-  --emerald-light: #7b967b;
-  --emerald-mid: #415745;
-  --emerald-dark: #0f1411;
+  /** Emerald is for prominent backgrounds and panels, greenish grey. Use brass components on top of it. */
+  --emerald-light: #8d968d;
+  --emerald-mid: #505a51;
+  --emerald-dark: #171a18;
 
   --wood-light: #775535;
   --wood-mid: #493422;
   --wood-dark: #2b1d11;
 
+  /** Velvet is for special backdrops e.g. avatar frame, dark purple. */
   --velvet-light: #601b7e;
   --velvet-mid: #3f0d34;
   --velvet-dark: #20121e;
