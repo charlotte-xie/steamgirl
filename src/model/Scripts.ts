@@ -286,6 +286,28 @@ const coreScripts: Record<string, ScriptFn> = {
     game.player.calcStats()
   },
 
+  /** Save the current outfit under a name (for later restoration with wearOutfit). */
+  saveOutfit: (game: Game, params: { name?: string } = {}) => {
+    const name = params.name
+    if (!name || typeof name !== 'string') {
+      throw new Error('saveOutfit script requires a name parameter')
+    }
+    game.player.saveOutfit(name)
+  },
+
+  /** Restore a previously saved outfit by name. Strips current clothes and re-dresses. */
+  wearOutfit: (game: Game, params: { name?: string; delete?: boolean } = {}) => {
+    const name = params.name
+    if (!name || typeof name !== 'string') {
+      throw new Error('wearOutfit script requires a name parameter')
+    }
+    game.player.wearOutfit(name)
+    if (params.delete) {
+      game.player.deleteOutfit(name)
+    }
+    game.player.calcStats()
+  },
+
   /** Strip all clothing and wear a list of items. Items not in inventory are skipped. */
   changeOutfit: (game: Game, params: { items?: string[]; force?: boolean } = {}) => {
     const items = params.items

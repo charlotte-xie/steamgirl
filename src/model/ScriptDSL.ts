@@ -503,6 +503,14 @@ export const stripAll = (force = false): Instruction =>
 export const changeOutfit = (items: string[], force = false): Instruction =>
   run('changeOutfit', { items, force })
 
+/** Save the current outfit under a name (for later restoration with wearOutfit) */
+export const saveOutfit = (name: string): Instruction =>
+  run('saveOutfit', { name })
+
+/** Restore a previously saved outfit by name. If delete is true, removes the saved outfit afterwards. */
+export const wearOutfit = (name: string, opts?: { delete?: boolean }): Instruction =>
+  run('wearOutfit', { name, ...opts })
+
 /** Move player to location (instant teleport). Optionally advance time after moving. */
 export const move = (location: string, minutes?: number): Instruction =>
   run('move', { location, minutes })

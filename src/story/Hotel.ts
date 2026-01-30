@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
+import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
 import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
@@ -146,6 +146,14 @@ makeScripts({
   consumeAlcohol: (g: Game, params: { amount?: number }) => {
     consumeAlcohol(g, params.amount ?? 0)
   },
+  restorePoolOutfit: (g: Game) => {
+    if (g.player.outfits['_before-pool']) {
+      g.add('You duck into the changing room and get dressed.')
+      g.player.wearOutfit('_before-pool')
+      g.player.deleteOutfit('_before-pool')
+      g.player.calcStats()
+    }
+  },
 })
 
 // ============================================================================
@@ -179,6 +187,8 @@ function patronKissChoice(farewell: Instruction): Instruction {
           choice(
             branch('Go with him',
               'You hold his gaze for a moment, then nod. His smile widens and he offers his arm.',
+              // If at the pool, change back into clothes before heading upstairs
+              run('restorePoolOutfit'),
               'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
               move('room-533', 2),
               run('room533Scene'),
@@ -279,6 +289,8 @@ function poolFarewell(): Instruction {
       '"Thank you for the company. This city can be lonely, even in the best hotels." He gives you a warm smile and disappears towards the lobby.',
       '"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.',
     ),
+    'You towel off and change back into your clothes.',
+    wearOutfit('_before-pool', { delete: true }),
     'You have the pool to yourself now. The water laps gently against the marble.',
   )
 }
@@ -298,6 +310,7 @@ function patronPoolPath(): Instruction {
         addItem('bikini-top'),
         addItem('bikini-bottom'),
       ),
+      saveOutfit('_before-pool'),
       'You slip into the changing room and emerge in your bikini. The warm, humid air feels pleasant on your skin.',
       changeOutfit(['bikini-top', 'bikini-bottom']),
     ),
@@ -773,6 +786,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'A grand indoor swimming pool beneath a vaulted glass ceiling. Brass pipes feed heated water from the hotel\'s boilers, keeping it pleasantly warm. Marble columns line the edges, and loungers draped with white towels await guests. The air is humid and smells faintly of minerals.',
     image: '/images/hotel/pool.jpg',
     links: [
+      { dest: 'pool-changing', time: 1, label: 'Changing Room' },
       { dest: 'hotel', time: 2, label: 'Back to Lobby' },
     ],
     activities: [
@@ -795,6 +809,45 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             g.add(texts[Math.floor(Math.random() * texts.length)])
             applyRelaxation(g, 30, 2.0)
           }
+        },
+      },
+    ],
+  },
+  'pool-changing': {
+    name: 'Pool Changing Room',
+    description: 'A clean, tiled changing room with wooden cubicles, brass hooks, and a long mirror. Folded towels are stacked on a marble shelf, and the air carries the warmth and mineral scent of the pool beyond.',
+    image: '/images/lowtown/ladies.jpg',
+    links: [
+      { dest: 'hotel-pool', time: 1, label: 'Back to Pool' },
+    ],
+    activities: [
+      {
+        name: 'Change into Swimwear',
+        symbol: '👙',
+        condition: (g: Game) => {
+          // Only show if player has swimwear and isn't already wearing it
+          const hasBikini = g.player.inventory.some(i => i.id === 'bikini-top')
+          const wearingBikini = g.player.getWornItems().some(i => i.id === 'bikini-top')
+          return hasBikini && !wearingBikini
+        },
+        script: (g: Game) => {
+          g.player.saveOutfit('_before-pool')
+          g.player.stripAll()
+          g.player.wearItem('bikini-top')
+          g.player.wearItem('bikini-bottom')
+          g.player.calcStats()
+          g.add('You change into your bikini and hang your clothes in the cubicle.')
+        },
+      },
+      {
+        name: 'Get Dressed',
+        symbol: '👗',
+        condition: (g: Game) => !!g.player.outfits['_before-pool'],
+        script: (g: Game) => {
+          g.player.wearOutfit('_before-pool')
+          g.player.deleteOutfit('_before-pool')
+          g.player.calcStats()
+          g.add('You towel off and change back into your clothes.')
         },
       },
     ],
