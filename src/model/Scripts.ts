@@ -1186,14 +1186,20 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /** Advance the scene: shift the next page off the stack and run it. Branches prepend their pages first. */
+  /** Advance the scene: shift the next page off the stack and run it. Branches prepend their pages first.
+   *  Auto-skips pages that produce no content or options (e.g. conditional lessonTime segments). */
   advanceScene: (game: Game, params: { push?: Instruction[] }) => {
     if (params.push) {
       game.scene.stack.unshift(...params.push)
     }
-    if (game.scene.stack.length === 0) return
-    const page = game.scene.stack.shift()!
-    game.run(page)
+    while (game.scene.stack.length > 0) {
+      const contentBefore = game.scene.content.length
+      const page = game.scene.stack.shift()!
+      game.run(page)
+      // If the page produced content or options, stop and show to user
+      if (game.scene.content.length > contentBefore || game.scene.options.length > 0) break
+      // Otherwise the page was a no-op — continue to next page
+    }
     if (game.scene.options.length === 0 && game.scene.stack.length > 0) {
       game.addOption('advanceScene', {}, 'Continue')
     }

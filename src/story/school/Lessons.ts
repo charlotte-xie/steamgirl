@@ -3,12 +3,7 @@ import type { Instruction } from '../../model/Scripts'
 import type { Card, CardDefinition, Reminder } from '../../model/Card'
 import { registerCardDefinition } from '../../model/Card'
 import { makeScripts } from '../../model/Scripts'
-import { text, random, timeLapse, timeLapseUntil, run, seq, scenes, scene, choice, branch } from '../../model/ScriptDSL'
-
-/** Pick a random element from an array. */
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
+import { random, timeLapseUntil, run, seq, scenes, choice, branch, lessonTime } from '../../model/ScriptDSL'
 
 // ============================================================================
 // TIMETABLE STRUCTURE
@@ -40,7 +35,6 @@ interface LessonTiming {
  * require touching the card definitions.
  */
 const LESSON_DURATION = 100 // minutes (1h40)
-const PHASE_DURATION = 25   // minutes per lesson phase
 
 export const TIMETABLE: Record<string, LessonTiming> = {
   'lesson-basic-aetherics': {
@@ -67,6 +61,13 @@ export const TIMETABLE: Record<string, LessonTiming> = {
 // TIMETABLE UTILITIES
 // ============================================================================
 
+/** Compute the unix timestamp for a given hour on the current game day. */
+function slotStartTime(game: Game, hour: number): number {
+  const d = game.date
+  d.setHours(Math.floor(hour), (hour % 1) * 60, 0, 0)
+  return Math.floor(d.getTime() / 1000)
+}
+
 /** Format an hour number as a human-readable time string. */
 function formatHour(hour: number): string {
   if (hour === 0 || hour === 24) return '12am'
@@ -92,9 +93,12 @@ function lessonReminders(game: Game, card: Card): Reminder[] {
 
   const dayOfWeek = game.date.getDay()
   const hour = game.hourOfDay
+  const lastAttended = card.lastAttended as number | undefined
   const reminders: Reminder[] = []
   for (const slot of timing.slots) {
     if (slot.day !== dayOfWeek) continue
+    // Already attended this slot
+    if (lastAttended && lastAttended >= slotStartTime(game, slot.startHour)) continue
     if (hour <= slot.startHour) {
       reminders.push({ text: `${timing.name} at ${formatHour(slot.startHour)}`, urgency: 'info', cardId: card.id, detail: `Head to the classroom for ${timing.name}.` })
     } else if (hour < slot.endHour) {
@@ -135,8 +139,11 @@ export function getNextLesson(game: Game): NextLesson | null {
     if (timing.startDate && game.time < timing.startDate) continue
     if (timing.endDate && game.time > timing.endDate) continue
 
+    const lastAttended = quest.lastAttended as number | undefined
     for (const slot of timing.slots) {
       if (slot.day !== dayOfWeek) continue
+      // Already attended this slot
+      if (lastAttended && lastAttended >= slotStartTime(game, slot.startHour)) continue
       // Attendable from 1 hour before start until end
       if (hour >= slot.startHour - 1 && hour < slot.endHour) {
         candidates.push({ id, name: timing.name, slot })
@@ -168,8 +175,11 @@ export function getLessonInProgress(game: Game): NextLesson | null {
     if (timing.startDate && game.time < timing.startDate) continue
     if (timing.endDate && game.time > timing.endDate) continue
 
+    const lastAttended = quest.lastAttended as number | undefined
     for (const slot of timing.slots) {
       if (slot.day !== dayOfWeek) continue
+      // Already attended this slot
+      if (lastAttended && lastAttended >= slotStartTime(game, slot.startHour)) continue
       if (hour >= slot.startHour && hour < slot.endHour) {
         return { id, name: timing.name, slot }
       }
@@ -219,75 +229,12 @@ const basicMechanicsLesson: CardDefinition = {
 }
 
 // ============================================================================
-// LESSON PHASE FLAVOUR TEXT
+// LESSON DEFINITIONS
 // ============================================================================
 
-interface LessonFlavour {
-  intro: string[]
-  middle: string[][]  // one array per middle phase
-  conclusion: string[]
+interface LessonDefinition {
   lateArrival?: Instruction
-}
-
-const LESSON_FLAVOUR: Record<string, LessonFlavour> = {
-  'lesson-basic-aetherics': {
-    intro: [
-      'The professor adjusts her brass spectacles and begins chalking luminous formulae onto the board. The air hums with residual aetheric charge.',
-      'A tall woman in a copper-trimmed coat strides to the lectern and taps a tuning fork against a crystal sphere. It rings with a faint, unearthly resonance.',
-      'The professor ignites a small aetheric lamp without touching it, drawing impressed murmurs from the students. "Pay attention," she says. "That was the easy part."',
-    ],
-    middle: [
-      [
-        'The professor demonstrates how aetheric resonance differs from simple galvanic current, her hands tracing patterns in the charged air.',
-        'You take careful notes as the professor explains the three Laws of Aetheric Conduction, scratching diagrams into your notebook.',
-        'A complex diagram of aetheric flow channels fills the blackboard. You copy it down, trying to follow the cascading logic.',
-      ],
-      [
-        'Students take turns attempting to channel a small aetheric current through a crystal matrix. Yours flickers uncertainly before stabilising.',
-        'The professor passes around samples of charged aetherstone. You feel a faint tingling warmth as you hold your piece up to the light.',
-        'You work through a set of practice calculations, converting between aetheric potentials and resonance frequencies.',
-      ],
-    ],
-    conclusion: [
-      'The professor dismisses the class with a reminder to review chapter four before the next session. You gather your notes, your mind buzzing with new concepts.',
-      'As the lesson ends, the professor extinguishes the demonstration apparatus with a wave of her hand. "Practice your focusing exercises," she calls out as students begin to leave.',
-      'The crystal spheres are carefully packed away as the lecture concludes. You feel you understand the fundamentals a little better now.',
-    ],
-    lateArrival: random(
-      'Professor Vael pauses mid-sentence and fixes you with a sharp look over her brass spectacles. "How good of you to join us. Do try to be punctual."',
-      'The class turns to watch as you slip through the door. Professor Vael\'s expression is icy. "Late again? Take your seat. Quietly."',
-      'Professor Vael doesn\'t break stride, but her voice gains a pointed edge. "I trust you have a compelling reason for your tardiness. No? Then sit down."',
-    ),
-  },
-  'lesson-basic-mechanics': {
-    intro: [
-      'The workshop master, a stocky man with oil-stained hands, gestures at the partially disassembled engine on the central bench. "Right then. Let\'s see what makes her tick."',
-      'Gears and springs are laid out in precise rows on the workbench. The instructor picks up a brass cog and holds it to the light. "Every tooth matters," he says.',
-      'The instructor wheels in a complex clockwork assembly on a trolley, its exposed mechanisms gleaming. "Today we get practical," he announces.',
-    ],
-    middle: [
-      [
-        'You learn to identify the key components of a differential steam regulator, tracing the flow of pressure through its chambers.',
-        'The instructor walks you through the principles of gear ratios, demonstrating with a set of interlocking brass wheels.',
-        'A detailed cross-section diagram is projected onto the wall. You follow along as the instructor explains each valve and piston.',
-      ],
-      [
-        'You carefully disassemble a small clockwork mechanism, laying out each piece in order. Putting it back together is the real test.',
-        'Working in pairs, you attempt to calibrate a pressure gauge. It takes several tries before the needle settles in the correct range.',
-        'You oil and adjust a set of miniature gears, learning to feel when the tolerances are right by the smoothness of the rotation.',
-      ],
-    ],
-    conclusion: [
-      'The instructor calls time and you wipe the oil from your hands with a rag. Your fingers ache pleasantly from the precise work.',
-      'Tools are returned to their racks as the session ends. The instructor nods approvingly at your workbench. "Not bad for a beginner."',
-      'You pack away your tools, satisfied with the small mechanism now ticking steadily on your bench. The fundamentals are starting to click.',
-    ],
-    lateArrival: random(
-      'Professor Greaves looks up from the workbench and grunts. "You\'re late. Grab your tools and catch up. I won\'t be repeating myself."',
-      'The instructor gives you a hard look as you enter. "In a real workshop, late means someone else gets your job. Sit down."',
-      'Greaves shakes his head as you take your seat. "Punctuality is a form of precision. Remember that."',
-    ),
-  },
+  body: Instruction
 }
 
 const LATE_ARRIVAL_GENERIC = [
@@ -301,58 +248,65 @@ const EARLY_ARRIVAL_FLAVOUR = [
   'You\'re early. The lecturer hasn\'t arrived yet and the room has a calm, expectant atmosphere.',
 ]
 
-// ============================================================================
-// DSL LESSON FLOW
-// ============================================================================
-
-/** Build the 4-phase lesson as a declarative scenes() flow. */
-function lessonFlow(lessonId: string, lessonName: string, endParams: Record<string, unknown>): Instruction {
-  const f = LESSON_FLAVOUR[lessonId]
-  return scenes(
-    scene(
-      f ? random(...f.intro) : text(`The ${lessonName} lecture begins.`),
-      timeLapse(PHASE_DURATION),
+const LESSONS: Record<string, LessonDefinition> = {
+  'lesson-basic-aetherics': {
+    lateArrival: random(
+      'Professor Vael pauses mid-sentence and fixes you with a sharp look over her brass spectacles. "How good of you to join us. Do try to be punctual."',
+      'The class turns to watch as you slip through the door. Professor Vael\'s expression is icy. "Late again? Take your seat. Quietly."',
+      'Professor Vael doesn\'t break stride, but her voice gains a pointed edge. "I trust you have a compelling reason for your tardiness. No? Then sit down."',
     ),
-    scene(
-      f ? random(...f.middle[0]) : text(`The ${lessonName} lecture continues.`),
-      timeLapse(PHASE_DURATION),
+    body: scenes(
+      lessonTime(0, random(
+        'The professor adjusts her brass spectacles and begins chalking luminous formulae onto the board. The air hums with residual aetheric charge.',
+        'A tall woman in a copper-trimmed coat strides to the lectern and taps a tuning fork against a crystal sphere. It rings with a faint, unearthly resonance.',
+        'The professor ignites a small aetheric lamp without touching it, drawing impressed murmurs from the students. "Pay attention," she says. "That was the easy part."',
+      )),
+      lessonTime(25, random(
+        'The professor demonstrates how aetheric resonance differs from simple galvanic current, her hands tracing patterns in the charged air.',
+        'You take careful notes as the professor explains the three Laws of Aetheric Conduction, scratching diagrams into your notebook.',
+        'A complex diagram of aetheric flow channels fills the blackboard. You copy it down, trying to follow the cascading logic.',
+      )),
+      lessonTime(50, random(
+        'Students take turns attempting to channel a small aetheric current through a crystal matrix. Yours flickers uncertainly before stabilising.',
+        'The professor passes around samples of charged aetherstone. You feel a faint tingling warmth as you hold your piece up to the light.',
+        'You work through a set of practice calculations, converting between aetheric potentials and resonance frequencies.',
+      )),
+      lessonTime(75, random(
+        'The professor dismisses the class with a reminder to review chapter four before the next session. You gather your notes, your mind buzzing with new concepts.',
+        'As the lesson ends, the professor extinguishes the demonstration apparatus with a wave of her hand. "Practice your focusing exercises," she calls out as students begin to leave.',
+        'The crystal spheres are carefully packed away as the lecture concludes. You feel you understand the fundamentals a little better now.',
+      ), run('endLesson')),
     ),
-    scene(
-      f ? random(...f.middle[1]) : text(`The ${lessonName} lecture continues.`),
-      timeLapse(PHASE_DURATION),
+  },
+  'lesson-basic-mechanics': {
+    lateArrival: random(
+      'Professor Greaves looks up from the workbench and grunts. "You\'re late. Grab your tools and catch up. I won\'t be repeating myself."',
+      'The instructor gives you a hard look as you enter. "In a real workshop, late means someone else gets your job. Sit down."',
+      'Greaves shakes his head as you take your seat. "Punctuality is a form of precision. Remember that."',
     ),
-    scene(
-      f ? random(...f.conclusion) : text(`The ${lessonName} lecture concludes.`),
-      timeLapse(PHASE_DURATION),
-      run('endLesson', endParams),
+    body: scenes(
+      lessonTime(0, random(
+        'The workshop master, a stocky man with oil-stained hands, gestures at the partially disassembled engine on the central bench. "Right then. Let\'s see what makes her tick."',
+        'Gears and springs are laid out in precise rows on the workbench. The instructor picks up a brass cog and holds it to the light. "Every tooth matters," he says.',
+        'The instructor wheels in a complex clockwork assembly on a trolley, its exposed mechanisms gleaming. "Today we get practical," he announces.',
+      )),
+      lessonTime(25, random(
+        'You learn to identify the key components of a differential steam regulator, tracing the flow of pressure through its chambers.',
+        'The instructor walks you through the principles of gear ratios, demonstrating with a set of interlocking brass wheels.',
+        'A detailed cross-section diagram is projected onto the wall. You follow along as the instructor explains each valve and piston.',
+      )),
+      lessonTime(50, random(
+        'You carefully disassemble a small clockwork mechanism, laying out each piece in order. Putting it back together is the real test.',
+        'Working in pairs, you attempt to calibrate a pressure gauge. It takes several tries before the needle settles in the correct range.',
+        'You oil and adjust a set of miniature gears, learning to feel when the tolerances are right by the smoothness of the rotation.',
+      )),
+      lessonTime(75, random(
+        'The instructor calls time and you wipe the oil from your hands with a rag. Your fingers ache pleasantly from the precise work.',
+        'Tools are returned to their racks as the session ends. The instructor nods approvingly at your workbench. "Not bad for a beginner."',
+        'You pack away your tools, satisfied with the small mechanism now ticking steadily on your bench. The fundamentals are starting to click.',
+      ), run('endLesson')),
     ),
-  )
-}
-
-/** Build the remaining phases from a given phase index (1-based, for late joins). */
-function lessonFlowFrom(phase: number, lessonId: string, lessonName: string, endParams: Record<string, unknown>): Instruction {
-  const f = LESSON_FLAVOUR[lessonId]
-  const allPhases = [
-    scene(
-      f ? random(...f.intro) : text(`The ${lessonName} lecture begins.`),
-      timeLapse(PHASE_DURATION),
-    ),
-    scene(
-      f ? random(...f.middle[0]) : text(`The ${lessonName} lecture continues.`),
-      timeLapse(PHASE_DURATION),
-    ),
-    scene(
-      f ? random(...f.middle[1]) : text(`The ${lessonName} lecture continues.`),
-      timeLapse(PHASE_DURATION),
-    ),
-    scene(
-      f ? random(...f.conclusion) : text(`The ${lessonName} lecture concludes.`),
-      timeLapse(PHASE_DURATION),
-      run('endLesson', endParams),
-    ),
-  ]
-  const remaining = allPhases.slice(phase - 1)
-  return remaining.length === 1 ? remaining[0] : scenes(...remaining)
+  },
 }
 
 // ============================================================================
@@ -379,12 +333,14 @@ const lessonScripts = {
     if (!quest) return
 
     const timing = TIMETABLE[next.id]
-    const endParams = { lessonId: next.id, lessonName: next.name, startHour: next.slot.startHour, npcId: timing?.npc }
+    const lesson = LESSONS[next.id]
+    const beginParams = { lessonId: next.id, startHour: next.slot.startHour, npcId: timing?.npc }
+    const body = lesson?.body
 
     if (g.hourOfDay < next.slot.startHour) {
       // Early — show arrival text and offer choices that all lead into the lesson
       g.run('move', { location: 'classroom' })
-      g.add(pick(EARLY_ARRIVAL_FLAVOUR))
+      g.add(EARLY_ARRIVAL_FLAVOUR[Math.floor(Math.random() * EARLY_ARRIVAL_FLAVOUR.length)])
       g.add({ type: 'text', text: `${next.name} begins at ${formatHour(next.slot.startHour)}.`, color: '#d0b691' })
       g.run(seq(
         choice(
@@ -404,18 +360,18 @@ const lessonScripts = {
             'The lecturer arrives and begins setting up.',
           ),
         ),
-        run('lessonBegin', endParams),
-        lessonFlow(next.id, next.name, endParams),
+        run('lessonBegin', beginParams),
+        ...(body ? [body] : []),
       ))
     } else if (g.hourOfDay <= next.slot.startHour + 0.25) {
       // On time
       g.run('move', { location: 'classroom' })
-      g.run('lessonBegin', endParams)
-      g.run(lessonFlow(next.id, next.name, endParams))
+      g.run('lessonBegin', beginParams)
+      if (body) g.run(body)
     } else {
       // Late
       g.run('move', { location: 'classroom' })
-      g.run('lessonLateStart', endParams)
+      g.run('lessonLateStart', beginParams)
     }
   },
 
@@ -434,16 +390,48 @@ const lessonScripts = {
     }
 
     g.add(`The ${lessonName} lecture is about to begin.`)
-    g.addOption('lessonBeginAndFlow', p, 'Start Lesson')
+    g.addOption('lessonBeginAndRun', p, 'Start Lesson')
   },
 
-  /** Set up lesson state: mark in-progress, move professor to classroom, set scene NPC. */
+  /** Conditional lesson segment. Runs body if fewer than `minutes` have elapsed since lesson start.
+   *  When skipped (time already past), produces no content — advanceScene auto-skips. */
+  lessonTime: (g: Game, p: Record<string, unknown>) => {
+    const minutes = (p.minutes as number) ?? 0
+    const body = p.body as Instruction[] | undefined
+    const quest = g.player.cards.find(c => c.inLesson)
+    const lessonStart = quest?.lessonStart as number | undefined
+    if (!lessonStart || !body) return
+
+    const elapsedMinutes = (g.time - lessonStart) / 60
+    if (elapsedMinutes >= minutes) return // skip — already past this segment
+
+    // Timelapse to this segment's start point
+    const gap = minutes - Math.floor(elapsedMinutes)
+    if (gap > 0) g.timeLapse(gap)
+
+    // Execute segment content
+    for (const instr of body) {
+      g.run(instr)
+    }
+  },
+
+  /** Set up lesson state: store context on quest card, mark in-progress, move professor. */
   lessonBegin: (g: Game, p: Record<string, unknown>) => {
     const lessonId = p.lessonId as string
     const npcId = p.npcId as string | undefined
+    const startHour = p.startHour as number
 
     const quest = g.player.cards.find(c => c.id === lessonId)
-    if (quest) quest.inLesson = true
+    if (!quest) return
+
+    quest.inLesson = true
+    quest.npcId = npcId
+    quest.startHour = startHour
+
+    // Store scheduled start as unix timestamp for lessonTime
+    const startTime = slotStartTime(g, startHour)
+    quest.lessonStart = startTime
+    quest.lastAttended = startTime
 
     if (npcId) {
       const prof = g.getNPC(npcId)
@@ -452,60 +440,42 @@ const lessonScripts = {
     }
   },
 
-  /** Combined begin + flow for auto-start (needs to push the full flow as a single option target). */
-  lessonBeginAndFlow: (g: Game, p: Record<string, unknown>) => {
+  /** Combined begin + run body for auto-start (single option target). */
+  lessonBeginAndRun: (g: Game, p: Record<string, unknown>) => {
     const lessonId = p.lessonId as string
-    const lessonName = p.lessonName as string
     g.run('lessonBegin', p)
-    g.run(lessonFlow(lessonId, lessonName, p))
+    const lesson = LESSONS[lessonId]
+    if (lesson?.body) g.run(lesson.body)
   },
 
   /**
    * Late start — the player arrives after the lesson has begun.
-   * Shows a scolding scene, then joins at the current phase.
+   * Shows scolding, then runs the same lesson body (elapsed segments auto-skip).
    */
   lessonLateStart: (g: Game, p: Record<string, unknown>) => {
     const lessonId = p.lessonId as string
-    const lessonName = p.lessonName as string
-    const startHour = p.startHour as number
-    const flavour = LESSON_FLAVOUR[lessonId]
+    const lesson = LESSONS[lessonId]
 
-    // Set up lesson state
+    // Set up lesson state (stores lessonStart for lessonTime)
     g.run('lessonBegin', p)
 
-    // Scolding — use lesson-specific DSL script or generic fallback
-    const lateScript = flavour?.lateArrival ?? random(...LATE_ARRIVAL_GENERIC)
+    // Scolding — use lesson-specific or generic fallback
+    const lateScript = lesson?.lateArrival ?? random(...LATE_ARRIVAL_GENERIC)
     g.run(lateScript)
 
     g.add({ type: 'text', text: 'You take your seat and try to follow along.', color: '#d0b691' })
 
-    // Determine which phase to join based on elapsed time
-    const elapsedMinutes = (g.hourOfDay - startHour) * 60
-    const currentPhase = Math.min(Math.floor(elapsedMinutes / PHASE_DURATION) + 1, 4)
-
-    if (currentPhase >= 4) {
-      // Past the last phase — just run endLesson
-      const f = LESSON_FLAVOUR[lessonId]
-      if (f) {
-        g.add(pick(f.conclusion))
-      } else {
-        g.add(`The ${lessonName} lecture concludes.`)
-      }
-      g.timeLapse(PHASE_DURATION)
-      g.run('endLesson', p)
-    } else {
-      // Join at the current phase and play remaining phases via DSL
-      g.run(lessonFlowFrom(currentPhase, lessonId, lessonName, p))
-    }
+    // Run the full lesson body — elapsed lessonTime segments auto-skip
+    if (lesson?.body) g.run(lesson.body)
   },
 
   /** Lesson cleanup: timeLapse to end, clear flags, increment attendance. */
-  endLesson: (g: Game, p: Record<string, unknown>) => {
-    const lessonId = p.lessonId as string
-    const startHour = p.startHour as number
-    const npcId = p.npcId as string | undefined
-    const quest = g.player.cards.find(c => c.id === lessonId)
+  endLesson: (g: Game) => {
+    const quest = g.player.cards.find(c => c.inLesson)
     if (!quest) return
+
+    const startHour = quest.startHour as number
+    const npcId = quest.npcId as string | undefined
 
     // Catch up to the scheduled end time in case phases drifted
     const endHour = startHour + LESSON_DURATION / 60

@@ -590,6 +590,12 @@ export const discoverLocation = (location: string, text?: string, colour?: strin
 export const timeLapseUntil = (untilTime: number): Instruction =>
   run('timeLapse', { untilTime })
 
+/** Conditional lesson segment. Runs body if fewer than `minutes` have elapsed since lesson start.
+ *  When skipped (time already past), produces no content and advanceScene auto-skips. */
+export function lessonTime(minutes: number, ...content: SceneElement[]): Instruction {
+  return run('lessonTime', { minutes, body: content.map(toInstruction) })
+}
+
 /** Modify an NPC stat (e.g. affection). Uses scene NPC if npc omitted from options. */
 export const addNpcStat = (
   stat: string, change: number,
