@@ -17,6 +17,7 @@ type GameContextType = {
   dismissScene: () => void
   initializeCharacter: (options: CharacterOptions) => void
   refresh: () => void
+  updateCounter: number
 }
 
 const throwMissing = (): never => {
@@ -30,6 +31,7 @@ const GameContext = createContext<GameContextType>({
   dismissScene: throwMissing,
   initializeCharacter: throwMissing,
   refresh: throwMissing,
+  updateCounter: 0,
 })
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -64,7 +66,7 @@ function loadFromState(state: Record<string, unknown> | null): Game | null {
 export function GameProvider({ children }: { children: ReactNode }) {
   const { state } = useLocation()
   const [game, setGame] = useState<Game | null>(() => loadFromState(state))
-  const [, setUpdateCounter] = useState(0)
+  const [updateCounter, setUpdateCounter] = useState(0)
 
   if (!game) {
     return <Navigate to="/start" replace />
@@ -122,7 +124,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   return (
     <GameContext.Provider
-      value={{ game, setGame, runScript, dismissScene, initializeCharacter, refresh }}
+      value={{ game, setGame, runScript, dismissScene, initializeCharacter, refresh, updateCounter }}
     >
       {children}
     </GameContext.Provider>

@@ -1,7 +1,7 @@
 import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
-import { getScript, isInstruction, isScriptFn, isAccessor, type Instruction, type Script } from './Scripts'
+import { getScript, isInstruction, isScriptFn, isAccessor, interpolateString, type Instruction, type Script } from './Scripts'
 import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 import { intervalsCrossed } from '../utils/intervalsCrossed'
@@ -232,8 +232,16 @@ export class Game {
    */
   add(item: string | SceneContentItem | SceneOptionItem | Array<string | SceneContentItem | SceneOptionItem>): this {
     if (typeof item === 'string') {
-      // This is a normal descriptive paragraph
-      this.scene.content.push({ type: 'paragraph', content: [{ type: 'text', text: item }] })
+      // This is a normal descriptive paragraph — interpolate {expressions} if present
+      if (item.includes('{')) {
+        const parts = interpolateString(this, item)
+        const content: ParagraphContent[] = parts.map(part =>
+          typeof part === 'string' ? { type: 'text' as const, text: part } : part
+        )
+        this.scene.content.push({ type: 'paragraph', content })
+      } else {
+        this.scene.content.push({ type: 'paragraph', content: [{ type: 'text', text: item }] })
+      }
     } else if (Array.isArray(item)) {
       item.forEach(i => this.add(i))
     } else if ('action' in item) {
@@ -528,6 +536,7 @@ export class Game {
     this.npcs.forEach((npc, npcId) => {
       if (npc.location === this.currentLocation) {
         this.npcsPresent.push(npcId)
+        npc.stats.set('seen', 1)
       }
     })
   }

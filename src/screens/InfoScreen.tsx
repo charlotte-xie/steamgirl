@@ -26,9 +26,9 @@ function NpcDetail({ npc }: { npc: NPC }) {
   const debug = useDebugMode()
   const [, setTick] = useState(0)
   const def = npc.template
-  const locName = npc.location
-    ? (getLocation(npc.location)?.name ?? npc.location)
-    : 'Unknown'
+  const locName = debug
+    ? (npc.location ? (getLocation(npc.location)?.name ?? npc.location) : 'Unknown')
+    : (npc.location === game.currentLocation ? 'Here' : '')
 
   // Collect all stats into sorted entries
   const statEntries = Array.from(npc.stats.entries()).sort(([a], [b]) => a.localeCompare(b))
@@ -63,31 +63,33 @@ function NpcDetail({ npc }: { npc: NPC }) {
         <p className="npc-detail-desc text-muted">{def.description}</p>
       )}
 
-      <div className="npc-detail-info">
-        <span className="text-muted">ID:</span> {npc.id}
-      </div>
-      {def.pronouns && (
-        <div className="npc-detail-info">
-          <span className="text-muted">Pronouns:</span> {def.pronouns.subject}/{def.pronouns.object}/{def.pronouns.possessive}
-        </div>
-      )}
-
-      {statEntries.length > 0 && (
-        <div className="npc-detail-stats">
-          <h4>Stats</h4>
-          {statEntries.map(([stat, value]) => (
-            <div key={stat} className="npc-stat-row">
-              <span className="npc-stat-name">{stat}</span>
-              <span className="npc-stat-value">{value}</span>
-              {debug && (
-                <span className="npc-stat-controls">
-                  <button className="dev-btn-sm" onClick={() => adjustStat(stat, -10)}>-10</button>
-                  <button className="dev-btn-sm" onClick={() => adjustStat(stat, 10)}>+10</button>
-                </span>
-              )}
+      {debug && (
+        <>
+          <div className="npc-detail-info">
+            <span className="text-muted">ID:</span> {npc.id}
+          </div>
+          {def.pronouns && (
+            <div className="npc-detail-info">
+              <span className="text-muted">Pronouns:</span> {def.pronouns.subject}/{def.pronouns.object}/{def.pronouns.possessive}
             </div>
-          ))}
-        </div>
+          )}
+
+          {statEntries.length > 0 && (
+            <div className="npc-detail-stats">
+              <h4>Stats</h4>
+              {statEntries.map(([stat, value]) => (
+                <div key={stat} className="npc-stat-row">
+                  <span className="npc-stat-name">{stat}</span>
+                  <span className="npc-stat-value">{value}</span>
+                  <span className="npc-stat-controls">
+                    <button className="dev-btn-sm" onClick={() => adjustStat(stat, -10)}>-10</button>
+                    <button className="dev-btn-sm" onClick={() => adjustStat(stat, 10)}>+10</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {debug && (
@@ -111,17 +113,19 @@ function NpcDetail({ npc }: { npc: NPC }) {
 
 function CharactersTab() {
   const { game } = useGame()
+  const debug = useDebugMode()
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null)
 
   const npcList = Array.from(game.npcs.values())
+    .filter(npc => debug || (npc.stats.get('seen') ?? 0) > 0)
 
   const sortedNpcs = npcList
     .map((npc) => ({
       npc,
       displayName: npcDisplayName(npc),
-      locName: npc.location
-        ? (getLocation(npc.location)?.name ?? npc.location)
-        : '—',
+      locName: debug
+        ? (npc.location ? (getLocation(npc.location)?.name ?? npc.location) : '—')
+        : (npc.location === game.currentLocation ? 'Here' : ''),
     }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName))
 

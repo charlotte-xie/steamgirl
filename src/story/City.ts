@@ -16,6 +16,11 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'default', time: 8 }, // 10 minutes to city
       { dest: 'subway-terminus', time: 2, label: 'Subway'},
     ],
+    onArrive: (g: Game) => {
+      g.getNPC('automaton-greeter')
+      g.getNPC('tour-guide')
+      g.getNPC('commuter')
+    },
     activities: [
       {
         name: 'Explore',

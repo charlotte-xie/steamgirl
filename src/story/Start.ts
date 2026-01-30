@@ -199,16 +199,6 @@ export const startScripts = {
       }
     }
 
-    // Generate NPCs that should be present at the start
-    // NOTE: NPCs are lazily instantiated - they only exist in game.npcs after getNPC() is called.
-    // Most NPCs are generated when their home location's onArrive hook runs (e.g., Tavern.ts).
-    // If you want an NPC to appear in the Characters list before visiting their location,
-    // add a getNPC() call here or in an early game event.
-    g.getNPC('automaton-greeter')
-    g.getNPC('tour-guide')
-    g.getNPC('commuter')
-
-    
     // Move on to start script
     g.run('start', {})
   },
@@ -228,7 +218,10 @@ export const startScripts = {
     g.timeLapse(2*60)
     g.run('move', { location: 'bedroom' })
     g.scene.hideNpcImage = true
-    g.add('You skip ahead to your room in the backstreets. Your key is in your hand; your goals, ahead.')
+    const landlord = g.getNPC('landlord')
+    landlord.nameKnown = 1
+    landlord.stats.set('seen', 1)
+    g.add('You skip ahead to your room in the backstreets after meeting your landlord {npc(landlord)}. Your key is in your hand; your goals, ahead.')
     g.run('gainItem', { item: 'room-key', number: 1, text: 'You have your room key.' })
     g.addQuest('attend-university', { silent: true })
     // Discover the lodgings and route out to the city
@@ -266,6 +259,10 @@ export const startScripts = {
   },
 
   startPlatform: (g: Game) => {
+    // Instantiate station NPCs now that the player is here
+    g.getNPC('automaton-greeter')
+    g.getNPC('tour-guide')
+    g.getNPC('commuter')
     g
     .add('You step onto the platform of Ironspark Terminus.')
     .add('Coal smoke curls around your ankles like fingers. The station cathedral looms above: brass vertebrae, glass skin revealing grinding intestines of gear and piston. Somewhere a valve releases steam that tastes faintly of iron and skin.')
