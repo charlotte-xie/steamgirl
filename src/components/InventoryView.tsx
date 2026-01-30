@@ -105,11 +105,11 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
   return (
     <div className="inventory inventory-with-grid">
       <div className="inventory-main">
-        <div className="inventory-filter-bar">
+        <div className="tab-bar">
           {FILTER_OPTIONS.map(option => (
             <button
               key={option}
-              className={`inventory-filter-btn ${filter === option ? 'active' : ''}`}
+              className={`tab-btn${filter === option ? ' active' : ''}`}
               onClick={() => handleFilterChange(option)}
             >
               {option}

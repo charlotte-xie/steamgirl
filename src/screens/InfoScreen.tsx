@@ -4,6 +4,7 @@ import { useDebugMode } from './SettingsScreen'
 import { Frame } from '../components/Frame'
 import { Panel } from '../components/Panel'
 import { Thumbnail } from '../components/Thumbnail'
+import { TabbedView } from '../components/TabbedView'
 import { getLocation } from '../model/Location'
 import { capitalise } from '../model/Text'
 import type { NPC } from '../model/NPC'
@@ -108,7 +109,7 @@ function NpcDetail({ npc }: { npc: NPC }) {
   )
 }
 
-export function InfoScreen() {
+function CharactersTab() {
   const { game } = useGame()
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null)
 
@@ -127,36 +128,41 @@ export function InfoScreen() {
   const selectedNpc = selectedNpcId ? game.npcs.get(selectedNpcId) ?? null : null
 
   return (
-    <Frame className="screen-frame">
-      <div className="info-screen">
-        <section className="info-section">
-          <h3>Characters</h3>
-          {npcList.length === 0 ? (
-            <p className="text-muted">No characters met yet.</p>
-          ) : (
-            <div className="overlay-group-content overlay-group-content--center">
-              {sortedNpcs.map(({ npc, displayName, locName }) => (
-                <Thumbnail
-                  key={npc.id}
-                  image={npc.template.image}
-                  name={displayName}
-                  subtitle={locName}
-                  symbol="👤"
-                  onClick={() => setSelectedNpcId(selectedNpcId === npc.id ? null : npc.id)}
-                  title={npc.template.description || npc.id}
-                  selected={selectedNpcId === npc.id}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+    <>
+      {npcList.length === 0 ? (
+        <p className="text-muted">No characters met yet.</p>
+      ) : (
+        <div className="overlay-group-content overlay-group-content--center">
+          {sortedNpcs.map(({ npc, displayName, locName }) => (
+            <Thumbnail
+              key={npc.id}
+              image={npc.template.image}
+              name={displayName}
+              subtitle={locName}
+              symbol="👤"
+              onClick={() => setSelectedNpcId(selectedNpcId === npc.id ? null : npc.id)}
+              title={npc.template.description || npc.id}
+              selected={selectedNpcId === npc.id}
+            />
+          ))}
+        </div>
+      )}
 
-        {selectedNpc && (
-          <Panel>
-            <NpcDetail npc={selectedNpc} />
-          </Panel>
-        )}
-      </div>
+      {selectedNpc && (
+        <Panel>
+          <NpcDetail npc={selectedNpc} />
+        </Panel>
+      )}
+    </>
+  )
+}
+
+export function InfoScreen() {
+  return (
+    <Frame className="screen-frame">
+      <TabbedView tabs={[
+        { id: 'characters', label: 'Characters', content: <CharactersTab /> },
+      ]} />
     </Frame>
   )
 }
