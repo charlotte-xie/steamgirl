@@ -518,6 +518,49 @@ function robWalkHome(): Instruction[] {
 
 Complete paths pass directly to `branch()` — no wrapping needed:
 
+### Repeatable Menus
+
+Use `menu()` to present a set of options that the player can choose from repeatedly. Non-exit branches loop back to re-present the menu after their content plays out. Exit branches break out of the loop.
+
+```typescript
+text('He settles beside you. The evening stretches ahead.'),
+menu(
+  branch('Kiss him',
+    random('The kiss is slow and deliberate...', 'He cups your face...'),
+    addStat('Arousal', 5, { max: 100 }),
+  ),
+  branch('Have a drink',
+    random('He refills your glass...', 'He produces champagne...'),
+    run('consumeAlcohol', { amount: 20 }),
+  ),
+  branch('Chat',
+    random('He tells you about his travels...', 'You talk about Aetheria...'),
+    addStat('Charm', 1, { max: 40, chance: 0.3 }),
+  ),
+  exit('Call it a night',
+    'You tell him you should go. He walks you to the door.',
+    move('hotel'),
+  ),
+)
+```
+
+Gate menu entries with `when()` — conditions are **re-evaluated each time** the menu is shown, so options can appear or disappear based on changing game state:
+
+```typescript
+menu(
+  when(hasStat('Flirtation', 20),
+    branch('Kiss him', ...),
+  ),
+  branch('Have a drink', ...),
+  when(hasStat('Arousal', 50),
+    exit('Things escalate...', ...),
+  ),
+  exit('Leave', ...),
+)
+```
+
+Between each action, the player sees a "Continue" button before the menu reappears.
+
 ### Quick Reference
 
 | Helper | Returns | Purpose |
@@ -527,6 +570,8 @@ Complete paths pass directly to `branch()` — no wrapping needed:
 | `branch(label, ...elements)` | `Instruction` | Story choice with auto-resume (use `scenes()` for multi-page) |
 | `choice(...branches, ...epilogue)` | `Instruction` | Branches with shared ending |
 | `gatedBranch(cond, label, ...elements)` | `Instruction` | Conditional branch |
+| `menu(...entries)` | `Instruction` | Repeatable choice loop (`branch` loops, `exit` breaks) |
+| `exit(label, ...elements)` | `Instruction` | Terminal branch inside `menu()` |
 | `seq(...elements)` | `Instruction` | Run elements immediately (no pause) |
 
 ## Writing Guidelines

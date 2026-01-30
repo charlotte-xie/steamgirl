@@ -49,6 +49,8 @@ import {
   branch,
   choice,
   gatedBranch,
+  menu,
+  exit,
   // Execution
   registerDslScript,
 } from './ScriptDSL'
@@ -1417,6 +1419,185 @@ describe('ScriptDSL', () => {
         expect(game.scene.content.length).toBe(4)
         // Options: buyAle, buyWine, lookAround, leave
         expect(game.scene.options.length).toBe(4)
+      })
+    })
+
+    describe('menu() and exit()', () => {
+      let game: Game
+
+      beforeEach(() => {
+        game = new Game()
+        game.run('init', {})
+        game.clearScene()
+      })
+
+      it('presents branch and exit options', () => {
+        game.run(menu(
+          branch('Option A', text('You chose A.')),
+          branch('Option B', text('You chose B.')),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        expect(game.scene.options).toHaveLength(3)
+        expect(game.scene.options[0].label).toBe('Option A')
+        expect(game.scene.options[1].label).toBe('Option B')
+        expect(game.scene.options[2].label).toBe('Leave')
+      })
+
+      it('non-exit branch loops back to the menu', () => {
+        game.run(menu(
+          branch('Drink', text('You drink.')),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        // Click "Drink"
+        const drinkScript = game.scene.options[0].script
+        expect(game.scene.options[0].label).toBe('Drink')
+        game.clearScene()
+        game.run(drinkScript)
+
+        // Branch content runs, then Continue to re-show menu
+        expect(game.scene.content.length).toBeGreaterThan(0)
+        expect(game.scene.options).toHaveLength(1)
+        expect(game.scene.options[0].label).toBe('Continue')
+
+        // Click Continue — menu re-appears
+        const continueScript = game.scene.options[0].script
+        game.clearScene()
+        game.run(continueScript)
+
+        expect(game.scene.options).toHaveLength(2)
+        expect(game.scene.options[0].label).toBe('Drink')
+        expect(game.scene.options[1].label).toBe('Leave')
+      })
+
+      it('exit branch does not loop back', () => {
+        game.run(menu(
+          branch('Drink', text('You drink.')),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        // Click "Leave"
+        const leaveOption = game.scene.options[1]
+        expect(leaveOption.label).toBe('Leave')
+        game.clearScene()
+        game.run(leaveOption.script)
+
+        // Exit content runs, no Continue button (stack is empty)
+        expect(game.scene.content.length).toBeGreaterThan(0)
+        expect(game.scene.options).toHaveLength(0)
+      })
+
+      it('when() gates menu entries', () => {
+        game.player.basestats.set('Flirtation', 5)
+        game.player.calcStats()
+
+        game.run(menu(
+          when(hasStat('Flirtation', 20),
+            branch('Kiss', text('You kiss.')),
+          ),
+          branch('Chat', text('You chat.')),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        // Kiss should not appear (Flirtation < 20)
+        expect(game.scene.options).toHaveLength(2)
+        expect(game.scene.options[0].label).toBe('Chat')
+        expect(game.scene.options[1].label).toBe('Leave')
+      })
+
+      it('gated entry appears when condition is met', () => {
+        game.player.basestats.set('Flirtation', 25)
+        game.player.calcStats()
+
+        game.run(menu(
+          when(hasStat('Flirtation', 20),
+            branch('Kiss', text('You kiss.')),
+          ),
+          branch('Chat', text('You chat.')),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        // Kiss should appear (Flirtation >= 20)
+        expect(game.scene.options).toHaveLength(3)
+        expect(game.scene.options[0].label).toBe('Kiss')
+      })
+
+      it('when() gates exit entries', () => {
+        game.player.basestats.set('Arousal', 10)
+        game.player.calcStats()
+
+        game.run(menu(
+          branch('Kiss', text('You kiss.'), addStat('Arousal', 5, { max: 100 })),
+          when(hasStat('Arousal', 50),
+            exit('Things escalate...', text('...')),
+          ),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        // "Things escalate" should not appear (Arousal < 50)
+        expect(game.scene.options).toHaveLength(2)
+        expect(game.scene.options[0].label).toBe('Kiss')
+        expect(game.scene.options[1].label).toBe('Leave')
+      })
+
+      it('conditions are re-evaluated on each menu display', () => {
+        game.player.basestats.set('Arousal', 0)
+        game.player.calcStats()
+
+        game.run(menu(
+          branch('Kiss', addStat('Arousal', 30, { max: 100, hidden: true })),
+          when(hasStat('Arousal', 25),
+            exit('Things get heated...', text('...')),
+          ),
+          exit('Leave', text('Goodbye.')),
+        ))
+
+        // Initially 2 options (Kiss + Leave)
+        expect(game.scene.options).toHaveLength(2)
+
+        // Click "Kiss" to raise Arousal
+        const kissScript = game.scene.options[0].script
+        game.clearScene()
+        game.run(kissScript)
+
+        // Continue back to menu
+        const continueScript = game.scene.options[0].script
+        game.clearScene()
+        game.run(continueScript)
+
+        // Now "Things get heated" should appear (Arousal >= 25)
+        expect(game.scene.options).toHaveLength(3)
+        expect(game.scene.options.some(o => o.label === 'Things get heated...')).toBe(true)
+      })
+    })
+
+    describe('random() with strings', () => {
+      let game: Game
+
+      beforeEach(() => {
+        game = new Game()
+        game.run('init', {})
+        game.clearScene()
+      })
+
+      it('accepts plain strings as arguments', () => {
+        // random() should accept strings and auto-convert to text()
+        vi.spyOn(Math, 'random').mockReturnValue(0) // always pick first
+
+        game.run(random('Hello', 'World'))
+
+        expect(game.scene.content.length).toBe(1)
+        vi.restoreAllMocks()
+      })
+
+      it('mixes strings and instructions', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.99) // pick last
+
+        game.run(random('Plain text', addStat('Mood', 1, { hidden: true })))
+
+        // Last entry is addStat, which doesn't add to content but modifies stat
+        vi.restoreAllMocks()
       })
     })
   })

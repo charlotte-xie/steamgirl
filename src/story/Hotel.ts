@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit } from '../model/ScriptDSL'
+import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
 import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
@@ -152,111 +152,194 @@ makeScripts({
 // BAR PATRON RANDOM ENCOUNTER (DSL)
 // ============================================================================
 
-// The kiss-or-not moment, shared by both pool and garden paths
-function patronKissChoice(): Instruction {
+// The kiss-or-not moment, shared by both pool and garden paths.
+// Each path provides its own farewell so the flow is self-contained.
+// Uses a Flirtation skill check (Charm + Flirtation vs difficulty 30):
+//   - Early player (Charm 10, Flirtation 5): threshold ~-15, almost never succeeds
+//   - Mid player (Charm 25, Flirtation 20): threshold ~15, succeeds ~15%
+//   - Late player (Charm 40, Flirtation 60): threshold ~70, succeeds ~70%
+function patronKissChoice(farewell: Instruction): Instruction {
   return choice(
-    gatedBranch(hasStat('Flirtation', 15),
-      'Kiss him',
-      text('You close the distance between you. His eyes widen slightly, then he smiles and leans in to meet you.'),
-      random(
-        text('The kiss is brief but electric — the taste of gin and something sweeter. When you pull back, he looks genuinely surprised.'),
-        text('His hand finds the small of your back as you kiss. It\'s gentle, unhurried, and when it ends neither of you speaks for a moment.'),
-      ),
-      addStat('Flirtation', 1, { max: 35, chance: 0.5 }),
-      addStat('Charm', 1, { max: 35, chance: 0.3 }),
-      text('He holds your gaze, something shifting behind his eyes. When he speaks, his voice is low.'),
-      random(
-        text('"I have a room upstairs — 533. We could have a drink, just the two of us. No pressure." His smile is warm, inviting, entirely without menace.'),
-        text('"My room is just upstairs. 533. It seems a shame to end the evening here." He lets the suggestion hang, watching your reaction.'),
-      ),
-      choice(
-        branch('Go with him',
-          text('You hold his gaze for a moment, then nod. His smile widens and he offers his arm.'),
-          text('The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.'),
-          move('room-533', 2),
-          run('room533Scene'),
+    gatedBranch(hasStat('Flirtation', 1), 'Kiss him',
+      skillCheck('Flirtation', 30,
+        // Success — the kiss lands
+        seq(
+          text('You close the distance between you. His eyes widen slightly, then he smiles and leans in to meet you.'),
+          random(
+            'The kiss is brief but electric — the taste of gin and something sweeter. When you pull back, he looks genuinely surprised.',
+            'His hand finds the small of your back as you kiss. It\'s gentle, unhurried, and when it ends neither of you speaks for a moment.',
+          ),
+          addStat('Flirtation', 1, { max: 40, chance: 0.5 }),
+          addStat('Charm', 1, { max: 40, chance: 0.3 }),
+          text('He holds your gaze, something shifting behind his eyes. When he speaks, his voice is low.'),
+          random(
+            '"I have a room upstairs — 533. We could have a drink, just the two of us. No pressure." His smile is warm, inviting, entirely without menace.',
+            '"My room is just upstairs. 533. It seems a shame to end the evening here." He lets the suggestion hang, watching your reaction.',
+          ),
+          choice(
+            branch('Go with him',
+              'You hold his gaze for a moment, then nod. His smile widens and he offers his arm.',
+              'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
+              move('room-533', 2),
+              run('room533Scene'),
+            ),
+            branch('Decline gracefully',
+              'You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.',
+              '"Of course. It was a wonderful evening regardless." He kisses your hand and bids you goodnight.',
+              addStat('Mood', 5, { max: 85 }),
+              farewell,
+            ),
+          ),
         ),
-        branch('Decline gracefully',
-          text('You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.'),
-          text('"Of course. It was a wonderful evening regardless." He kisses your hand and bids you goodnight.'),
-          addStat('Mood', 5, { max: 85 }),
+        // Failure — the moment doesn't land
+        seq(
+          random(
+            'You lean in, but the timing is off. He pulls back slightly, surprised, and the moment dissolves into awkward laughter.',
+            'You move closer, but he misreads the gesture and turns to signal the barman. The moment slips away.',
+          ),
+          addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
+          random(
+            '"Well," he says, recovering quickly. "It\'s been a delightful evening." He smiles warmly, but the spark has dimmed.',
+            'He clears his throat. "I should probably call it a night. But I\'ve enjoyed your company tremendously."',
+          ),
+          farewell,
         ),
       ),
     ),
     branch('Let the moment pass',
-      text('The tension hangs between you for a heartbeat, then dissolves into a warm smile. Some things are better left as possibilities.'),
-      text('"It\'s been a wonderful evening," he says, and means it.'),
+      'The tension hangs between you for a heartbeat, then dissolves into a warm smile. Some things are better left as possibilities.',
+      '"It\'s been a wonderful evening," he says, and means it.',
       addStat('Mood', 5, { max: 85 }),
+      farewell,
     ),
   )
 }
 
-// Garden path — walk, talk, optional kiss, return to bar
+// Garden farewell — plays when the player doesn't go to Room 533
+function gardenFarewell(): Instruction {
+  return seq(
+    'He walks you back to the lobby, his hand hovering at the small of your back.',
+    random(
+      '"Thank you for the company. This city can be lonely, even in the best hotels." He tips an imaginary hat and disappears into the night.',
+      '"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.',
+    ),
+    move('hotel-bar'),
+  )
+}
+
+// Garden path — walk, talk, repeatable menu, optional kiss, return to bar
 function patronGardenPath(): Instruction {
-  return scenes(
-    scene(
-      text('You follow him through the lobby and into the brass lift. He presses the top button with a confident smile.'),
-      move('hotel-garden', 5),
-      text('The lift opens onto the rooftop garden. The city stretches below, gaslights tracing the streets like scattered jewels. The air is cool and fragrant with night-blooming flowers.'),
-      text('"Worth the trip, wouldn\'t you say?" He stands close, one hand resting lightly on the railing beside yours.'),
-      timeLapse(20),
-      run('consumeAlcohol', { amount: 15 }),
-      random(
-        text('The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.'),
-        text('You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.'),
+  return scene(
+    'You follow him through the lobby and into the brass lift. He presses the top button with a confident smile.',
+    move('hotel-garden', 5),
+    'The lift opens onto the rooftop garden. The city stretches below, gaslights tracing the streets like scattered jewels. The air is cool and fragrant with night-blooming flowers.',
+    '"Worth the trip, wouldn\'t you say?" He stands close, one hand resting lightly on the railing beside yours.',
+    timeLapse(10),
+    run('consumeAlcohol', { amount: 15 }),
+    menu(
+      branch('Talk',
+        random(
+          'The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.',
+          'You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.',
+          'He points out landmarks across the skyline — the university clock tower, the great chimney of the steamworks. You find yourself leaning into him as you look.',
+          'He asks about your studies and listens with genuine curiosity. The night air is cool, and you stand close for warmth.',
+        ),
+        timeLapse(10),
+        addStat('Charm', 1, { max: 40, chance: 0.3 }),
       ),
-      patronKissChoice(),
-    ),
-    scene(
-      text('He walks you back to the lobby, his hand hovering at the small of your back.'),
-      random(
-        text('"Thank you for the company. This city can be lonely, even in the best hotels." He tips an imaginary hat and disappears into the night.'),
-        text('"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.'),
+      branch('Have a drink',
+        random(
+          'He produces a silver hip flask and pours you something that smells of honey and smoke.',
+          'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
+        ),
+        run('consumeAlcohol', { amount: 15 }),
+        timeLapse(5),
       ),
-      move('hotel-bar'),
+      branch('Enjoy the view',
+        random(
+          'You lean against the railing together, watching the gaslights flicker across the rooftops. The city hums softly below.',
+          'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
+          'You watch an airship drift silently across the moon, its running lights winking red and green.',
+        ),
+        timeLapse(10),
+        addStat('Mood', 2, { max: 85 }),
+      ),
+      exit('Make your move',
+        patronKissChoice(gardenFarewell()),
+      ),
     ),
   )
 }
 
-// Pool path — change into swimwear, swim, optional kiss, stay at pool
+// Pool farewell — plays when the player doesn't go to Room 533
+function poolFarewell(): Instruction {
+  return seq(
+    'He climbs out and wraps himself in a monogrammed robe.',
+    random(
+      '"Thank you for the company. This city can be lonely, even in the best hotels." He gives you a warm smile and disappears towards the lobby.',
+      '"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.',
+    ),
+    'You have the pool to yourself now. The water laps gently against the marble.',
+  )
+}
+
+// Pool path — change into swimwear, repeatable menu, optional kiss, stay at pool
 function patronPoolPath(): Instruction {
   return scenes(
     scene(
-      text('He leads you through a side corridor and down a flight of marble stairs. The air grows warm and humid.'),
+      'He leads you through a side corridor and down a flight of marble stairs. The air grows warm and humid.',
       move('hotel-pool', 5),
-      text('The pool glimmers under the vaulted glass ceiling, lit from below by brass lanterns. You have the place entirely to yourselves.'),
+      'The pool glimmers under the vaulted glass ceiling, lit from below by brass lanterns. You have the place entirely to yourselves.',
       // Offer to buy a bikini if the player doesn't have one
       when(not(hasItem('bikini-top')),
-        text('You hesitate — you don\'t have anything to swim in.'),
-        text('He notices your expression and waves a hand. "Leave it to me." He has a quiet word with an attendant, who returns minutes later with a neatly folded bikini in hotel packaging.'),
-        text('"A gift," he says with a smile. "Consider it an investment in the evening."'),
+        'You hesitate — you don\'t have anything to swim in.',
+        'He notices your expression and waves a hand. "Leave it to me." He has a quiet word with an attendant, who returns minutes later with a neatly folded bikini in hotel packaging.',
+        '"A gift," he says with a smile. "Consider it an investment in the evening."',
         addItem('bikini-top'),
         addItem('bikini-bottom'),
       ),
-      text('You slip into the changing room and emerge in your bikini. The warm, humid air feels pleasant on your skin.'),
+      'You slip into the changing room and emerge in your bikini. The warm, humid air feels pleasant on your skin.',
       changeOutfit(['bikini-top', 'bikini-bottom']),
     ),
     scene(
       random(
-        text('You lower yourself into the heated water. It\'s blissfully warm — the hotel\'s boilers keep it at a perfect temperature.'),
-        text('You dive in. The water is warm and silky, lit from below so it glows a deep aquamarine.'),
+        'You lower yourself into the heated water. It\'s blissfully warm — the hotel\'s boilers keep it at a perfect temperature.',
+        'You dive in. The water is warm and silky, lit from below so it glows a deep aquamarine.',
       ),
-      timeLapse(20),
+      timeLapse(10),
       run('consumeAlcohol', { amount: 15 }),
-      text('You swim lazy lengths while he watches from the pool\'s edge, drink in hand. Eventually he joins you, and you float together in the warm water.'),
-      random(
-        text('He tells you about his travels — the canals of Veneto, the hot springs of Nordheim. His hand brushes yours beneath the water, not quite by accident.'),
-        text('He asks about your studies, and seems genuinely interested. You talk until your fingers wrinkle, drifting closer with each exchange.'),
+      menu(
+        branch('Swim',
+          random(
+            'You swim lazy lengths together, the water warm and silky against your skin. The echo of splashing fills the vaulted space.',
+            'You race him to the far end. He lets you win — or perhaps you\'re simply faster. Either way, you\'re both laughing.',
+            'You float on your back, gazing up through the glass ceiling at the stars. He drifts beside you, close enough to touch.',
+          ),
+          timeLapse(10),
+          addStat('Fitness', 1, { max: 50, chance: 0.2 }),
+        ),
+        branch('Talk',
+          random(
+            'He tells you about his travels — the canals of Veneto, the hot springs of Nordheim. His hand brushes yours beneath the water, not quite by accident.',
+            'He asks about your studies, and seems genuinely interested. You talk until your fingers wrinkle, drifting closer with each exchange.',
+            'You rest your arms on the pool\'s edge and talk. The warm water makes everything feel languid and easy.',
+            'He describes the mechanical baths of Praag — heated by volcanic springs, with brass jets that massage your shoulders. "Nothing like this, though," he adds, looking at you.',
+          ),
+          timeLapse(10),
+          addStat('Charm', 1, { max: 40, chance: 0.3 }),
+        ),
+        branch('Have a drink',
+          random(
+            'He climbs out briefly and returns with two glasses from the poolside cabinet. You drink treading water, which makes you both laugh.',
+            'An attendant materialises with a tray of cocktails. You sip yours with your elbows propped on the marble edge.',
+          ),
+          run('consumeAlcohol', { amount: 15 }),
+          timeLapse(5),
+        ),
+        exit('Make your move',
+          patronKissChoice(poolFarewell()),
+        ),
       ),
-      patronKissChoice(),
-    ),
-    scene(
-      text('He climbs out and wraps himself in a monogrammed robe.'),
-      random(
-        text('"Thank you for the company. This city can be lonely, even in the best hotels." He gives you a warm smile and disappears towards the lobby.'),
-        text('"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.'),
-      ),
-      text('You have the pool to yourself now. The water laps gently against the marble.'),
     ),
   )
 }
@@ -304,29 +387,45 @@ const barPatronScene = scenes(
       ),
       text('He raises his glass. "To new acquaintances." His eyes linger on you a moment longer than strictly necessary.'),
       choice(
-        branch('Flirt back', scenes(
-          scene(
-            text('You hold his gaze and let a slow smile play across your lips. He leans in, clearly intrigued.'),
-            random(
-              text('The conversation turns playful. He\'s witty and attentive, and keeps finding excuses to touch your hand.'),
-              text('You trade barbs and compliments in equal measure. He laughs easily, charmed by your boldness.'),
+        gatedBranch(hasStat('Flirtation', 1), 'Flirt back',
+          // Flirtation check (difficulty 20): early players mostly fail, experienced players succeed
+          skillCheck('Flirtation', 20,
+            // Success — he's charmed
+            scenes(
+              scene(
+                'You hold his gaze and let a slow smile play across your lips. He leans in, clearly intrigued.',
+                random(
+                  'The conversation turns playful. He\'s witty and attentive, and keeps finding excuses to touch your hand.',
+                  'You trade barbs and compliments in equal measure. He laughs easily, charmed by your boldness.',
+                ),
+                timeLapse(30),
+                run('consumeAlcohol', { amount: 20 }),
+                addStat('Flirtation', 1, { max: 40, chance: 0.4 }),
+              ),
+              // After flirting — he suggests going somewhere
+              patronOuting(),
             ),
-            timeLapse(30),
-            run('consumeAlcohol', { amount: 20 }),
-            addStat('Flirtation', 1, { max: 35, chance: 0.4 }),
+            // Failure — the flirtation falls flat
+            seq(
+              random(
+                'You try to catch his eye with a coy smile, but the delivery falls flat. He gives a polite laugh and changes the subject.',
+                'You attempt a witty remark, but it lands awkwardly. He smiles graciously and steers the conversation elsewhere.',
+              ),
+              timeLapse(20),
+              addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
+              'After a pleasant but unremarkable chat, he finishes his drink. "Well, it\'s been a pleasure. Do enjoy your evening."',
+            ),
           ),
-          // After flirting — he suggests going somewhere
-          patronOuting(),
-        )),
+        ),
         branch('Keep it casual',
-          text('You steer the conversation to safer waters — the city, the weather, a new exhibition at the museum.'),
-          text('He seems genuine enough, and the chat is pleasant. After a while he finishes his drink and bids you a courteous good evening.'),
+          'You steer the conversation to safer waters — the city, the weather, a new exhibition at the museum.',
+          'He seems genuine enough, and the chat is pleasant. After a while he finishes his drink and bids you a courteous good evening.',
           timeLapse(20),
           addStat('Mood', 3, { max: 85 }),
         ),
         branch('Excuse yourself',
-          text('You thank him for the drink but explain you were just leaving.'),
-          text('He looks faintly disappointed but recovers quickly. "Of course. It was a pleasure." You leave him nursing his cocktail alone.'),
+          'You thank him for the drink but explain you were just leaving.',
+          'He looks faintly disappointed but recovers quickly. "Of course. It was a pleasure." You leave him nursing his cocktail alone.',
         ),
       ),
     ),
@@ -339,91 +438,72 @@ const barPatronScene = scenes(
 
 
 // ============================================================================
-// ROOM 533 — PATRON'S ROOM (REPEATABLE MENU)
+// ROOM 533 — PATRON'S ROOM (DSL MENU)
 // ============================================================================
 
-const addRoom533Options = (g: Game) => {
-  g.addOption('room533Kiss', {}, 'Kiss him')
-  g.addOption('room533Drink', {}, 'Have a drink')
-  g.addOption('room533Chat', {}, 'Chat')
-  g.addOption('room533Leave', {}, 'Call it a night')
-}
-
-const room533Scripts = {
-  room533Scene: (g: Game) => {
-    const texts = [
+const room533Scene = scenes(
+  scene(
+    random(
       'The room is warm and softly lit, the city glittering beyond the window. He pours two drinks from a crystal decanter and hands you one.',
       'He closes the door behind you and crosses to the drinks cabinet. "Make yourself comfortable." The room smells of sandalwood and expensive leather.',
-    ]
-    g.add(texts[Math.floor(Math.random() * texts.length)])
-    g.add('He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.')
-    addRoom533Options(g)
-  },
-  room533Kiss: (g: Game) => {
-    const texts = [
-      'You lean into him and his arms wrap around you. The kiss is slow and deliberate, tasting of whisky and wanting. Your pulse quickens.',
-      'You close the distance between you. His hand slides to your waist as your lips meet — gentle at first, then with growing urgency.',
-      'He cups your face in his hands and kisses you deeply. The room seems to narrow to just the two of you, the city forgotten beyond the glass.',
-      'You kiss him again, harder this time. He makes a soft sound of surprise, then pulls you closer. The warmth of his body is intoxicating.',
-    ]
-    g.add(texts[Math.floor(Math.random() * texts.length)])
-    g.player.modifyStat('Arousal', 5)
-    g.add({ type: 'text', text: 'Arousal +5', color: '#e85d75' })
-    if (Math.random() < 0.3) {
-      g.player.modifyStat('Flirtation', 1)
-    }
-    g.timeLapse(5)
-    const afterTexts = [
-      'He draws back just far enough to look at you, slightly breathless. "You are full of surprises."',
-      'When you finally pull apart, his eyes are bright. He runs a hand through his hair, composing himself.',
-      'He exhales slowly, a smile tugging at his lips. "I think I could get used to that."',
-    ]
-    g.add(afterTexts[Math.floor(Math.random() * afterTexts.length)])
-    addRoom533Options(g)
-  },
-  room533Drink: (g: Game) => {
-    const texts = [
-      'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
-      'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
-      'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
-    ]
-    g.add(texts[Math.floor(Math.random() * texts.length)])
-    consumeAlcohol(g, 20)
-    g.timeLapse(10)
-    const afterTexts = [
-      'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
-      'You clink glasses. The room feels cosier now, the city lights softening through the window.',
-    ]
-    g.add(afterTexts[Math.floor(Math.random() * afterTexts.length)])
-    addRoom533Options(g)
-  },
-  room533Chat: (g: Game) => {
-    const texts = [
-      'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
-      'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
-      'The conversation drifts to dreams and ambitions. He speaks carefully, choosing his words, and you realise he\'s more thoughtful than his polished exterior suggests.',
-      'He asks about your life before Aetheria. You find yourself sharing more than you expected, drawn out by his quiet attentiveness. In turn, he tells you about growing up in the country — a different world from this gilded hotel room.',
-    ]
-    g.add(texts[Math.floor(Math.random() * texts.length)])
-    g.timeLapse(15)
-    if (Math.random() < 0.3) {
-      g.player.modifyStat('Charm', 1)
-    }
-    g.player.modifyStat('Mood', 2)
-    addRoom533Options(g)
-  },
-  room533Leave: (g: Game) => {
-    const texts = [
-      'You set down your glass and tell him you should go. He nods, rising to walk you to the door.\n\n"Thank you for a memorable evening," he says, pressing a kiss to the back of your hand. "Truly."',
-      'You stand and smooth your clothes. He doesn\'t try to stop you — just smiles, warm and genuine.\n\n"I won\'t forget tonight," he says quietly. The door clicks shut behind you, and you make your way to the lift.',
-    ]
-    g.add(texts[Math.floor(Math.random() * texts.length)])
-    g.run('endScene', { text: 'You step out into the corridor, your heart still racing slightly, and take the lift back down to the lobby.' })
-    g.run('move', { location: 'hotel' })
-  },
-}
+    ),
+    'He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.',
+    menu(
+      branch('Kiss him',
+        random(
+          'You lean into him and his arms wrap around you. The kiss is slow and deliberate, tasting of whisky and wanting. Your pulse quickens.',
+          'You close the distance between you. His hand slides to your waist as your lips meet — gentle at first, then with growing urgency.',
+          'He cups your face in his hands and kisses you deeply. The room seems to narrow to just the two of you, the city forgotten beyond the glass.',
+          'You kiss him again, harder this time. He makes a soft sound of surprise, then pulls you closer. The warmth of his body is intoxicating.',
+        ),
+        addStat('Arousal', 5, { max: 100 }),
+        addStat('Flirtation', 1, { max: 40, chance: 0.3 }),
+        timeLapse(5),
+        random(
+          'He draws back just far enough to look at you, slightly breathless. "You are full of surprises."',
+          'When you finally pull apart, his eyes are bright. He runs a hand through his hair, composing himself.',
+          'He exhales slowly, a smile tugging at his lips. "I think I could get used to that."',
+        ),
+      ),
+      branch('Have a drink',
+        random(
+          'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
+          'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
+          'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
+        ),
+        run('consumeAlcohol', { amount: 20 }),
+        timeLapse(10),
+        random(
+          'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
+          'You clink glasses. The room feels cosier now, the city lights softening through the window.',
+        ),
+      ),
+      branch('Chat',
+        random(
+          'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
+          'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
+          'The conversation drifts to dreams and ambitions. He speaks carefully, choosing his words, and you realise he\'s more thoughtful than his polished exterior suggests.',
+          'He asks about your life before Aetheria. You find yourself sharing more than you expected, drawn out by his quiet attentiveness. In turn, he tells you about growing up in the country — a different world from this gilded hotel room.',
+        ),
+        timeLapse(15),
+        addStat('Charm', 1, { max: 40, chance: 0.3 }),
+        addStat('Mood', 2, { max: 85 }),
+      ),
+      exit('Call it a night',
+        random(
+          'You set down your glass and tell him you should go. He nods, rising to walk you to the door.\n\n"Thank you for a memorable evening," he says, pressing a kiss to the back of your hand. "Truly."',
+          'You stand and smooth your clothes. He doesn\'t try to stop you — just smiles, warm and genuine.\n\n"I won\'t forget tonight," he says quietly. The door clicks shut behind you, and you make your way to the lift.',
+        ),
+        'You step out into the corridor, your heart still racing slightly, and take the lift back down to the lobby.',
+        move('hotel'),
+      ),
+    ),
+  ),
+)
 
-makeScripts(room533Scripts)
+makeScripts({
+  room533Scene: (g: Game) => g.run(room533Scene),
+})
 
 // ============================================================================
 // ACTIVITY SCRIPTS (DSL)

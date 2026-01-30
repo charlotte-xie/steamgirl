@@ -356,6 +356,112 @@ export function gatedBranch(
   return when(condition, branch(label, ...rest))
 }
 
+// --- Branch info extraction (internal) ---
+
+/** Extract label and content from a branch option instruction */
+function extractBranchInfo(instr: Instruction): { label: string; content: Instruction } | null {
+  if (!isBranchOption(instr)) return null
+  const params = instr[1] as { label?: string; params?: { push?: Instruction[] } }
+  const label = params.label ?? ''
+  const push = (params.params?.push ?? []) as Instruction[]
+  return { label, content: push.length === 1 ? push[0] : run('seq', { instructions: push }) }
+}
+
+/** True if instruction is an exit() marker */
+function isExitInstruction(instr: Instruction): boolean {
+  return instr[0] === '_menuExit'
+}
+
+/** Extract label and content from an exit() marker */
+function extractExitInfo(instr: Instruction): { label: string; content: Instruction } | null {
+  if (!isExitInstruction(instr)) return null
+  const params = instr[1] as { label: string; body: Instruction[] }
+  return { label: params.label, content: seq(...params.body) }
+}
+
+/**
+ * A terminal branch inside a `menu()` — choosing this exits the loop.
+ *
+ * @example
+ * menu(
+ *   branch('Kiss him', 'You kiss.', addStat('Arousal', 5)),
+ *   branch('Have a drink', 'He pours you a drink.'),
+ *   exit('Call it a night', 'You leave.', move('hotel')),
+ * )
+ */
+export function exit(label: string, ...rest: SceneElement[]): Instruction {
+  return run('_menuExit', { label, body: rest.map(toInstruction) })
+}
+
+/**
+ * A repeatable choice menu. Presents options to the player; non-exit
+ * branches loop back to re-present the menu, exit branches break out.
+ *
+ * Accepts `branch()`, `exit()`, and `when(condition, branch/exit)`.
+ * Conditions are re-evaluated each time the menu is shown, so options
+ * can appear or disappear based on changing game state.
+ *
+ * Between each action, the player sees a "Continue" button before the
+ * menu reappears — giving them time to read the result.
+ *
+ * @example
+ * menu(
+ *   when(hasStat('Flirtation', 20),
+ *     branch('Kiss him', 'You kiss.', addStat('Arousal', 5)),
+ *   ),
+ *   branch('Have a drink', 'He pours you a drink.', run('consumeAlcohol', { amount: 20 })),
+ *   branch('Chat', 'You talk for a while.'),
+ *   exit('Leave', 'You say goodnight.', move('hotel')),
+ * )
+ */
+export function menu(...args: SceneElement[]): Instruction {
+  type MenuEntry = {
+    label: string
+    content: Instruction
+    isExit: boolean
+    condition?: Instruction
+  }
+  const entries: MenuEntry[] = []
+
+  for (const arg of args) {
+    const instr = toInstruction(arg)
+
+    // exit('Label', ...)
+    const exitInfo = extractExitInfo(instr)
+    if (exitInfo) {
+      entries.push({ ...exitInfo, isExit: true })
+      continue
+    }
+
+    // branch('Label', ...)
+    const branchInfo = extractBranchInfo(instr)
+    if (branchInfo) {
+      entries.push({ ...branchInfo, isExit: false })
+      continue
+    }
+
+    // when(condition, branch/exit)
+    if (instr[0] === 'when') {
+      const p = instr[1] as { condition: Instruction; then: Instruction[] }
+      if (p.then && p.then.length === 1) {
+        const inner = p.then[0]
+        const innerExit = extractExitInfo(inner)
+        if (innerExit) {
+          entries.push({ ...innerExit, isExit: true, condition: p.condition })
+          continue
+        }
+        const innerBranch = extractBranchInfo(inner)
+        if (innerBranch) {
+          entries.push({ ...innerBranch, isExit: false, condition: p.condition })
+          continue
+        }
+      }
+    }
+  }
+
+  return run('menu', { entries })
+}
+
 /**
  * Perform a skill test. Can be used as:
  * - Predicate: skillCheck('Flirtation', 10) - returns boolean

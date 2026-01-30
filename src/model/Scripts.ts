@@ -548,6 +548,41 @@ const coreScripts: Record<string, ScriptFn> = {
     execAll(game, chosen)
   },
 
+  /**
+   * Repeatable choice menu. Presents options; non-exit branches loop back,
+   * exit branches break out. Conditions are re-evaluated each display.
+   */
+  menu: (game: Game, params: {
+    entries?: Array<{
+      label: string
+      content: Instruction
+      isExit: boolean
+      condition?: Instruction
+    }>
+  }) => {
+    const entries = params.entries
+    if (!entries || entries.length === 0) return
+
+    // The menu instruction itself, for re-pushing onto the stack
+    const menuSelf: Instruction = ['menu', params]
+
+    for (const entry of entries) {
+      // Check condition if gated
+      if (entry.condition) {
+        const result = exec(game, entry.condition)
+        if (!result) continue
+      }
+
+      if (entry.isExit) {
+        // Exit: push content only — no loop back
+        game.addOption('advanceScene', { push: [entry.content] }, entry.label)
+      } else {
+        // Loop: push content then re-push the menu
+        game.addOption('advanceScene', { push: [entry.content, menuSelf] }, entry.label)
+      }
+    }
+  },
+
   /** Perform a skill test. Returns boolean if no callbacks provided, otherwise executes callbacks. */
   skillCheck: (game: Game, params: {
     skill?: string
