@@ -168,8 +168,8 @@ registerNPC('ivan-hess', {
     say('New in town, are you? After a drink? Or looking for something else?'),
     say("Either way, I'm your man. Ivan Hess at your service."),
     learnNpcName(),
-    option('Buy a Drink (10 Kr)', 'interact', { script: 'buyDrink' }),
-    option('Just looking', 'interact', { script: 'onGeneralChat' }),
+    option('Buy a Drink (10 Kr)', 'buyDrink'),
+    option('Just looking', 'onGeneralChat'),
     npcLeaveOption('You nod politely and step away from the bar.', 'Come back whenever you\'re thirsty.'),
   ),
 
@@ -248,18 +248,30 @@ registerNPC('ivan-hess', {
     // CHAT MENU
     // ----------------------------------------------------------------
 
-    onGeneralChat: (g: Game) => {
-      const npc = g.npc
-      npc.option('Buy a Drink (10 Kr)', 'buyDrink')
-        .option('Ask for gossip', 'gossip')
-        .option('Ask for work', 'work')
+    onGeneralChat: seq(
+      option('Buy a Drink (10 Kr)', 'buyDrink'),
+      option('Ask for gossip', 'gossip'),
+      option('Ask for work', 'work'),
+      when(npcStat('affection', { min: 5 }),
+        option('Ask about the regulars', 'askRegulars'),
+      ),
+      option('Leave', 'farewell'),
+    ),
 
-      if (npc.affection >= 5) {
-        npc.option('Ask about the regulars', 'askRegulars')
-      }
-
-      npc.leaveOption('You take your leave.', 'Come back whenever you\'re thirsty.')
-    },
+    farewell: seq(
+      'You step away from the bar.',
+      random(
+        say("Don't be a stranger, {pc}."),
+        say("Come back whenever you're thirsty."),
+        say("Watch yourself out there."),
+        when(npcStat('affection', { min: 20 }),
+          say("Take care of yourself, {pc}. Lowtown's not kind after dark."),
+        ),
+        when(npcStat('affection', { min: 5 }),
+          say("You're alright, {pc}. For a newcomer."),
+        ),
+      ),
+    ),
 
     // ----------------------------------------------------------------
     // BUY A DRINK
@@ -275,12 +287,12 @@ registerNPC('ivan-hess', {
       }
       g.player.removeItem('crown', 10)
       consumeAlcohol(g, 35)
-      g.run(addNpcStat('affection', 1, { max: 10, hidden: true }))
+      g.run(addNpcStat('affection', 1, { max: 20, hidden: true }))
 
       g.run(cond(
-        npcStat('affection', { min: 8 }),
+        npcStat('affection', { min: 20 }),
         seq(
-          'Ivan draws you a foaming pint without being asked — he already knows what you drink.',
+          '{npc} draws you a foaming pint without being asked — he already knows what you drink.',
           say("There you go, {pc}. Mind the fumes from the still — we like our ale strong here."),
         ),
         seq(
