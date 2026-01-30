@@ -47,6 +47,14 @@ export function DevControls() {
       </button>
       <button
         className="dev-btn"
+        onClick={() => refresh()}
+        title="Force re-render"
+      >
+        <span className="dev-btn-icon">⟳</span>
+        <span className="dev-btn-label">Refresh</span>
+      </button>
+      <button
+        className="dev-btn"
         onClick={() => { game.player.addItem('crown', 1000); applyAndSave() }}
         title="Add 1000 Krona"
       >

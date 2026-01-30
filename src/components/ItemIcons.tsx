@@ -10,7 +10,7 @@ const sv = `0 0 ${S} ${S}`
 // Shared props for all SVGs - width/height use 100% to fill container
 const svgProps = { width: '100%', height: '100%', viewBox: sv, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
 
-const icons: Record<string, () => JSX.Element> = {
+export const icons: Record<string, () => JSX.Element> = {
 
   food: () => (
     <svg {...svgProps}>
@@ -246,12 +246,17 @@ const icons: Record<string, () => JSX.Element> = {
 
 export type ItemIconName = keyof typeof icons
 
+// Mutable registry so HMR can swap icons in place without a full reload.
+const liveIcons: Record<string, () => JSX.Element> = { ...icons }
+
 export function getItemIcon(name: string): (() => JSX.Element) | undefined {
-  return icons[name]
+  return liveIcons[name]
 }
 
-// Accept HMR updates without propagating to parent modules,
-// which would cause the game to reset via a full page reload.
 if (import.meta.hot) {
-  import.meta.hot.accept()
+  import.meta.hot.accept((newModule) => {
+    if (newModule) {
+      Object.assign(liveIcons, newModule.icons)
+    }
+  })
 }
