@@ -123,6 +123,27 @@ function resolveParts(game: Game, parts: (string | Instruction)[]): (string | In
   return result
 }
 
+/** Resolve a single interpolation expression. Calls the named script and returns its result, or red error text. */
+function resolveExpression(game: Game, expression: string): string | InlineContent {
+  if (!expression) {
+    return { type: 'text', text: '{}', color: '#ff4444' }
+  }
+  const scriptFn = getScript(expression)
+  if (!scriptFn) {
+    return { type: 'text', text: `{${expression}}`, color: '#ff4444' }
+  }
+  let resolved: unknown = game.run(expression)
+  for (let i = 0; isInstruction(resolved); i++) {
+    if (i >= 1000) throw new Error(`Interpolation exceeded 1000 iterations resolving {${expression}}`)
+    resolved = game.run(resolved)
+  }
+  if (typeof resolved === 'string') return resolved
+  if (resolved && typeof resolved === 'object' && 'type' in resolved) {
+    return resolved as InlineContent
+  }
+  return ''
+}
+
 /**
  * Parse and resolve {scriptName} expressions in a template string.
  * Each {name} calls game.run(name) and uses the result as text content.
@@ -165,21 +186,7 @@ function interpolateString(game: Game, template: string): (string | InlineConten
       }
 
       const scriptName = template.slice(i + 1, end).trim()
-      if (!scriptName) {
-        result.push({ type: 'text', text: '{}', color: '#ff4444' })
-      } else {
-        const scriptFn = getScript(scriptName)
-        if (!scriptFn) {
-          result.push({ type: 'text', text: `{${scriptName}}`, color: '#ff4444' })
-        } else {
-          const resolved = game.run(scriptName)
-          if (typeof resolved === 'string') {
-            result.push(resolved)
-          } else if (resolved && typeof resolved === 'object' && 'type' in resolved) {
-            result.push(resolved as InlineContent)
-          }
-        }
-      }
+      result.push(resolveExpression(game, scriptName))
 
       i = end + 1
       continue
