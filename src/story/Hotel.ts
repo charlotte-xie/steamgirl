@@ -5,7 +5,7 @@ import type { CardDefinition } from '../model/Card'
 import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run } from '../model/ScriptDSL'
+import { script, text, when, npcStat, seq, cond, hasItem, removeItem, timeLapse, eatFood, addStat, random, run, scenes, scene, branch, choice } from '../model/ScriptDSL'
 import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
@@ -146,6 +146,54 @@ makeScripts({
     consumeAlcohol(g, params.amount ?? 0)
   },
 })
+
+// ============================================================================
+// BAR PATRON RANDOM ENCOUNTER (DSL)
+// ============================================================================
+
+const barPatronScene = scenes(
+  // Page 1: A rich man approaches
+  scene(
+    text('A well-dressed man in a tailored waistcoat slides onto the stool beside you. His cufflinks are polished brass, and he smells faintly of expensive cologne.'),
+    text('"Forgive the intrusion," he says, signalling the barman. "But it seems a shame for a young lady to drink alone. Might I buy you something?"'),
+    branch('Accept the drink',
+      run('consumeAlcohol', { amount: 25 }),
+      text('The barman sets down two cocktails — something with gin and elderflower that catches the light.'),
+      text('"I\'m Edmund," he says, raising his glass. "I deal in aetheric instruments. And you? You don\'t look like one of the usual crowd here."'),
+      text('His eyes linger on you a moment longer than strictly necessary.'),
+      choice(
+        branch('Flirt back',
+          text('You lean in slightly, meeting his gaze. "Perhaps I\'m exactly the sort of person you\'d want to meet, Edmund."'),
+          text('His eyebrows rise and a slow smile spreads across his face. "Well. I think I may have underestimated you."'),
+          text('You spend the next half hour in easy, flirtatious conversation. He\'s witty, attentive, and keeps finding excuses to touch your hand.'),
+          timeLapse(30),
+          run('consumeAlcohol', { amount: 20 }),
+          addStat('Flirtation', 1, { max: 40, chance: 0.5 }),
+          addStat('Charm', 1, { max: 40, chance: 0.3 }),
+          text('Eventually he rises and presses a calling card into your palm. "I do hope we meet again." His fingers linger on yours before he disappears into the lobby.'),
+        ),
+        branch('Keep it casual',
+          text('"I\'m a student at the university," you say, keeping your tone friendly but measured.'),
+          text('"Ah, an academic! How wonderful." He seems genuine enough, and the conversation drifts to the city — the best restaurants, the parks worth visiting, a new exhibition at the museum.'),
+          timeLapse(20),
+          text('After a pleasant chat, he finishes his drink and bids you a courteous good evening. Not every encounter needs to be complicated.'),
+          addStat('Mood', 3, { max: 90 }),
+        ),
+        branch('Excuse yourself',
+          text('"Thank you for the drink," you say, sliding off the stool. "But I should be going."'),
+          text('He looks faintly disappointed but recovers quickly. "Of course. It was a pleasure."'),
+          text('You leave him nursing his cocktail alone.'),
+        ),
+      ),
+    ),
+    branch('Politely decline',
+      text('"I\'m quite all right, thank you," you say with a polite smile.'),
+      text('He inclines his head graciously. "Of course. Enjoy your evening." He takes his drink and moves to a table across the room.'),
+      text('The barman gives you a small, approving nod.'),
+    ),
+  ),
+)
+
 
 // ============================================================================
 // ACTIVITY SCRIPTS (DSL)
@@ -338,6 +386,12 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hotel', time: 1, label: 'Back to Lobby' },
     ],
+    onWait: (g: Game) => {
+      // 20% chance per 10-minute chunk of a rich patron approaching
+      if (Math.random() < 0.2) {
+        g.run(barPatronScene)
+      }
+    },
     activities: [
       {
         name: 'Order a Drink (15 Kr)',
@@ -363,8 +417,13 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             const texts = [
               'You sit at the bar, watching the well-dressed clientele come and go. A businessman argues quietly with his companion. A woman in furs laughs at something her escort says.',
               'You observe the barman\'s mechanical precision as he mixes drinks. The brass fixtures gleam in the lamplight.',
-              'You listen to the low murmur of conversation and the clink of glasses. The bar has a hushed, genteel atmosphere quite unlike the Copper Pot.',
             ]
+            // Only compare to the Copper Pot if the player has actually been there
+            if (g.getLocation('copper-pot-tavern').numVisits > 0) {
+              texts.push('You listen to the low murmur of conversation and the clink of glasses. The bar has a hushed, genteel atmosphere quite unlike the Copper Pot.')
+            } else {
+              texts.push('You listen to the low murmur of conversation and the clink of glasses. The bar has a hushed, genteel atmosphere.')
+            }
             g.add(texts[Math.floor(Math.random() * texts.length)])
           }
         },
