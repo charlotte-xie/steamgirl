@@ -59,7 +59,7 @@
   /* Borders (using brass palette) */
   --border-subtle: rgba(212, 168, 83, 0.4); /* brass-light at 40% */
   --border-dashed: rgba(212, 168, 83, 0.6); /* brass-light at 60% */
-  --border-main: var(--brass-mid);
+  --border-main: var(--brass-light);
 
   --text-main: #f4e4c4; /* parchment */
   --text-muted: #d0b691; /* aged parchment */
@@ -430,19 +430,34 @@ img {
   min-height: 0;
 }
 
-.scene-overlay {
-  position: relative;
+/* Generic panel — brass border, copper background */
+.panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  max-width: 37.5rem;
-  width: 100%;
-  background: var(--bg-overlay);
+  background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  padding: var(--space-md);
   box-shadow: var(--shadow-strong), var(--shadow-inner);
   backdrop-filter: blur(0.625rem);
+}
+
+.panel h4 {
+  margin: 0 0 var(--space-xs);
+  color: var(--text-main);
+}
+
+.panel p {
+  margin: 0 0 var(--space-sm);
+  color: var(--text-main);
+}
+
+.scene-overlay {
+  position: relative;
+  max-width: 37.5rem;
+  width: 100%;
+  padding: var(--space-lg);
 }
 
 .scene-npc-image-wrap {
@@ -460,11 +475,6 @@ img {
   border-radius: var(--radius-sm);
 }
 
-.scene-overlay p {
-  margin: 0;
-  color: var(--text-main);
-  margin-bottom: var(--space-sm);
-}
 
 .speech {
   padding-left: 1em;
@@ -488,7 +498,6 @@ img {
   color: var(--text-muted);
   font-size: var(--font-lg);
   cursor: pointer;
-  padding: var(--space-xs) var(--space-sm);
   line-height: 1;
   opacity: 0.6;
   transition: opacity 0.15s ease;
@@ -858,13 +867,6 @@ img {
    Names here are purely visual, not logical.
    ========================================================================== */
 
-.panel {
-  background: var(--bg-panel-soft);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: var(--space-xs);
-}
-
 .panel-elevated {
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
@@ -1165,6 +1167,14 @@ img {
   background: color-mix(in srgb, var(--brass-light) 15%, transparent);
 }
 
+.thumbnail-selected {
+  background: color-mix(in srgb, var(--brass-light) 20%, transparent);
+}
+
+.thumbnail-selected .thumbnail-image {
+  border-color: var(--border-main);
+}
+
 .thumbnail:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -1357,10 +1367,6 @@ img {
 }
 
 .inventory-details {
-  padding: var(--space-md);
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
   flex-shrink: 0;
   min-width: 0;
   max-width: 100%;
@@ -1369,21 +1375,9 @@ img {
   box-sizing: border-box;
 }
 
-.inventory-details h4 {
-  margin: 0 0 var(--space-xs) 0;
-  color: var(--text-main);
-}
-
 .inventory-details p {
-  margin: 0 0 var(--space-xs) 0;
+  margin: 0 0 var(--space-xs);
   color: var(--text-muted);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
-}
-
-.inventory-details p:last-child {
-  margin-bottom: 0;
 }
 
 /* Inventory with clothing grid layout */
@@ -1938,9 +1932,10 @@ img {
 
 /* Settings screen */
 .settings-screen {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-md);
+  align-items: start;
 }
 
 .setting-row {

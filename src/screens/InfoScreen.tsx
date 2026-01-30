@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useGame } from '../context/GameContext'
 import { useDebugMode } from './SettingsScreen'
 import { Frame } from '../components/Frame'
+import { Panel } from '../components/Panel'
+import { Thumbnail } from '../components/Thumbnail'
 import { getLocation } from '../model/Location'
 import { capitalise } from '../model/Text'
 import type { NPC } from '../model/NPC'
@@ -132,25 +134,27 @@ export function InfoScreen() {
           {npcList.length === 0 ? (
             <p className="text-muted">No characters met yet.</p>
           ) : (
-            <div className="info-list">
+            <div className="overlay-group-content overlay-group-content--center">
               {sortedNpcs.map(({ npc, displayName, locName }) => (
-                <div
+                <Thumbnail
                   key={npc.id}
-                  className={`info-item info-item-clickable${selectedNpcId === npc.id ? ' info-item-selected' : ''}`}
-                  title={npc.template.description || npc.id}
+                  image={npc.template.image}
+                  name={displayName}
+                  subtitle={locName}
+                  symbol="👤"
                   onClick={() => setSelectedNpcId(selectedNpcId === npc.id ? null : npc.id)}
-                >
-                  {displayName} <span className="text-muted">({locName})</span>
-                </div>
+                  title={npc.template.description || npc.id}
+                  selected={selectedNpcId === npc.id}
+                />
               ))}
             </div>
           )}
         </section>
 
         {selectedNpc && (
-          <section className="info-section">
+          <Panel>
             <NpcDetail npc={selectedNpc} />
-          </section>
+          </Panel>
         )}
       </div>
     </Frame>

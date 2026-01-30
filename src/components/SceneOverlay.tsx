@@ -1,4 +1,5 @@
 import { Button } from './Button'
+import { Panel } from './Panel'
 import { useGame } from '../context/GameContext'
 import type { SceneData, SceneOptionItem } from '../model/Game'
 import { getScript } from '../model/Scripts'
@@ -29,7 +30,7 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
   const npcImage = npcDef?.image && !scene.hideNpcImage ? npcDef.image : undefined
 
   return (
-    <div className="scene-overlay">
+    <Panel className="scene-overlay">
       {npcImage && (
         <div className="scene-npc-image-wrap">
           <img src={assetUrl(npcImage)} alt={npcDef?.name || npcId || 'NPC'} className="scene-npc-image" />
@@ -67,6 +68,6 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
           ×
         </button>
       )}
-    </div>
+    </Panel>
   )
 }

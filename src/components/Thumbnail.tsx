@@ -9,14 +9,15 @@ interface ThumbnailProps {
   title?: string
   disabled?: boolean
   disabledReason?: string
+  selected?: boolean
 }
 
-export function Thumbnail({ image, name, subtitle, symbol, onClick, title, disabled, disabledReason }: ThumbnailProps) {
+export function Thumbnail({ image, name, subtitle, symbol, onClick, title, disabled, disabledReason, selected }: ThumbnailProps) {
   const tooltip = disabled && disabledReason ? disabledReason : (title || name)
-  
+
   return (
     <button
-      className={`thumbnail ${disabled ? 'thumbnail-disabled' : ''}`}
+      className={`thumbnail${disabled ? ' thumbnail-disabled' : ''}${selected ? ' thumbnail-selected' : ''}`}
       onClick={disabled ? undefined : onClick}
       title={tooltip}
       disabled={disabled}

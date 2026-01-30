@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useGame } from '../context/GameContext'
 import { ItemView } from './ItemView'
 import { Button } from './Button'
+import { Panel } from './Panel'
 import { ClothingGrid } from './ClothingGrid'
 import { OutfitManagement } from './OutfitManagement'
 import { capitalise } from '../model/Text'
@@ -129,7 +130,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
             ))
           )}
         </div>
-        <div className="inventory-details">
+        <Panel className="inventory-details">
           {selectedItem ? (
             <>
               <h4>{capitalise(selectedItem.template.name)}{selectedItem.worn ? ' (worn)' : ''}</h4>
@@ -196,7 +197,7 @@ export function InventoryView({ onUseItem }: InventoryViewProps) {
           ) : (
             <p className="text-muted">Select an item to view details</p>
           )}
-        </div>
+        </Panel>
       </div>
       <div className="inventory-clothing">
         <h4>Worn</h4>
