@@ -1029,9 +1029,15 @@ const coreScripts: Record<string, ScriptFn> = {
       game.timeLapse(chunk) /* Should never trigger scenes */
       remaining -= chunk
 
-      // NPC onWait hooks — present NPCs may approach, react, or trigger encounters
+      // NPC hooks — present NPCs may intercept, react, or trigger encounters
       for (const npcId of game.npcsPresent) {
         const npc = game.getNPC(npcId)
+        // maybeApproach — NPC-initiated intercepts (dates, auto-greets)
+        if (npc.template.maybeApproach) {
+          game.run(npc.template.maybeApproach)
+          if (game.inScene) return
+        }
+        // onWait — ambient behaviour (flavour text, reputation-aware reactions)
         if (npc.template.onWait) {
           game.run(npc.template.onWait, { npc: npcId, minutes: chunk })
         }
@@ -1249,9 +1255,15 @@ const coreScripts: Record<string, ScriptFn> = {
     }
 
     const npc = game.getNPC(npcId)
-    npc.approachCount++
-
     const npcDef = npc.template
+
+    // maybeApproach — NPC-initiated intercepts (date approach, etc.)
+    if (npcDef.maybeApproach) {
+      game.run(npcDef.maybeApproach)
+      if (game.inScene) return // NPC took over — skip normal approach
+    }
+
+    npc.approachCount++
 
     game.scene.npc = npcId
     game.scene.hideNpcImage = false

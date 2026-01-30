@@ -137,9 +137,11 @@ registerNPC('spice-dealer', {
     npc.followSchedule(game, schedule)
   },
 
-  onWait: (game: Game) => {
-    if (handleDateApproach(game, 'spice-dealer')) return
+  maybeApproach: (game: Game) => {
+    handleDateApproach(game, 'spice-dealer')
+  },
 
+  onWait: (game: Game) => {
     const npc = game.getNPC('spice-dealer')
     if (npc.location !== game.currentLocation) return
     if (npc.nameKnown <= 0) return
@@ -162,10 +164,8 @@ registerNPC('spice-dealer', {
       ))
     }
 
-    const respect = npc.stats.get('respect') ?? 0
-
     // Spice pushing: only when not too respected/feared
-    // Stops at respect >= 40 OR gangster reputation >= 40
+    const respect = npc.stats.get('respect') ?? 0
     if (respect < 40 && !game.run(hasReputation('gangster', { min: 40 }))) {
       const lastPush = npc.stats.get('lastPush') ?? 0
       const hoursSincePush = (game.time - lastPush) / 3600
@@ -187,8 +187,6 @@ registerNPC('spice-dealer', {
   },
 
   onApproach: (game: Game) => {
-    if (handleDateApproach(game, 'spice-dealer')) return
-
     const npc = game.npc
     const respect = npc.stats.get('respect') ?? 0
 

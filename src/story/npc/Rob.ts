@@ -90,10 +90,11 @@ registerNPC('tour-guide', {
     ])
   },
 
-  onWait: (game: Game) => {
-    // If Rob is waiting for a date and the player is at the meeting location
-    if (handleDateApproach(game, 'tour-guide')) return
+  maybeApproach: (game: Game) => {
+    handleDateApproach(game, 'tour-guide')
+  },
 
+  onWait: (game: Game) => {
     // If you wait at the station and haven't met Rob yet, he approaches you
     const npc = game.getNPC('tour-guide')
     if (npc.nameKnown === 0) {
@@ -115,16 +116,12 @@ registerNPC('tour-guide', {
   },
 
   onApproach: (game: Game) => {
-    // If there's an active date and we're at the meeting point, trigger date approach
-    if (handleDateApproach(game, 'tour-guide')) return
-
     // In the hotel room — random impressed comments
     if (game.currentLocation === 'dorm-suite') {
       game.run(run('interact', { script: 'roomChat' }))
       return
     }
 
-    // Default: station approach
     const npc = game.npc
     const tourDone = npc.stats.get('tourDone') ?? 0
     const hotelVisited = npc.stats.get('hotelVisited') ?? 0

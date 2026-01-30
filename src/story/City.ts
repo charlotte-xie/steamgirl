@@ -1,7 +1,7 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { script, seq, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
+import { script, seq, random, text, time, wait, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
 
 // Location definitions for the city of Aetheria
@@ -43,7 +43,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             random(
               text('An announcement automaton clicks to life, its brass voicebox broadcasting the next departure times. The mechanical voice echoes through the station halls.'),
               text('You watch as a steam-powered baggage cart trundles past, its wheels clicking rhythmically on the platform stones. The driver tips his cap as he passes.'),
-              text('A family with elaborate mechanical travel cases waits on a bench. The children\'s toys—tiny steam-powered contraptions—whir and click as they play.'),
+              seq(text('A family with elaborate mechanical travel cases waits on a bench. The children\'s toys—tiny steam-powered contraptions—whir and click as they play.'), wait(1)),
               text('You spot a news vendor selling papers from a brass-plated cart. Steam rises from a small boiler keeping the papers warm, and mechanical print headlines flash on a tiny display.'),
               seq(
                 text('You explore the ticket area, looking at the mechanical displays and brass ticket machines. As you examine the area, something catches your eye.'),
@@ -54,7 +54,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             hourBetween(18, 22),
             random(
               text('A steam whistle echoes through the air as a train arrives at the platform. Passengers disembark, their luggage clinking with brass fittings and gears.'),
-              text('The station clock, a massive brass mechanism with visible gears, chimes the hour. Travellers check their own pocket watches, synchronising time before their journeys.'),
+              seq(text('The station clock, a massive brass mechanism with visible gears, chimes the hour. Travellers check their own pocket watches, synchronising time before their journeys.'), wait(1)),
               text('A station worker adjusts the valves on an overhead steam pipe, releasing a controlled burst of vapour. The warm, oily mist briefly obscures the platform.'),
               text('The evening crowd thins as the last commuters hurry to catch their trains. The station settles into a quieter rhythm, steam pipes hissing softly overhead.'),
             ),

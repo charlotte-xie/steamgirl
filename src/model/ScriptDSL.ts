@@ -524,6 +524,10 @@ export const go = (location: string, minutes?: number): Instruction =>
 export const time = (minutes: number): Instruction =>
   run('timeLapse', { minutes })
 
+/** Interruptible wait at the current location. NPC hooks may create a scene to interrupt. */
+export const wait = (minutes: number): Instruction =>
+  run('wait', { minutes })
+
 /** Set the current scene's NPC (for dialogue scenes with a specific character) */
 export const setNpc = (npc: string): Instruction =>
   run('setNpc', { npc })

@@ -121,23 +121,20 @@ registerNPC('jonny-elric', {
     npc.followSchedule(game, schedule)
   },
 
-  onWait: (game: Game) => {
-    // Date approach takes priority
-    if (handleDateApproach(game, 'jonny-elric')) return
+  maybeApproach: (game: Game) => {
+    handleDateApproach(game, 'jonny-elric')
+  },
 
+  onWait: (game: Game) => {
     const npc = game.getNPC('jonny-elric')
     if (npc.location !== game.currentLocation) return
-
     // Random "do a round" offer at high affection
     if (npc.affection > 15 && !game.player.hasCard('date') && Math.random() < 0.3) {
       game.run('approach', { npc: 'jonny-elric' })
-      // The approach script will handle the round offer
     }
   },
 
   onApproach: (game: Game) => {
-    if (handleDateApproach(game, 'jonny-elric')) return
-
     const npc = game.npc
 
     // ── Affection > 15: may offer a round ──

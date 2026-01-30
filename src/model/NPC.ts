@@ -68,6 +68,12 @@ export interface NPCDefinition {
   // Script to run when the hour changes (for NPC movement)
   onMove?: Script
   /**
+   * Called when a NPC has a chance to approach the player (e.g. waiting).
+   * May create a scene to interrupt.
+   * Use for date intercepts, auto-greets, and NPC-initiated encounters.
+   */
+  maybeApproach?: Script
+  /**
    * Called each 10-minute chunk when the player waits at a location where this NPC is present.
    * Receives { npc: string, minutes: number }. May create a scene to interrupt the wait.
    * Fires before the location's onWait. Use NPC state (e.g. nameKnown) to gate one-shot events.
