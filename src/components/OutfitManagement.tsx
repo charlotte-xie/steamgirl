@@ -112,11 +112,13 @@ export function OutfitManagement() {
                 onClick={() => {
                   if (isNaming) {
                     setNewName(name)
+                  } else if (name === selectedOutfit && !inScene) {
+                    handleWear()
                   } else {
                     setSelectedOutfit(name === selectedOutfit ? null : name)
                   }
                 }}
-                title={name}
+                title={name === selectedOutfit ? `${name} (Click again to wear)` : name}
               >
                 <div className="thumbnail-image">
                   {thumbnail
