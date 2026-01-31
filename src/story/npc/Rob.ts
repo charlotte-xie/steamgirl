@@ -339,10 +339,30 @@ function robRepeatTour(): Instruction {
     scene(
       cond(
         hasRelationship('boyfriend'),
-        seq(
-          say('See you later, love.'),
-          'He kisses you — quick, warm, familiar — then heads off with a wave.',
-          kiss(2),
+        random(
+          seq(
+            say('See you later, love.'),
+            'He kisses you — quick, warm, familiar — then heads off with a wave.',
+            kiss(2),
+          ),
+          seq(
+            'He pulls you close and rests his chin on your head for a moment.',
+            say('I wish we could do this every day.'),
+            kiss(2),
+          ),
+          when(npcStat('affection', { max: 49 }),
+            seq(
+              say('Right then. See you.'),
+              'He doesn\'t kiss you. He doesn\'t even look at you as he turns to go.',
+            ),
+          ),
+          when(npcStat('affection', { max: 39 }),
+            seq(
+              'He hesitates, as though he wants to say something. Then he shakes his head.',
+              say('Bye.'),
+              'He walks away quickly. You watch him until he rounds the corner.',
+            ),
+          ),
         ),
         random(
           seq(
@@ -452,7 +472,22 @@ registerNPC('tour-guide', {
         // Greeting varies based on shared history and relationship
         cond(
           hasRelationship('boyfriend'),
-          say('There you are! I was hoping you\'d come by.'),
+          random(
+            say('There you are! I was hoping you\'d come by.'),
+            say('Hello, love. Good day?'),
+            when(npcStat('affection', { max: 49 }),
+              seq(
+                say('Oh. Hello.'),
+                'His smile doesn\'t quite reach his eyes.',
+              ),
+            ),
+            when(npcStat('affection', { max: 39 }),
+              seq(
+                'He glances up from his guidebook. There\'s a flatness to his expression you haven\'t seen before.',
+                say('I wasn\'t sure you\'d come.'),
+              ),
+            ),
+          ),
           hasCard('date'),
           say('Hello again! Looking forward to later.'),
           npcStat('hotelVisited'),
@@ -602,6 +637,18 @@ registerNPC('tour-guide', {
           say('I was passing through the backstreets and thought I\'d see if you were in. Is this all right?'),
           say('Evening, love. I finished up early and couldn\'t stop thinking about you.'),
           say('I couldn\'t sleep. Kept thinking about you. So I thought... why not?'),
+          when(npcStat('affection', { max: 49 }),
+            seq(
+              say('Can we talk? I feel like... I don\'t know. Like something\'s off between us.'),
+              'He stands in the doorway, not quite stepping in.',
+            ),
+          ),
+          when(npcStat('affection', { max: 39 }),
+            seq(
+              'He\'s on the landing. His hands are in his pockets and he won\'t meet your eye.',
+              say('I just wanted to see you. Is that still allowed?'),
+            ),
+          ),
         ),
         when(npcStat('madeLove'),
           random(
@@ -654,6 +701,24 @@ registerNPC('tour-guide', {
         ),
         say('I like your room. It\'s small but it\'s... warm. Like you.'),
         say('This is much better than the station. Better company, too.'),
+        when(npcStat('affection', { max: 49 }),
+          seq(
+            'He\'s quiet for a while, turning his cap over in his hands.',
+            say('Do you ever think about us? Where this is going?'),
+          ),
+        ),
+        when(npcStat('affection', { max: 39 }),
+          seq(
+            'He stares at the floor. The silence stretches.',
+            say('I feel like I\'m losing you. Am I losing you?'),
+          ),
+        ),
+        when(npcStat('affection', { max: 29 }),
+          seq(
+            say('You don\'t look at me the way you used to.'),
+            'He says it quietly, like he\'s been rehearsing it. The hurt in his voice is unmistakable.',
+          ),
+        ),
       ),
       when(npcStat('madeLove'),
         random(
@@ -1178,6 +1243,19 @@ registerNPC('tour-guide', {
           say('I\'ll see you tomorrow. At the station, if not before.'),
           'He squeezes your hand, then he\'s gone.',
         ),
+        when(npcStat('affection', { max: 49 }),
+          seq(
+            'He pauses at the door. His hand rests on the frame but he doesn\'t turn around.',
+            say('Goodnight.'),
+            'The door closes softly behind him.',
+          ),
+        ),
+        when(npcStat('affection', { max: 39 }),
+          seq(
+            say('I\'ll go, then. Since you want me to.'),
+            'There\'s an edge to his voice. He doesn\'t wait for an answer.',
+          ),
+        ),
       ),
       moveNpc('tour-guide', null),
     ),
@@ -1207,6 +1285,20 @@ registerNPC('tour-guide', {
           say('I could stay, you know. Call in sick. Spend the whole day here with you.'),
           'He\'s already putting his boots on as he says it. You both know he won\'t.',
           say('No, you\'re right. Duty calls.'),
+        ),
+        when(npcStat('affection', { max: 49 }),
+          seq(
+            'Rob dresses in silence. He doesn\'t look at you.',
+            say('I\'ll be at the station.'),
+            'He leaves without kissing you goodbye.',
+          ),
+        ),
+        when(npcStat('affection', { max: 39 }),
+          seq(
+            'Rob is already dressed when you wake. He\'s sitting on the edge of the bed, staring at nothing.',
+            say('I don\'t know what I\'m doing wrong.'),
+            'He stands and leaves before you can answer.',
+          ),
         ),
       ),
       branch('Kiss him goodbye',
@@ -1240,6 +1332,7 @@ registerNPC('tour-guide', {
           'He manages a small, broken smile.',
           say('I\'ll always care about you. I hope you know that.'),
           setRelationship(''),
+          addNpcStat('brokeUp', 1, { hidden: true }),
           addNpcStat('affection', -40, { min: 5 }),
           npcLeaveOption('Rob leaves quietly. He doesn\'t look back.'),
         ),
@@ -1512,6 +1605,13 @@ function robBoyfriendDate(): Instruction {
           say('There\'s my favourite person.'),
           'He wraps an arm around your shoulders as you fall into step together.',
         ),
+        when(npcStat('affection', { max: 49 }),
+          seq(
+            'Rob falls into step beside you. He doesn\'t take your hand.',
+            say('Shall we, then?'),
+            'His voice is polite. Just polite.',
+          ),
+        ),
       ),
       move('lake', 15),
       'The city fades behind you. There\'s no need to fill the silence — it\'s comfortable, warm, yours.',
@@ -1536,6 +1636,18 @@ function robBoyfriendDate(): Instruction {
           say('Same bench, same view, same steam. But it\'s different now, isn\'t it?'),
           'He looks at you, and his expression is so tender it makes your chest ache.',
           say('Better. Much better.'),
+        ),
+        when(npcStat('affection', { max: 49 }),
+          seq(
+            say('We used to talk for hours. Do you remember?'),
+            'He stares out across the water. The silence between you is no longer comfortable.',
+          ),
+        ),
+        when(npcStat('affection', { max: 39 }),
+          seq(
+            'He sits on the bench, leaving a gap between you. He used to sit close.',
+            say('I keep wondering if you\'d rather be somewhere else.'),
+          ),
         ),
       ),
       addNpcStat('affection', 2, { max: 70, hidden: true }),
@@ -1715,6 +1827,7 @@ function robMaybeAskRelationship(): Instruction[] {
         and(
           npcStat('affection', { min: 51 }),
           not(hasRelationship()),
+          not(npcStat('brokeUp')),
           chance(0.3),
         ),
         seq(
