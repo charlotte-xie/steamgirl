@@ -31,6 +31,7 @@ import './Dating'
 // Register NPC definitions
 import './npc/Rob' // Rob Hayes - tour guide
 import './npc/Jonny' // Jonny Elric - enforcer
+import './npc/Gerald' // Gerald Moss - landlord
 import './npc/Timmy' // Timmy Bug - spice dealer
 
 // Register test NPC (for testing)

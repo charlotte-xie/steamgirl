@@ -1,55 +1,9 @@
 import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
-import { text, say, scene, scenes, move, time, hideNpcImage, addItem, addQuest, learnNpcName, discoverLocation } from '../model/ScriptDSL'
 import { takeWash, freshenUp, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
-
-registerNPC('landlord', {
-  name: 'Gerald Moss',
-  uname: 'landlord',
-  description: 'A weathered man with the tired eyes of someone who\'s managed properties in the backstreets for too long. His clothes are serviceable but worn, and he moves with the deliberate pace of someone conserving energy. Despite his gruff exterior, there\'s a hint of kindness in his manner—he\'s seen countless tenants come and go, and he knows how to spot the ones who\'ll cause trouble versus those who just need a place to rest their head.',
-  image: '/images/npcs/Landlord.jpg',
-  speechColor: '#b895ae',
-  scripts: {
-    showAround: scenes(
-      // Scene 1: Landlord greets on backstreet and introduces himself
-      scene(
-        text('A weathered figure steps out from a doorway.'),
-        say("{pc}, I presume? Gerald Moss—I'm your landlord. Pleasure to meet you. You're all paid up for two weeks. Let me show you around."),
-        learnNpcName(),
-        time(5),
-      ),
-      // Scene 2: Landlord leads you into the building
-      scene(
-        hideNpcImage(),
-        time(1),
-        move('stairwell'),
-        discoverLocation('stairwell'),
-        text('He leads you through a narrow doorway and into the building. The stairwell is dimly lit by gas lamps, the walls lined with faded wallpaper. The smell of coal smoke and old wood fills the air.'),
-        say("Mind your step on these stairs. The third one creaks something awful."),
-      ),
-      // Scene 3: Landlord shows bathroom
-      scene(
-        time(2),
-        text('He leads you down the hallway on the first floor.'),
-        say("This is the bathroom - it's shared with the other tenants. Keep it clean, won't you?"),
-        move('bathroom'),
-      ),
-      // Scene 4: Landlord shows bedroom and hands over key
-      scene(
-        time(3),
-        move('bedroom'),
-        text("You follow your landlord to your room. It's a small room, but nice enough and all you need right now. He produces a brass key from his pocket and hands it to you."),
-        say("Here's your key. Enjoy your stay."),
-        addItem('room-key'),
-        addQuest('attend-university', { silent: true }),
-      ),
-    ),
-  },
-})
 
 // Location definitions for the player's lodgings
 const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -61,6 +15,7 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'bedroom', time: 1, label: 'Your Room' },
       { dest: 'bathroom', time: 1 },
+      { dest: 'landlord-office', time: 1, label: 'Landlord\'s Office' },
       { dest: 'backstreets', time: 1, label: 'Exit to Backstreets' },
     ],
   },
@@ -78,6 +33,20 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     activities: [
       bedActivity(),
     ],
+  },
+  'landlord-office': {
+    name: 'Landlord\'s Office',
+    description: 'A cramped room off the stairwell, piled high with ledgers, rent receipts, and the accumulated paperwork of decades of tenancy management.',
+    image: '/images/lodgings/office.webp',
+    links: [
+      { dest: 'stairwell', time: 1 },
+    ],
+    onArrive: (g: Game) => {
+      const npc = g.npcs.get('landlord')
+      if (!npc || npc.location !== 'landlord-office') {
+        g.add('The office is empty. Gerald\'s chair is pushed back from the desk, a half-drunk cup of tea growing cold beside a stack of ledgers. A brass clock on the wall ticks steadily.')
+      }
+    },
   },
   bathroom: {
     name: 'Bathroom',

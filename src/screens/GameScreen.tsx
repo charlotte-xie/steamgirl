@@ -16,6 +16,7 @@ import type { ScreenId } from '../components/ScreenSwitcher'
 export function GameScreen() {
   const { game, initializeCharacter, refresh } = useGame()
   const { clearGame } = useGameLoader()
+  const debugMode = useDebugMode()
 
   // Store screen in game object to survive HMR
   const currentScreen = game.uiScreen as ScreenId
@@ -59,8 +60,6 @@ export function GameScreen() {
         return <LocationView location={game.location} />
     }
   }
-
-  const debugMode = useDebugMode()
 
   return (
     <div className="game-screen">
