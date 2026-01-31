@@ -33,19 +33,19 @@ const CAMPUS_NPCS = ['prof-nicholas-denver', 'prof-eleanor-hurst']
 // ============================================================================
 
 const hallwayGate = staffDecencyGate(40, 'school', [
-  'A university administrator blocks your path in the corridor. "I beg your pardon — you cannot walk around the university dressed like that. Leave the premises at once."',
-  'A porter steps out of his lodge and holds up a hand. "Not a chance. You\'re not coming through here like that. Out. Now."',
-  'A stern-faced professor stops dead in the corridor and stares. "This is an institution of learning, not a — get out. Immediately."',
+  seq('A university administrator blocks your path in the corridor.', say('I beg your pardon — you cannot walk around the university dressed like that. Leave the premises at once.')),
+  seq('A porter steps out of his lodge and holds up a hand.', say('Not a chance. You\'re not coming through here like that. Out. Now.')),
+  seq('A stern-faced professor stops dead in the corridor and stares.', say('This is an institution of learning, not a — get out. Immediately.')),
 ])
 
 const greatHallGate = staffDecencyGate(40, 'hallway', [
-  'Every head in the Great Hall turns as you enter. A porter hurries over, red-faced. "You can\'t be in here like that! Back to the corridors — and for heaven\'s sake, sort yourself out."',
-  'The hum of conversation dies as students stare. A dining hall attendant rushes to intercept you. "Out. Please. You\'re causing a scene."',
+  seq('Every head in the Great Hall turns as you enter. A porter hurries over, red-faced.', say('You can\'t be in here like that! Back to the corridors — and for heaven\'s sake, sort yourself out.')),
+  seq('The hum of conversation dies as students stare. A dining hall attendant rushes to intercept you.', say('Out. Please. You\'re causing a scene.')),
 ])
 
 const libraryGate = staffDecencyGate(40, 'courtyard', [
-  'The librarian looks up from her desk and her eyes go wide. She removes her spectacles with deliberate calm. "Get. Out. Of my library."',
-  'A sharp "Shh!" cuts through the silence — but it\'s not about the noise. The librarian points firmly at the door. "Not in here. Not dressed like that."',
+  seq('The librarian looks up from her desk and her eyes go wide. She removes her spectacles with deliberate calm.', say('Get. Out. Of my library.')),
+  seq('A sharp "Shh!" cuts through the silence — but it\'s not about the noise. The librarian points firmly at the door.', say('Not in here. Not dressed like that.')),
 ])
 
 const lessonDecencyCheck = decencyCheck(40, 'You can\'t attend a lesson dressed like that. The professor would send you straight out.')

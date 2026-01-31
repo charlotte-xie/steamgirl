@@ -63,6 +63,7 @@
 
   --text-main: #f4e4c4; /* parchment */
   --text-muted: #d0b691; /* aged parchment */
+  --speech-default: #c8d8e8; /* cool blue-grey — distinguishes NPC speech from narration */
 
   --shadow-strong: 0 26px 60px rgba(0, 0, 0, 0.7);
   --shadow-inner: inset 0 1px 0 rgba(255, 214, 170, 0.12);
@@ -496,6 +497,7 @@ img {
   padding-left: 1em;
   margin-left: 0.5em;
   border-left: 3px solid var(--border-subtle);
+  color: var(--speech-default);
 }
 
 .scene-actions {

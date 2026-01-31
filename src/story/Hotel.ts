@@ -6,8 +6,9 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
-import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation } from './Effects'
+import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
+import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
+import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
 import { bedActivity } from './Sleep'
 import { staffDecencyGate } from './Public'
 
@@ -68,11 +69,12 @@ registerCardDefinition('suite-booking', suiteBookingCard)
 // ============================================================================
 
 const addReceptionOptions = (g: Game) => {
+  const crowns = g.player.inventory.find(i => i.id === 'crown')?.number ?? 0
   if (!g.player.hasCard('hotel-booking')) {
-    g.addOption('receptionBookRoom', `Book a Room (${ROOM_PRICE} Kr)`)
+    g.scene.options.push({ type: 'button', action: 'receptionBookRoom', label: `Book a Room (${ROOM_PRICE} Kr)`, disabled: crowns < ROOM_PRICE })
   }
   if (!g.player.hasCard('suite-booking')) {
-    g.addOption('receptionBookSuite', `Book the Suite (${SUITE_PRICE} Kr)`)
+    g.scene.options.push({ type: 'button', action: 'receptionBookSuite', label: `Book the Suite (${SUITE_PRICE} Kr)`, disabled: crowns < SUITE_PRICE })
   }
   g.addOption('receptionAskWork', 'Ask About Work')
   g.addOption('receptionLeave', 'Leave')
@@ -89,12 +91,6 @@ const receptionScripts = {
     addReceptionOptions(g)
   },
   receptionBookRoom: (g: Game) => {
-    const crowns = g.player.inventory.find(i => i.id === 'crown')?.number ?? 0
-    if (crowns < ROOM_PRICE) {
-      g.add(`The concierge glances at a brass ledger. "A single room is ${ROOM_PRICE} Krona per night, checkout at eleven." He pauses, reading your expression. "Perhaps another time."`)
-      addReceptionOptions(g)
-      return
-    }
     g.player.removeItem('crown', ROOM_PRICE)
     // Expires at 11am the next day
     const tomorrow = new Date(g.date)
@@ -109,12 +105,6 @@ const receptionScripts = {
     addReceptionOptions(g)
   },
   receptionBookSuite: (g: Game) => {
-    const crowns = g.player.inventory.find(i => i.id === 'crown')?.number ?? 0
-    if (crowns < SUITE_PRICE) {
-      g.add(`The concierge glances at a brass ledger. "The Imperial Suite is ${SUITE_PRICE} Krona per night, checkout at eleven. Our finest accommodation." He pauses. "Perhaps another time."`)
-      addReceptionOptions(g)
-      return
-    }
     g.player.removeItem('crown', SUITE_PRICE)
     const tomorrow = new Date(g.date)
     tomorrow.setDate(tomorrow.getDate() + 1)
@@ -129,6 +119,11 @@ const receptionScripts = {
   },
   receptionAskWork: (g: Game) => {
     g.add('The concierge raises an eyebrow. "We do take on staff from time to time — chambermaids, kitchen hands, that sort of thing. Speak to the head cook if you\'re interested. The kitchens are through the back."')
+    const kitchens = g.getLocation('hotel-kitchens')
+    if (!kitchens.discovered) {
+      kitchens.discovered = true
+      g.add({ type: 'text', text: 'You note the way to the kitchens.', color: '#3b82f6' })
+    }
     addReceptionOptions(g)
   },
   receptionLeave: (g: Game) => {
@@ -677,9 +672,9 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     ],
     onArrive: (g: Game) => {
       staffDecencyGate(50, 'default', [
-        'The doorman takes one look at you and steps firmly into your path. "I\'m sorry, madam, but I cannot allow you into the Imperial dressed like that. Standards must be maintained."',
-        'A uniformed bellhop intercepts you before you reach the front desk. "I\'m afraid we have a strict dress code, madam. You\'ll need to come back properly attired."',
-        'The concierge looks up, and his professional smile freezes. He rises from behind the counter. "Madam, I must ask you to leave. The Imperial has a reputation to uphold."',
+        seq('The doorman takes one look at you and steps firmly into your path.', say('I\'m sorry, madam, but I cannot allow you into the Imperial dressed like that. Standards must be maintained.')),
+        seq('A uniformed bellhop intercepts you before you reach the front desk.', say('I\'m afraid we have a strict dress code, madam. You\'ll need to come back properly attired.')),
+        seq('The concierge looks up, and his professional smile freezes. He rises from behind the counter.', say('Madam, I must ask you to leave. The Imperial has a reputation to uphold.')),
       ])(g)
       if (g.currentLocation !== 'hotel') return
       g.add('The lobby is warm and softly lit. A concierge in a tailored waistcoat nods from behind a polished brass counter.')
@@ -743,11 +738,14 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   'hotel-kitchens': {
     name: 'Hotel Kitchens',
     description: 'A clattering labyrinth of copper pans, steam ovens, and harried cooks. The air is thick with the smell of roasting meat and fresh bread. Mechanical spit-turners rotate joints of beef over glowing coals, and a brass dumbwaiter rattles between floors.',
-    image: '/images/kitchens.jpg',
+    image: '/images/hotel/kitchens.webp',
     secret: true,
     links: [
       { dest: 'hotel', time: 2, label: 'Back to Lobby' },
     ],
+    onArrive: (g: Game) => {
+      g.getNPC('hotel-chef')
+    },
   },
   'hotel-bar': {
     name: 'Hotel Bar',
@@ -757,9 +755,9 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'hotel', time: 1, label: 'Back to Lobby' },
     ],
     onArrive: staffDecencyGate(50, 'hotel', [
-      'The barman looks up from polishing a glass and frowns. "I\'m going to have to ask you to leave, madam. We have standards here."',
-      'A waiter hurries over before you can sit down. "I\'m sorry, but you can\'t be in here like that. Back to the lobby, please."',
-      'The barman sets down his cocktail shaker with a pointed look. "Not dressed like that, you\'re not. Out."',
+      seq('The barman looks up from polishing a glass and frowns.', say('I\'m going to have to ask you to leave, madam. We have standards here.')),
+      seq('A waiter hurries over before you can sit down.', say('I\'m sorry, but you can\'t be in here like that. Back to the lobby, please.')),
+      seq('The barman sets down his cocktail shaker with a pointed look.', say('Not dressed like that, you\'re not. Out.')),
     ]),
     onWait: (g: Game) => {
       // 20% chance per 10-minute chunk of a rich patron approaching
@@ -813,9 +811,9 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'hotel', time: 1, label: 'Back to Lobby' },
     ],
     onArrive: staffDecencyGate(60, 'hotel', [
-      'The maître d\' steps smoothly into your path. "I\'m terribly sorry, madam, but I cannot seat you. The restaurant has a dress code." He gestures firmly toward the lobby.',
-      'A waiter intercepts you at the entrance. "I\'m afraid we can\'t allow — that is to say, the restaurant requires appropriate attire, madam."',
-      'The maître d\' takes one look at you and shakes his head with practised diplomacy. "Perhaps when you are more suitably dressed, madam. Good day."',
+      seq('The maître d\' steps smoothly into your path.', say('I\'m terribly sorry, madam, but I cannot seat you. The restaurant has a dress code.'), 'He gestures firmly toward the lobby.'),
+      seq('A waiter intercepts you at the entrance.', say('I\'m afraid we can\'t allow — that is to say, the restaurant requires appropriate attire, madam.')),
+      seq('The maître d\' takes one look at you and shakes his head with practised diplomacy.', say('Perhaps when you are more suitably dressed, madam. Good day.')),
     ]),
     activities: [
       {
@@ -919,8 +917,8 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'hotel', time: 2, label: 'Back to Lobby (Lift)' },
     ],
     onArrive: staffDecencyGate(40, 'hotel', [
-      'A garden attendant hurries over, looking flustered. "I\'m sorry, madam, but you can\'t be up here like that. I\'ll have to ask you to go back to the lobby."',
-      'The lift attendant gives you a scandalised look as the doors open onto the garden. "I think you\'d better go back down, madam. Dressed like that, you\'ll frighten the orchids."',
+      seq('A garden attendant hurries over, looking flustered.', say('I\'m sorry, madam, but you can\'t be up here like that. I\'ll have to ask you to go back to the lobby.')),
+      seq('The lift attendant gives you a scandalised look as the doors open onto the garden.', say('I think you\'d better go back down, madam. Dressed like that, you\'ll frighten the orchids.')),
     ]),
     onFirstArrive: script(
       text('The lift doors open onto an unexpected paradise. Green leaves and bright flowers surround you, impossibly lush against the industrial skyline. You can see the whole city from here — the university spires, the factory smokestacks, the distant gleam of the river.'),
@@ -1013,4 +1011,176 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
 // Register all hotel location definitions when module loads
 Object.entries(HOTEL_DEFINITIONS).forEach(([id, definition]) => {
   registerLocation(id, definition)
+})
+
+// ============================================================================
+// CHEF NPC
+// ============================================================================
+
+/** Kitchen work scene — 4 hours of labour with random events. */
+function kitchenWorkShift(): Instruction {
+  return scenes(
+    // Page 1 — assigned tasks
+    scene(
+      hideNpcImage(),
+      say('Right then. Apron on, sleeves up. You can start on the vegetables.'),
+      random(
+        'You tie on a heavy canvas apron and set to work peeling a mountain of potatoes. The kitchen clatters around you — pans banging, orders shouted, steam hissing from every valve.',
+        'You are handed a chopping board and a heap of carrots. The blade is sharp and the work is relentless. Around you the kitchen roars like a living thing.',
+        'You are set to scrubbing pans in a deep copper sink. The water is scalding, the grease stubborn, and the pile never seems to shrink.',
+      ),
+      wait(60),
+    ),
+    // Page 2 — mid-shift random event
+    scene(
+      random(
+        seq(
+          'A pot boils over on the range, sending a gout of steam across the kitchen. You leap back just in time.',
+          say('Mind yourself! Burns don\'t heal quick in this heat.'),
+          'You mop up the spillage and get back to it.',
+        ),
+        seq(
+          'The dumbwaiter bell rings frantically — a rush order from the dining room. The kitchen erupts into organised chaos.',
+          say('Move it, move it! Table twelve wants their pheasant yesterday!'),
+          'You find yourself ferrying hot plates to the dumbwaiter at a sprint.',
+        ),
+        seq(
+          'One of the kitchen hands drops a tray of copper moulds with an almighty crash. Everyone freezes.',
+          say('Pick those up and get back to work, the lot of you!'),
+          'You help gather the scattered moulds. The hand gives you a grateful nod.',
+        ),
+        seq(
+          'During a lull, another kitchen hand — a girl about your age — slides you a cup of tea.',
+          '"First shift? You\'re doing well. He doesn\'t shout at the ones he likes."',
+          'You sip the tea gratefully before the next wave of orders arrives.',
+        ),
+      ),
+      wait(60),
+    ),
+    // Page 3 — late shift
+    scene(
+      random(
+        'The pace finally slows as the evening service winds down. Your arms ache and your apron is splattered with grease.',
+        'The last orders trickle in and the frantic energy of the kitchen subsides into a weary rhythm of cleaning and putting away.',
+        'You scrub down the counters as the other hands begin to drift away. Your back is sore and your hands are red from the hot water.',
+      ),
+      wait(60),
+    ),
+    // Page 4 — shift end and payment
+    scene(
+      showNpcImage(),
+      wait(60),
+      say('That\'ll do. Not bad for a new pair of hands.'),
+      random(
+        'He counts out coins from a brass tin and drops them into your palm.',
+        'He pulls a small pouch from his apron and counts out your wages.',
+      ),
+      addItem('crown', 20),
+      paragraph({ text: 'You earned 20 Krona.', color: '#d4af37' }),
+      addNpcStat('affection', 4, { max: 20, hidden: true }),
+      addStat('Fitness', 1, { max: 20, chance: 0.5, hidden: true }),
+      random(
+        say('Same time tomorrow if you want it. Now get out of my kitchen.'),
+        say('You\'ll do. Come back when you need the work.'),
+      ),
+    ),
+  )
+}
+
+const chefChatOptions = seq(
+  option('Chat', npcInteract('chat')),
+  option('Ask for work', npcInteract('work')),
+  npcLeaveOption('You leave the chef to his kitchen.'),
+)
+
+registerNPC('hotel-chef', {
+  name: 'Chef Morel',
+  uname: 'head chef',
+  description:
+    'A barrel-chested man with a bristling moustache and forearms like hams. His whites are ' +
+    'immaculate despite the chaos around him, and he commands the kitchen with a voice that ' +
+    'cuts through the clatter of pans and hiss of steam. A row of brass-handled knives hangs ' +
+    'from his belt like medals.',
+  image: '/images/hotel/chefs_1.webp',
+  speechColor: '#e07020',
+  pronouns: PRONOUNS.he,
+
+  generate: (_game: Game, npc: NPC) => {
+    npc.location = 'hotel-kitchens'
+    npc.stats.set('affection', 0)
+  },
+
+  onMove: (game: Game) => {
+    const npc = game.getNPC('hotel-chef')
+    npc.followSchedule(game, [
+      [6, 22, 'hotel-kitchens'],
+    ])
+  },
+
+  onFirstApproach: seq(
+    'A broad man in chef\'s whites looks up from a simmering stockpot and fixes you with a sharp eye.',
+    say('Who let you in here? This isn\'t the dining room.'),
+    'You explain that the concierge mentioned there might be work.',
+    say('Did he now. Well, I\'m Morel. Head chef. And this is my kitchen.'),
+    'He looks you up and down, assessing.',
+    say('I can always use an extra pair of hands. It\'s hard graft, mind — four hours on your feet. Twenty Krona. Interested?'),
+    learnNpcName(),
+    chefChatOptions,
+  ),
+
+  onApproach: seq(
+    cond(
+      npcStat('affection', { min: 15 }),
+      random(
+        say('Ah, there she is. My best kitchen hand. What can I do for you?'),
+        say('Back again? Good. I like the ones who keep showing up.'),
+      ),
+      npcStat('affection', { min: 5 }),
+      random(
+        say('You again. Good — I remember you. What is it?'),
+        say('Back for more, are you? At least you\'re keen.'),
+      ),
+      random(
+        say('Yes? Make it quick — I have a sauce that won\'t reduce itself.'),
+        say('What do you want? I\'m busy.'),
+      ),
+    ),
+    chefChatOptions,
+  ),
+
+  scripts: {
+    chat: seq(
+      random(
+        seq(
+          say('This kitchen has been here since the hotel opened in eighteen sixty-two. Every pan has a story.'),
+          'He taps a battered copper pot with obvious affection.',
+        ),
+        seq(
+          say('The secret to a good stock? Patience. Low heat, twelve hours, and no peeking.'),
+          'He stirs the stockpot with a long brass ladle.',
+        ),
+        seq(
+          say('I trained in Montpellier before I came to Aetheria. French kitchens are brutal — this is a holiday by comparison.'),
+          'He chuckles, which is slightly terrifying.',
+        ),
+        seq(
+          say('The mechanical spit-turners are new. I didn\'t trust them at first, but they keep a better rhythm than any boy I\'ve hired.'),
+          'He watches the gleaming brass mechanism rotate a joint of beef with hypnotic precision.',
+        ),
+      ),
+      addNpcStat('affection', 1, { max: 20, hidden: true }),
+      chefChatOptions,
+    ),
+
+    work: (game: Game) => {
+      if (game.hourOfDay >= 18) {
+        game.getNPC('hotel-chef').say('Too late for a shift today. Come back in the morning — I need you fresh, not half-asleep.')
+        game.run(chefChatOptions)
+        return
+      }
+      game.run(kitchenWorkShift())
+      // After the scenes complete, apply dirtiness
+      riskDirty(game, 0.8)
+    },
+  },
 })

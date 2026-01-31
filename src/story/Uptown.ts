@@ -3,7 +3,7 @@ import { makeScripts } from '../model/Scripts'
 import type { Hairstyle } from '../model/Player'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { script, seq, scenes, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run, indecent, ejectPlayer } from '../model/ScriptDSL'
+import { script, seq, scenes, random, text, say, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run, indecent, ejectPlayer } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
 import { publicChecks, staffDecencyGate } from './Public'
 
@@ -110,13 +110,13 @@ makeScripts({
 // -- Indecency gates for upscale venues ------------------------------------
 
 const cafeGate = staffDecencyGate(50, 'uptown', [
-  'The café hostess takes one look at you and positions herself squarely in the doorway. "I\'m sorry, but The Gilt Lily has a dress code. You\'ll need to come back properly attired."',
-  'A waiter intercepts you before you can take a seat. "I\'m afraid we can\'t have you in here like that, miss. Our clientele expect a certain standard."',
+  seq('The café hostess takes one look at you and positions herself squarely in the doorway.', say('I\'m sorry, but The Gilt Lily has a dress code. You\'ll need to come back properly attired.')),
+  seq('A waiter intercepts you before you can take a seat.', say('I\'m afraid we can\'t have you in here like that, miss. Our clientele expect a certain standard.')),
 ])
 
 const arcadeGate = staffDecencyGate(40, 'uptown', [
-  'A shopkeeper steps out from behind her counter as you enter the arcade. "Excuse me, miss — you can\'t walk around in here like that. You\'re disturbing the customers."',
-  'The arcade\'s uniformed attendant hurries over, looking pained. "I\'m going to have to ask you to leave, miss. We have a reputation to maintain."',
+  seq('A shopkeeper steps out from behind her counter as you enter the arcade.', say('Excuse me, miss — you can\'t walk around in here like that. You\'re disturbing the customers.')),
+  seq('The arcade\'s uniformed attendant hurries over, looking pained.', say('I\'m going to have to ask you to leave, miss. We have a reputation to maintain.')),
 ])
 
 const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {

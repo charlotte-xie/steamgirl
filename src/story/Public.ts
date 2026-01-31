@@ -3,9 +3,10 @@ import { makeScripts, type Script } from '../model/Scripts'
 import { getImpressionStat } from '../model/Impression'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
+import type { Instruction } from '../model/ScriptDSL'
 import {
   text, random, seq, scenes, scene, move,
-  ejectPlayer, addStat, time,
+  ejectPlayer, addStat, time, option,
   branch, choice, skillCheck,
 } from '../model/ScriptDSL'
 
@@ -26,11 +27,11 @@ export function decencyCheck(threshold: number, message: string) {
  * Returns an `onArrive` script for upscale venues. If decency is below
  * the threshold, shows a random refusal text and ejects the player.
  */
-export function staffDecencyGate(threshold: number, ejectTo: string, texts: string[]) {
+export function staffDecencyGate(threshold: number, ejectTo: string, variants: Instruction[]) {
   return (game: Game) => {
     const d = getImpressionStat(game, 'decency')
     if (d >= threshold) return
-    game.run(seq(random(...texts.map(t => text(t))), ejectPlayer(ejectTo)))
+    game.run(seq(random(...variants), option('Leave', ejectPlayer(ejectTo))))
   }
 }
 

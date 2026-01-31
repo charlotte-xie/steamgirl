@@ -213,23 +213,28 @@ export const startScripts = {
     }
   },
 
-  /** Skip intro: jump to bedroom at 2pm with key and goals. */
+  /** Skip intro: jump to bedroom at 2pm with key and goals, as if you did the tour. */
   skipIntro: (g: Game) => {
     g.timeLapse(2*60)
     g.run('move', { location: 'bedroom' })
     g.scene.hideNpcImage = true
+    // Landlord met
     const landlord = g.getNPC('landlord')
     landlord.nameKnown = 1
     landlord.stats.set('seen', 1)
-    g.add('You skip ahead to your room in the backstreets after meeting your landlord {npc(landlord)}. Your key is in your hand; your goals, ahead.')
+    // Rob met on tour
+    const rob = g.getNPC('tour-guide')
+    rob.nameKnown = 1
+    rob.stats.set('tourDone', 1)
+    g.add('You skip ahead to your room in the backstreets. You\'ve met {npc(tour-guide)} and your landlord {npc(landlord)}. Your key is in your hand; your goals, ahead.')
     g.run('gainItem', { item: 'room-key', number: 1, text: 'You have your room key.' })
     g.addQuest('attend-university', { silent: true })
-    // Discover the lodgings and route out to the city
+    // Discover lodgings + tour locations
     const bedroom = g.getLocation('bedroom')
     bedroom.numVisits++
-    bedroom.discovered = true
-    g.getLocation('stairwell').discovered = true
-    g.getLocation('backstreets').discovered = true
+    for (const id of ['bedroom', 'stairwell', 'backstreets', 'default', 'hotel', 'school', 'lake', 'market']) {
+      g.getLocation(id).discovered = true
+    }
   },
 
   /** Debug: skip to school at 9:30am Monday, attend-university quest already done. */
