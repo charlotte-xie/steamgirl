@@ -103,6 +103,8 @@ seq(text('You enter the room.'), say('Welcome!'))
 | `hasReputation(rep, opts?)` | Check faction reputation |
 | `hasCard(id)` / `cardCompleted(id)` | Check cards |
 | `locationDiscovered(loc)` | Check discovery |
+| `impression(name, {npc?, min?, max?})` | NPC impression score or range check (see [AUTHORING.md](./AUTHORING.md#impressions)) |
+| `indecent(level?)` | True if decency below level (default 40) in a public location |
 | `hourBetween(from, to)` | Time of day (supports wrap-around) |
 | `timeElapsed(timer, minutes)` | Check cooldown |
 | `debug()` | True in debug mode |

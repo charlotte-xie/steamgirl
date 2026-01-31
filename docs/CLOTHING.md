@@ -120,6 +120,8 @@ calcStats: (player) => {
 }
 ```
 
+Clothing also affects **impressions** (`decency`, `appearance`, `attraction`) — computed scores that determine how NPCs react to the player. Use `appearance` bonuses for high-quality items; the base appearance score caps at 50 from coverage alone. See [AUTHORING.md](./AUTHORING.md#impressions).
+
 These modifiers are **transient** -- they are recalculated from scratch every time `player.calcStats()` runs. The calculation flow is:
 
 1. Copy `basestats` to `stats`

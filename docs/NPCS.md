@@ -132,6 +132,32 @@ The `NPC` class provides fluent methods for building conversation scenes:
 
 All methods return `this` for chaining.
 
+## Impressions
+
+NPCs should react to the player's appearance using **impressions** (`decency`, `appearance`, `attraction`) rather than checking clothing directly. Impressions are 0--100 scores computed from clothing coverage, grooming, and item modifiers, then adjusted per-NPC via `modifyImpression`. See [AUTHORING.md](./AUTHORING.md#impressions) for DSL usage.
+
+```typescript
+// Gate dialogue on the NPC's impression of the player
+when(impression('decency', { max: 59 }),
+  say('You might want to put some proper clothes on.'),
+)
+
+// In imperative scripts
+import { impression } from '../model/Impression'
+const score = impression(game, 'appearance', 'gerald-ashworth')
+```
+
+NPCs can define `modifyImpression` to express personal preferences (e.g. Gerald values modesty, so his decency impression is harsher):
+
+```typescript
+registerNPC('gerald-ashworth', {
+  modifyImpression: (npc, name, score) => {
+    if (name === 'decency') return score - 10  // stricter standards
+    return score
+  },
+})
+```
+
 ## Wait Encounters
 
 The `onWait` hook fires each 10-minute chunk when the player waits at a location where the NPC is present. It can create a scene to interrupt the wait -- useful for ambient encounters and one-shot events.

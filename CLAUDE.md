@@ -19,6 +19,13 @@ The game is an immersive, rich, story driven game with complex characters and th
 - **Vitest** for testing
 - **pnpm** as package manager
 
+## Development principles
+
+- Object to make highly extensive and flexible through simple pluggable components and systems
+- Focused tests to catch regressions in mechanics and systems
+- Look for opportunity to simplify and clean up 
+- Concise documentation of key ideas in docs and code comments 
+
 ## Commands
 
 ```bash
