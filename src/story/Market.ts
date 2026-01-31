@@ -3,11 +3,10 @@
  */
 
 import type { Game } from '../model/Game'
-import type { ShopItemEntry } from '../model/Game'
 import type { LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { Item } from '../model/Item'
-import { registerItemDefinition } from '../model/Item'
+import { registerItemDefinition, shopItems } from '../model/Item'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
 import { publicChecks } from './Public'
@@ -18,52 +17,28 @@ import { eatFood, consumeAlcohol } from './Effects'
 // Clothing shop inventory
 // ============================================================================
 
-const CLOTHING_SHOP_ITEMS: ShopItemEntry[] = [
+const CLOTHING_SHOP_ITEMS = shopItems([
   // Tops
-  { itemId: 'blouse-white', price: 20 },
-  { itemId: 'blouse-silk', price: 40 },
-  { itemId: 'shirt-work', price: 12 },
-  { itemId: 'vest-brocade', price: 30 },
-
+  'blouse-white', 'blouse-silk', 'shirt-work', 'vest-brocade',
   // Skirts & trousers
-  { itemId: 'skirt-practical', price: 15 },
-  { itemId: 'skirt-pleated', price: 20 },
-  { itemId: 'skirt-bustle', price: 45 },
-  { itemId: 'trousers-riding', price: 35 },
-
+  'skirt-practical', 'skirt-pleated', 'skirt-bustle', 'trousers-riding',
   // Dresses
-  { itemId: 'dress-simple', price: 25 },
-  { itemId: 'dress-day', price: 40 },
-  { itemId: 'dress-evening', price: 80 },
-
+  'dress-simple', 'dress-day', 'dress-evening',
   // Outerwear
-  { itemId: 'corset-suede', price: 35 },
-  { itemId: 'corset-leather', price: 50 },
-  { itemId: 'jacket-aviator', price: 55 },
-  { itemId: 'coat-velvet', price: 65 },
-
+  'corset-suede', 'corset-leather', 'jacket-aviator', 'coat-velvet',
   // Accessories
-  { itemId: 'gloves-leather', price: 15 },
-  { itemId: 'scarf-silk', price: 20 },
-  { itemId: 'choker-velvet', price: 25 },
-]
+  'gloves-leather', 'scarf-silk', 'choker-velvet',
+], 1.5)
 
 // ============================================================================
 // Components shop inventory
 // ============================================================================
 
-const COMPONENTS_SHOP_ITEMS: ShopItemEntry[] = [
-  { itemId: 'brass-cog', price: 3 },
-  { itemId: 'copper-wire', price: 5 },
-  { itemId: 'spring-coil', price: 8 },
-  { itemId: 'brass-trinket', price: 10 },
-  { itemId: 'steam-whistle', price: 12 },
-  { itemId: 'lens-ground', price: 15 },
-  { itemId: 'pressure-gauge', price: 20 },
-  { itemId: 'mysterious-gear', price: 25 },
-  { itemId: 'aether-valve', price: 30 },
-  { itemId: 'glowing-crystal', price: 40 },
-]
+const COMPONENTS_SHOP_ITEMS = shopItems([
+  'brass-cog', 'copper-wire', 'spring-coil', 'brass-trinket',
+  'steam-whistle', 'lens-ground', 'pressure-gauge',
+  'mysterious-gear', 'aether-valve', 'glowing-crystal',
+], 1.5)
 
 // ============================================================================
 // Snack items
@@ -73,6 +48,7 @@ registerItemDefinition('toffee-apple', {
   name: 'toffee apple',
   description: 'A rosy apple coated in a hard shell of dark treacle toffee, skewered on a brass stick.',
   category: 'Consumables',
+  value: 1,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('You crunch through the sticky toffee shell into the sweet apple beneath. Delicious.')
@@ -85,6 +61,7 @@ registerItemDefinition('meat-pie', {
   name: 'meat pie',
   description: 'A hand-sized pie with a golden pastry crust, filled with spiced mutton and gravy. Kept warm on a little steam-heated rack.',
   category: 'Consumables',
+  value: 3,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('The pie is piping hot, the pastry flaky and the filling rich with pepper and gravy. Very satisfying.')
@@ -97,6 +74,7 @@ registerItemDefinition('sugared-almonds', {
   name: 'sugared almonds',
   description: 'A little paper cone of almonds coated in crystallised sugar and rose water. A fashionable indulgence.',
   category: 'Consumables',
+  value: 2,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('The almonds are crunchy and fragrant, the sugar coating dissolving sweetly on your tongue.')
@@ -109,6 +87,7 @@ registerItemDefinition('ginger-beer', {
   name: 'ginger beer',
   description: 'A bottle of fiery home-brewed ginger beer, sealed with a mechanical stopper that pops with a satisfying hiss.',
   category: 'Consumables',
+  value: 2,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('The ginger beer fizzes and burns pleasantly. It warms you from the inside out.')
@@ -121,6 +100,7 @@ registerItemDefinition('treacle-tart', {
   name: 'treacle tart',
   description: 'A sticky, gloriously sweet slice of golden syrup tart with a crumbly shortcrust base.',
   category: 'Consumables',
+  value: 3,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('The treacle tart is sinfully sweet and utterly wonderful. You lick the syrup from your fingers.')
@@ -133,6 +113,7 @@ registerItemDefinition('mulled-cider', {
   name: 'mulled cider',
   description: 'A tin cup of warm cider infused with cinnamon, cloves, and a generous measure of brandy. Steam curls from the surface.',
   category: 'Consumables',
+  value: 3,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('The cider is warming and spiced, with a kick of brandy that goes straight to your head.')
@@ -146,6 +127,7 @@ registerItemDefinition('roasted-chestnuts', {
   name: 'roasted chestnuts',
   description: 'A paper bag of chestnuts roasted over a small coal-fired brazier. They smell heavenly.',
   category: 'Consumables',
+  value: 1,
   stackable: true,
   onConsume: (game: Game) => {
     game.add('You peel the hot shells and eat the soft, earthy chestnuts one by one. Simple but comforting.')
@@ -158,15 +140,10 @@ registerItemDefinition('roasted-chestnuts', {
 // Snack shop inventory
 // ============================================================================
 
-const SNACK_SHOP_ITEMS: ShopItemEntry[] = [
-  { itemId: 'toffee-apple', price: 2 },
-  { itemId: 'roasted-chestnuts', price: 2 },
-  { itemId: 'sugared-almonds', price: 3 },
-  { itemId: 'ginger-beer', price: 3 },
-  { itemId: 'meat-pie', price: 4 },
-  { itemId: 'treacle-tart', price: 4 },
-  { itemId: 'mulled-cider', price: 5 },
-]
+const SNACK_SHOP_ITEMS = shopItems([
+  'toffee-apple', 'roasted-chestnuts', 'sugared-almonds',
+  'ginger-beer', 'meat-pie', 'treacle-tart', 'mulled-cider',
+], 1.5)
 
 // ============================================================================
 // Shopkeeper NPCs

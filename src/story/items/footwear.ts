@@ -14,6 +14,7 @@ registerItemDefinition(
   extendItem('base-stockings', {
     name: 'long stockings',
     description: 'White cotton stockings that reach above the knee.',
+    value: 3,
   })
 )
 
@@ -22,6 +23,7 @@ registerItemDefinition(
   extendItem('base-socks', {
     name: 'white socks',
     description: 'Plain white cotton socks. Simple and practical.',
+    value: 1,
   })
 )
 
@@ -30,6 +32,7 @@ registerItemDefinition(
   extendItem('base-stockings', {
     name: 'silk stockings',
     description: 'Sheer silk stockings with a subtle sheen. Luxurious against the skin.',
+    value: 15,
     calcStats: (player) => {
       player.modifyStat('appearance', 2)
     },
@@ -56,6 +59,7 @@ registerItemDefinition(
     name: 'plain shoes',
     description: 'Simple leather shoes with a low heel. Comfortable and unremarkable.',
     image: '/images/steamgirl/Shoes.PNG',
+    value: 8,
   })
 )
 
@@ -65,6 +69,7 @@ registerItemDefinition(
     name: 'leather boots',
     description: 'Sturdy leather boots with brass buckles. Practical for any occasion.',
     image: '/images/steamgirl/Boots.PNG',
+    value: 15,
     calcStats: (player) => {
       player.modifyStat('Agility', 2)
     },
@@ -76,6 +81,7 @@ registerItemDefinition(
   extendItem('base-footwear', {
     name: 'heeled boots',
     description: 'Elegant boots with a modest heel and delicate button closures.',
+    value: 25,
     calcStats: (player) => {
       player.modifyStat('Agility', -1)
       player.modifyStat('appearance', 2)
@@ -88,6 +94,7 @@ registerItemDefinition(
   extendItem('base-footwear', {
     name: 'dancing shoes',
     description: 'Lightweight shoes with flexible soles, perfect for dancing.',
+    value: 20,
     calcStats: (player) => {
       player.modifyStat('Dancing', 5)
       player.modifyStat('Agility', 2)
@@ -100,6 +107,7 @@ registerItemDefinition(
   extendItem('base-footwear', {
     name: 'work boots',
     description: 'Heavy-duty boots with steel toe caps. Essential for factory work.',
+    value: 10,
     calcStats: (player) => {
       player.modifyStat('Strength', 2)
     },

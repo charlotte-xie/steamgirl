@@ -66,6 +66,7 @@ export interface ItemDefinition {
   image?: string
   icon?: string           // SVG icon name for inventory display (see ItemIcons.tsx)
   category?: ItemCategory
+  value?: number          // Intrinsic value in Krona. Shops multiply this for sale price.
   stackable?: boolean
   colour?: string                 // CSS colour for the item (tints icon SVGs and avatar image)
   imageTint?: string              // CSS colour for multiply-blend tinting on the avatar (defaults to colour)
@@ -84,6 +85,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     name: 'Krona',
     description: 'A currency used throughout the city.',
     category: 'Valuables',
+    value: 1,
     icon: 'money',
     colour: '#c0a040',
     stackable: true,
@@ -92,6 +94,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     name: 'pocket watch',
     description: 'A fine brass pocket watch with intricate gears.',
     category: 'Valuables',
+    value: 30,
     icon: 'gem',
     colour: '#b0903a',
   },
@@ -352,6 +355,15 @@ export function getItem(id: ItemId): ItemDefinition | undefined {
  */
 export function tintedItem(baseId: ItemId, colour: string, overrides: Partial<ItemDefinition>): ItemDefinition {
   return extendItem(baseId, { colour, imageTint: colour, ...overrides })
+}
+
+/** Build a shop inventory from item IDs and a price multiplier applied to each item's base value. */
+export function shopItems(itemIds: string[], multiplier: number): { itemId: string; price: number }[] {
+  return itemIds.map(itemId => {
+    const def = ITEM_DEFINITIONS[itemId]
+    const value = def?.value ?? 1
+    return { itemId, price: Math.round(value * multiplier) }
+  })
 }
 
 // Ensure an ItemSpec is converted to an Item instance.

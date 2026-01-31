@@ -10,6 +10,7 @@ registerItemDefinition(
     name: 'brass goggles',
     description:
       'Polished brass goggles with tinted lenses and adjustable straps. Essential for any aspiring engineer.',
+    value: 15,
     calcStats: (player) => {
       player.modifyStat('Perception', 5)
     },
@@ -22,6 +23,7 @@ registerItemDefinition(
     name: 'bowler hat',
     description: 'A classic black bowler hat with a silk ribbon. Respectable and refined.',
     image: '/images/steamgirl/Hat.PNG',
+    value: 15,
     calcStats: (player) => {
       player.modifyStat('appearance', 2)
     },
@@ -34,6 +36,7 @@ registerItemDefinition(
     name: 'top hat',
     description:
       'A tall silk top hat with brass clockwork decorations. The height of fashion.',
+    value: 40,
     calcStats: (player) => {
       player.modifyStat('Etiquette', 3)
       player.modifyStat('appearance', 5)
@@ -46,5 +49,6 @@ registerItemDefinition(
   extendItem('base-hat', {
     name: 'newsboy cap',
     description: 'A worn tweed newsboy cap. Practical for the working class.',
+    value: 3,
   })
 )

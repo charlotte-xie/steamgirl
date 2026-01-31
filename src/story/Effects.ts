@@ -388,7 +388,7 @@ export function applyMakeup(game: Game): void {
   game.removeCard('makeup', true)
   game.addEffect('makeup')
   game.add({ type: 'text', text: 'You carefully apply your makeup, finishing with a satisfied look in the mirror.', color: '#f472b6' })
-  game.run('wait', { minutes: 10 })
+  game.run('wait', { minutes: 15 })
 }
 
 /**
@@ -401,7 +401,7 @@ export function eatFood(game: Game, quantity: number): void {
 }
 
 /**
- * Consume alcohol script - adds alcohol amount to the player's intoxicated effect.
+ * Consume alcohol - adds alcohol amount to the player's intoxicated effect.
  * Adds the intoxicated effect if the player doesn't have it.
  * Adds to existing alcohol value if the player already has the effect.
  */
