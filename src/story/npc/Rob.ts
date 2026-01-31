@@ -5,28 +5,22 @@
  * puppy-dog type: warm, enthusiastic, and easily impressed. He genuinely
  * likes people and the city, and takes real pleasure in showing newcomers
  * around.
+ * 
+ * Important stats:
+ * - affection => gates dating Rob. 20-50 = happy to date, 50+ = seeks relationship, 80+ = obsessive love
+ * - tourDone => modifies the city tour (becomes mini date that can be repeated)
  *
  * Romance path & affection budget:
  *
  *   PRE-DATE (easy to reach ~20-25):
- *   - City tour: +1 hidden (no cap — flavour; warmer dialogue at 15+)
- *   - Hotel room invite: +10 (max 15)
- *   - Flirting: +3 each (max 30 — diminishing returns; pushing past 30
- *     without Charm risks pushback and -3)
+ *   - Can gain affection with city your, flirting or hotel room invite
  *
  *   DATE INVITATION:
  *   - Triggered by: Flirtation skill check DC 10, affection > 20, no
  *     existing date card
  *
- *   FIRST DATE — all affection earned through the date scenes:
- *   - Lakeside lean: +3 (max 45)
- *   - Shooting star (Perception DC 10): +2 (max 45)
- *   - Pier hand-hold: +5 (max 50)
- *   - Garden discovery (requires affection ≥ 35): +3 (max 50)
- *   - Garden charm check (Charm DC 12): +3 (max 50)
- *   - Garden sit close: +3 (max 50)
- *   - Kiss (requires affection ≥ 40): +5 hidden (max 55)
- *   - No completion bonus — affection is earned through choices.
+ *   DATES — higher affection earned through the date scenes:
+ *   - Various choices and skill checks, can boost affection
  *
  *   Getting past 50 is hard and requires both the garden path and
  *   the kiss. Beyond 55 requires future content (multiple dates,
@@ -44,7 +38,7 @@ import { Game } from '../../model/Game'
 import { NPC, PRONOUNS, registerNPC } from '../../model/NPC'
 import {
   type Instruction,
-  say, npcLeaveOption, npcInteract,
+  say, npcLeaveOption, npcInteract, learnNpcName,
   seq, when, random, cond,
   addNpcStat, moveNpc,
   discoverLocation, option, branch, scene, scenes,
@@ -58,6 +52,255 @@ import {
   handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
 } from '../Dating'
+
+// ============================================================================
+// CITY TOUR — FIRST TIME
+// ============================================================================
+
+/** First tour: guided sightseeing with one player choice per stop. */
+function robFirstTour(): Instruction {
+  return scenes(
+    // City centre
+    scene(
+      hideNpcImage(),
+      'You set off with Rob.',
+      move('default'), time(15),
+      say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?'),
+      'Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city.',
+      branch('Tell him you\'re impressed',
+        say('You should see it at sunset — the brass catches the light something beautiful.'),
+        'He looks pleased by your reaction.',
+        addNpcStat('affection', 1, { max: 10, hidden: true }),
+      ),
+      branch('Nod politely',
+        'You take in the sights. Rob watches your face, gauging your reaction.',
+        say('Give it time. It grows on you.'),
+      ),
+    ),
+    // Imperial Hotel
+    scene(
+      discoverLocation('hotel'),
+      move('hotel'), time(5),
+      'Rob takes you to an imposing brass-and-marble facade with gilt lettering above its revolving doors. You take a peek inside.',
+      say('The Imperial Hotel. Very grand, very expensive — too expensive for most folks. But worth knowing about if you ever come into money.'),
+    ),
+    // University
+    scene(
+      discoverLocation('school'),
+      move('school'), time(15),
+      say('The University — you\'ll be studying there you say? A fine institution.'),
+      'Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.',
+      discoverLocation('subway-university'),
+      say('There\'s a subway here — efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...'),
+      // Perception check — notice an inscription
+      skillCheck('Perception', 5,
+        seq(
+          'As you pass through the courtyard, you notice a faded inscription carved into the stone archway — old Aetherian script, almost worn smooth.',
+          say('Sharp eyes! Most people walk right past that. It\'s the university\'s original motto: "By Steam and Starlight."'),
+          addNpcStat('affection', 1, { max: 10, hidden: true }),
+        ),
+      ),
+    ),
+    // Lake
+    scene(
+      discoverLocation('lake'),
+      move('lake'), time(18),
+      say('The Lake. A peaceful spot when the city gets too much. Steam off the water — rather lovely.'),
+      'Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.',
+    ),
+    // Market
+    scene(
+      discoverLocation('market'),
+      move('market'), time(15),
+      say('The Market. Best place for oddities and curios. Keep your wits about you.'),
+      'Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam.',
+      branch('Ask about his favourite stall',
+        say('Oh — there\'s a fellow who sells miniature clockwork birds. Completely useless, absolutely charming. I\'ve got three.'),
+        'He grins, embarrassed.',
+        addNpcStat('affection', 1, { max: 10, hidden: true }),
+      ),
+      branch('Keep moving',
+        'You press through the crowd. Rob stays close, one hand hovering near your elbow.',
+      ),
+    ),
+    // Backstreets
+    scene(
+      discoverLocation('backstreets'),
+      move('backstreets'), time(15),
+      'The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.',
+      say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.'),
+    ),
+    // Tour ends — farewell
+    scene(
+      showNpcImage(),
+      'Rob shows you around the backstreets for a while.',
+      say('I hope this helps you find your feet. Enjoy Aetheria!'),
+      addNpcStat('affection', 1, { hidden: true }),
+      addNpcStat('tourDone', 1, { hidden: true }),
+      npcLeaveOption('You thank Rob and he leaves you in the backstreets.'),
+    ),
+  )
+}
+
+// ============================================================================
+// CITY TOUR — REPEAT (mini-date)
+// ============================================================================
+
+/** Repeat tour: more relaxed, varied stops, flirt potential. */
+function robRepeatTour(): Instruction {
+  return scenes(
+    // Setting off — warmer tone
+    scene(
+      hideNpcImage(),
+      random(
+        seq(
+          say('Fancy another spin? I know a few spots I skipped last time.'),
+          'He falls into step beside you, matching your pace.',
+        ),
+        seq(
+          say('Back for more? I\'ll take that as a compliment.'),
+          'He grins and gestures for you to follow.',
+        ),
+        seq(
+          say('I was hoping you\'d ask. Come on — I\'ve got something to show you.'),
+          'He sets off eagerly, almost forgetting to wait for you.',
+        ),
+      ),
+      move('default'), time(10),
+    ),
+    // City centre — random vignette
+    scene(
+      random(
+        seq(
+          'Rob takes you past a steam-powered street organ. It wheezes out a jaunty tune that echoes off the brass facades.',
+          say('This old thing\'s been here longer than I have. I think it plays the same three songs.'),
+          branch('Dance a few steps',
+            'You sway to the music. Rob laughs — surprised, delighted — and does a clumsy little shuffle of his own.',
+            addNpcStat('affection', 2, { max: 25, hidden: true }),
+          ),
+          branch('Listen for a moment',
+            'You stand together, letting the tinny melody wash over you. Rob hums along under his breath.',
+          ),
+        ),
+        seq(
+          'A clockwork performer stands motionless on a plinth, then springs to life as you pass — juggling brass balls in a blur of gears.',
+          say('Brilliant, isn\'t it? Someone programmed it to learn new tricks. Last week it was doing card tricks.'),
+          skillCheck('Mechanics', 8,
+            seq(
+              'You point out the hidden counterweight mechanism in its wrist. Rob stares.',
+              say('How did you spot that? I\'ve watched this thing a dozen times and never noticed.'),
+              addNpcStat('affection', 1, { max: 25, hidden: true }),
+            ),
+          ),
+        ),
+        seq(
+          'Rob steers you down a side street you haven\'t seen before. A tiny brass plaque reads "Automaton Row."',
+          say('The craftsmen who build the city\'s automatons all work along here. You can hear them hammering away.'),
+          'The rhythmic clanging drifts from open workshop doors, accompanied by the hiss of soldering torches.',
+        ),
+      ),
+    ),
+    // Lake or market — alternating flavour
+    scene(
+      random(
+        // Lake detour
+        seq(
+          move('lake'), time(15),
+          'Rob takes a detour past the lake. The steam is thicker today, curling in slow spirals.',
+          cond(
+            npcStat('affection', { min: 15 }),
+            seq(
+              say('I come here when I need to think. It\'s my favourite spot in the whole city.'),
+              'He pauses, watching the steam curl over the water.',
+              say('I don\'t usually tell people that. But — I wanted you to know.'),
+            ),
+            say('Lovely this time of day, isn\'t it? The steam catches the light.'),
+          ),
+          skillCheck('Perception', 8,
+            seq(
+              'You notice a heron standing motionless at the water\'s edge — real, not clockwork. Its stillness is almost mechanical.',
+              say('Would you look at that! I\'ve never seen a real one here before. They usually avoid the steam.'),
+              addNpcStat('affection', 1, { max: 25, hidden: true }),
+            ),
+          ),
+        ),
+        // Market detour
+        seq(
+          move('market'), time(15),
+          'Rob leads you through the market. The stalls are different today — new wares, new faces.',
+          random(
+            seq(
+              say('Oh — look at this.'),
+              'He picks up a tiny brass bird from a stall. It flutters in his palm, wings whirring.',
+              say('I keep meaning to buy one for my flat. Maybe today\'s the day.'),
+            ),
+            seq(
+              'A vendor offers you both samples of spiced tea from a steaming brass urn.',
+              say('Go on, try it. The cinnamon one\'s good.'),
+            ),
+            seq(
+              say('See that stall with the red canopy? Best meat pies in the city. Don\'t tell anyone.'),
+              'He taps the side of his nose conspiratorially.',
+            ),
+          ),
+        ),
+      ),
+    ),
+    // Backstreets — intimate moment
+    scene(
+      move('backstreets'), time(10),
+      showNpcImage(),
+      'The backstreets are quieter than the main thoroughfares. Rob slows his pace.',
+      cond(
+        npcStat('affection', { min: 15 }),
+        seq(
+          say('You know, I used to do these tours and it was just... work. Talking to strangers. But with you it\'s different.'),
+          'He glances at you, then quickly away.',
+          // Flirt opportunity on repeat tours
+          when(hasStat('Flirtation', 1),
+            seq(
+              branch('Flirt back',
+                'You tell him you enjoy his company too — more than he probably realises.',
+                say('I — really? That\'s — blimey.'),
+                'His ears go pink. He\'s trying very hard not to grin.',
+                addNpcStat('affection', 2, { max: 25 }),
+              ),
+              branch('Smile warmly',
+                'You give him a warm smile. He relaxes, matching it with one of his own.',
+                addNpcStat('affection', 1, { max: 25, hidden: true }),
+              ),
+            ),
+          ),
+        ),
+        seq(
+          say('Getting to know the backstreets takes a while. Lots of little turns and dead ends.'),
+          'He points out a few landmarks — a bakery with a brass chimney, a wall covered in old playbills.',
+        ),
+      ),
+    ),
+    // Farewell
+    scene(
+      random(
+        seq(
+          say('Same time next time?'),
+          'He catches himself.',
+          say('I mean — if you want. No pressure.'),
+        ),
+        seq(
+          say('I always enjoy our little walks. Is that odd to say?'),
+          'He scratches the back of his neck, smiling.',
+        ),
+        seq(
+          say('Right then. Back to the station for me.'),
+          'He lingers a moment, as though he\'s forgotten something. Then he gives a small wave.',
+        ),
+      ),
+      addNpcStat('affection', 1, { hidden: true }),
+      addNpcStat('tourDone', 1, { hidden: true }),
+      npcLeaveOption('You part ways in the backstreets.'),
+    ),
+  )
+}
 
 registerNPC('tour-guide', {
   name: 'Rob Hayes',
@@ -102,154 +345,59 @@ registerNPC('tour-guide', {
     }
   },
 
-  onFirstApproach: (game: Game) => {
-    const npc = game.npc
-    game.add('A man with a well-worn guidebook catches your eye and steps over with a warm smile.')
-    npc.say("The name's Rob Hayes. I lead tours of the city for new arrivals. It takes about an hour and ends in the backstreets—handy if that's where you're headed. Fancy it?")
-    npc.nameKnown = 1
-    game.addOption(['interact', { script: 'tour' }], 'Accept')
-    npc.leaveOption(
+  onFirstApproach: seq(
+    'A man with a well-worn guidebook catches your eye and steps over with a warm smile.',
+    say("The name's Rob Hayes. I lead tours of the city for new arrivals. It takes about an hour and ends in the backstreets—handy if that's where you're headed. Fancy it?"),
+    learnNpcName(),
+    option('Accept', npcInteract('tour')),
+    npcLeaveOption(
       'You politely decline the invitation.',
       "Whenever you're ready. I'm usually here at the station.",
       'Decline',
-    )
-  },
+    ),
+  ),
 
-  onApproach: (game: Game) => {
+  onApproach: seq(
     // In the hotel room — random impressed comments
-    if (game.currentLocation === 'dorm-suite') {
-      game.run(run('interact', { script: 'roomChat' }))
-      return
-    }
-
-    const npc = game.npc
-    const tourDone = npc.stats.get('tourDone') ?? 0
-    const hotelVisited = npc.stats.get('hotelVisited') ?? 0
-
-    // Greeting varies based on shared history
-    if (game.player.hasCard('date')) {
-      npc.say('Hello again! Looking forward to later.')
-    } else if (hotelVisited) {
-      npc.say('Good to see you! How\'s the Imperial treating you?')
-    } else if (tourDone) {
-      npc.say('Hello again! How are you finding the city?')
-    } else {
-      npc.say('Back again? The tour offer still stands if you\'re interested.')
-    }
-
-    if (!tourDone) {
-      game.addOption(['interact', { script: 'tour' }], 'Accept the tour')
-    } else {
-      game.addOption(['interact', { script: 'tour' }], 'Take another tour')
-    }
-    if (game.player.hasCard('hotel-booking') && !hotelVisited) {
-      game.addOption(['interact', { script: 'inviteToRoom' }], 'Invite to see your hotel room')
-    }
-    if ((game.player.stats.get('Flirtation') ?? 0) >= 1) {
-      game.addOption(['interact', { script: 'flirt' }], 'Flirt')
-    }
-    npc.leaveOption(undefined, 'No worries. Safe travels!', 'Decline')
-  },
+    cond(
+      inLocation('dorm-suite'),
+      npcInteract('roomChat'),
+      seq(
+        // Greeting varies based on shared history
+        cond(
+          hasCard('date'),
+          say('Hello again! Looking forward to later.'),
+          npcStat('hotelVisited'),
+          say('Good to see you! How\'s the Imperial treating you?'),
+          npcStat('tourDone'),
+          say('Hello again! How are you finding the city?'),
+          say('Back again? The tour offer still stands if you\'re interested.'),
+        ),
+        // Options
+        cond(
+          npcStat('tourDone'),
+          option('Take another tour', npcInteract('tour')),
+          option('Accept the tour', npcInteract('tour')),
+        ),
+        when(and(hasCard('hotel-booking'), not(npcStat('hotelVisited'))),
+          option('Invite to see your hotel room', npcInteract('inviteToRoom')),
+        ),
+        when(hasStat('Flirtation', 1),
+          option('Flirt', npcInteract('flirt')),
+        ),
+        npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
+      ),
+    ),
+  ),
 
   scripts: {
     // ----------------------------------------------------------------
     // CITY TOUR
     // ----------------------------------------------------------------
-    tour: scenes(
-      // City centre
-      scene(
-        hideNpcImage(),
-        cond(
-          npcStat('affection', { min: 15 }),
-          seq(
-            'You set off together, Rob matching your pace. He keeps glancing at you with a warm, slightly nervous smile.',
-            move('default'), time(15),
-            say('Here we are — the heart of Aetheria. I never get tired of this view. But it\'s nicer with company.'),
-          ),
-          seq(
-            'You set off with Rob.',
-            move('default'), time(15),
-            say('Here we are—the heart of Aetheria. Magnificent, isn\'t it?'),
-          ),
-        ),
-        'Towering brass structures with visible gears and pipes reach toward the sky. Steam-powered carriages glide through cobblestone streets, while clockwork automatons serve the citizens. The air hums with the mechanical pulse of the city.',
-      ),
-      // Imperial Hotel
-      scene(
-        discoverLocation('hotel'),
-        move('hotel'), time(5),
-        'Rob takes you to an imposing brass-and-marble facade with gilt lettering above its revolving doors. You take a peek inside.',
-        say('The Imperial Hotel. Very grand, very expensive — too expensive for most folks. But worth knowing about if you ever come into money.'),
-      ),
-      // University
-      scene(
-        discoverLocation('school'),
-        move('school'), time(15),
-        say('The University - you\'ll be studying there you say? A fine institution.'),
-        'Its grand brass doors and halls where you will learn the mechanical arts, steam engineering, and the mysteries of clockwork.',
-        discoverLocation('subway-university'),
-        say('There\'s a subway here - efficient way to get around the city though it costs 3 Krona. It\'s also pretty safe... most of the time...'),
-      ),
-      // Lake
-      scene(
-        discoverLocation('lake'),
-        move('lake'), time(18),
-        cond(
-          npcStat('affection', { min: 15 }),
-          seq(
-            say('The Lake. I come here when I need to think. It\'s my favourite spot in the whole city.'),
-            'He pauses, watching the steam curl over the water.',
-            say('I don\'t usually tell people that. But — I wanted you to know.'),
-          ),
-          say('The Lake. A peaceful spot when the city gets too much. Steam off the water—rather lovely.'),
-        ),
-        'Steam gently rises from the surface, creating a serene mist. A sanctuary where the mechanical and natural worlds blend.',
-      ),
-      // Market
-      scene(
-        discoverLocation('market'),
-        move('market'), time(15),
-        cond(
-          npcStat('affection', { min: 15 }),
-          seq(
-            say('The Market. Brilliant for oddities, but stay close — some of the vendors can be a bit pushy.'),
-            'He steps a little nearer as the crowd thickens, his hand hovering protectively near your elbow.',
-          ),
-          say('The Market. Best place for oddities and curios. Keep your wits about you.'),
-        ),
-        'Vendors display exotic mechanical trinkets and clockwork wonders. The air is filled with haggling, the clink of gears, and the hiss of steam. The market throbs. Fingers brush you as you pass—accidental, deliberate, promising.',
-      ),
-      // Backstreets
-      scene(
-        discoverLocation('backstreets'),
-        move('backstreets'), time(15),
-        'The alleys close in, narrow and intimate. Gas lamps flicker like dying heartbeats. Somewhere above, gears moan. Somewhere below, something else answers.',
-        cond(
-          npcStat('affection', { min: 15 }),
-          seq(
-            say('Your room\'s in one of the buildings, I believe. It can get a bit rough at night, so — if you ever need anything, you know where to find me.'),
-            'He catches your eye, and looks away quickly.',
-          ),
-          say('Your room\'s in one of the buildings, I believe. It\'s a nice enough area, but be careful at night.'),
-        ),
-      ),
-      // Tour ends — farewell
-      scene(
-        showNpcImage(),
-        'Rob shows you around the backstreets for a while.',
-        cond(
-          npcStat('affection', { min: 15 }),
-          seq(
-            say('I really enjoyed that. More than usual, if I\'m honest.'),
-            'He lingers, reluctant to say goodbye.',
-            say('Come find me at the station any time. I mean it.'),
-          ),
-          say('I hope this helps you find your feet. Enjoy Aetheria!'),
-        ),
-        addNpcStat('affection', 1, { hidden: true }),
-        addNpcStat('tourDone', 1, { hidden: true }),
-        npcLeaveOption('You thank Rob and he leaves you in the backstreets.'),
-      ),
+    tour: cond(
+      npcStat('tourDone'),
+      robRepeatTour(),
+      robFirstTour(),
     ),
 
     // ----------------------------------------------------------------
@@ -465,12 +613,11 @@ registerNPC('tour-guide', {
       })
     },
 
-    dateDecline: (game: Game) => {
-      const npc = game.getNPC('tour-guide')
-      npc.say('Oh. No, that\'s — of course. Maybe some other time, then.')
-      game.add('He tries to smile, but his disappointment is obvious.')
-      npc.leaveOption()
-    },
+    dateDecline: seq(
+      say('Oh. No, that\'s — of course. Maybe some other time, then.'),
+      'He tries to smile, but his disappointment is obvious.',
+      npcLeaveOption(),
+    ),
   },
 })
 
