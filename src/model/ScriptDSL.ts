@@ -568,6 +568,10 @@ export const addEffect = (effectId: string, args?: object): Instruction =>
 export const recordTime = (timer: string): Instruction =>
   run('recordTime', { timer })
 
+/** Apply a kiss — adds intensity to Arousal (capped at 50). 2 = peck, 5 = normal, 10 = intense. */
+export const kiss = (intensity: number): Instruction =>
+  run('kiss', { intensity })
+
 /** Eat food. Sets lastEat timer and removes hunger based on quantity. */
 export const eatFood = (quantity: number): Instruction =>
   run('eatFood', { quantity })

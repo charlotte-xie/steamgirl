@@ -192,7 +192,26 @@ export const freshEffect: CardDefinition = {
   },
 }
 
+export const flushedEffect: CardDefinition = {
+  name: 'Flushed',
+  description: 'Your pulse is racing and your cheeks are warm.',
+  type: 'Effect',
+  color: '#ec4899', // Pink — matches Arousal meter
+  // Removed by accumulateFlushed when arousal drops below threshold
+}
+
+/**
+ * Apply a kiss. Adds intensity directly to the Arousal meter, capped at 50.
+ * Typical values: 2 = peck, 5 = normal kiss, 10 = intense.
+ */
+export function applyKiss(game: Game, intensity: number): void {
+  const current = game.player.basestats.get('Arousal') ?? 0
+  const capped = Math.min(intensity, 50 - current)
+  if (capped > 0) game.player.addBaseStat('Arousal', capped)
+}
+
 // Register the effect definitions
+registerCardDefinition('flushed', flushedEffect)
 registerCardDefinition('intoxicated', intoxicatedEffect)
 registerCardDefinition('sleepy', sleepyEffect)
 registerCardDefinition('peckish', peckishEffect)
@@ -208,6 +227,10 @@ makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
   }
 })
 
+makeScript('kiss', (game: Game, params: { intensity?: number }) => {
+  applyKiss(game, params.intensity ?? 5)
+})
+
 makeScript('eatFood', (game: Game, params: { quantity?: number }) => {
   eatFood(game, params.quantity ?? 100)
 })
@@ -218,7 +241,30 @@ makeScript('eatFood', (game: Game, params: { quantity?: number }) => {
  */
 export function timeEffects(game: Game, seconds: number): void {
   accumulateHunger(game, seconds)
+  decayArousal(game, seconds)
+  accumulateFlushed(game)
   // Future: accumulateFatigue, etc.
+}
+
+/** Decay arousal naturally over time — approximately 1 per minute. */
+function decayArousal(game: Game, seconds: number): void {
+  const arousal = game.player.basestats.get('Arousal') ?? 0
+  if (arousal <= 0) return
+  const minutes = Math.floor(seconds / 60)
+  if (minutes > 0) {
+    game.player.addBaseStat('Arousal', -minutes)
+  }
+}
+
+/** Add 'Flushed' effect when arousal is high, remove when it drops. */
+function accumulateFlushed(game: Game): void {
+  const arousal = game.player.basestats.get('Arousal') ?? 0
+  const hasFlushed = game.player.hasCard('flushed')
+  if (arousal >= 20 && !hasFlushed) {
+    game.addEffect('flushed')
+  } else if (arousal < 10 && hasFlushed) {
+    game.removeCard('flushed', true)
+  }
 }
 
 /**

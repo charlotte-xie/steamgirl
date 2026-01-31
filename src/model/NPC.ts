@@ -183,9 +183,21 @@ export class NPC {
       }
     }
 
+    // Determine final location: if a schedule matched, go there.
+    // If not, leave scheduled locations (e.g. end of shift) but stay put elsewhere.
+    let finalLocation = this.location
+    if (found) {
+      finalLocation = newLocation
+    } else {
+      const scheduledLocations = new Set(schedule.map(e => e[2]))
+      if (this.location && scheduledLocations.has(this.location)) {
+        finalLocation = null
+      }
+    }
+
     // If the NPC is currently at the player's location and about to leave,
     // fire the onLeavePlayer hook (if player is awake and not in a scene).
-    if (this.location === game.currentLocation && newLocation !== this.location) {
+    if (this.location === game.currentLocation && finalLocation !== this.location) {
       const hook = this.template.onLeavePlayer
       if (hook && !game.player.sleeping && !game.inScene) {
         game.scene.npc = this.id
@@ -193,7 +205,7 @@ export class NPC {
       }
     }
 
-    this.location = found ? newLocation : null
+    this.location = finalLocation
   }
 
   /** Gets the NPC definition template. */

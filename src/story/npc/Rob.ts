@@ -47,7 +47,7 @@ import {
   hasStat, npcStat, skillCheck,
   run, and, not, hasCard, inLocation,
   hasRelationship, setRelationship, chance,
-  inBedroom,
+  inBedroom, kiss,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -320,6 +320,7 @@ function robRepeatTour(): Instruction {
         seq(
           say('See you later, love.'),
           'He kisses you — quick, warm, familiar — then heads off with a wave.',
+          kiss(2),
         ),
         random(
           seq(
@@ -607,6 +608,7 @@ registerNPC('tour-guide', {
       ),
       addNpcStat('affection', 2, { max: 75, hidden: true }),
       time(5),
+      kiss(5),
       option('Chat', 'npc:lodgingsChat'),
       option('Kiss him again', 'npc:lodgingsKiss'),
       npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
@@ -621,6 +623,7 @@ registerNPC('tour-guide', {
         seq(
           say('Goodnight, love.'),
           'He kisses you gently, then slips out.',
+          kiss(2),
         ),
         seq(
           say('Sleep well. Dream of me.'),
@@ -647,6 +650,7 @@ registerNPC('tour-guide', {
           'Rob stretches and checks his pocket watch, then winces.',
           say('Is that the time? I\'m going to be late.'),
           'He scrambles for his coat, then stops to kiss you on the cheek.',
+          kiss(2),
           say('I\'ll see you later, yeah?'),
         ),
         seq(
@@ -662,6 +666,7 @@ registerNPC('tour-guide', {
       ),
       branch('Kiss him goodbye',
         'You pull him close and kiss him. He lingers a moment longer than he should.',
+        kiss(5),
         say('Now I\'m definitely going to be late.'),
         'He grins and slips out the door.',
       ),
@@ -955,6 +960,7 @@ function robBoyfriendDate(): Instruction {
         ),
         seq(
           'He pulls you close and kisses your temple before you even say hello.',
+          kiss(2),
           say('Come on. I\'ve got plans for us tonight.'),
         ),
         seq(
@@ -1223,6 +1229,7 @@ function robWalkHome(): Instruction[] {
           'He stops under a streetlamp and turns to you. The amber light catches the warmth in his eyes.',
           say('I never get tired of this, you know. Being with you.'),
           'He cups your face gently and kisses you — unhurried, sure, the kind of kiss that feels like coming home.',
+          kiss(10),
           addNpcStat('affection', 3, { hidden: true, max: 70 }),
           say('I don\'t want tonight to end just yet.'),
           branch('Come back to mine',
@@ -1249,6 +1256,7 @@ function robWalkHome(): Instruction[] {
             // The kiss — pure narrative, no stat noise
             scene(
               'You close the distance between you. The kiss is gentle, a little clumsy, and over too soon. When you pull apart his eyes are shining.',
+              kiss(10),
               say('I\'ll remember this. Always.'),
               'He touches his lips as though he can\'t quite believe it happened. Then he smiles — the widest, most unguarded smile you\'ve seen from him.',
               addNpcStat('affection', 5, { hidden: true, max: 55 }),
