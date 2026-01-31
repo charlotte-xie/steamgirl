@@ -53,6 +53,7 @@ import {
   registerDatePlan, endDate,
   handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
+  tryStrip,
 } from '../Dating'
 
 // ============================================================================
@@ -705,6 +706,7 @@ registerNPC('tour-guide', {
         say('I\'ll take whatever you\'re willing to give. Always.'),
         npcInteract('lodgingsChat'),
       ),
+      tryStrip(),
     ),
 
     // Kissing within the makeout scene — more intense
@@ -736,6 +738,7 @@ registerNPC('tour-guide', {
         say('You\'re going to be the death of me. In the best possible way.'),
         npcInteract('lodgingsChat'),
       ),
+      tryStrip(),
     ),
 
     // Rob leaves your room

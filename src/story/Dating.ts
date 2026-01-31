@@ -29,8 +29,11 @@
 import { Game } from '../model/Game'
 import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
-import { makeScripts, type Script } from '../model/Scripts'
-import { type Instruction, run } from '../model/ScriptDSL'
+import { makeScripts, makeScript, type Script } from '../model/Scripts'
+import { type Instruction, run, seq, say, option } from '../model/ScriptDSL'
+import type { ClothingLayer, ClothingPosition } from '../model/Item'
+import type { Item } from '../model/Item'
+import type { Player } from '../model/Player'
 
 // ============================================================================
 // DATE CARD DATA
@@ -459,3 +462,132 @@ const dateScripts = {
 }
 
 makeScripts(dateScripts)
+
+// ============================================================================
+// CLOTHING REMOVAL — generic NPC strip attempts during intimate scenes
+// ============================================================================
+
+/** Layers eligible for removal, in priority order (outer first). */
+const STRIP_LAYERS: ClothingLayer[] = ['outer', 'inner', 'under']
+
+/** Positions in strip priority order (feet first, chest/hips last). */
+const STRIP_POSITIONS: ClothingPosition[] = [
+  'feet', 'legs', 'hands', 'wrists', 'arms', 'waist',
+  'neck', 'head', 'face', 'belly', 'hips', 'chest',
+]
+
+/**
+ * Select the next clothing item an NPC should try to remove.
+ * Prioritises outer layers and extremities, with some randomness
+ * so the order isn't perfectly predictable.
+ */
+export function selectStripItem(player: Player): Item | undefined {
+  const candidates = player.getWornItems().filter(item => {
+    const layer = item.template.layer
+    return layer && STRIP_LAYERS.includes(layer) && !item.locked
+  })
+  if (candidates.length === 0) return undefined
+
+  // Score: layer priority * 100 + max position priority, with random jitter
+  const scored = candidates.map(item => {
+    const layerIdx = STRIP_LAYERS.indexOf(item.template.layer!)
+    const positions = item.template.positions ?? []
+    const posIdx = positions.length > 0
+      ? Math.max(...positions.map(p => STRIP_POSITIONS.indexOf(p)).filter(i => i >= 0))
+      : 0
+    const score = layerIdx * 100 + posIdx + Math.random() * 3
+    return { item, score }
+  })
+
+  scored.sort((a, b) => a.score - b.score)
+  return scored[0].item
+}
+
+const FUMBLE_NARRATION = [
+  (name: string) => `He reaches for your ${name}, fingers clumsy with nerves.`,
+  (name: string) => `His hands find your ${name}. He hesitates, looking at you uncertainly.`,
+  (name: string) => `He tugs at your ${name}, fumbling with the fastenings.`,
+  (name: string) => `His fingers brush your ${name}. He pauses, glancing up at you.`,
+  (name: string) => `He tries to work out how your ${name} comes off. It takes him a moment.`,
+]
+
+const FUMBLE_ASK = [
+  'Is this — can I—?',
+  'May I?',
+  'Is this all right?',
+  'Do you mind if I—?',
+]
+
+const ALLOW_NARRATION = [
+  'He manages it eventually, grinning like he just solved a puzzle.',
+  'He lets out a shaky breath of relief when he finally gets it.',
+  'His hands are trembling, but he manages.',
+  'He fumbles it twice before getting it right. His ears go red.',
+]
+
+const RESIST_NARRATION = [
+  'Sorry — sorry. I got carried away.',
+  'Right. Of course. Sorry.',
+  "I shouldn't have — I'm sorry.",
+  'Too much? I — sorry. I just got caught up in the moment.',
+]
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+makeScript('tryRemoveClothing', (game: Game) => {
+  const npcId = game.scene.npc
+  if (!npcId) return
+  const npc = game.getNPC(npcId)
+
+  // Probability check: base 40%, reduced by stripResisted
+  const resisted = npc.stats.get('stripResisted') ?? 0
+  if (Math.random() >= 0.4 / (1 + resisted)) return
+
+  const item = selectStripItem(game.player)
+  if (!item) return
+
+  const itemName = item.template.name ?? 'clothing'
+
+  // Push a sub-scene onto the stack using DSL builders
+  const stripScene = seq(
+    pickRandom(FUMBLE_NARRATION)(itemName),
+    say(pickRandom(FUMBLE_ASK)),
+    option(`Let ${npc.pronouns.object}`, ['tryStripAllow', { item: item.id }]),
+    option(`Stop ${npc.pronouns.object}`, 'tryStripResist'),
+  )
+  game.scene.stack.unshift(stripScene)
+  game.clearScene()
+  game.run('advanceScene')
+})
+
+makeScript('tryStripAllow', (game: Game, params: { item?: string }) => {
+  const npcId = game.scene.npc
+  if (!npcId || !params.item) return
+  const npc = game.getNPC(npcId)
+
+  game.player.unwearItem(params.item)
+  npc.stats.set('stripResisted', 0)
+
+  game.add(pickRandom(ALLOW_NARRATION))
+  game.run('interact', { script: 'makeOutMenu' })
+})
+
+makeScript('tryStripResist', (game: Game) => {
+  const npcId = game.scene.npc
+  if (!npcId) return
+  const npc = game.getNPC(npcId)
+
+  const cur = npc.stats.get('stripResisted') ?? 0
+  npc.stats.set('stripResisted', cur + 1)
+  npc.stats.set('affection', Math.max(0, (npc.stats.get('affection') ?? 0) - 1))
+
+  npc.say(pickRandom(RESIST_NARRATION))
+  game.run('interact', { script: 'makeOutMenu' })
+})
+
+/** DSL accessor: NPC may try to remove a clothing item. Place at end of makeout menus. */
+export function tryStrip(): Instruction {
+  return run('tryRemoveClothing', {})
+}
