@@ -69,6 +69,7 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'Your small but comfortable room in the backstreets.',
     image: '/images/room.jpg',
     nightImage: '/images/room-night.jpg',
+    isBedroom: true,
     secret: true, // Undiscovered until after initial "Go to Lodgings" / landlord intro; then appears as a Place in nav
     links: [
       { dest: 'bathroom', time: 1 },

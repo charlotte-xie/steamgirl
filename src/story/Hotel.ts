@@ -690,6 +690,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Room 101',
     description: 'A compact but well-appointed hotel room with a single bed, a writing desk, and a window overlooking the city rooftops. The bedsheets are crisp, the fixtures polished, and a small steam radiator keeps the chill at bay.',
     image: '/images/dorm-suite.jpg',
+    isBedroom: true,
     secret: true,
     links: [
       { dest: 'nice-bathroom', time: 1, label: 'En-Suite Bathroom' },

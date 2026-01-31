@@ -799,6 +799,11 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.currentLocation === params.location
   },
 
+  /** Check if player is in a bedroom (any location with isBedroom flag) */
+  inBedroom: (game: Game): boolean => {
+    return game.location.template.isBedroom === true
+  },
+
   /** Check if currently in a scene (has options) */
   inScene: (game: Game): boolean => {
     return game.inScene
@@ -1029,8 +1034,9 @@ const coreScripts: Record<string, ScriptFn> = {
    * Conscious wait at current location.
    *
    * Time advances in 10-minute chunks. After each chunk, event hooks fire:
-   *   1. NPC onWait — for each NPC present, receives { npc, minutes }
-   *   2. Location onWait — receives { minutes }
+   *   1. NPC maybeApproach + onWait — for each NPC present
+   *   2. NPC onWaitAway — for each NPC NOT present (e.g. boyfriend visits)
+   *   3. Location onWait — receives { minutes }
    *
    * If any hook creates a scene (adds options), the wait stops immediately.
    * The optional `then` script only runs if no scene was created.
@@ -1069,6 +1075,15 @@ const coreScripts: Record<string, ScriptFn> = {
           game.run(npc.template.onWait, { npc: npcId, minutes: chunk })
         }
         if (game.inScene) return // NPC created a scene — stop waiting
+      }
+
+      // Away NPC hooks — NPCs not present may visit (e.g. boyfriend dropping by)
+      for (const [, npc] of game.npcs) {
+        if (game.npcsPresent.includes(npc.id)) continue // already handled above
+        if (npc.template.onWaitAway) {
+          game.run(npc.template.onWaitAway)
+          if (game.inScene) return
+        }
       }
 
       // Location onWait hook — ambient events, random encounters

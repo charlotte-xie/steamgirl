@@ -36,6 +36,8 @@ export interface LocationDefinition {
    * Fires after NPC onWait hooks (so NPC interactions take priority over ambient events).
    */
   onWait?: Script
+  /** If true, this is a bedroom — NPCs can visit/stay overnight. */
+  isBedroom?: boolean
   secret?: boolean // If true, location starts as undiscovered (discovered = false)
   /** If true, this is a main area for travel (e.g. City Centre, Station). Links between two mainLocation sites appear under Travel. */
   mainLocation?: boolean

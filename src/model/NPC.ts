@@ -80,6 +80,19 @@ export interface NPCDefinition {
    * Fires before the location's onWait. Use NPC state (e.g. nameKnown) to gate one-shot events.
    */
   onWait?: Script
+  /**
+   * Called each 10-minute chunk during waits for NPCs that are NOT at the player's location.
+   * Use for NPCs that can visit the player (e.g. boyfriend dropping by in the evening).
+   * May create a scene to interrupt the wait.
+   */
+  onWaitAway?: Script
+  /**
+   * Called when followSchedule is about to move this NPC away from the player's location.
+   * Fires only if the player is awake and not already in a scene.
+   * Use for farewell scenes (e.g. boyfriend leaving in the morning).
+   * The NPC's location is updated after this script runs — no need to call moveNpc.
+   */
+  onLeavePlayer?: Script
   /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */
   scripts?: Record<string, Script>
 }
@@ -145,6 +158,8 @@ export class NPC {
     const currentDay = game.date.getDay() // 0=Sunday
 
     // Find matching schedule entry
+    let newLocation: string | null = null
+    let found = false
     for (const entry of schedule) {
       const [startHour, endHour, locationId, days] = entry
 
@@ -162,13 +177,23 @@ export class NPC {
       }
 
       if (matches) {
-        this.location = locationId
-        return
+        newLocation = locationId
+        found = true
+        break
       }
     }
 
-    // No schedule matches, set location to null
-    this.location = null
+    // If the NPC is currently at the player's location and about to leave,
+    // fire the onLeavePlayer hook (if player is awake and not in a scene).
+    if (this.location === game.currentLocation && newLocation !== this.location) {
+      const hook = this.template.onLeavePlayer
+      if (hook && !game.player.sleeping && !game.inScene) {
+        game.scene.npc = this.id
+        game.run(hook)
+      }
+    }
+
+    this.location = found ? newLocation : null
   }
 
   /** Gets the NPC definition template. */

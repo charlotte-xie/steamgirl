@@ -634,6 +634,10 @@ export const hasStat = (stat: string, min?: number, max?: number): Instruction =
 export const inLocation = (location: string): Instruction =>
   run('inLocation', { location })
 
+/** Check if player is in a bedroom (any location with isBedroom flag) */
+export const inBedroom = (): Instruction =>
+  run('inBedroom', {})
+
 /** Check if currently in a scene (has options) */
 export const inScene = (): Instruction =>
   run('inScene', {})

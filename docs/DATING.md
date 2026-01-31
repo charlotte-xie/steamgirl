@@ -239,6 +239,129 @@ dateScene: cond(
 - **Relationship proposals** are gated by affection thresholds, `not(hasRelationship())`, and `chance()` to avoid repetition
 - **Breakup** is offered as an option during chat interactions when a relationship exists
 
+## NPC Visits
+
+NPCs can visit the player in bedroom locations (`isBedroom: true` on the location definition). This is separate from the date system — visits are casual drop-ins that happen outside of dates.
+
+### Location Flag
+
+Mark any location where NPCs can stay overnight:
+
+```typescript
+bedroom: {
+  name: 'Bedroom',
+  isBedroom: true,
+  // ...
+}
+```
+
+The `inBedroom()` DSL predicate checks this flag. Use it instead of hardcoding location IDs.
+
+### Visit Triggers
+
+Visits use the `onWaitAway` NPC hook, which fires during waits for NPCs that are **not** at the player's location. The standard `onWait` only fires for present NPCs, so `onWaitAway` is needed for NPCs arriving from elsewhere.
+
+```typescript
+onWaitAway: (game: Game) => {
+  if (
+    game.player.relationships.get('my-npc') === 'boyfriend' &&
+    game.location.template.isBedroom &&
+    game.hourOfDay >= 18 && game.hourOfDay < 22 &&
+    !game.player.hasCard('date') &&
+    Math.random() < 0.2
+  ) {
+    game.scene.npc = 'my-npc'
+    game.scene.hideNpcImage = false
+    game.run('interact', { script: 'npcVisit' })
+  }
+},
+```
+
+### Keeping NPCs in Bedrooms
+
+In `onMove`, check the `isBedroom` flag to keep a visiting NPC in place while the player is there:
+
+```typescript
+onMove: (game: Game) => {
+  const npc = game.getNPC('my-npc')
+  const loc = npc.location ? game.getLocation(npc.location) : undefined
+  if (loc?.template.isBedroom && npc.location === game.currentLocation) return
+  npc.followSchedule(game, [[9, 18, 'station']])
+},
+```
+
+When the player leaves, the next `onMove` tick returns the NPC to their normal schedule.
+
+### Chat Loop Pattern
+
+Room interactions use a repeatable chat loop — a `seq` with `random` flavour text and options that cycle back:
+
+```typescript
+lodgingsChat: seq(
+  random(
+    say('Random line 1.'),
+    say('Random line 2.'),
+  ),
+  option('Chat', 'npc:lodgingsChat'),
+  option('Kiss him', 'npc:lodgingsKiss'),
+  npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
+  option('Ask him to leave', 'npc:leaveLodgings'),
+),
+```
+
+### Exiting Chat Without Removing the NPC
+
+Use `npcLeaveOption` with custom text and label to end the conversation while the NPC stays in the room. The player can approach them again to resume chatting.
+
+```typescript
+// Ends the scene — NPC stays in location, player returns to free movement
+npcLeaveOption('You leave them to it for now.', undefined, 'Do something else')
+```
+
+This is distinct from a "leave" script that calls `moveNpc(npcId, null)` to actually send the NPC away:
+
+```typescript
+// Sends NPC away — they return to their normal schedule
+leaveLodgings: seq(
+  say('Right. I should probably head off.'),
+  moveNpc('my-npc', null),
+),
+```
+
+### Chaining from Dates
+
+A date's walk-home scene can offer a visit invitation. End the date first, then transition into the visit:
+
+```typescript
+branch('Come back to mine',
+  endDate(),                          // clean up date card first
+  move('bedroom', 5),
+  moveNpc('my-npc', 'bedroom'),
+  say('I thought you\'d never ask.'),
+  npcInteract('lodgingsChat'),        // enter the visit chat loop
+),
+branch('Goodnight',
+  say('Goodnight, love.'),
+  endDate(),
+),
+```
+
+### onApproach Routing
+
+When an NPC can be in multiple room types, use `cond` with location checks in `onApproach`:
+
+```typescript
+onApproach: seq(
+  cond(
+    inLocation('dorm-suite'),
+    npcInteract('roomChat'),       // hotel room chat
+    inBedroom(),
+    npcInteract('lodgingsChat'),   // lodgings chat
+    seq(/* ...normal approach... */),
+  ),
+),
+```
+
 ## Writing Date Scenes
 
 ### Linear Dates

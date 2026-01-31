@@ -89,6 +89,29 @@ function NpcDetail({ npc }: { npc: NPC }) {
               ))}
             </div>
           )}
+
+          <div className="npc-detail-info">
+            <span className="text-muted">Relationship:</span>{' '}
+            <select
+              value={game.player.relationships.get(npc.id) ?? ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  game.player.relationships.set(npc.id, e.target.value)
+                } else {
+                  game.player.relationships.delete(npc.id)
+                }
+                setTick(t => t + 1)
+                refresh()
+              }}
+            >
+              <option value="">None</option>
+              <option value="boyfriend">Boyfriend</option>
+              <option value="girlfriend">Girlfriend</option>
+              <option value="partner">Partner</option>
+              <option value="rival">Rival</option>
+              <option value="enemy">Enemy</option>
+            </select>
+          </div>
         </>
       )}
 

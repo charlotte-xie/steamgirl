@@ -47,6 +47,7 @@ import {
   hasStat, npcStat, skillCheck,
   run, and, not, hasCard, inLocation,
   hasRelationship, setRelationship, chance,
+  inBedroom,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -362,13 +363,15 @@ registerNPC('tour-guide', {
 
   onMove: (game: Game) => {
     const npc = game.getNPC('tour-guide')
+    const loc = npc.location ? game.getLocation(npc.location) : undefined
 
-    // If Rob is visiting the hotel room, keep him there until the player leaves
-    if (npc.location === 'dorm-suite' && game.currentLocation === 'dorm-suite') {
+    // Stay in bedroom with the player outside of work hours
+    if (loc?.template.isBedroom && npc.location === game.currentLocation && game.hourOfDay < 9) {
       return
     }
 
     // Normal schedule — date positioning is handled by the Date card's afterUpdate
+    // If Rob is leaving the player's location, followSchedule fires onLeavePlayer
     npc.followSchedule(game, [
       [9, 18, 'station'],
     ])
@@ -378,11 +381,28 @@ registerNPC('tour-guide', {
     handleDateApproach(game, 'tour-guide')
   },
 
+  onLeavePlayer: npcInteract('morningDepart'),
+
   onWait: (game: Game) => {
-    // If you wait at the station and haven't met Rob yet, he approaches you
+    // Auto-greet at station if not yet met
     const npc = game.getNPC('tour-guide')
     if (npc.nameKnown === 0) {
       game.run('approach', { npc: 'tour-guide' })
+    }
+  },
+
+  onWaitAway: (game: Game) => {
+    // Random evening visit — boyfriend drops by your room
+    if (
+      game.player.relationships.get('tour-guide') === 'boyfriend' &&
+      game.location.template.isBedroom &&
+      game.hourOfDay >= 18 && game.hourOfDay < 22 &&
+      !game.player.hasCard('date') &&
+      Math.random() < 0.2
+    ) {
+      game.scene.npc = 'tour-guide'
+      game.scene.hideNpcImage = false
+      game.run('interact', { script: 'robVisit' })
     }
   },
 
@@ -399,10 +419,12 @@ registerNPC('tour-guide', {
   ),
 
   onApproach: seq(
-    // In the hotel room — random impressed comments
     cond(
+      // In a bedroom — dispatch to appropriate chat
       inLocation('dorm-suite'),
       npcInteract('roomChat'),
+      inBedroom(),
+      npcInteract('lodgingsChat'),
       seq(
         // Greeting varies based on shared history and relationship
         cond(
@@ -506,8 +528,8 @@ registerNPC('tour-guide', {
       when(hasRelationship('boyfriend'),
         option('Break up', 'npc:breakup'),
       ),
+      npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
       option('Depart Room', 'npc:leaveRoom'),
-      npcLeaveOption(),
     ),
 
     // Leave the hotel room together
@@ -516,6 +538,137 @@ registerNPC('tour-guide', {
       say('Right you are. Thanks for the visit — quite the treat!'),
       moveNpc('tour-guide', null),
       move('hotel', 1),
+    ),
+
+    // ----------------------------------------------------------------
+    // LODGINGS VISIT — boyfriend drops by your room
+    // ----------------------------------------------------------------
+    robVisit: scenes(
+      scene(
+        'A knock at your door. You open it to find Rob on the landing, slightly out of breath.',
+        moveNpc('tour-guide', 'bedroom'),
+        showNpcImage(),
+        random(
+          say('I was passing through the backstreets and thought I\'d see if you were in. Is this all right?'),
+          say('Evening, love. I finished up early and couldn\'t stop thinking about you.'),
+          say('I couldn\'t sleep. Kept thinking about you. So I thought... why not?'),
+        ),
+        addNpcStat('affection', 1, { hidden: true, max: 70 }),
+        branch('Come in',
+          'You step aside and he slips through the doorway.',
+          npcInteract('lodgingsChat'),
+        ),
+        branch('It\'s not a good time',
+          say('Oh — of course. Sorry, I should have sent word first.'),
+          'He gives an apologetic smile and backs away.',
+          say('I\'ll see you at the station. Goodnight, love.'),
+          addNpcStat('affection', -5),
+          moveNpc('tour-guide', null),
+        ),
+      ),
+    ),
+
+    // Repeatable lodgings interaction — more intimate than hotel roomChat
+    lodgingsChat: seq(
+      random(
+        say('It\'s cosy in here. I like it. It\'s very you.'),
+        say('Have you read all these books? I can barely manage a newspaper.'),
+        seq(
+          say('It\'s nice being somewhere quiet with you. No crowds, no steam engines.'),
+          'He settles into the chair by your desk, looking perfectly at home.',
+        ),
+        say('I like your room. It\'s small but it\'s... warm. Like you.'),
+        say('This is much better than the station. Better company, too.'),
+      ),
+      option('Chat', 'npc:lodgingsChat'),
+      option('Kiss him', 'npc:lodgingsKiss'),
+      npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
+      option('Ask him to leave', 'npc:leaveLodgings'),
+    ),
+
+    // Intimate moment — kissing in your room
+    lodgingsKiss: seq(
+      random(
+        seq(
+          'You lean over and kiss him. He makes a small surprised sound, then melts into it.',
+          say('What was that for?'),
+          'You tell him you felt like it.',
+          say('Feel like it more often.'),
+        ),
+        seq(
+          'He\'s mid-sentence when you kiss him. He forgets whatever he was saying.',
+          say('I — what were we talking about?'),
+          'He grins, dazed.',
+        ),
+        seq(
+          'You sit beside him and rest your head on his shoulder. He turns and presses his lips to your hair, then your forehead, then finds your mouth.',
+          'The kiss is slow and unhurried. There\'s nowhere either of you needs to be.',
+        ),
+      ),
+      addNpcStat('affection', 2, { max: 75, hidden: true }),
+      time(5),
+      option('Chat', 'npc:lodgingsChat'),
+      option('Kiss him again', 'npc:lodgingsKiss'),
+      npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
+      option('Ask him to leave', 'npc:leaveLodgings'),
+    ),
+
+    // Rob leaves your room
+    leaveLodgings: seq(
+      say('Right. I should probably head off. Early start tomorrow.'),
+      'He stands and stretches, then pauses at the door.',
+      random(
+        seq(
+          say('Goodnight, love.'),
+          'He kisses you gently, then slips out.',
+        ),
+        seq(
+          say('Sleep well. Dream of me.'),
+          'He winks, then disappears down the stairwell.',
+        ),
+        seq(
+          say('I\'ll see you tomorrow. At the station, if not before.'),
+          'He squeezes your hand, then he\'s gone.',
+        ),
+      ),
+      moveNpc('tour-guide', null),
+    ),
+
+    // Rob says goodbye in the morning before leaving for work
+    morningDepart: seq(
+      random(
+        seq(
+          'Rob pulls on his boots and reaches for his cap.',
+          say('Right — I\'d better head to the station. Early shift.'),
+          'He pauses at the door and looks back at you.',
+          say('Last night was lovely. I\'ll think about it all day.'),
+        ),
+        seq(
+          'Rob stretches and checks his pocket watch, then winces.',
+          say('Is that the time? I\'m going to be late.'),
+          'He scrambles for his coat, then stops to kiss you on the cheek.',
+          say('I\'ll see you later, yeah?'),
+        ),
+        seq(
+          'Rob buttons his coat and tucks his guidebook under his arm.',
+          say('I don\'t want to go. But if I\'m late again, the stationmaster will have my head.'),
+          'He grins ruefully.',
+        ),
+        seq(
+          say('I could stay, you know. Call in sick. Spend the whole day here with you.'),
+          'He\'s already putting his boots on as he says it. You both know he won\'t.',
+          say('No, you\'re right. Duty calls.'),
+        ),
+      ),
+      branch('Kiss him goodbye',
+        'You pull him close and kiss him. He lingers a moment longer than he should.',
+        say('Now I\'m definitely going to be late.'),
+        'He grins and slips out the door.',
+      ),
+      branch('See you later',
+        say('See you later, love.'),
+        'He squeezes your hand, then he\'s gone.',
+      ),
     ),
 
     // ----------------------------------------------------------------
@@ -1064,18 +1217,26 @@ function robWalkHome(): Instruction[] {
     scene(
       showNpcImage(),
       cond(
-        // ── Boyfriend farewell: natural kiss, no asking ──
+        // ── Boyfriend farewell: kiss + offer to come back to yours ──
         hasRelationship('boyfriend'),
         seq(
           'He stops under a streetlamp and turns to you. The amber light catches the warmth in his eyes.',
           say('I never get tired of this, you know. Being with you.'),
           'He cups your face gently and kisses you — unhurried, sure, the kind of kiss that feels like coming home.',
           addNpcStat('affection', 3, { hidden: true, max: 70 }),
-          say('Same time next time?'),
-          'He grins. It\'s not really a question.',
-          say('Get home safe, love. I\'ll see you soon.'),
-          'He squeezes your hand one last time, then walks into the steam, whistling.',
-          endDate(),
+          say('I don\'t want tonight to end just yet.'),
+          branch('Come back to mine',
+            endDate(),
+            move('bedroom', 5),
+            moveNpc('tour-guide', 'bedroom'),
+            say('I thought you\'d never ask.'),
+            npcInteract('lodgingsChat'),
+          ),
+          branch('Goodnight',
+            say('Goodnight, love. I\'ll see you soon.'),
+            'He squeezes your hand one last time, then walks into the steam, whistling.',
+            endDate(),
+          ),
         ),
         // ── High affection: Rob asks to kiss you ──
         npcStat('affection', { min: 40 }),
