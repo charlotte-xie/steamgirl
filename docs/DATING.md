@@ -364,9 +364,11 @@ onApproach: seq(
 
 ## Writing Date Scenes
 
-### Linear Dates
+Date scenes use the standard DSL (`scenes()`, `branch()`, `cond()`, `skillCheck()`). See [SCRIPTING.md](./SCRIPTING.md) for the full DSL reference.
 
-The simplest date is a linear `scenes()` sequence:
+### Key Patterns
+
+**Linear date** -- a `scenes()` sequence ending with `endDate()`:
 
 ```typescript
 dateScene: scenes(
@@ -376,134 +378,23 @@ dateScene: scenes(
 )
 ```
 
-Each array is one scene. `scenes()` adds automatic Continue buttons between them. The last scene should call `dateComplete` to trigger the completion script.
-
-### Branching with Player Choices
-
-Add options within a scene to let the player choose a path. When a scene contains options, `scenes()` does *not* add an automatic Continue -- the player's choice drives progression.
-
-```typescript
-scenes(
-  // Scene 1: Set-up
-  [say('"Shall we go to the lake or the pier?"')],
-  // Scene 2: Player chooses
-  [
-    branch('The lake', [
-      [move('lake', 10), say('"The lake is beautiful tonight."')],
-      [say('"Glad we came here."'), endDate()],
-    ]),
-    branch('The pier', [
-      [move('pier', 10), say('"I love the pier at night."')],
-      [say('"What a view."'), endDate()],
-    ]),
-  ],
-)
-```
-
-`branch(label, scenes)` hands control to the scenes engine with a different sequence of scenes depending on the player's choice. If there are scenes after the branching scene, the engine automatically continues to them after the branch finishes.
-
-### Branching with Conditions
-
-Use `cond()` inside a scene to gate content on stats, items, or affection:
-
-```typescript
-scenes(
-  [
-    say('"That was lovely."'),
-    // Only attempt a kiss if affection is high enough
-    cond(
-      npcStat('affection', { min: 40 }),
-      seq(
-        say('"May I... may I kiss you?"'),
-        branch('Kiss him', text('You share a gentle kiss.'), addNpcStat('affection', 5)),
-        branch('Not yet', say('"Of course. No rush."')),
-      ),
-      // Default: too early for a kiss
-      say('"I had a really lovely time tonight."'),
-    ),
-  ],
-)
-```
-
-### Skill Check Gates
-
-Use `skillCheck()` to gate special events on player ability:
-
-```typescript
-// As a predicate in cond()
-cond(
-  skillCheck('Perception', 10),
-  seq(
-    text('You notice a shooting star streak across the sky.'),
-    say('Did you see that? Make a wish!'),
-  ),
-  text('The stars are beautiful tonight.'),
-)
-
-// With inline callbacks
-skillCheck('Charm', 15,
-  seq(say('You always know just what to say.'), addNpcStat('affection', 3)),
-  'You stumble over your words, but he smiles anyway.',
-)
-```
-
-### Intimacy Choices
-
-A common pattern is offering the player a choice between showing more intimacy or holding back:
+**Branching** -- `branch()` inside a scene lets the player choose a path. Scenes after the branching scene auto-resume:
 
 ```typescript
 [
-  text('He moves a little closer on the bench.'),
-  branch('Lean against him',
-    text('You lean against his shoulder. He tenses for a moment, then relaxes.'),
-    addNpcStat('affection', 3),
-    say('This is nice.'),
-  ),
-  branch('Stay where you are',
-    text('You keep a comfortable distance. He glances at you and smiles.'),
-    say('It\'s peaceful here, isn\'t it?'),
-  ),
-]
+  branch('The lake', [
+    [move('lake', 10), say('"The lake is beautiful tonight."')],
+  ]),
+  branch('The pier', [
+    [move('pier', 10), say('"I love the pier at night."')],
+  ]),
+],
+[say('"I had a wonderful time."'), endDate()],  // runs after either branch
 ```
 
-### Exiting to Common Scripts
+**Conditional content** -- use `cond()` with `npcStat()` to fork scenes by affection or stats. Nest `scenes()` inside `cond()` for entirely different sequences per state.
 
-A date scene can break out to any common script -- NPC interact scripts, shared mechanics, or custom functions:
-
-```typescript
-// Run an NPC interaction script mid-date
-[
-  say('"Want to grab a drink from that stall?"'),
-  option('Sure', 'interact', { script: 'buyDrink' }),
-  branch('No thanks', text('You politely decline.')),
-]
-
-// Call any global script
-[endDate()]
-```
-
-This lets date scenes share code with the rest of the game rather than duplicating behaviour.
-
-### Nested Scenes in Branches
-
-For complex branching, nest `scenes()` inside `cond()`:
-
-```typescript
-cond(
-  npcStat('affection', { min: 30 }),
-  scenes(
-    [say('"I know a secret spot. Follow me!"')],
-    [text('He leads you to a hidden garden.'), say('"Nobody else knows about this place."')],
-    [addNpcStat('affection', 5), endDate()],
-  ),
-  scenes(
-    [say('"Shall we head back? It\'s getting late."')],
-    [text('You walk back through the quiet streets.'), endDate()],
-  ),
-)
-```
-
-This produces entirely different scene sequences based on the NPC's affection level.
+**Intimacy choices** -- offer `branch()` pairs (lean in / hold back) to let the player shape the dynamic.
 
 ## Invitation Mechanics
 

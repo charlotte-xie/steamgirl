@@ -213,39 +213,7 @@ interface LocationActivity {
 
 ## NPC
 
-NPCs have a definition (name, portrait, dialogue scripts, schedule) and mutable instance state (location, relationship stats).
-
-### Key Stats
-
-- `approachCount` -- Times the player has talked to this NPC
-- `nameKnown` -- Whether the player knows the NPC's name (0 = unknown)
-- `affection` -- Relationship value
-
-### Scheduling
-
-```typescript
-npc.followSchedule(game, [
-  [8, 18, 'market'],     // 8am--6pm at market
-  [20, 2, 'tavern'],     // 8pm--2am at tavern (wraps midnight)
-])
-```
-
-Called from the NPC's `onMove` hook when the hour changes.
-
-### Dialogue Hooks
-
-- `onFirstApproach` -- First conversation with player
-- `onApproach` -- Subsequent conversations
-- `onWait` -- When NPC is present and player is waiting
-- `scripts` -- Named NPC-specific scripts, accessed via the `interact` system
-
-### NPC Fluent API
-
-```typescript
-npc.say('Hello!')                        // Add NPC speech in their colour
-   .option('Chat', 'onGeneralChat')      // Add interaction option
-   .leaveOption('Goodbye.', 'See you!')  // Standard exit button
-```
+NPCs have a definition (name, portrait, dialogue scripts, schedule) and mutable instance state (location, relationship stats). Key stats: `approachCount`, `nameKnown`, `affection`. NPCs move via `followSchedule()` in their `onMove` hook and interact via `onApproach`/`onFirstApproach` hooks and named scripts. See [NPCS.md](./NPCS.md) for full details.
 
 ## Serialisation
 

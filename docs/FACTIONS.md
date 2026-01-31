@@ -76,157 +76,54 @@ Defaults to `value > 0` when no min/max specified (same convention as `npcStat`)
 
 ## Usage Patterns
 
-### 1. Flavour Text and Branching
+### Gating Content
 
-Gate dialogue variations and scene branches on reputation. This is the simplest and most common use.
+Use `hasReputation` in `cond()`, `when()`, and `gatedBranch()` to gate dialogue, scene branches, and options:
 
 ```typescript
 // Different greeting based on reputation
 cond(
   hasReputation('gangster', { min: 40 }),
-  seq(
-    'The bouncer steps aside without a word.',
-    say('Evening, miss. Go right in.'),
-  ),
+  say('Evening, miss. Go right in.'),
   hasReputation('socialite', { min: 30 }),
-  seq(
-    'The bouncer checks the guest list and nods.',
-    say('Your name\'s on the list. Enjoy your evening.'),
-  ),
-  // default
-  seq(
-    'The bouncer looks you up and down.',
-    say('And you are...?'),
-  ),
+  say('Your name\'s on the list. Enjoy your evening.'),
+  say('And you are...?'),
 )
-```
 
-For random flavour text where some options are reputation-gated, use `random()` with `when()` entries. Only entries whose conditions pass join the pool; one is picked at random. Falsy entries are silently ignored (supports `&&` patterns).
-
-```typescript
-// Random flavour — some options gated by reputation
+// Reputation-gated entries in random pools
 random(
-  when(hasReputation('gangster', { min: 40 }),
-    'A woman crosses the street to avoid you. You pretend not to notice.',
-  ),
   when(hasReputation('gangster', { min: 40 }),
     'Two men at the corner fall silent as you pass. One tips his cap.',
   ),
-  when(hasReputation('socialite', { min: 30 }),
-    'A woman in a fine coat gives you a knowing nod as she passes.',
-  ),
-  npc.affection > 10 && say('He smiles at you as you walk by.'),
   'The street is quiet. Nothing catches your eye.',
-  'You walk on, unremarked.',
 )
 ```
 
-If no conditions pass and no defaults are present, nothing happens. This makes `random` the go-to helper for ambient reputation-flavoured events.
+### NPC Behaviour
+
+NPCs should adjust tone and options based on faction reputation. Check reputation in `onApproach` and scripts:
 
 ```typescript
-// Unlock a scene branch at a reputation threshold
-gatedBranch(hasReputation('academic', { min: 50 }),
-  'Quote the relevant theorem',
-  'The professor raises an eyebrow, then smiles.',
-  say('Well! Someone has been reading ahead.'),
-  addNpcStat('affection', 3, { max: 20 }),
-)
-```
-
-### 2. NPC Treatment Based on Faction
-
-NPCs that share a faction with the player's reputation should adjust their behaviour. This is handled in the NPC's `onApproach` and `onGeneralChat` scripts using `hasReputation` checks.
-
-```typescript
-onApproach: (game: Game) => {
-  const npc = game.npc
-
-  if (game.run(hasReputation('gangster', { min: 40 }))) {
-    // High gangster rep: this NPC treats you with wary deference
-    game.add('He straightens up when he sees you. Word travels fast in Lowtown.')
-    npc.say('Didn\'t realise you were... connected. What do you need?')
-    npc.chat()
-    return
-  }
-
-  // Standard approach
-  game.add('He gives you a suspicious once-over.')
+if (game.run(hasReputation('gangster', { min: 40 }))) {
+  game.add('He straightens up. Word travels fast in Lowtown.')
+  npc.say('What do you need?')
+} else {
   npc.say('What do you want?')
-  npc.chat()
 }
 ```
 
-For NPCs tagged with a faction, check the relevant tracks to decide tone, available options, and dialogue flavour. A Lowtown NPC might unlock jobs or information at `gangster >= 30`. A School NPC might offer tutoring at `academic >= 20`.
-
-### 3. Modifying NPC Stat Gains
-
-Reputation should influence how easily the player gains stats with specific NPCs. This is NPC-specific logic -- each NPC decides which reputations matter and how they affect gains.
-
-The pattern: check reputation in the NPC's scripts and adjust `addNpcStat` calls accordingly.
+Use reputation as a **bonus modifier** for NPC stat gains -- small (+1 to +3), capped, and `hidden: true`:
 
 ```typescript
-// Timmy Bug: gangster rep makes respect easier to gain
-buySpice: (g: Game) => {
-  const npc = g.npc
-  // ... purchase logic ...
-
-  // Base affection gain
-  g.run(addNpcStat('affection', 3, { max: 15 }))
-
-  // Gangster rep: Timmy respects your connections more easily
-  if (g.run(hasReputation('gangster', { min: 20 }))) {
-    g.run(addNpcStat('respect', 2, { max: 40, hidden: true }))
-  }
-
-  // Junkie rep: Timmy warms to a fellow user
-  if (g.run(hasReputation('junkie', { min: 10 }))) {
-    g.run(addNpcStat('affection', 2, { max: 25, hidden: true }))
-  }
+g.run(addNpcStat('affection', 3, { max: 15 }))  // base gain
+if (g.run(hasReputation('gangster', { min: 20 }))) {
+  g.run(addNpcStat('respect', 2, { max: 40, hidden: true }))  // rep bonus
 }
 ```
 
-This keeps the logic local to each NPC -- different NPCs care about different reputations. Jonny might give bonus affection at high `gangster`. A professor might be harder to impress at high `bad-girl`. A socialite might respond to `entertainer`.
+### Random Events
 
-Guidelines:
-- Use reputation as a **bonus modifier**, not as the only source of NPC stat gains. Reputation smooths the path; direct interactions still matter.
-- Keep bonuses small (+1 to +3) and capped. Reputation should make things easier, not trivial.
-- Use `hidden: true` for reputation-based bonus gains so the player doesn't see a flood of stat messages.
-
-### 4. Random Event Triggers
-
-Reputation can trigger random flavour events during waits and travel. Check reputation in `onWait` hooks (locations or NPCs) and `onArrive` hooks.
-
-```typescript
-// Location onWait: people react to your reputation
-onWait: (g: Game) => {
-  if (g.run(hasReputation('gangster', { min: 50 }))) {
-    if (Math.random() < 0.15) {
-      const events = [
-        'A woman crosses the street to avoid you. You pretend not to notice.',
-        'Two men at the corner fall silent as you pass. One tips his cap.',
-        'A street vendor gives you an extra portion without being asked. You don\'t comment on it.',
-      ]
-      g.add(events[Math.floor(Math.random() * events.length)])
-    }
-  }
-
-  if (g.run(hasReputation('socialite', { min: 40 }))) {
-    if (Math.random() < 0.1) {
-      const events = [
-        'A woman in a fine coat gives you a knowing nod as she passes.',
-        'A carriage slows beside you. The passenger peers out, then waves.',
-      ]
-      g.add(events[Math.floor(Math.random() * events.length)])
-    }
-  }
-}
-```
-
-Guidelines:
-- Keep random event probability low (5--20%) to avoid repetition.
-- Use multiple flavour texts and pick randomly for variety.
-- Don't gate critical content behind random reputation events -- they're flavour, not progression.
-- Higher reputation thresholds should trigger more dramatic reactions.
+Use reputation checks in `onWait` hooks for ambient flavour (5--20% chance). Use `random()` with multiple texts for variety. Don't gate progression behind random reputation events.
 
 ## Earning Reputation
 

@@ -255,18 +255,6 @@ game.removeCard('peckish', true)     // Silent removal (no messages or hooks)
 
 Quest cards are not removed when completed -- they remain with `completed: true` (or `failed: true`) so they continue to display on the quests screen.
 
-## Quest States
-
-Quests use custom properties for tracking:
-
-| Property | Meaning |
-|----------|---------|
-| `completed` | Quest objective achieved |
-| `failed` | Quest can no longer be completed |
-| *(neither)* | Quest is ongoing |
-
-The `afterUpdate` hook typically checks game state each action and sets these flags. The UI displays quests with colour-coded status (blue for ongoing, green for completed, red for failed).
-
 ## UI Display
 
 Cards appear in two places:

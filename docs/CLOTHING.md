@@ -111,25 +111,18 @@ registerItemDefinition('blouse-silk', extendItem('base-top', {
 
 ## Stat Modifiers
 
-Worn clothing can modify player stats via the `calcStats` callback. The callback uses `player.modifyStat(statName, bonus)` to apply temporary bonuses or penalties:
+Worn clothing can modify player stats via the `calcStats` callback:
 
 ```typescript
 calcStats: (player) => {
-  player.modifyStat('Charm', 5)    // Bonus
-  player.modifyStat('Agility', -3) // Penalty
+  player.modifyStat('appearance', 5)  // High-quality item bonus
+  player.modifyStat('Agility', -3)    // Movement penalty
 }
 ```
 
-Clothing also affects **impressions** (`decency`, `appearance`, `attraction`) — computed scores that determine how NPCs react to the player. Use `appearance` bonuses for high-quality items; the base appearance score caps at 50 from coverage alone. See [AUTHORING.md](./AUTHORING.md#impressions).
+Clothing also affects **impressions** (`decency`, `appearance`, `attraction`) — computed scores that determine how NPCs react to the player. The base appearance score caps at 50 from coverage alone; use `appearance` bonuses on high-quality items to push higher. See [AUTHORING.md](./AUTHORING.md#impressions).
 
-These modifiers are **transient** -- they are recalculated from scratch every time `player.calcStats()` runs. The calculation flow is:
-
-1. Copy `basestats` to `stats`
-2. Apply `calcStats` from each **worn** item (unworn wearable items are skipped)
-3. Apply `calcStats` from active cards/effects
-4. Clamp all stats to 0--100
-
-Multi-position items (like dresses) apply their `calcStats` callback once, not per position.
+Modifiers are **transient** -- recalculated from scratch each `player.calcStats()` call (see [CARDS.md](./CARDS.md#calcstats----stat-modification) for the full calculation order). Multi-position items apply their callback once, not per position.
 
 ## Wearing and Removing Items
 
