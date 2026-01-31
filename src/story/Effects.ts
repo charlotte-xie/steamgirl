@@ -709,12 +709,8 @@ export function freshenUp(game: Game): void {
 
 /**
  * Apply makeup. Tests the Makeup skill to determine quality:
- * - Flawless (3): pass at difficulty 40
- * - Good (2): pass at difficulty 20
- * - Passable (1): pass at difficulty 0
- * - Poor (0): fail all checks
  *
- * Each application trains the Makeup skill slightly.
+ * Applications train the Makeup skill slightly. Possible to grind to 50 this way with enough practice.
  */
 export function applyMakeup(game: Game): void {
   game.removeCard('makeup', true)
