@@ -361,7 +361,33 @@ menu(
 )
 ```
 
-## Exemplar: Hotel Bar Patron
+### NPCs That Change Over Time
+
+The same interaction should feel different depending on where the relationship stands. An NPC who has slept with the player shouldn't still be fumbling and shy. An NPC whose affection is cratering shouldn't greet the player with the same warmth as before.
+
+Use `cond()` for structural forks — entirely different paths based on relationship milestones. Use `when()` inside `random()` for graduated flavour that blends in alongside normal variants without replacing them.
+
+The key insight: **don't rewrite the whole scene for each state**. Layer conditional entries into existing random pools. A low-affection greeting should appear *sometimes*, mixed in with normal greetings, so the player notices the shift without being beaten over the head with it.
+
+Escalate gradually across thresholds. Subtle distance at first, then open hurt, then desperation. The player should feel the relationship cooling before anything dramatic happens.
+
+### Skill Checks as Story Tools
+
+Skill checks aren't just pass/fail gates — they shape how the player navigates relationships. A high-Charm player can turn someone down gently and keep the peace. A perceptive player notices the scratch on someone's hand, the shadows under their eyes, the coat buttoned wrong — and earns trust for paying attention.
+
+This means skill checks should feel like *being a person*, not gaming a stat. Charm is kindness and tact. Perception is attentiveness. The narrative should read naturally whether the check succeeds or fails — the failure isn't "you fail to be charming", it's "you don't find the right words" or "you don't notice".
+
+For romance arcs, skill checks become the lever that makes high affection achievable. Without them, the player hits a ceiling. With them, the player can push higher — but only by investing in the right skills, which means making choices elsewhere. This is the tension that drives storyline trade-offs.
+
+### NPC-Initiated Escalation
+
+Sometimes the NPC acts and the player must respond. A kiss that turns urgent. A confession that demands an answer. A sudden mood shift. Use `replaceScene()` to clear the current options and force a direct response — the player can't browse a menu while someone is asking them to come to bed.
+
+Use this sparingly. Most interactions should leave the player in control. But the moments where the NPC takes initiative — and the player has to decide *right now* — are what make relationships feel alive rather than transactional.
+
+## Exemplars
+
+### Hotel Bar Patron
 
 `src/story/Hotel.ts` demonstrates most features working together in a complete random event:
 
@@ -373,6 +399,16 @@ menu(
 - **Costume changes**: pool path with `saveOutfit`/`changeOutfit`/`wearOutfit`
 - **Parameterised farewell**: `patronKissAttempt(farewell)` with path-specific cleanup
 - **NPC-initiates escalation**: patron leans in, player responds
+
+### Rob Hayes — Long-Running Romance
+
+`src/story/npc/Rob.ts` demonstrates how a persistent NPC relationship evolves across multiple milestones:
+
+- **Behaviour that changes with history**: Post-intimacy Rob is confident where pre-intimacy Rob was shy — `cond(npcStat('madeLove'), ...)` forks narration throughout
+- **Graduated relationship warnings**: Low-affection flavour mixed into `random()` blocks at escalating thresholds, so the player feels the relationship cooling
+- **Skill checks shaping relationships**: Charm softens rejection penalties, Perception earns bonus affection — both feel like natural character traits rather than stat manipulation
+- **NPC-initiated escalation**: `replaceScene()` for moments where Rob acts and the player must respond directly
+- **Permanent consequences**: `brokeUp` stat prevents re-proposal after breakup — some doors close for good
 
 ## Key Source Files
 

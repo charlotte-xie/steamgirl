@@ -47,3 +47,7 @@ There will be romance options with various (most?) NPCs depending on the paths t
 ## Dream Girl (Rob Hayes)
 
 The easy early romance that becomes progressively harder to maintain. Rob is warm and eager from day one, but after intimacy his devotion curdles into neediness. Reaching affection 90+ requires high Charm and Perception, regular intimacy, and consistently prioritising Rob over other storylines. The title is his fantasy, not the player's. See `src/story/npc/Rob.ts` for full mechanical details.
+
+## Timmy Bug — Three Paths
+
+Timmy's story branches based on how the player engages with him. Three mutually exclusive outcomes, determined by the balance of affection, respect, and reputation. The player drifts into a path based on how they play — by the time they realise which road they're on, it's hard to turn back. **Gateway to the Underworld**: the player climbs through Jonny and Elvis, outgrowing Timmy until he's too frightened to be a friend. **Junkie Girlfriend**: spice and affection intertwine into a warm, codependent trap. **Reform**: high Charm and Perception chip away at Timmy's defences until he drops his spice and reaches for your hand instead. See `src/story/npc/Timmy.ts` for full details.
