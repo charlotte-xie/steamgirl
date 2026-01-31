@@ -94,6 +94,22 @@ function exec(game: Game, instruction: Instruction): unknown {
   return game.run(scriptName, params)
 }
 
+/**
+ * Evaluate a script result as truthy/falsy for predicates.
+ *
+ * - `true` / `false` — as-is
+ * - numbers: `> 0` is truthy, `0` and negatives are falsy
+ * - `null`, `undefined`, `''` — falsy
+ * - everything else — JS truthiness
+ *
+ * This is the single source of truth for predicate evaluation across
+ * `when`, `cond`, `not`, `and`, `or`, and gated random entries.
+ */
+function isTruthy(value: unknown): boolean {
+  if (typeof value === 'number') return value > 0
+  return !!value
+}
+
 /** Execute a sequence of instructions */
 function execAll(game: Game, instructions: Instruction[]): void {
   for (const instr of instructions) {
@@ -648,7 +664,7 @@ const coreScripts: Record<string, ScriptFn> = {
   when: (game: Game, params: { condition?: Instruction; then?: Instruction[] }) => {
     if (!params.condition || !params.then) return
     const result = exec(game, params.condition)
-    if (result) {
+    if (isTruthy(result)) {
       execAll(game, params.then)
     }
   },
@@ -659,7 +675,7 @@ const coreScripts: Record<string, ScriptFn> = {
 
     for (const branch of params.branches) {
       const result = exec(game, branch.condition)
-      if (result) {
+      if (isTruthy(result)) {
         exec(game, branch.then)
         return
       }
@@ -726,7 +742,7 @@ const coreScripts: Record<string, ScriptFn> = {
       // Check condition if gated
       if (entry.condition) {
         const result = exec(game, entry.condition)
-        if (!result) continue
+        if (!isTruthy(result)) continue
       }
 
       if (entry.isExit) {
@@ -777,22 +793,25 @@ const coreScripts: Record<string, ScriptFn> = {
     )
   },
 
-  /** Check player stat value */
-  hasStat: (game: Game, params: { stat?: string; min?: number; max?: number }): boolean => {
-    if (!params.stat) return false
+  /** Player stat: returns value (number) if no min/max, boolean if threshold specified. */
+  stat: (game: Game, params: { stat?: string; min?: number; max?: number }): number | boolean => {
+    if (!params.stat) return 0
     const value = game.player.stats.get(params.stat as StatName) ?? 0
+    // No range: return raw value (works in conditionals via isTruthy)
+    if (params.min === undefined && params.max === undefined) return value
     if (params.min !== undefined && value < params.min) return false
     if (params.max !== undefined && value > params.max) return false
     return true
   },
 
-  /** Check a faction reputation score. Defaults to rep > 0 if no min/max specified. */
-  hasReputation: (game: Game, params: { reputation?: string; min?: number; max?: number }): boolean => {
-    if (!params.reputation) return false
+  /** Faction reputation: returns value (number) if no min/max, boolean if threshold specified. */
+  reputation: (game: Game, params: { reputation?: string; min?: number; max?: number }): number | boolean => {
+    if (!params.reputation) return 0
     const value = game.player.reputation.get(params.reputation) ?? 0
+    // No range: return raw value (works in conditionals via isTruthy)
+    if (params.min === undefined && params.max === undefined) return value
     if (params.min !== undefined && value < params.min) return false
     if (params.max !== undefined && value > params.max) return false
-    if (params.min === undefined && params.max === undefined) return value > 0
     return true
   },
 
@@ -819,17 +838,22 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.inScene
   },
 
-  /** Check NPC stat value. Defaults to stat > 0 if no min/max specified. Uses scene NPC if npc omitted. */
-  npcStat: (game: Game, params: { npc?: string; stat?: string; min?: number; max?: number }): boolean => {
+  /** True when the current scene already has content (text, paragraphs, etc.) */
+  hasContent: (game: Game): boolean => {
+    return game.scene.content.length > 0
+  },
+
+  /** NPC stat: returns value (number) if no min/max, boolean if threshold specified. Uses scene NPC if npc omitted. */
+  npcStat: (game: Game, params: { npc?: string; stat?: string; min?: number; max?: number }): number | boolean => {
     const npcId = params.npc ?? game.scene.npc
-    if (!npcId || !params.stat) return false
+    if (!npcId || !params.stat) return 0
     const npc = game.npcs.get(npcId)
-    if (!npc) return false
+    if (!npc) return 0
     const value = npc.stats.get(params.stat) ?? 0
+    // No range: return raw value (works in conditionals via isTruthy)
+    if (params.min === undefined && params.max === undefined) return value
     if (params.min !== undefined && value < params.min) return false
     if (params.max !== undefined && value > params.max) return false
-    // Default: stat > 0 when no range specified
-    if (params.min === undefined && params.max === undefined) return value > 0
     return true
   },
 
@@ -889,19 +913,19 @@ const coreScripts: Record<string, ScriptFn> = {
   /** Negate a predicate */
   not: (game: Game, params: { predicate?: Instruction }): boolean => {
     if (!params.predicate) return true
-    return !exec(game, params.predicate)
+    return !isTruthy(exec(game, params.predicate))
   },
 
   /** All predicates must be true */
   and: (game: Game, params: { predicates?: Instruction[] }): boolean => {
     if (!params.predicates) return true
-    return params.predicates.every(p => exec(game, p))
+    return params.predicates.every(p => isTruthy(exec(game, p)))
   },
 
   /** Any predicate must be true */
   or: (game: Game, params: { predicates?: Instruction[] }): boolean => {
     if (!params.predicates) return false
-    return params.predicates.some(p => exec(game, p))
+    return params.predicates.some(p => isTruthy(exec(game, p)))
   },
 
   /** True with the given probability (0-1). Evaluated at runtime. */
@@ -918,6 +942,22 @@ const coreScripts: Record<string, ScriptFn> = {
   /** True when steamy content is enabled */
   steamy: (game: Game): boolean => {
     return game.settings.get('steamy') ?? false
+  },
+
+  // ── Comparison predicates ───────────────────────────────────────
+
+  /** Compare two value-returning instructions. op: '>' (default), '<', '>=', '<=', '==' */
+  compare: (game: Game, params: { a?: Instruction; b?: Instruction; op?: string }): boolean => {
+    if (!params.a || !params.b) return false
+    const a = game.run(params.a) as number
+    const b = game.run(params.b) as number
+    switch (params.op) {
+      case '<': return a < b
+      case '>=': return a >= b
+      case '<=': return a <= b
+      case '==': return a === b
+      default: return a > b
+    }
   },
 
   /** Check if at least `minutes` have elapsed since a recorded timer */

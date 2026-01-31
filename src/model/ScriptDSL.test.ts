@@ -9,8 +9,8 @@ import {
   run,
   // Predicates
   hasItem,
-  hasStat,
-  hasReputation,
+  stat,
+  reputation,
   inLocation,
   inScene,
   hasCard,
@@ -312,9 +312,9 @@ describe('ScriptDSL', () => {
         expect(hasItem('gold', 100)).toEqual(['hasItem', { item: 'gold', count: 100 }])
       })
 
-      it('hasStat() produces hasStat instruction', () => {
-        expect(hasStat('Agility', 30)).toEqual(['hasStat', { stat: 'Agility', min: 30, max: undefined }])
-        expect(hasStat('Agility', 10, 50)).toEqual(['hasStat', { stat: 'Agility', min: 10, max: 50 }])
+      it('stat() produces stat instruction', () => {
+        expect(stat('Agility', 30)).toEqual(['stat', { stat: 'Agility', min: 30, max: undefined }])
+        expect(stat('Agility', 10, 50)).toEqual(['stat', { stat: 'Agility', min: 10, max: 50 }])
       })
 
       it('inLocation() produces inLocation instruction', () => {
@@ -566,12 +566,12 @@ describe('ScriptDSL', () => {
         expect(game.run(hasItem('nonexistent'))).toBe(false)
       })
 
-      it('hasStat checks player stats', () => {
+      it('stat checks player stats', () => {
         // Player starts with Agility 30
-        expect(game.run(hasStat('Agility', 30))).toBe(true)
-        expect(game.run(hasStat('Agility', 50))).toBe(false)
-        expect(game.run(hasStat('Agility', 0, 50))).toBe(true)
-        expect(game.run(hasStat('Agility', 0, 20))).toBe(false)
+        expect(game.run(stat('Agility', 30))).toBe(true)
+        expect(game.run(stat('Agility', 50))).toBe(false)
+        expect(game.run(stat('Agility', 0, 50))).toBe(true)
+        expect(game.run(stat('Agility', 0, 20))).toBe(false)
       })
 
       it('inLocation checks current location', () => {
@@ -770,8 +770,8 @@ describe('ScriptDSL', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0) // always pick first eligible
         try {
           game.run(random(
-            when(hasReputation('gangster', { min: 40 }), text('Feared')),
-            when(hasReputation('socialite', { min: 30 }), text('Posh')),
+            when(reputation('gangster', { min: 40 }), text('Feared')),
+            when(reputation('socialite', { min: 30 }), text('Posh')),
             text('Default'),
           ))
           // Pool: [Feared, Default] (socialite condition fails). Index 0 → Feared
@@ -787,7 +787,7 @@ describe('ScriptDSL', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0)
         try {
           game.run(random(
-            when(hasReputation('gangster', { min: 99 }), text('Feared')),
+            when(reputation('gangster', { min: 99 }), text('Feared')),
             text('Quiet street'),
           ))
           // Pool: [Quiet street] only. Feared condition fails (gangster = 0)
@@ -801,7 +801,7 @@ describe('ScriptDSL', () => {
 
       it('random does nothing when pool is empty', () => {
         game.run(random(
-          when(hasReputation('gangster', { min: 99 }), text('Feared')),
+          when(reputation('gangster', { min: 99 }), text('Feared')),
         ))
         expect(game.scene.content.length).toBe(0)
       })
@@ -1491,7 +1491,7 @@ describe('ScriptDSL', () => {
         game.player.calcStats()
 
         game.run(menu(
-          when(hasStat('Flirtation', 20),
+          when(stat('Flirtation', 20),
             branch('Kiss', text('You kiss.')),
           ),
           branch('Chat', text('You chat.')),
@@ -1509,7 +1509,7 @@ describe('ScriptDSL', () => {
         game.player.calcStats()
 
         game.run(menu(
-          when(hasStat('Flirtation', 20),
+          when(stat('Flirtation', 20),
             branch('Kiss', text('You kiss.')),
           ),
           branch('Chat', text('You chat.')),
@@ -1527,7 +1527,7 @@ describe('ScriptDSL', () => {
 
         game.run(menu(
           branch('Kiss', text('You kiss.'), addStat('Arousal', 5, { max: 100 })),
-          when(hasStat('Arousal', 50),
+          when(stat('Arousal', 50),
             exit('Things escalate...', text('...')),
           ),
           exit('Leave', text('Goodbye.')),
@@ -1545,7 +1545,7 @@ describe('ScriptDSL', () => {
 
         game.run(menu(
           branch('Kiss', addStat('Arousal', 30, { max: 100, hidden: true })),
-          when(hasStat('Arousal', 25),
+          when(stat('Arousal', 25),
             exit('Things get heated...', text('...')),
           ),
           exit('Leave', text('Goodbye.')),

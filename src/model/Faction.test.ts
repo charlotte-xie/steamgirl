@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
-import { addReputation, hasReputation } from './ScriptDSL'
+import { addReputation, reputation } from './ScriptDSL'
 import { getFaction, getReputation, getReputationsForFaction, getAllFactionIds, getAllReputationIds } from './Faction'
 import '../story/World'
 
@@ -65,14 +65,14 @@ describe('Faction system', () => {
       )
     })
 
-    it('hasReputation produces correct instruction', () => {
-      expect(hasReputation('socialite', { min: 30 })).toEqual(
-        ['hasReputation', { reputation: 'socialite', min: 30 }]
+    it('reputation produces correct instruction', () => {
+      expect(reputation('socialite', { min: 30 })).toEqual(
+        ['reputation', { reputation: 'socialite', min: 30 }]
       )
     })
 
-    it('hasReputation with no options', () => {
-      expect(hasReputation('academic')).toEqual(['hasReputation', { reputation: 'academic' }])
+    it('reputation with no options', () => {
+      expect(reputation('academic')).toEqual(['reputation', { reputation: 'academic' }])
     })
   })
 
@@ -138,37 +138,37 @@ describe('Faction system', () => {
     })
   })
 
-  describe('hasReputation', () => {
-    it('returns false when reputation is 0 (default check)', () => {
+  describe('reputation', () => {
+    it('returns 0 when reputation is 0 (default check)', () => {
       const game = new Game()
-      expect(game.run(hasReputation('academic'))).toBe(false)
+      expect(game.run(reputation('academic'))).toBe(0)
     })
 
-    it('returns true when reputation > 0 (default check)', () => {
+    it('returns raw value when reputation > 0 (default check)', () => {
       const game = new Game()
       game.player.reputation.set('academic', 1)
-      expect(game.run(hasReputation('academic'))).toBe(true)
+      expect(game.run(reputation('academic'))).toBe(1)
     })
 
     it('checks min threshold', () => {
       const game = new Game()
       game.player.reputation.set('academic', 30)
-      expect(game.run(hasReputation('academic', { min: 20 }))).toBe(true)
-      expect(game.run(hasReputation('academic', { min: 50 }))).toBe(false)
+      expect(game.run(reputation('academic', { min: 20 }))).toBe(true)
+      expect(game.run(reputation('academic', { min: 50 }))).toBe(false)
     })
 
     it('checks max threshold', () => {
       const game = new Game()
       game.player.reputation.set('academic', 30)
-      expect(game.run(hasReputation('academic', { max: 40 }))).toBe(true)
-      expect(game.run(hasReputation('academic', { max: 20 }))).toBe(false)
+      expect(game.run(reputation('academic', { max: 40 }))).toBe(true)
+      expect(game.run(reputation('academic', { max: 20 }))).toBe(false)
     })
 
     it('checks min and max together', () => {
       const game = new Game()
       game.player.reputation.set('academic', 30)
-      expect(game.run(hasReputation('academic', { min: 20, max: 40 }))).toBe(true)
-      expect(game.run(hasReputation('academic', { min: 40, max: 50 }))).toBe(false)
+      expect(game.run(reputation('academic', { min: 20, max: 40 }))).toBe(true)
+      expect(game.run(reputation('academic', { min: 40, max: 50 }))).toBe(false)
     })
   })
 

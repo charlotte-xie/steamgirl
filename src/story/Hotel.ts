@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, hasStat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
+import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
 import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
@@ -443,7 +443,7 @@ const barPatronScene = scenes(
       ),
       text('He raises his glass. "To new acquaintances." His eyes linger on you a moment longer than strictly necessary.'),
       choice(
-        gatedBranch(hasStat('Flirtation', 1), 'Flirt back',
+        gatedBranch(stat('Flirtation', 1), 'Flirt back',
           // Flirtation check (difficulty 20): early players mostly fail, experienced players succeed
           skillCheck('Flirtation', 20,
             // Success — he's charmed

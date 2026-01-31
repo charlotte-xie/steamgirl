@@ -19,7 +19,8 @@
       "Bash(findstr:*)",
       "Bash(git grep:*)",
       "Bash(pnpm add:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

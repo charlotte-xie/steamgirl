@@ -646,9 +646,9 @@ export const addReputation = (
 export const hasItem = (item: string, count = 1): Instruction =>
   run('hasItem', { item, count })
 
-/** Check player stat value */
-export const hasStat = (stat: string, min?: number, max?: number): Instruction =>
-  run('hasStat', { stat, min, max })
+/** Player stat: returns value if no range, boolean if min/max specified. */
+export const stat = (stat: string, min?: number, max?: number): Instruction =>
+  run('stat', { stat, min, max })
 
 /** Check if player is at location */
 export const inLocation = (location: string): Instruction =>
@@ -666,13 +666,17 @@ export const exposed = (position: string): Instruction =>
 export const inScene = (): Instruction =>
   run('inScene', {})
 
+/** True when the current scene already has content. Use with unless() to skip flavour text when other hooks have already added output. */
+export const hasContent = (): Instruction =>
+  run('hasContent', {})
+
 /** Check NPC stat value. Defaults to stat > 0 if no min/max specified. Uses scene NPC if npc omitted. */
 export const npcStat = (stat: string, options?: { npc?: string; min?: number; max?: number }): Instruction =>
   run('npcStat', { stat, ...(options ?? {}) })
 
-/** Check a faction reputation score. Defaults to rep > 0 if no min/max specified. */
-export const hasReputation = (reputation: string, options?: { min?: number; max?: number }): Instruction =>
-  run('hasReputation', { reputation, ...(options ?? {}) })
+/** Faction reputation: returns value if no range, boolean if min/max specified. */
+export const reputation = (reputation: string, options?: { min?: number; max?: number }): Instruction =>
+  run('reputation', { reputation, ...(options ?? {}) })
 
 /** Check if player has a card */
 export const hasCard = (cardId: string): Instruction =>
@@ -713,6 +717,26 @@ export const steamy = (): Instruction =>
 /** True with the given probability (0-1). Evaluated at runtime. */
 export const chance = (probability: number): Instruction =>
   run('chance', { probability })
+
+// ── Comparison predicates ─────────────────────────────────────────────────
+// Use npcStat/hasStat/hasReputation with no min/max to get raw values for comparisons.
+// e.g. gt(npcStat('lust'), npcStat('affection'))
+
+/**  True when a > b. a and b are value-returning instructions (e.g. npcStat, hasStat). */
+export const gt = (a: Instruction, b: Instruction): Instruction =>
+  run('compare', { a, b, op: '>' })
+
+/** True when a < b. */
+export const lt = (a: Instruction, b: Instruction): Instruction =>
+  run('compare', { a, b, op: '<' })
+
+/** True when a >= b. */
+export const gte = (a: Instruction, b: Instruction): Instruction =>
+  run('compare', { a, b, op: '>=' })
+
+/** True when a <= b. */
+export const lte = (a: Instruction, b: Instruction): Instruction =>
+  run('compare', { a, b, op: '<=' })
 
 /** Negate a predicate */
 export const not = (predicate: Instruction): Instruction =>

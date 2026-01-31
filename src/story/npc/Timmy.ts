@@ -80,7 +80,7 @@ import {
   say, seq, scene, scenes,
   addNpcStat,
   addReputation,
-  hasReputation,
+  reputation,
   npcStat,
   random,
   when,
@@ -140,22 +140,22 @@ registerNPC('spice-dealer', {
         'Timmy is leaning against the wall, turning a packet over in his mechanical hand. He doesn\'t notice you.',
         'Timmy is haggling with someone in a doorway. His mechanical hand jabs the air for emphasis.',
         'You catch a glimpse of Timmy ducking between buildings, coat collar turned up.',
-        when(hasReputation('gangster', { min: 30 }),
+        when(reputation('gangster', { min: 30 }),
           'Timmy glances your way and quickly looks elsewhere. He knows who you run with.',
         ),
-        when(hasReputation('gangster', { min: 30 }),
+        when(reputation('gangster', { min: 30 }),
           'Timmy straightens his coat when he notices you. Word travels fast in Lowtown.',
         ),
         when(npcStat('respect', { min: 30 }),
           'Timmy notices you and finds somewhere else to be. He\'s not avoiding you exactly — he\'s just careful now.',
         ),
-        when(hasReputation('junkie', { min: 15 }),
+        when(reputation('junkie', { min: 15 }),
           'Timmy catches your eye and taps his coat pocket with a knowing look.',
         ),
-        when(hasReputation('junkie', { min: 15 }),
+        when(reputation('junkie', { min: 15 }),
           'Timmy gives you a conspiratorial nod as you pass. Fellow travellers.',
         ),
-        when(hasReputation('junkie', { min: 20 }),
+        when(reputation('junkie', { min: 20 }),
           'Timmy catches your eye and mimes taking a hit. He grins. You grin back. It\'s your thing now.',
         ),
         when(npcStat('affection', { min: 20 }),
@@ -166,7 +166,7 @@ registerNPC('spice-dealer', {
 
     // Spice pushing: only when not too respected/feared
     const respect = npc.stats.get('respect') ?? 0
-    if (respect < 40 && !game.run(hasReputation('gangster', { min: 40 }))) {
+    if (respect < 40 && !game.run(reputation('gangster', { min: 40 }))) {
       const lastPush = npc.stats.get('lastPush') ?? 0
       const hoursSincePush = (game.time - lastPush) / 3600
       if (hoursSincePush >= 24 && Math.random() < 0.2) {
@@ -230,7 +230,7 @@ registerNPC('spice-dealer', {
           say('Didn\'t expect to see you round here. Everything alright?'),
         ),
       ))
-    } else if (game.run(hasReputation('junkie', { min: 15 }))) {
+    } else if (game.run(reputation('junkie', { min: 15 }))) {
       game.run(random(
         seq(
           'Timmy\'s eyes light up when he sees you. A fellow connoisseur.',
@@ -320,7 +320,7 @@ registerNPC('spice-dealer', {
         when(npcStat('affection', { min: 15 }),
           say('For you? Always the good stuff. Can\'t have my favourite customer going without.'),
         ),
-        when(hasReputation('junkie', { min: 15 }),
+        when(reputation('junkie', { min: 15 }),
           seq(
             say('Same as usual, yeah?'),
             'He gives you a knowing look. No need for the sales pitch any more.',
@@ -335,12 +335,12 @@ registerNPC('spice-dealer', {
       g.run(addReputation('junkie', 2, { max: 30 }))
 
       // Gangster rep: Timmy respects your connections
-      if (g.run(hasReputation('gangster', { min: 20 }))) {
+      if (g.run(reputation('gangster', { min: 20 }))) {
         g.run('addNpcStat', { stat: 'respect', change: 2, max: 40, hidden: true })
       }
 
       // Junkie rep: Timmy warms to a fellow user
-      if (g.run(hasReputation('junkie', { min: 10 }))) {
+      if (g.run(reputation('junkie', { min: 10 }))) {
         g.run('addNpcStat', { stat: 'affection', change: 2, max: 25, hidden: true })
       }
 
@@ -602,7 +602,7 @@ registerNPC('spice-dealer', {
             ),
           ),
           // Junkie-conditional: shared ritual
-          when(hasReputation('junkie', { min: 15 }),
+          when(reputation('junkie', { min: 15 }),
             seq(
               'Timmy produces a packet. The ritual is wordless now — he prepares, you wait.',
               say('Better, yeah? Everything\'s better together.'),
