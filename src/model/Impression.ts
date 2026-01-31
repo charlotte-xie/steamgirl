@@ -70,6 +70,19 @@ function isExposed(player: Player, position: ClothingPosition): boolean {
   return layers.every(layer => !player.getWornAt(position, layer))
 }
 
+/** Get the topmost clothing layer at a position (outer → inner → under). */
+function getTopmostLayer(player: Player, position: ClothingPosition): 'outer' | 'inner' | 'under' | null {
+  if (player.getWornAt(position, 'outer')) return 'outer'
+  if (player.getWornAt(position, 'inner')) return 'inner'
+  if (player.getWornAt(position, 'under')) return 'under'
+  return null
+}
+
+/** True if underwear is the topmost visible item at a position. */
+function isUnderwearExposed(player: Player, position: ClothingPosition): boolean {
+  return getTopmostLayer(player, position) === 'under'
+}
+
 // ── Impression base calculators ──────────────────────────────────────────
 
 /** Shared exposure score used by both decency and appearance. */
@@ -111,8 +124,15 @@ registerImpression('attraction', (player: Player) => {
 })
 
 registerImpression('decency', (player: Player) => {
-  // 0=shameless, 20=naked, 40=barely acceptable, 60=normal, 80=well dressed, 100=exceptional
-  return calcExposureScore(player)
+  // 0=shameless, 20=naked, 35=underwear showing, 40=barely acceptable, 60=normal, 80=well dressed, 100=exceptional
+  let score = calcExposureScore(player)
+
+  // Underwear as the topmost layer on chest or hips is indecent
+  if (isUnderwearExposed(player, 'chest') || isUnderwearExposed(player, 'hips')) {
+    score = Math.min(score, 35)
+  }
+
+  return score
 })
 
 registerImpression('appearance', (player: Player) => {

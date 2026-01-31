@@ -48,17 +48,7 @@ function loadFromState(state: Record<string, unknown> | null): Game | null {
   try {
     let json: string | null = null
     if (state?.gameJson && typeof state.gameJson === 'string') {
-      // New game passed via navigation state — but if a started autosave exists,
-      // prefer it (handles HMR remount where stale navigation state would reload
-      // the unstarted game from character creation)
-      const autosave = localStorage.getItem(GAME_SAVE_AUTO)
-      if (autosave) {
-        const autoGame = Game.fromJSON(autosave)
-        if (autoGame.isStarted()) {
-          autoGame.isDebug = getDebugFromStorage()
-          return autoGame
-        }
-      }
+      // New game passed via navigation state (autosave was cleared by newGame())
       json = state.gameJson
     } else if (state?.source === 'loadGame') {
       json = localStorage.getItem(GAME_SAVE)
