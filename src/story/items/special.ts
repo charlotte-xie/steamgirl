@@ -64,8 +64,8 @@ registerItemDefinition(
     description: 'A remarkable undergarment of brass and leather, powered by a tiny steam engine. It hums softly against the skin.',
     image: '/images/steamgirl/SteamBra.PNG',
     calcStats: (player) => {
-      player.modifyStat('Charm', 5)
       player.modifyStat('Mechanics', 3)
+      player.modifyStat('appearance', 3)
     },
   })
 )
@@ -78,7 +78,7 @@ registerItemDefinition(
     image: '/images/steamgirl/SteamStockings.PNG',
     calcStats: (player) => {
       player.modifyStat('Agility', 5)
-      player.modifyStat('Charm', 3)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -94,7 +94,7 @@ registerItemDefinition(
     description:
       'Exquisitely crafted gloves of supple black leather. They seem to shimmer with an unnatural darkness. Once worn, you feel an unsettling compulsion to keep them on...',
     calcStats: (player) => {
-      player.modifyStat('Charm', 5)
+      player.modifyStat('appearance', 4)
       player.modifyStat('Willpower', -10)
     },
     onWorn: (_player, item) => {

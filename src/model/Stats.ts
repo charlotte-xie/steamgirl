@@ -28,7 +28,7 @@ export type MeterName =
   | 'Pain'
   | 'Mood'
 
-export type ImpressionName = 'decency' | 'attraction'
+export type ImpressionName = 'decency' | 'attraction' | 'appearance'
 
 export type StatName = MainStatName | SkillName | MeterName | ImpressionName
 
@@ -174,6 +174,9 @@ export const IMPRESSION_INFO: Record<ImpressionName, ImpressionInfo> = {
   },
   attraction: {
     description: 'How attractive you appear to others. Based on Charm and modified by clothing and effects.',
+  },
+  appearance: {
+    description: 'How well-presented you look overall. Based on clothing, hair, makeup, and grooming.',
   },
 }
 

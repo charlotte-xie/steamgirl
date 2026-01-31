@@ -72,6 +72,39 @@ function isExposed(player: Player, position: ClothingPosition): boolean {
 
 // ── Impression base calculators ──────────────────────────────────────────
 
+/** Shared exposure score used by both decency and appearance. */
+function calcExposureScore(player: Player): number {
+  // Chest/hips exposed: hard caps
+  if (isExposed(player, 'hips')) return 20
+  if (isExposed(player, 'chest')) return 30
+
+  let score = 70
+
+  // Minor exposure: neck/arms/legs, -5 each, no lower than 60
+  if (isExposed(player, 'neck')) score -= 5
+  if (isExposed(player, 'arms')) score -= 5
+  if (isExposed(player, 'legs')) score -= 5
+  score = Math.max(score, 60)
+
+  // Moderate exposure: belly/feet, -10 each, no lower than 40
+  if (isExposed(player, 'belly')) score -= 10
+  if (isExposed(player, 'feet')) score -= 10
+  score = Math.max(score, 40)
+
+  return score
+}
+
+/** Hair styling bonus based on how recently hair was styled. */
+function calcHairBonus(player: Player): number {
+  const lastStyled = player.timers.get('lastHairstyle')
+  if (!lastStyled) return 0
+  const now = player.timers.get('lastAction') ?? 0
+  const daysSince = (now - lastStyled) / (24 * 60 * 60)
+  if (daysSince < 1) return 10
+  if (daysSince < 5) return 5
+  return 0
+}
+
 registerImpression('attraction', (player: Player) => {
   // Base attraction from Charm. Item/card modifiers add on top.
   return player.stats.get('Charm') ?? 0
@@ -79,22 +112,12 @@ registerImpression('attraction', (player: Player) => {
 
 registerImpression('decency', (player: Player) => {
   // 0=shameless, 20=naked, 40=barely acceptable, 60=normal, 80=well dressed, 100=exceptional
-  // Chest/hips exposed: hard caps (override everything else)
-  if (isExposed(player, 'hips')) return 20
-  if (isExposed(player, 'chest')) return 30
+  return calcExposureScore(player)
+})
 
-  let score = 70
-
-  // Minor exposure: neck/arms/legs, -5 each, no lower than 60 (still normal)
-  if (isExposed(player, 'neck')) score -= 5
-  if (isExposed(player, 'arms')) score -= 5
-  if (isExposed(player, 'legs')) score -= 5
-  score = Math.max(score, 60)
-
-  // Moderate exposure: belly/feet, -10 each, no lower than 40 (barely acceptable)
-  if (isExposed(player, 'belly')) score -= 10
-  if (isExposed(player, 'feet')) score -= 10
-  score = Math.max(score, 40)
-
-  return score
+registerImpression('appearance', (player: Player) => {
+  // Exposure base capped at 50. Item bonuses, makeup, fresh, and hair add on top.
+  const exposureBase = Math.min(50, calcExposureScore(player))
+  const hairBonus = calcHairBonus(player)
+  return exposureBase + hairBonus
 })

@@ -99,9 +99,6 @@ registerItemDefinition(
     name: 'bikini top',
     description: 'A simple bikini top. Not standard attire in Aetheria.',
     image: '/images/steamgirl/BikiniTop.PNG',
-    calcStats: (player) => {
-      player.modifyStat('Charm', 2)
-    },
   })
 )
 
@@ -111,8 +108,5 @@ registerItemDefinition(
     name: 'bikini bottom',
     description: 'A simple bikini bottom. Definitely not standard attire in Aetheria.',
     image: '/images/steamgirl/BikiniBottom.PNG',
-    calcStats: (player) => {
-      player.modifyStat('Charm', 2)
-    },
   })
 )

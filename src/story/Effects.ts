@@ -172,7 +172,7 @@ export const freshEffect: CardDefinition = {
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Mood', 10)
-    player.modifyStat('Charm', 5)
+    player.modifyStat('appearance', 5)
   },
   onTime: (game: Game, card: Card, seconds: number) => {
     // Grace period of 30 minutes after last wash, then 1% chance per minute of wearing off
@@ -210,6 +210,27 @@ export function applyKiss(game: Game, intensity: number, max = 50): void {
   if (capped > 0) game.player.addBaseStat('Arousal', capped)
 }
 
+export const makeupEffect: CardDefinition = {
+  name: 'Made Up',
+  description: 'Your makeup is carefully applied, enhancing your appearance.',
+  type: 'Effect',
+  color: '#f472b6', // Pink
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+  },
+  calcStats: (player: Player) => {
+    player.modifyStat('appearance', 10)
+  },
+  onTime: (game: Game, card: Card) => {
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - addedAt
+    if (elapsed >= 3 * 60 * 60) { // 3 hours
+      game.removeCard(card.id)
+      game.add({ type: 'text', text: 'Your makeup is starting to look a little tired.', color: '#f472b6' })
+    }
+  },
+}
+
 // Register the effect definitions
 registerCardDefinition('flushed', flushedEffect)
 registerCardDefinition('intoxicated', intoxicatedEffect)
@@ -218,6 +239,7 @@ registerCardDefinition('peckish', peckishEffect)
 registerCardDefinition('hungry', hungryEffect)
 registerCardDefinition('starving', starvingEffect)
 registerCardDefinition('fresh', freshEffect)
+registerCardDefinition('makeup', makeupEffect)
 
 // Register scripts
 makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
@@ -340,9 +362,10 @@ export function removeHunger(game: Game, quantity: number): void {
   }
 }
 
-/** Common logic for washing (shower, bath, etc.). Records the timer and applies the Fresh effect. */
+/** Common logic for washing (shower, bath, etc.). Records the timer and applies the Fresh effect. Washes off makeup. */
 export function takeWash(game: Game): void {
   game.player.setTimer('lastWash', game.time)
+  game.removeCard('makeup', true)
   game.addEffect('fresh')
 }
 
@@ -351,7 +374,21 @@ export function freshenUp(game: Game): void {
   game.add('You freshen up as best you can.')
   game.removeCard('sweaty', true)
   game.player.setTimer('lastWash', game.time)
+  // Reset makeup timer if wearing makeup
+  if (game.player.hasCard('makeup')) {
+    game.removeCard('makeup', true)
+    game.addEffect('makeup')
+    game.add('You touch up your makeup while you\'re at it.')
+  }
   game.run('wait', { minutes: 5 })
+}
+
+/** Apply makeup. Adds the makeup effect (or resets its timer). */
+export function applyMakeup(game: Game): void {
+  game.removeCard('makeup', true)
+  game.addEffect('makeup')
+  game.add({ type: 'text', text: 'You carefully apply your makeup, finishing with a satisfied look in the mirror.', color: '#f472b6' })
+  game.run('wait', { minutes: 10 })
 }
 
 /**

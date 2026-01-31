@@ -14,7 +14,7 @@ registerItemDefinition(
     name: 'leather gloves',
     description: 'Fine leather gloves that add a touch of elegance to any outfit.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -25,8 +25,8 @@ registerItemDefinition(
     name: 'lace gloves',
     description: 'Delicate lace gloves that extend to the elbow. Purely decorative.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 4)
       player.modifyStat('Etiquette', 2)
+      player.modifyStat('appearance', 3)
     },
   })
 )
@@ -53,7 +53,7 @@ registerItemDefinition(
     description:
       'An ornate mask of black velvet with gold filigree and peacock feathers.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 4)
+      player.modifyStat('appearance', 3)
     },
   })
 )
@@ -105,7 +105,7 @@ registerItemDefinition(
     name: 'silk scarf',
     description: 'A flowing silk scarf in rich jewel tones.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -116,8 +116,8 @@ registerItemDefinition(
     name: 'silk cravat',
     description: 'A formal silk cravat tied in an elegant knot.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
       player.modifyStat('Etiquette', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -128,7 +128,7 @@ registerItemDefinition(
     name: 'pearl necklace',
     description: 'A strand of lustrous pearls with a silver clasp.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 4)
+      player.modifyStat('appearance', 4)
     },
   })
 )
@@ -139,7 +139,7 @@ registerItemDefinition(
     name: 'velvet choker',
     description: 'A black velvet choker with a small cameo pendant.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -151,7 +151,7 @@ registerItemDefinition(
     description:
       'An exquisite gold pocket watch with intricate engravings. A mark of status.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
+      player.modifyStat('appearance', 3)
     },
   })
 )
@@ -166,7 +166,7 @@ registerItemDefinition(
     name: 'silver bracelet',
     description: 'A delicate silver chain bracelet with tiny gear charms.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )

@@ -12,7 +12,7 @@ registerItemDefinition(
     description:
       'A luxurious silk blouse in deep burgundy with mother-of-pearl buttons.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
+      player.modifyStat('appearance', 3)
     },
   })
 )
@@ -23,7 +23,7 @@ registerItemDefinition(
     name: 'brocade vest',
     description: 'A fitted vest of gold and green brocade with brass buttons.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -43,7 +43,7 @@ registerItemDefinition(
     description:
       'A crisp white cotton blouse with a high collar and delicate pin-tucks.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 1)
     },
   })
 )
@@ -54,9 +54,6 @@ registerItemDefinition(
     name: 'crop top',
     description: 'A short, fitted top that bares the midriff. Daring by Aetherian standards.',
     image: '/images/steamgirl/CropTop.PNG',
-    calcStats: (player) => {
-      player.modifyStat('Charm', 3)
-    },
   })
 )
 
@@ -66,9 +63,6 @@ registerItemDefinition(
     name: 'white tied shirt',
     description: 'A white shirt tied in a knot at the front, leaving the belly exposed.',
     image: '/images/steamgirl/TiedShirt.PNG',
-    calcStats: (player) => {
-      player.modifyStat('Charm', 2)
-    },
   })
 )
 

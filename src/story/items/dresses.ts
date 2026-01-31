@@ -10,9 +10,6 @@ registerItemDefinition(
     name: 'basic dress',
     description: 'A long, plain dress of sturdy cotton. Unremarkable but decent.',
     image: '/images/steamgirl/BasicDress.PNG',
-    calcStats: (player) => {
-      player.modifyStat('Charm', 1)
-    },
   })
 )
 
@@ -31,8 +28,8 @@ registerItemDefinition(
     description:
       'An elegant gown of midnight blue velvet with silver embroidery and a sweeping train.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 8)
       player.modifyStat('Agility', -4)
+      player.modifyStat('appearance', 5)
     },
   })
 )
@@ -44,7 +41,7 @@ registerItemDefinition(
     description:
       'A tasteful dress of printed cotton with a fitted bodice and modest bustle.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
+      player.modifyStat('appearance', 3)
     },
   })
 )

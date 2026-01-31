@@ -11,8 +11,8 @@ registerItemDefinition(
     description:
       'A structured leather corset with brass buckles and intricate stitching. Cinches the waist dramatically.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 5)
       player.modifyStat('Agility', -3)
+      player.modifyStat('appearance', 5)
     },
   })
 )
@@ -25,8 +25,8 @@ registerItemDefinition(
       'A soft brown suede corset with subtle brass lacing. Flattering but comfortable.',
     image: '/images/steamgirl/Corset.PNG',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
       player.modifyStat('Agility', -1)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -51,7 +51,7 @@ registerItemDefinition(
     description:
       'A rich burgundy velvet coat with brass buttons and embroidered cuffs.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 4)
+      player.modifyStat('appearance', 3)
     },
   })
 )

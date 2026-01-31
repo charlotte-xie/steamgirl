@@ -31,7 +31,7 @@ registerItemDefinition(
     name: 'silk stockings',
     description: 'Sheer silk stockings with a subtle sheen. Luxurious against the skin.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 2)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -77,8 +77,8 @@ registerItemDefinition(
     name: 'heeled boots',
     description: 'Elegant boots with a modest heel and delicate button closures.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
       player.modifyStat('Agility', -1)
+      player.modifyStat('appearance', 2)
     },
   })
 )

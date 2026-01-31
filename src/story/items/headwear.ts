@@ -23,7 +23,7 @@ registerItemDefinition(
     description: 'A classic black bowler hat with a silk ribbon. Respectable and refined.',
     image: '/images/steamgirl/Hat.PNG',
     calcStats: (player) => {
-      player.modifyStat('Charm', 3)
+      player.modifyStat('appearance', 2)
     },
   })
 )
@@ -35,8 +35,8 @@ registerItemDefinition(
     description:
       'A tall silk top hat with brass clockwork decorations. The height of fashion.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 5)
       player.modifyStat('Etiquette', 3)
+      player.modifyStat('appearance', 5)
     },
   })
 )

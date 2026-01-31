@@ -7,7 +7,7 @@ import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
 import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
-import { freshenUp, consumeAlcohol, applyRelaxation } from './Effects'
+import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 import { staffDecencyGate } from './Public'
 
@@ -727,6 +727,10 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         script: (g: Game) => freshenUp(g),
       },
       {
+        name: 'Apply Makeup',
+        script: (g: Game) => applyMakeup(g),
+      },
+      {
         name: 'Take Shower',
         script: ['shower', { text: 'You undress and step into the spotless shower cubicle. Hot water flows instantly — the hotel\'s boilers are clearly well maintained.' }],
       },
@@ -989,6 +993,10 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Freshen Up',
         script: (g: Game) => freshenUp(g),
+      },
+      {
+        name: 'Apply Makeup',
+        script: (g: Game) => applyMakeup(g),
       },
       {
         name: 'Take Shower',

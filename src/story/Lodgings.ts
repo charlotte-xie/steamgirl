@@ -7,7 +7,7 @@ import {
   text, setNpc, npcInteract,
   hourBetween, isWeekday,
 } from '../model/ScriptDSL'
-import { freshenUp } from './Effects'
+import { freshenUp, applyMakeup } from './Effects'
 import { bedActivity } from './Sleep'
 
 // Location definitions for the player's lodgings
@@ -73,6 +73,10 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       {
         name: 'Freshen Up',
         script: (g: Game) => freshenUp(g),
+      },
+      {
+        name: 'Apply Makeup',
+        script: (g: Game) => applyMakeup(g),
       },
       {
         name: 'Take Shower',

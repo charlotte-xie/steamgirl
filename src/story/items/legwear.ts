@@ -11,8 +11,8 @@ registerItemDefinition(
     description:
       'An elaborate skirt with a pronounced bustle and layers of ruffled fabric.',
     calcStats: (player) => {
-      player.modifyStat('Charm', 4)
       player.modifyStat('Agility', -2)
+      player.modifyStat('appearance', 3)
     },
   })
 )
@@ -32,9 +32,6 @@ registerItemDefinition(
     name: 'pleated skirt',
     description: 'A navy blue skirt with crisp pleats. Modest and practical.',
     image: '/images/steamgirl/SchoolSkirt.PNG',
-    calcStats: (player) => {
-      player.modifyStat('Charm', 1)
-    },
   })
 )
 
