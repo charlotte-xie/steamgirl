@@ -550,16 +550,13 @@ makeScript('tryRemoveClothing', (game: Game) => {
 
   const itemName = item.template.name ?? 'clothing'
 
-  // Push a sub-scene onto the stack using DSL builders
-  const stripScene = seq(
+  // Push a sub-scene that replaces the current content and options
+  game.run('replaceScene', { pages: [seq(
     pickRandom(FUMBLE_NARRATION)(itemName),
     say(pickRandom(FUMBLE_ASK)),
     option(`Let ${npc.pronouns.object}`, ['tryStripAllow', { item: item.id }]),
     option(`Stop ${npc.pronouns.object}`, 'tryStripResist'),
-  )
-  game.scene.stack.unshift(stripScene)
-  game.clearScene()
-  game.run('advanceScene')
+  )] })
 })
 
 makeScript('tryStripAllow', (game: Game, params: { item?: string }) => {
@@ -591,3 +588,4 @@ makeScript('tryStripResist', (game: Game) => {
 export function tryStrip(): Instruction {
   return run('tryRemoveClothing', {})
 }
+

@@ -315,13 +315,15 @@ const coreScripts: Record<string, ScriptFn> = {
       // This runs after onTime so newly added cards don't get onTime in the same tick
       game.run('timeEffects', { seconds: totalSeconds })
 
-      // If hour boundary crossed, call onMove for all NPCs
-      const hoursCrossed = game.calcTicks(totalSeconds, 60 * 60) // 1 hour in seconds
-      if (hoursCrossed > 0) {
-        game.npcs.forEach((npc) => {
-          game.run(npc.template.onMove)
-        })
-        game.updateNPCsPresent()
+      // If hour boundary crossed, call onMove for all NPCs (skip during scenes)
+      if (!game.inScene) {
+        const hoursCrossed = game.calcTicks(totalSeconds, 60 * 60) // 1 hour in seconds
+        if (hoursCrossed > 0) {
+          game.npcs.forEach((npc) => {
+            game.run(npc.template.onMove)
+          })
+          game.updateNPCsPresent()
+        }
       }
     }
   },
@@ -802,6 +804,14 @@ const coreScripts: Record<string, ScriptFn> = {
   /** Check if player is in a bedroom (any location with isBedroom flag) */
   inBedroom: (game: Game): boolean => {
     return game.location.template.isBedroom === true
+  },
+
+  /** True if a body position is exposed (nothing worn at under, inner, or outer layers). */
+  exposed: (game: Game, params: { position?: string }): boolean => {
+    const position = params.position
+    if (!position) return false
+    const layers = ['under', 'inner', 'outer'] as const
+    return layers.every(layer => !game.player.getWornAt(position as any, layer))
   },
 
   /** Check if currently in a scene (has options) */
@@ -1334,6 +1344,16 @@ const coreScripts: Record<string, ScriptFn> = {
     if (game.scene.options.length === 0) {
       game.addOption('advanceScene', 'Continue')
     }
+  },
+
+  /** Push a sub-scene that replaces the current content and options.
+   *  Use for interrupts (e.g. NPC initiates something mid-scene) where the player
+   *  must respond to the sub-scene before the outer scene can continue. */
+  replaceScene: (game: Game, params: { pages?: Instruction[] }) => {
+    if (!params.pages || params.pages.length === 0) return
+    game.scene.stack.unshift(...params.pages)
+    game.clearScene()
+    game.run('advanceScene')
   },
 
   /** Advance the scene: shift the next page off the stack and run it. Branches prepend their pages first.

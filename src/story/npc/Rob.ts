@@ -47,7 +47,7 @@ import {
   hasStat, npcStat, skillCheck,
   run, and, not, or, hasCard, inLocation,
   hasRelationship, setRelationship, chance,
-  inBedroom, kiss,
+  inBedroom, kiss, exposed, replaceScene,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -647,6 +647,27 @@ registerNPC('tour-guide', {
       ),
       npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
       option('Ask him to leave', 'npc:leaveLodgings'),
+      // Chance Rob tries to escalate to makeout — replaces current scene
+      when(chance(0.25),
+        replaceScene(
+          random(
+            'He pulls you closer, his hand sliding to the small of your back. His voice is low and rough.',
+            'The kiss deepens. His hands are in your hair and he\'s breathing hard.',
+            'He breaks the kiss, flushed and breathless. His eyes are dark.',
+          ),
+          random(
+            say('I don\'t want to stop. Can we — should we—'),
+            say('Come here. Please.'),
+            say('I want to be closer to you. Is that all right?'),
+          ),
+          option('Let him', 'npc:makeOut'),
+          branch('Not tonight',
+            say('Right. Of course. Sorry — I got carried away.'),
+            'He takes a steadying breath and gives you a sheepish grin.',
+            npcInteract('lodgingsChat'),
+          ),
+        ),
+      ),
     ),
 
     // Making out in bed — escalation from kissing
@@ -697,6 +718,51 @@ registerNPC('tour-guide', {
       kiss(5),
       time(3),
       addNpcStat('affection', 1, { max: 80, hidden: true }),
+      // Exposure-dependent intimacy
+      when(exposed('chest'),
+        seq(
+          random(
+            seq(
+              'His gaze drops. His hand hovers, trembling, then brushes tentatively across your breast.',
+              say('Is this — can I—?'),
+              'You guide his hand. He exhales shakily.',
+            ),
+            seq(
+              'He presses his lips to your collarbone, then lower, kissing the soft curve of your breast.',
+              say('You\'re incredible. I mean it.'),
+            ),
+            seq(
+              'His thumb traces a slow circle across your skin. He watches your face, checking, always checking.',
+              say('Tell me if I should stop.'),
+            ),
+          ),
+          kiss(8, 80),
+        ),
+      ),
+      when(exposed('hips'),
+        seq(
+          random(
+            seq(
+              'His hand slides down to your hip, fingers tracing the line of bare skin. He swallows hard.',
+              say('God. I can\'t — you\'re so—'),
+              'He loses the words. His touch says the rest.',
+            ),
+            seq(
+              'He pulls you closer, his hand warm against your bare hip. You can feel him trembling.',
+              say('I\'ve never — I don\'t really know what I\'m doing.'),
+              'His honesty is disarming.',
+            ),
+            seq(
+              'His fingers trace along your inner thigh. His breathing is ragged.',
+              say('Tell me what you want. Please.'),
+            ),
+          ),
+          kiss(10, 100),
+        ),
+      ),
+      when(exposed('hips'),
+        option('Make love', 'npc:makeLove'),
+      ),
       option('Keep going', 'npc:makeOutMenu'),
       option('Kiss him', 'npc:makeOutKiss'),
       branch('Slow down',
@@ -730,6 +796,41 @@ registerNPC('tour-guide', {
       kiss(8),
       time(2),
       addNpcStat('affection', 1, { max: 80, hidden: true }),
+      // Exposure-dependent intimacy
+      when(exposed('chest'),
+        seq(
+          random(
+            seq(
+              'He breaks the kiss and his mouth trails down your neck, across your collarbone, lower.',
+              'His lips find your breast and you feel him smile against your skin.',
+              say('You taste like — I don\'t know. Like something I want more of.'),
+            ),
+            seq(
+              'His hand cups your breast, gentle and uncertain. He watches your reaction as though it\'s the most important thing in the world.',
+              say('Is this all right?'),
+            ),
+          ),
+          kiss(10, 80),
+        ),
+      ),
+      when(exposed('hips'),
+        seq(
+          random(
+            seq(
+              'His hand slides down your body, tentative but wanting. You feel him shudder against you.',
+              say('I want — I want to touch you. Everywhere. Is that mad?'),
+            ),
+            seq(
+              'He pulls you flush against him, one hand gripping your bare hip. The contact sends a jolt through you both.',
+              'His breathing is uneven, his pupils blown wide.',
+            ),
+          ),
+          kiss(12, 100),
+        ),
+      ),
+      when(exposed('hips'),
+        option('Make love', 'npc:makeLove'),
+      ),
       option('Keep going', 'npc:makeOutMenu'),
       option('Kiss him again', 'npc:makeOutKiss'),
       branch('Slow down',
@@ -739,6 +840,76 @@ registerNPC('tour-guide', {
         npcInteract('lodgingsChat'),
       ),
       tryStrip(),
+    ),
+
+    // Making love — fade to black
+    makeLove: (game: Game) => {
+      const npc = game.getNPC('tour-guide')
+
+      // Lead-in
+      const leadIns = [
+        ['He pulls you close, his whole body trembling. His forehead rests against yours.',
+         'Are you sure? I need you to be sure.'],
+        ['He looks at you — really looks at you — and something shifts behind his eyes.',
+         'I want this. I want you. If you\'ll have me.'],
+        ['His hands are shaking. He takes a breath, steadying himself.',
+         'I\'ve never wanted anything more than I want this.'],
+      ]
+      const lead = leadIns[Math.floor(Math.random() * leadIns.length)]
+      game.add(lead[0])
+      npc.say(lead[1])
+
+      // Fade to black
+      game.add({ type: 'text', text: '\u2022 \u2022 \u2022', color: '#6b7280' })
+
+      const fadeLines = [
+        'What follows is tender, clumsy, and achingly sincere. He whispers your name like it\'s the only word he knows.',
+        'He is gentle and uncertain and impossibly earnest. Every touch is a question; every answer draws him closer.',
+        'It is awkward and sweet and over sooner than either of you expected. But the way he holds you afterwards says more than the act itself.',
+      ]
+      game.add(fadeLines[Math.floor(Math.random() * fadeLines.length)])
+
+      game.add({ type: 'text', text: '\u2022 \u2022 \u2022', color: '#6b7280' })
+
+      // Mechanical effects
+      game.player.addBaseStat('Arousal', -70)
+      npc.stats.set('madeLove', (npc.stats.get('madeLove') ?? 0) + 1)
+      const affection = npc.stats.get('affection') ?? 0
+      npc.stats.set('affection', Math.min(90, affection + 5))
+
+      // Transition to aftermath
+      game.run('interact', { script: 'makeLoveAftermath' })
+    },
+
+    // Aftermath — quiet, reflective
+    makeLoveAftermath: seq(
+      random(
+        seq(
+          'You lie tangled together, his arm across your waist. His breathing is slow and steady.',
+          say('That was... I don\'t have words. Is that all right? Not having words?'),
+          'You tell him it\'s perfectly all right.',
+        ),
+        seq(
+          'He pulls the blanket over you both and presses his lips to your shoulder.',
+          say('I hope that was — I mean, was it — did I—'),
+          'You silence him with a kiss. He smiles against your mouth.',
+        ),
+        seq(
+          'Afterwards, he holds you close. You can feel his heartbeat slowing against your back.',
+          say('Stay. Please. Just for a bit.'),
+          'You settle into the warmth of him. Neither of you moves.',
+        ),
+        seq(
+          'He traces lazy patterns on your skin with his fingertip. His eyes are half-closed, content.',
+          say('I keep thinking I\'m going to wake up. That this is some mad dream.'),
+          'You pinch his arm. He yelps.',
+          say('Not a dream, then. Good.'),
+        ),
+      ),
+      addNpcStat('affection', 3, { max: 90, hidden: true }),
+      time(10),
+      option('Sleep', ['sleep', {}]),
+      option('Stay awake', 'npc:lodgingsChat'),
     ),
 
     // Rob leaves your room

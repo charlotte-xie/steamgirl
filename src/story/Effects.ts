@@ -204,9 +204,9 @@ export const flushedEffect: CardDefinition = {
  * Apply a kiss. Adds intensity directly to the Arousal meter, capped at 50.
  * Typical values: 2 = peck, 5 = normal kiss, 10 = intense.
  */
-export function applyKiss(game: Game, intensity: number): void {
+export function applyKiss(game: Game, intensity: number, max = 50): void {
   const current = game.player.basestats.get('Arousal') ?? 0
-  const capped = Math.min(intensity, 50 - current)
+  const capped = Math.min(intensity, max - current)
   if (capped > 0) game.player.addBaseStat('Arousal', capped)
 }
 
@@ -227,8 +227,8 @@ makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
   }
 })
 
-makeScript('kiss', (game: Game, params: { intensity?: number }) => {
-  applyKiss(game, params.intensity ?? 5)
+makeScript('kiss', (game: Game, params: { intensity?: number; max?: number }) => {
+  applyKiss(game, params.intensity ?? 5, params.max ?? 50)
 })
 
 makeScript('eatFood', (game: Game, params: { quantity?: number }) => {

@@ -224,6 +224,22 @@ export const scene = (...elements: SceneElement[]): Instruction =>
   seq(...elements)
 
 /**
+ * Push a sub-scene that **replaces** the current content and options.
+ * Use for interrupts where an NPC initiates something mid-scene and
+ * the player must respond before the outer scene continues.
+ *
+ * Example:
+ *   replaceScene(
+ *     'He reaches for your hand...',
+ *     say('May I?'),
+ *     option('Let him', 'npc:allowScript'),
+ *     option('Stop him', 'npc:resistScript'),
+ *   )
+ */
+export const replaceScene = (...elements: SceneElement[]): Instruction =>
+  run('replaceScene', { pages: [seq(...elements)] })
+
+/**
  * Create a player-choice option that **continues** the current `scenes()`
  * sequence after its content plays out.
  *
@@ -569,8 +585,8 @@ export const recordTime = (timer: string): Instruction =>
   run('recordTime', { timer })
 
 /** Apply a kiss — adds intensity to Arousal (capped at 50). 2 = peck, 5 = normal, 10 = intense. */
-export const kiss = (intensity: number): Instruction =>
-  run('kiss', { intensity })
+export const kiss = (intensity: number, max?: number): Instruction =>
+  run('kiss', { intensity, ...(max !== undefined && { max }) })
 
 /** Eat food. Sets lastEat timer and removes hunger based on quantity. */
 export const eatFood = (quantity: number): Instruction =>
@@ -641,6 +657,10 @@ export const inLocation = (location: string): Instruction =>
 /** Check if player is in a bedroom (any location with isBedroom flag) */
 export const inBedroom = (): Instruction =>
   run('inBedroom', {})
+
+/** True if a body position is exposed (nothing worn at under, inner, or outer layers). */
+export const exposed = (position: string): Instruction =>
+  run('exposed', { position })
 
 /** Check if currently in a scene (has options) */
 export const inScene = (): Instruction =>
