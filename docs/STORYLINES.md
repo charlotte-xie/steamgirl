@@ -40,6 +40,10 @@ Aetherics is taught as a respectable academic discipline, but its deeper applica
 
 Each storyline will also have a secret, hard to obtain "Ultimate" Ending. This is intended as a challenge for experienced players, and will probably require NG+ perks or extreme skill / luck to achieve. Not available in Easy mode!
 
-# NPC Romance options
+# NPC Romance Paths
 
 There will be romance options with various (most?) NPCs depending on the paths the player chooses. Elise may get a different ending if she chooses romance over following one of the main quest lines (both are possible, but may be hard or impossible to achieve certain main ending / NPC romance combinations). Fun challenge...
+
+## Dream Girl (Rob Hayes)
+
+The easy early romance that becomes progressively harder to maintain. Rob is warm and eager from day one, but after intimacy his devotion curdles into neediness. Reaching affection 90+ requires high Charm and Perception, regular intimacy, and consistently prioritising Rob over other storylines. The title is his fantasy, not the player's. See `src/story/npc/Rob.ts` for full mechanical details.

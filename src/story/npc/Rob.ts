@@ -5,33 +5,54 @@
  * puppy-dog type: warm, enthusiastic, and easily impressed. He genuinely
  * likes people and the city, and takes real pleasure in showing newcomers
  * around.
- * 
- * Important stats:
- * - affection => gates dating Rob. 20-50 = happy to date, 50+ = seeks relationship, 80+ = obsessive love
- * - tourDone => modifies the city tour (becomes mini date that can be repeated)
  *
- * Romance path & affection budget:
+ * Schedule: Station 9am–6pm daily. Bedroom visits in the evening.
  *
- *   PRE-DATE (easy to reach ~20-25):
- *   - Can gain affection with city your, flirting or hotel room invite
+ * ═══════════════════════════════════════════════════════════════════════
+ * STORYLINE: "Dream Girl" — Rob Romance Path
+ * ═══════════════════════════════════════════════════════════════════════
  *
- *   DATE INVITATION:
- *   - Triggered by: Flirtation skill check DC 10, affection > 20, no
- *     existing date card
+ * Stats: affection, tourDone, madeLove, stripResisted, hotelVisited
  *
- *   DATES — higher affection earned through the date scenes:
- *   - Various choices and skill checks, can boost affection
+ * The easiest romance to start and the hardest to finish. Rob falls
+ * for the player fast — too fast. Early affection comes freely from
+ * tours, flirting, dates. Anyone can get to boyfriend.
  *
- *   Getting past 50 is hard and requires both the garden path and
- *   the kiss. Beyond 55 requires future content (multiple dates,
- *   gifts, special events).
+ * But after they sleep together, something shifts. The sweet puppy-dog
+ * becomes possessive. He wants more. He needs reassurance. He gets
+ * hurt when he doesn't get it. The player who got into this casually
+ * now has to decide: feed the relationship or let it starve.
  *
- * Approach comments are history-aware: Rob references the tour,
- * hotel room visit, and pending dates in his greetings.
+ * Affection curve (fuzzy — ranges overlap):
  *
- * Schedule: Station 9am–6pm daily. Can be moved to dorm-suite via the
- * invite-to-room interaction; returns to schedule when the player leaves.
- * During an active date window, moves to the meeting location instead.
+ *   ~0–20   Friendly. Easy gains from chatting, touring, flirting.
+ *   ~15–40  Dating. Requires Flirtation to unlock. Charm matters
+ *           for flirting past 30. The garden path and first kiss
+ *           are the big milestones here.
+ *   ~40–65  Boyfriend. He asks the question. Steady but slow gains
+ *           from dates, visits, kissing. Comfortable plateau.
+ *   ~55–80  Intimacy changes everything. After making love, Rob gets
+ *           needy. Affection decays without regular intimacy. Turning
+ *           him down costs more. High Charm softens the blow. High
+ *           Perception earns bonus affection from reading his moods.
+ *   ~75–90  The grind. Normal sources are capped out. Only regular
+ *           intimacy, perfect Charm on refusals, and Perception
+ *           checks can push higher. Time here competes with every
+ *           other storyline. This is what you give up.
+ *   ~90+    Proposal. "Dream Girl" ending. Rob's fantasy of the
+ *           perfect devoted partner. Nearly impossible without high
+ *           Charm, high Perception, and consistent sacrifice.
+ *           (TODO: implement proposal scene)
+ *
+ * The dark thread: is this a healthy relationship? Rob's love is
+ * genuine but it curdles into dependency. The "Dream Girl" is the
+ * woman who gives him everything he wants. A perceptive player might
+ * see the warning signs — but acting on them means losing him.
+ *
+ * Rob breaks up with the player if affection drops below ~25 while
+ * boyfriend. (TODO: implement via onApproach/onWaitAway check)
+ *
+ * ═══════════════════════════════════════════════════════════════════════
  */
 
 import { Game } from '../../model/Game'
@@ -582,16 +603,41 @@ registerNPC('tour-guide', {
           say('Evening, love. I finished up early and couldn\'t stop thinking about you.'),
           say('I couldn\'t sleep. Kept thinking about you. So I thought... why not?'),
         ),
+        when(npcStat('madeLove'),
+          random(
+            say('I couldn\'t stay away. I kept thinking about last time.'),
+            seq(
+              say('Evening, love.'),
+              'He steps close and kisses you before you can say hello.',
+              kiss(5),
+            ),
+            say('I want to see you. That\'s reason enough, isn\'t it?'),
+          ),
+        ),
         addNpcStat('affection', 1, { hidden: true, max: 70 }),
         branch('Come in',
           'You step aside and he slips through the doorway.',
           npcInteract('lodgingsChat'),
         ),
         branch('It\'s not a good time',
-          say('Oh — of course. Sorry, I should have sent word first.'),
-          'He gives an apologetic smile and backs away.',
-          say('I\'ll see you at the station. Goodnight, love.'),
-          addNpcStat('affection', -5),
+          // Charm check: let him down gently to reduce the sting
+          skillCheck('Charm', 10,
+            seq(
+              'You touch his arm and tell him you\'re glad he came, but tonight isn\'t good.',
+              say('No, I understand. You\'re lovely about it, as always.'),
+              'He manages a real smile.',
+              addNpcStat('affection', -2),
+            ),
+            seq(
+              say('Oh — of course. Sorry, I should have sent word first.'),
+              'He gives an apologetic smile and backs away.',
+              say('I\'ll see you at the station. Goodnight, love.'),
+              addNpcStat('affection', -5),
+              when(npcStat('madeLove'),
+                addNpcStat('affection', -5),
+              ),
+            ),
+          ),
           moveNpc('tour-guide', null),
         ),
       ),
@@ -608,6 +654,42 @@ registerNPC('tour-guide', {
         ),
         say('I like your room. It\'s small but it\'s... warm. Like you.'),
         say('This is much better than the station. Better company, too.'),
+      ),
+      when(npcStat('madeLove'),
+        random(
+          seq(
+            'He catches your eye across the room. The look he gives you is slow and knowing.',
+            say('Come here.'),
+          ),
+          say('I keep thinking about you. About us. I can\'t help it.'),
+          seq(
+            'He pulls you close and presses his lips to your neck.',
+            say('You smell incredible. Has anyone told you that?'),
+          ),
+        ),
+      ),
+      // Perception: notice something about him — small bonding moment
+      skillCheck('Perception', 8,
+        seq(
+          random(
+            seq(
+              'You notice a new scratch on his hand — a graze from the station machinery.',
+              'You take his hand and run your thumb over it gently.',
+              say('It\'s nothing. Just caught it on a coupling. But — thank you. For noticing.'),
+            ),
+            seq(
+              'There are shadows under his eyes. He\'s been sleeping badly.',
+              'You ask him if he\'s all right. He seems surprised.',
+              say('I\'m fine. Better now. It means a lot that you asked.'),
+            ),
+            seq(
+              'His coat is buttoned wrong. You reach over and fix it without thinking.',
+              say('I — oh. Thank you. I was in a rush to get here.'),
+              'He looks at you like you\'ve done something extraordinary.',
+            ),
+          ),
+          addNpcStat('affection', 1, { max: 80, hidden: true }),
+        ),
       ),
       option('Chat', 'npc:lodgingsChat'),
       option('Kiss him', 'npc:lodgingsKiss'),
@@ -650,20 +732,58 @@ registerNPC('tour-guide', {
       // Chance Rob tries to escalate to makeout — replaces current scene
       when(chance(0.25),
         replaceScene(
-          random(
-            'He pulls you closer, his hand sliding to the small of your back. His voice is low and rough.',
-            'The kiss deepens. His hands are in your hair and he\'s breathing hard.',
-            'He breaks the kiss, flushed and breathless. His eyes are dark.',
-          ),
-          random(
-            say('I don\'t want to stop. Can we — should we—'),
-            say('Come here. Please.'),
-            say('I want to be closer to you. Is that all right?'),
+          cond(
+            npcStat('madeLove'),
+            seq(
+              random(
+                'He pulls you hard against him. His breathing is rough.',
+                'He pins you gently, his mouth at your neck. His intent is unmistakable.',
+                'His hands slide down your body with a confidence that makes your breath catch.',
+              ),
+              random(
+                say('I want you. Bed. Now.'),
+                say('Come to bed with me.'),
+                say('I need you.'),
+              ),
+            ),
+            seq(
+              random(
+                'He pulls you closer, his hand sliding to the small of your back. His voice is low and rough.',
+                'The kiss deepens. His hands are in your hair and he\'s breathing hard.',
+                'He breaks the kiss, flushed and breathless. His eyes are dark.',
+              ),
+              random(
+                say('I don\'t want to stop. Can we — should we—'),
+                say('Come here. Please.'),
+                say('I want to be closer to you. Is that all right?'),
+              ),
+            ),
           ),
           option('Let him', 'npc:makeOut'),
           branch('Not tonight',
-            say('Right. Of course. Sorry — I got carried away.'),
-            'He takes a steadying breath and gives you a sheepish grin.',
+            cond(
+              npcStat('madeLove'),
+              skillCheck('Charm', 12,
+                seq(
+                  'You press a gentle kiss to his temple and tell him you\'re tired — but you want him to stay.',
+                  say('Stay? You mean — just sleep?'),
+                  'You nod. He relaxes, pulling you close.',
+                  say('I\'d like that. I\'d really like that.'),
+                  addNpcStat('affection', -1, { hidden: true }),
+                ),
+                seq(
+                  'He stops. Something tightens in his expression.',
+                  say('Fine. Fine.'),
+                  'He rolls onto his back, staring at the ceiling. After a moment he forces a smile.',
+                  say('Sorry. I just — I thought you wanted—'),
+                  addNpcStat('affection', -3, { hidden: true }),
+                ),
+              ),
+              seq(
+                say('Right. Of course. Sorry — I got carried away.'),
+                'He takes a steadying breath and gives you a sheepish grin.',
+              ),
+            ),
             npcInteract('lodgingsChat'),
           ),
         ),
@@ -673,18 +793,35 @@ registerNPC('tour-guide', {
     // Making out in bed — escalation from kissing
     makeOut: seq(
       'You take his hand and pull him towards the bed. He follows without resistance.',
-      random(
-        seq(
-          say('Are you sure? I mean — I\'m not complaining, I just—'),
-          'You silence him with a kiss. He stops talking.',
+      cond(
+        npcStat('madeLove'),
+        random(
+          seq(
+            say('I was hoping you\'d do that.'),
+            'He pulls you down beside him, one hand already at the small of your back.',
+          ),
+          seq(
+            'He doesn\'t hesitate this time. His arms are around you before you hit the mattress.',
+            say('I\'ve wanted this all evening.'),
+          ),
+          seq(
+            say('Come here. I want you.'),
+            'He pulls you close with a confidence that still surprises you.',
+          ),
         ),
-        seq(
-          'He lets out a shaky breath as you pull him down beside you.',
-          say('Right. Yes. This is — this is happening.'),
-        ),
-        seq(
-          say('I\'ve been thinking about this all evening.'),
-          'He pulls you close, one hand tangling in your hair.',
+        random(
+          seq(
+            say('Are you sure? I mean — I\'m not complaining, I just—'),
+            'You silence him with a kiss. He stops talking.',
+          ),
+          seq(
+            'He lets out a shaky breath as you pull him down beside you.',
+            say('Right. Yes. This is — this is happening.'),
+          ),
+          seq(
+            say('I\'ve been thinking about this all evening.'),
+            'He pulls you close, one hand tangling in your hair.',
+          ),
         ),
       ),
       kiss(8),
@@ -694,30 +831,70 @@ registerNPC('tour-guide', {
 
     // Looping menu for the makeout scene
     makeOutMenu: seq(
-      random(
-        seq(
-          'His hands trace the curve of your waist. His breath is warm against your neck.',
-          say('You\'re so beautiful. I can\'t think straight.'),
+      cond(
+        npcStat('madeLove'),
+        random(
+          seq(
+            'His hands trace the curve of your waist with practised certainty. He knows where to touch now.',
+            say('I want you. I always want you.'),
+          ),
+          seq(
+            'He kisses the hollow of your throat, then lower, unhurried and sure of himself.',
+            'His confidence is new. You like it.',
+          ),
+          seq(
+            'He pulls you against him, one hand firm on your hip.',
+            say('You feel so good. I can\'t get enough of you.'),
+          ),
+          seq(
+            'His mouth finds the spot below your ear that makes you shiver. He knows exactly what he\'s doing.',
+          ),
+          seq(
+            'You run your hands through his hair and he groans softly.',
+            say('Keep doing that. Don\'t stop.'),
+          ),
         ),
-        seq(
-          'He kisses the hollow of your throat, then your collarbone, then finds your mouth again.',
-          'The world outside your room ceases to exist.',
-        ),
-        seq(
-          'You press against him and he makes a soft, helpless sound.',
-          say('Don\'t stop. Please don\'t stop.'),
-        ),
-        seq(
-          'His fingers trace along your jawline. He kisses you slowly, deliberately, as if memorising the shape of you.',
-        ),
-        seq(
-          'You run your hands through his hair and he shivers.',
-          say('You have no idea what you do to me.'),
+        random(
+          seq(
+            'His hands trace the curve of your waist. His breath is warm against your neck.',
+            say('You\'re so beautiful. I can\'t think straight.'),
+          ),
+          seq(
+            'He kisses the hollow of your throat, then your collarbone, then finds your mouth again.',
+            'The world outside your room ceases to exist.',
+          ),
+          seq(
+            'You press against him and he makes a soft, helpless sound.',
+            say('Don\'t stop. Please don\'t stop.'),
+          ),
+          seq(
+            'His fingers trace along your jawline. He kisses you slowly, deliberately, as if memorising the shape of you.',
+          ),
+          seq(
+            'You run your hands through his hair and he shivers.',
+            say('You have no idea what you do to me.'),
+          ),
         ),
       ),
       kiss(5),
       time(3),
       addNpcStat('affection', 1, { max: 80, hidden: true }),
+      // Perception: read his body language for a deeper moment
+      skillCheck('Perception', 10,
+        random(
+          seq(
+            'You notice his hands are trembling slightly. You lace your fingers through his and squeeze.',
+            'He lets out a breath he didn\'t know he was holding.',
+            say('How do you always know exactly what I need?'),
+            addNpcStat('affection', 2, { max: 85, hidden: true }),
+          ),
+          seq(
+            'There\'s a tension in his shoulders — he\'s holding back, afraid of going too far.',
+            'You pull him closer, giving him permission. The relief on his face is beautiful.',
+            addNpcStat('affection', 2, { max: 85, hidden: true }),
+          ),
+        ),
+      ),
       // Exposure-dependent intimacy
       when(exposed('chest'),
         seq(
@@ -767,9 +944,29 @@ registerNPC('tour-guide', {
       option('Kiss him', 'npc:makeOutKiss'),
       branch('Slow down',
         'You gently press a hand to his chest. He pulls back immediately, eyes searching yours.',
-        say('Too much? I\'m sorry — I got carried away.'),
-        'You tell him it\'s fine. He brushes a strand of hair from your face and smiles.',
-        say('I\'ll take whatever you\'re willing to give. Always.'),
+        cond(
+          npcStat('madeLove'),
+          // Charm: soften the rejection when he's needy
+          skillCheck('Charm', 12,
+            seq(
+              'You cup his face and tell him he\'s wonderful, but you just want to be held right now.',
+              say('Just held? I can do that. I can absolutely do that.'),
+              'The tension leaves his shoulders. He wraps his arms around you instead.',
+              addNpcStat('affection', -1, { hidden: true }),
+            ),
+            seq(
+              say('Did I do something wrong?'),
+              'There\'s a flicker of hurt in his eyes. He covers it quickly.',
+              say('It\'s fine. Of course it\'s fine. Whatever you want.'),
+              addNpcStat('affection', -3, { hidden: true }),
+            ),
+          ),
+          seq(
+            say('Too much? I\'m sorry — I got carried away.'),
+            'You tell him it\'s fine. He brushes a strand of hair from your face and smiles.',
+            say('I\'ll take whatever you\'re willing to give. Always.'),
+          ),
+        ),
         npcInteract('lodgingsChat'),
       ),
       tryStrip(),
@@ -777,20 +974,38 @@ registerNPC('tour-guide', {
 
     // Kissing within the makeout scene — more intense
     makeOutKiss: seq(
-      random(
-        seq(
-          'You kiss him hard. He gasps against your mouth, his hands tightening on your hips.',
-          say('God, you\'re—'),
-          'He doesn\'t finish the sentence. He doesn\'t need to.',
+      cond(
+        npcStat('madeLove'),
+        random(
+          seq(
+            'You kiss him hard. He matches your intensity, pulling you tight against him.',
+            say('More. I want more.'),
+          ),
+          seq(
+            'He catches your mouth with a confidence he didn\'t used to have. The kiss is deep and sure.',
+            'When you pull apart, he chases your lips.',
+          ),
+          seq(
+            'He pins you gently, kissing you with slow, deliberate hunger.',
+            say('You\'re mine. Say it.'),
+            'He grins against your mouth. He\'s teasing, but only just.',
+          ),
         ),
-        seq(
-          'You cup his face and kiss him, deep and unhurried. He melts into you, boneless.',
-          'When you finally pull apart, his eyes are dark and dazed.',
-        ),
-        seq(
-          'He catches your lower lip gently between his teeth. A thrill runs through you.',
-          say('Sorry — was that—'),
-          'You kiss him again before he can apologise.',
+        random(
+          seq(
+            'You kiss him hard. He gasps against your mouth, his hands tightening on your hips.',
+            say('God, you\'re—'),
+            'He doesn\'t finish the sentence. He doesn\'t need to.',
+          ),
+          seq(
+            'You cup his face and kiss him, deep and unhurried. He melts into you, boneless.',
+            'When you finally pull apart, his eyes are dark and dazed.',
+          ),
+          seq(
+            'He catches your lower lip gently between his teeth. A thrill runs through you.',
+            say('Sorry — was that—'),
+            'You kiss him again before he can apologise.',
+          ),
         ),
       ),
       kiss(8),
@@ -834,9 +1049,30 @@ registerNPC('tour-guide', {
       option('Keep going', 'npc:makeOutMenu'),
       option('Kiss him again', 'npc:makeOutKiss'),
       branch('Slow down',
-        say('We should probably... stop. Before I lose what\'s left of my self-control.'),
-        'He presses his forehead against yours, breathing hard.',
-        say('You\'re going to be the death of me. In the best possible way.'),
+        cond(
+          npcStat('madeLove'),
+          skillCheck('Charm', 12,
+            seq(
+              'You kiss his forehead and tell him you want to take things slow tonight.',
+              say('Slow. Right. I can do slow.'),
+              'He lets out a long breath and pulls you against his chest.',
+              say('This is nice too. Just being close.'),
+              addNpcStat('affection', -1, { hidden: true }),
+            ),
+            seq(
+              'He stops. His jaw tightens.',
+              say('You don\'t want to? I thought—'),
+              'He catches himself. Takes a breath.',
+              say('No. It\'s fine. You\'re right. Sorry.'),
+              addNpcStat('affection', -3, { hidden: true }),
+            ),
+          ),
+          seq(
+            say('We should probably... stop. Before I lose what\'s left of my self-control.'),
+            'He presses his forehead against yours, breathing hard.',
+            say('You\'re going to be the death of me. In the best possible way.'),
+          ),
+        ),
         npcInteract('lodgingsChat'),
       ),
       tryStrip(),
@@ -845,9 +1081,17 @@ registerNPC('tour-guide', {
     // Making love — fade to black
     makeLove: (game: Game) => {
       const npc = game.getNPC('tour-guide')
+      const experienced = (npc.stats.get('madeLove') ?? 0) > 0
 
-      // Lead-in
-      const leadIns = [
+      // Lead-in — experienced vs first time
+      const leadIns = experienced ? [
+        ['He pulls you close. There\'s no hesitation this time.',
+         'I want you. Now.'],
+        ['His eyes are dark and certain. He knows what he wants.',
+         'Come here.'],
+        ['He draws you to him with quiet confidence, his lips at your ear.',
+         'I\'ve been thinking about this all day.'],
+      ] : [
         ['He pulls you close, his whole body trembling. His forehead rests against yours.',
          'Are you sure? I need you to be sure.'],
         ['He looks at you — really looks at you — and something shifts behind his eyes.',
@@ -862,7 +1106,11 @@ registerNPC('tour-guide', {
       // Fade to black
       game.add({ type: 'text', text: '\u2022 \u2022 \u2022', color: '#6b7280' })
 
-      const fadeLines = [
+      const fadeLines = experienced ? [
+        'He knows you now — knows what you like, what makes you gasp, what makes you hold on tighter. He takes his time.',
+        'It is unhurried and sure. The awkwardness is gone. In its place, something deeper.',
+        'There is a confidence in his touch that wasn\'t there before. He is learning you, and the lessons are sticking.',
+      ] : [
         'What follows is tender, clumsy, and achingly sincere. He whispers your name like it\'s the only word he knows.',
         'He is gentle and uncertain and impossibly earnest. Every touch is a question; every answer draws him closer.',
         'It is awkward and sweet and over sooner than either of you expected. But the way he holds you afterwards says more than the act itself.',
