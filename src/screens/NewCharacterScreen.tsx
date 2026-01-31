@@ -4,8 +4,14 @@ import { CenteredContent } from '../components/CenteredContent'
 import { AvatarPanel } from '../components/AvatarPanel'
 import { useGame } from '../context/GameContext'
 import { getStartingOutfit } from '../story/Start'
+import type { Hairstyle } from '../model/Player'
 
 export type Specialty = 'Aetherics' | 'Mechanics' | 'Flirtation'
+
+const HAIRSTYLES: { id: Hairstyle; label: string }[] = [
+  { id: 'buns', label: 'Buns' },
+  { id: 'ponytail', label: 'Ponytail' },
+]
 
 interface SpecialtyInfo {
   name: Specialty
@@ -32,17 +38,18 @@ const SPECIALTIES: SpecialtyInfo[] = [
 ]
 
 interface NewCharacterScreenProps {
-  onStart: (name: string, specialty: Specialty | null) => void
+  onStart: (name: string, specialty: Specialty | null, hairstyle: Hairstyle) => void
   onCancel: () => void
 }
 
 export function NewCharacterScreen({ onStart, onCancel }: NewCharacterScreenProps) {
   const [playerName, setPlayerName] = useState('Elise')
   const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty | null>(null)
+  const [selectedHairstyle, setSelectedHairstyle] = useState<Hairstyle>('buns')
 
   const { game, refresh } = useGame()
 
-  // Update avatar outfit when specialty changes
+  // Update avatar when specialty or hairstyle changes
   useEffect(() => {
     const pc = game.player
     pc.stripAll(true)
@@ -52,15 +59,16 @@ export function NewCharacterScreen({ onStart, onCancel }: NewCharacterScreenProp
       pc.addItem(id)
       pc.wearItem(id)
     }
+    pc.hairstyle = selectedHairstyle
     refresh()
-  }, [selectedSpecialty])
+  }, [selectedSpecialty, selectedHairstyle])
 
   const trimmedName = playerName.trim()
   const isValidName = trimmedName.length > 0
 
   const handleStart = () => {
     if (isValidName) {
-      onStart(trimmedName, selectedSpecialty)
+      onStart(trimmedName, selectedSpecialty, selectedHairstyle)
     }
   }
 
@@ -101,6 +109,38 @@ export function NewCharacterScreen({ onStart, onCancel }: NewCharacterScreenProp
               fontFamily: 'var(--font-sans)',
             }}
           />
+        </div>
+
+        {/* Hairstyle Selection */}
+        <div style={{ marginBottom: 'var(--space-lg)' }}>
+          <label style={{ display: 'block', marginBottom: 'var(--space-sm)', color: 'var(--text-muted)' }}>
+            Hairstyle
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${HAIRSTYLES.length}, 1fr)`, gap: 'var(--space-sm)' }}>
+            {HAIRSTYLES.map((hs) => {
+              const isSelected = selectedHairstyle === hs.id
+              return (
+                <button
+                  key={hs.id}
+                  type="button"
+                  onClick={() => setSelectedHairstyle(hs.id)}
+                  style={{
+                    padding: 'var(--space-xs) var(--space-sm)',
+                    background: isSelected ? 'var(--bg-panel)' : 'var(--bg-panel-soft)',
+                    border: '2px solid',
+                    borderColor: isSelected ? 'var(--border-main)' : 'var(--border-subtle)',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    color: 'var(--text-main)',
+                    transition: 'background 0.2s ease, border-color 0.2s ease',
+                    fontWeight: isSelected ? 600 : 400,
+                  }}
+                >
+                  {hs.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Specialty Selection */}

@@ -3,13 +3,10 @@ import { useGame } from '../context/GameContext'
 import { assetUrl } from '../utils/assetUrl'
 import { getItemZOrder } from '../model/Item'
 
-/** Base model layers rendered back-to-front beneath clothing */
-const BASE_LAYERS = [
-  '/images/steamgirl/BackArm.PNG',
-  '/images/steamgirl/GirlBase.PNG',
-  '/images/steamgirl/FrontArm.PNG',
-  '/images/steamgirl/HairBuns.PNG',
-]
+const HAIR_IMAGES: Record<string, string> = {
+  buns: '/images/steamgirl/HairBuns.PNG',
+  ponytail: '/images/steamgirl/HairPonyTail.PNG',
+}
 
 /**
  * Renders the player avatar as layered images: base model layers,
@@ -18,13 +15,20 @@ const BASE_LAYERS = [
 export const AvatarImage = forwardRef<HTMLDivElement>(function AvatarImage(_, ref) {
   const { game } = useGame()
 
+  const baseLayers = [
+    '/images/steamgirl/BackArm.PNG',
+    '/images/steamgirl/GirlBase.PNG',
+    '/images/steamgirl/FrontArm.PNG',
+    HAIR_IMAGES[game.player.hairstyle] ?? HAIR_IMAGES.buns,
+  ]
+
   const clothingLayers = game.player.getWornItems()
     .filter(item => item.template.image)
     .sort((a, b) => getItemZOrder(a.template) - getItemZOrder(b.template))
 
   return (
     <div className="avatar-placeholder" ref={ref} data-avatar>
-      {BASE_LAYERS.map(src => (
+      {baseLayers.map(src => (
         <img key={src} className="avatar-layer" src={assetUrl(src)} alt="" />
       ))}
       {clothingLayers.map(item => {

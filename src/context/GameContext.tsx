@@ -4,10 +4,12 @@ import { Game } from '../model/Game'
 import { getScript, type Instruction } from '../model/Scripts'
 import { GAME_SAVE, GAME_SAVE_AUTO, DEBUG_MODE } from '../constants/storage'
 import type { Specialty } from '../screens/NewCharacterScreen'
+import type { Hairstyle } from '../model/Player'
 
 export type CharacterOptions = {
   name: string
   specialty: Specialty | null
+  hairstyle?: Hairstyle
 }
 
 type GameContextType = {
@@ -93,8 +95,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const init = getScript('init')
     if (init) init(game, { specialty: options.specialty })
 
-    // Override the player name with the user's choice
+    // Override the player name and hairstyle with the user's choices
     game.player.name = options.name
+    game.player.hairstyle = options.hairstyle ?? 'buns'
 
     // Apply specialty bonuses (if a specialty was chosen)
     if (options.specialty) {

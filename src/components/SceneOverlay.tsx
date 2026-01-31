@@ -31,10 +31,12 @@ export function SceneOverlay({ scene }: SceneOverlayProps) {
             {scene.options.map((option, index) => {
               if (option.type === 'button') {
                 const buttonLabel = option.label || 'Continue'
+                const isDisabled = option.disabled || !option.action
                 return (
                   <Button
                     key={index}
                     onClick={() => runScript(option.action)}
+                    disabled={isDisabled}
                   >
                     {buttonLabel}
                   </Button>

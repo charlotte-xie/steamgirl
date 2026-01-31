@@ -1,8 +1,90 @@
 import { Game } from '../model/Game'
+import { makeScripts } from '../model/Scripts'
+import type { Hairstyle } from '../model/Player'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { script, seq, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
+
+// -- Salon scripts ----------------------------------------------------------
+
+const STYLE_COST = 100
+
+type StyleOption = {
+  id: Hairstyle
+  label: string
+  description: string
+  result: string
+  quote: string
+  refresh: string
+}
+
+const STYLES: StyleOption[] = [
+  {
+    id: 'buns',
+    label: 'Buns',
+    description: 'A pair of neat buns, pinned high — classic and refined.',
+    result: 'Madame Voss works your hair into a pair of neat buns, pinned high and secured with tiny brass clasps. She tilts your chin toward the mirror with one finger.',
+    quote: '"Classic. Refined. You could walk into any drawing room in Aetheria and turn heads."',
+    refresh: 'Madame Voss unpins your buns, brushes your hair through with long, careful strokes, and pins them up again — tighter, neater, every strand in its place. "There. Good as new, dear."',
+  },
+  {
+    id: 'ponytail',
+    label: 'Ponytail',
+    description: 'A long, smooth ponytail secured with dark silk — simple and modern.',
+    result: 'Madame Voss unpins your hair with practised fingers and draws it back into a long, smooth ponytail, secured with a ribbon of dark silk. She turns you to face the mirror.',
+    quote: '"There. Simple, elegant, modern. You look like a different girl."',
+    refresh: 'Madame Voss loosens your ponytail, works a scented oil through the length of your hair, and draws it back smooth and gleaming. She ties it off with a fresh ribbon. "Silk makes all the difference."',
+  },
+]
+
+function addSalonOptions(g: Game) {
+  const crown = g.player.inventory.find((i) => i.id === 'crown')?.number ?? 0
+  const canAfford = crown >= STYLE_COST
+  g.add(`Madame Voss gestures to a chart of styles on the wall. "A hundred crowns for any style, dear. What takes your fancy?"`)
+  for (const style of STYLES) {
+    const current = style.id === g.player.hairstyle
+    const label = current
+      ? `${style.label} — refresh (${STYLE_COST} Kr)`
+      : `${style.label} (${STYLE_COST} Kr)`
+    if (canAfford) {
+      g.addOption(['salonStyle', { style: style.id }], label)
+    } else {
+      g.scene.options.push({ type: 'button', action: '', label, disabled: true })
+    }
+  }
+  g.addOption('salonBrowse', 'Just browsing')
+}
+
+makeScripts({
+  salonMenu: (g: Game) => {
+    addSalonOptions(g)
+  },
+  salonBrowse: (g: Game) => {
+    g.run(random(
+      text('You browse the salon\'s display of hairpins, combs, and ornamental clips. Some are set with tiny gems that catch the lamplight. Madame Voss watches you with quiet amusement.'),
+      text('A chart on the wall shows a dozen hairstyles, each illustrated in meticulous detail with names like "The Empress" and "The Aviatrix". Some are marked as requiring appointments.'),
+      text('You examine a shelf of bottled tonics and tinctures — hair oil, rosewater rinse, something labelled "Voss\'s Patent Volumiser" in elegant script.'),
+    ))
+    g.timeLapse(5)
+  },
+  salonStyle: (g: Game, params: { style?: string }) => {
+    const style = STYLES.find(s => s.id === params.style)
+    if (!style) return
+    const refresh = g.player.hairstyle === style.id
+    g.player.removeItem('crown', STYLE_COST)
+    g.player.hairstyle = style.id
+    g.player.setTimer('lastHairstyle', g.time)
+    g.timeLapse(120)
+    if (refresh) {
+      g.add(style.refresh)
+    } else {
+      g.add(style.result)
+      g.add(style.quote)
+    }
+    g.run('addStat', { stat: 'Mood', change: 5, max: 90 })
+  },
+})
 
 const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   uptown: {
@@ -16,6 +98,8 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'school', time: 10 },
       { dest: 'uptown-cafe', time: 2, label: 'Café' },
       { dest: 'uptown-arcade', time: 2, label: 'Arcade' },
+      { dest: 'uptown-salon', time: 2, label: 'Salon' },
+      { dest: 'uptown-clinic', time: 2, label: 'Clinic' },
     ],
     onFirstArrive: (g: Game) => {
       g.add('The streets are wider here, the buildings taller and better kept. Brass lanterns line the pavements, and the shop windows display things you\'ve never seen before — or never thought you could afford. The people walk differently in Uptown. Unhurried. Certain.')
@@ -37,6 +121,10 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             discoverLocation('uptown-cafe', 'You notice a charming café tucked behind a row of ornamental steam-trees, its windows fogged with warmth. A brass sign reads: The Gilt Lily.', '#3b82f6'),
             and(not(locationDiscovered('uptown-arcade')), skillCheck('Perception', 0)),
             discoverLocation('uptown-arcade', 'A grand glass-roofed arcade stretches between two boulevards, its ironwork arches glinting in the light. Inside, boutiques and curiosity shops beckon.', '#3b82f6'),
+            and(not(locationDiscovered('uptown-salon')), skillCheck('Perception', 0)),
+            discoverLocation('uptown-salon', 'A discreet brass plaque beside an elegant doorway reads: Madame Voss — Coiffure & Beautification. Through the frosted glass, you glimpse velvet chairs and gleaming mirrors.', '#3b82f6'),
+            and(not(locationDiscovered('uptown-clinic')), skillCheck('Perception', 0)),
+            discoverLocation('uptown-clinic', 'A polished door of dark wood bears a small engraved sign: Dr. Harland — Physician & Surgeon. The windows are spotless, the curtains drawn.', '#3b82f6'),
             // Morning
             hourBetween(6, 12),
             random(
@@ -160,6 +248,74 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             text('You pass a curiosity shop crammed with oddities — a preserved coelacanth, a compass that points to the nearest source of aether, a jar of something that glows faintly blue.'),
           ),
         ),
+      },
+    ],
+  },
+
+  'uptown-salon': {
+    name: 'Madame Voss\'s Salon',
+    description: 'An elegant salon where Uptown\'s fashionable set come to be coiffed, curled, and made presentable.',
+    image: '/images/uptown/salon.webp',
+    secret: true,
+    links: [
+      { dest: 'uptown', time: 2 },
+    ],
+    onFirstArrive: (g: Game) => {
+      g.add('The salon is a haven of velvet and vanity. Gilt-framed mirrors line the walls, reflecting a dozen versions of yourself back at you. The air is thick with the scent of rosewater and heated tongs. A woman with silver-streaked hair and immaculate posture looks you over from behind the counter.')
+      g.add('"Welcome, dear. I am Madame Voss. Sit — let me see what we have to work with."')
+    },
+    onArrive: (g: Game) => {
+      g.run(random(
+        text('Madame Voss is attending to a client, pinning an elaborate updo into place with brass clips. She acknowledges you with a nod.'),
+        text('The salon hums with quiet conversation. A mechanical hair-dryer whirs softly in the corner, its brass nozzle shaped like a swan\'s neck.'),
+        text('A young apprentice sweeps clippings from the chequered floor while Madame Voss examines a tray of ornamental hairpins.'),
+      ))
+    },
+    activities: [
+      {
+        name: 'See Madame Voss',
+        script: 'salonMenu',
+      },
+    ],
+  },
+
+  'uptown-clinic': {
+    name: 'Dr. Harland\'s Clinic',
+    description: 'A private medical practice with spotless floors and the faint smell of antiseptic.',
+    image: '/images/uptown/clinic.webp',
+    secret: true,
+    links: [
+      { dest: 'uptown', time: 2 },
+    ],
+    onFirstArrive: (g: Game) => {
+      g.add('The clinic is immaculate — white tile, polished brass fittings, and the sharp scent of carbolic soap. A reception desk of dark wood dominates the entrance. Behind it sits a young woman in a starched collar, writing in a leather-bound ledger.')
+      g.add('"Good day. I\'m afraid Dr. Harland is away on business at present. I can take your name if you\'d like to be notified when he returns."')
+    },
+    onArrive: (g: Game) => {
+      g.run(random(
+        text('The receptionist looks up from her ledger. "I\'m afraid the doctor is still away. We expect him back soon, but I couldn\'t say exactly when."'),
+        text('The waiting room is empty. A mechanical clock on the wall ticks with surgical precision. The receptionist offers you a polite, practised smile.'),
+        text('A brass plaque on the wall lists Dr. Harland\'s qualifications in small, precise lettering. The receptionist is sorting correspondence.'),
+      ))
+    },
+    activities: [
+      {
+        name: 'Ask at Reception',
+        script: (g: Game) => {
+          g.run(random(
+            text('"Dr. Harland is attending a medical conference on the continent," the receptionist explains. "He\'s expected back before long. Shall I make a note?"'),
+            text('"The doctor sends his apologies. He was called away rather suddenly — a colleague in need of consultation. These things happen." She smiles thinly.'),
+            text('"I\'m afraid there\'s no one else who can see you at present. The doctor is very particular about who practises under his name." She straightens a stack of papers.'),
+          ))
+          g.timeLapse(5)
+        },
+      },
+      {
+        name: 'Wait',
+        script: (g: Game) => {
+          g.add('You take a seat in the waiting room. The chair is uncomfortable in a way that suggests it was chosen deliberately. The clock ticks. Nothing happens.')
+          g.run('wait', { minutes: 15 })
+        },
       },
     ],
   },

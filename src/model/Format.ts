@@ -26,7 +26,7 @@ export type Content =
 
 /** An option button in a scene. Action is a string expression (resolved via game.run) or an Instruction. */
 export type SceneOptionItem =
-  | { type: 'button'; action: string | Instruction; label?: string }
+  | { type: 'button'; action: string | Instruction; label?: string; disabled?: boolean }
 
 // ============================================================================
 // CONTENT BUILDERS

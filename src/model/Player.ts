@@ -12,6 +12,7 @@ export type TimerName =
   | 'lastWash'
   | 'lastExercise'
   | 'lastEat'
+  | 'lastHairstyle'
 
 /** Named relationship labels for NPCs. Extensible via string literals. */
 export type Relationship =
@@ -22,8 +23,11 @@ export type Relationship =
   | 'enemy'
   | string
 
+export type Hairstyle = 'buns' | 'ponytail'
+
 export interface PlayerData {
   name: string
+  hairstyle?: Hairstyle
   basestats?: Record<string, number>
   timers?: Record<string, number>
   reputation?: Record<string, number>
@@ -45,11 +49,13 @@ export class Player {
   inventory: Item[]
   cards: Card[]
   outfits: OutfitData
+  hairstyle: Hairstyle
   /** Transient flag indicating the player is currently sleeping (not serialized) */
   sleeping: boolean
 
   constructor() {
     this.name = "" // Empty name indicates uninitialized character
+    this.hairstyle = 'buns'
     this.sleeping = false
     this.basestats = new Map<StatName, number>()
     this.stats = new Map<StatName, number>()
@@ -101,6 +107,7 @@ export class Player {
 
     return {
       name: this.name,
+      hairstyle: this.hairstyle,
       basestats: basestatsRecord,
       timers: timersRecord,
       reputation: Object.keys(reputationRecord).length > 0 ? reputationRecord : undefined,
@@ -115,7 +122,8 @@ export class Player {
     const data = typeof json === 'string' ? JSON.parse(json) : json
     const player = new Player()
     player.name = data.name
-    
+    player.hairstyle = data.hairstyle ?? 'buns'
+
     // Deserialize basestats
     if (data.basestats) {
       player.basestats.clear()

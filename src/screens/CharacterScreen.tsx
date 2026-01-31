@@ -13,6 +13,7 @@ const TIMER_LABELS: Record<TimerName, string> = {
   lastWash: 'Last wash',
   lastExercise: 'Last exercise',
   lastEat: 'Last meal',
+  lastHairstyle: 'Last hairstyle',
 }
 
 function formatTimerValue(timerSeconds: number, nowSeconds: number): string {

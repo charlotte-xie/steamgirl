@@ -6,6 +6,7 @@ import { DevControls } from '../components/DevControls'
 import { useGame } from '../context/GameContext'
 import { useGameLoader } from '../context/GameLoaderContext'
 import { NewCharacterScreen, type Specialty } from './NewCharacterScreen'
+import type { Hairstyle } from '../model/Player'
 import { InfoScreen } from './InfoScreen'
 import { QuestsScreen } from './QuestsScreen'
 import { CharacterScreen } from './CharacterScreen'
@@ -25,8 +26,8 @@ export function GameScreen() {
 
   // Show character creation screen if game hasn't been started yet
   if (!game.isStarted()) {
-    const handleStart = (name: string, specialty: Specialty | null) => {
-      initializeCharacter({ name, specialty })
+    const handleStart = (name: string, specialty: Specialty | null, hairstyle: Hairstyle) => {
+      initializeCharacter({ name, specialty, hairstyle })
     }
 
     const handleCancel = () => {
