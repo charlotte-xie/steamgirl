@@ -824,6 +824,27 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.player.hasCard(params.cardId)
   },
 
+  /** Check if player has a specific relationship with an NPC. If no relationship specified, checks if any exists. Uses scene NPC if npc omitted. */
+  hasRelationship: (game: Game, params: { relationship?: string; npc?: string }): boolean => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) return false
+    const rel = game.player.relationships.get(npcId)
+    if (!rel) return false
+    if (params.relationship) return rel === params.relationship
+    return true
+  },
+
+  /** Set a relationship with an NPC. Uses scene NPC if npc omitted. Omit relationship to clear. */
+  setRelationship: (game: Game, params: { relationship?: string; npc?: string }) => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) throw new Error('setRelationship requires an npc parameter or active scene NPC')
+    if (params.relationship) {
+      game.player.relationships.set(npcId, params.relationship)
+    } else {
+      game.player.relationships.delete(npcId)
+    }
+  },
+
   /** Check if a card is completed */
   cardCompleted: (game: Game, params: { cardId?: string }): boolean => {
     if (!params.cardId) return false
@@ -866,6 +887,12 @@ const coreScripts: Record<string, ScriptFn> = {
   or: (game: Game, params: { predicates?: Instruction[] }): boolean => {
     if (!params.predicates) return false
     return params.predicates.some(p => exec(game, p))
+  },
+
+  /** True with the given probability (0-1). Evaluated at runtime. */
+  chance: (_game: Game, params: { probability?: number }): boolean => {
+    const p = params.probability ?? 0.5
+    return Math.random() < p
   },
 
   /** True when debug mode is enabled */

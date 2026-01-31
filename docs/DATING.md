@@ -109,12 +109,9 @@ Four global scripts handle the date lifecycle, registered by `Dating.ts`:
 
 ### NPC Integration
 
-NPCs need two hooks to support dates. NPC positioning is handled automatically by the Date card's `afterUpdate` -- NPC `onMove` hooks do not need date logic.
+NPCs use `maybeApproach` to support dates. NPC positioning is handled automatically by the Date card's `afterUpdate` -- NPC `onMove` hooks do not need date logic.
 
-- **`onWait`** -- If the player is waiting at the meeting location during the date window, trigger `dateApproach`.
-- **`onApproach`** -- If the player clicks the NPC at the meeting location during the date window, trigger `dateApproach`.
-
-Both can use the `handleDateApproach(game, npcId)` helper, which returns `true` if the date system handled the interaction:
+**`maybeApproach`** is called before `onWait` (each 10-minute chunk) and before `onApproach`. If it creates a scene, the wait/approach is cancelled. Use it for date intercepts via `handleDateApproach`:
 
 ```typescript
 import { handleDateApproach } from '../Dating'
@@ -127,15 +124,14 @@ registerNPC('my-npc', {
     npc.followSchedule(game, [[9, 18, 'station']])
   },
 
-  onWait: (game) => {
-    if (handleDateApproach(game)) return
-    // ...normal wait logic
+  // Date intercept — only thing that should go here
+  maybeApproach: (game) => {
+    handleDateApproach(game, 'my-npc')
   },
 
-  onApproach: (game) => {
-    if (handleDateApproach(game)) return
-    // ...normal approach logic
-  },
+  // Normal wait/approach logic — no date guards needed
+  onWait: (game) => { /* ... */ },
+  onApproach: seq(/* ... */),
 })
 ```
 
@@ -154,6 +150,94 @@ NPC affection ranges from 0 to 100. These tiers guide content gating and NPC beh
 | 80--100 | Infatuation / Obsession | Potentially dangerous intensity. Jealousy, possessiveness, or unhealthy attachment may emerge. |
 
 The rate at which affection grows is NPC-specific. A warm, open character like Rob might reach Active Interest quickly through casual flirting, while a guarded gangster might require completing dangerous tasks before budging past Mild Like. Use `max` caps on `addNpcStat` to enforce per-interaction ceilings, and document each NPC's affection budget in their source file.
+
+## Relationships
+
+Relationships track the formal status between the player and NPCs. They interact closely with the dating system — relationship status can gate different date sequences, condition greetings, and unlock new options like breakup.
+
+### Data Model
+
+The `Player` class has a `relationships` field:
+
+```typescript
+type Relationship = 'boyfriend' | 'girlfriend' | 'partner' | 'rival' | 'enemy' | string
+
+// In Player:
+relationships: Map<string, Relationship>
+```
+
+The map key is the NPC ID (e.g. `'tour-guide'`). Serialised as `Record<string, string>` in save data — empty maps are omitted.
+
+### DSL Helpers
+
+| Helper | Type | Description |
+|--------|------|-------------|
+| `hasRelationship(relationship?, npc?)` | Predicate | Check if a relationship exists. If `relationship` omitted, checks for any relationship. If `npc` omitted, infers from current scene NPC. |
+| `setRelationship(relationship, npc?)` | Action | Set a relationship. Pass empty string `''` to clear. If `npc` omitted, infers from current scene NPC. |
+| `chance(probability)` | Predicate | Runtime random check (0–1). Useful for gating relationship proposals. |
+
+### Core Scripts
+
+```typescript
+// In Scripts.ts:
+hasRelationship: (game, { relationship?, npc? }) => boolean
+setRelationship: (game, { relationship?, npc? }) => void
+chance: (game, { probability? }) => boolean
+```
+
+### Patterns
+
+**Conditioning content on relationship:**
+
+```typescript
+cond(
+  hasRelationship('boyfriend'),
+  say('There you are, love!'),       // boyfriend greeting
+  say('Hello again!'),                // default greeting
+)
+```
+
+**Proposing a relationship (probabilistic):**
+
+```typescript
+cond(
+  and(
+    npcStat('affection', { min: 51 }),
+    not(hasRelationship()),
+    chance(0.3),
+  ),
+  seq(
+    say('Would you want to be together? Properly?'),
+    branch('Yes', setRelationship('boyfriend'), addNpcStat('affection', 5)),
+    branch('Not ready', addNpcStat('affection', -10)),
+  ),
+)
+```
+
+**Breaking up:**
+
+```typescript
+setRelationship('')  // clears the relationship (empty string is falsy → deletes)
+addNpcStat('affection', -40, { min: 5 })
+```
+
+**Dispatching different date sequences:**
+
+```typescript
+dateScene: cond(
+  hasRelationship('boyfriend'),
+  robBoyfriendDate(),
+  robNormalDate(),
+),
+```
+
+### Integration with Dating
+
+- **Date greeting** can be conditioned on relationship for warmer boyfriend-specific text
+- **Date scenes** can dispatch to entirely different sequences based on relationship
+- **Walk-home / farewell** scenes can skip the "may I kiss you?" gate for boyfriends and auto-kiss instead
+- **Relationship proposals** are gated by affection thresholds, `not(hasRelationship())`, and `chance()` to avoid repetition
+- **Breakup** is offered as an option during chat interactions when a relationship exists
 
 ## Writing Date Scenes
 

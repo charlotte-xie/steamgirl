@@ -13,11 +13,21 @@ export type TimerName =
   | 'lastExercise'
   | 'lastEat'
 
+/** Named relationship labels for NPCs. Extensible via string literals. */
+export type Relationship =
+  | 'boyfriend'
+  | 'girlfriend'
+  | 'partner'
+  | 'rival'
+  | 'enemy'
+  | string
+
 export interface PlayerData {
   name: string
   basestats?: Record<string, number>
   timers?: Record<string, number>
   reputation?: Record<string, number>
+  relationships?: Record<string, string>
   inventory: ItemData[]
   cards: CardData[]
   outfits?: OutfitData
@@ -30,6 +40,8 @@ export class Player {
   basestats: Map<StatName, number>
   timers: Map<TimerName, number>
   reputation: Map<string, number>
+  /** NPC relationships — maps NPC ID to relationship label (e.g. 'boyfriend', 'rival'). */
+  relationships: Map<string, Relationship>
   inventory: Item[]
   cards: Card[]
   outfits: OutfitData
@@ -43,6 +55,7 @@ export class Player {
     this.stats = new Map<StatName, number>()
     this.timers = new Map<TimerName, number>()
     this.reputation = new Map<string, number>()
+    this.relationships = new Map<string, string>()
     // Initialize all stats to 0
     STAT_NAMES.forEach(statName => {
       this.basestats.set(statName, 0)
@@ -80,11 +93,18 @@ export class Player {
       }
     })
 
+    // Convert relationships Map to Record
+    const relationshipsRecord: Record<string, string> = {}
+    this.relationships.forEach((value, npcId) => {
+      relationshipsRecord[npcId] = value
+    })
+
     return {
       name: this.name,
       basestats: basestatsRecord,
       timers: timersRecord,
       reputation: Object.keys(reputationRecord).length > 0 ? reputationRecord : undefined,
+      relationships: Object.keys(relationshipsRecord).length > 0 ? relationshipsRecord : undefined,
       inventory: this.inventory.map(item => item.toJSON()),
       cards: this.cards.map(card => card.toJSON()),
       outfits: this.outfits,
@@ -120,6 +140,15 @@ export class Player {
       Object.entries(data.reputation).forEach(([repName, value]) => {
         if (typeof value === 'number') {
           player.reputation.set(repName, value)
+        }
+      })
+    }
+
+    // Deserialize relationships
+    if (data.relationships) {
+      Object.entries(data.relationships).forEach(([npcId, value]) => {
+        if (typeof value === 'string') {
+          player.relationships.set(npcId, value)
         }
       })
     }

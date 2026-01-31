@@ -650,6 +650,14 @@ export const hasReputation = (reputation: string, options?: { min?: number; max?
 export const hasCard = (cardId: string): Instruction =>
   run('hasCard', { cardId })
 
+/** Check if player has a relationship with an NPC. Uses scene NPC if npc omitted. */
+export const hasRelationship = (relationship?: string, npc?: string): Instruction =>
+  run('hasRelationship', { relationship, npc })
+
+/** Set a relationship with an NPC. Uses scene NPC if npc omitted. */
+export const setRelationship = (relationship: string, npc?: string): Instruction =>
+  run('setRelationship', { relationship, npc })
+
 /** Check if a card is completed */
 export const cardCompleted = (cardId: string): Instruction =>
   run('cardCompleted', { cardId })
@@ -669,6 +677,10 @@ export const timeElapsed = (timer: string, minutes: number): Instruction =>
 /** True when debug mode is enabled */
 export const debug = (): Instruction =>
   run('debug', {})
+
+/** True with the given probability (0-1). Evaluated at runtime. */
+export const chance = (probability: number): Instruction =>
+  run('chance', { probability })
 
 /** Negate a predicate */
 export const not = (predicate: Instruction): Instruction =>

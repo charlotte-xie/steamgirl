@@ -46,6 +46,7 @@ import {
   hideNpcImage, showNpcImage,
   hasStat, npcStat, skillCheck,
   run, and, not, hasCard, inLocation,
+  hasRelationship, setRelationship, chance,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -149,21 +150,36 @@ function robFirstTour(): Instruction {
 /** Repeat tour: more relaxed, varied stops, flirt potential. */
 function robRepeatTour(): Instruction {
   return scenes(
-    // Setting off — warmer tone
+    // Setting off — tone varies by relationship
     scene(
       hideNpcImage(),
-      random(
+      cond(
+        hasRelationship('boyfriend'),
         seq(
-          say('Fancy another spin? I know a few spots I skipped last time.'),
-          'He falls into step beside you, matching your pace.',
+          random(
+            seq(
+              say('Come on, love. Let me show you my city properly.'),
+              'He takes your hand and pulls you along.',
+            ),
+            seq(
+              say('I know you\'ve seen it all before. But you haven\'t seen it with me holding your hand.'),
+              'He grins and laces his fingers through yours.',
+            ),
+          ),
         ),
-        seq(
-          say('Back for more? I\'ll take that as a compliment.'),
-          'He grins and gestures for you to follow.',
-        ),
-        seq(
-          say('I was hoping you\'d ask. Come on — I\'ve got something to show you.'),
-          'He sets off eagerly, almost forgetting to wait for you.',
+        random(
+          seq(
+            say('Fancy another spin? I know a few spots I skipped last time.'),
+            'He falls into step beside you, matching your pace.',
+          ),
+          seq(
+            say('Back for more? I\'ll take that as a compliment.'),
+            'He grins and gestures for you to follow.',
+          ),
+          seq(
+            say('I was hoping you\'d ask. Come on — I\'ve got something to show you.'),
+            'He sets off eagerly, almost forgetting to wait for you.',
+          ),
         ),
       ),
       move('default'), time(10),
@@ -252,6 +268,23 @@ function robRepeatTour(): Instruction {
       showNpcImage(),
       'The backstreets are quieter than the main thoroughfares. Rob slows his pace.',
       cond(
+        // Boyfriend: relaxed, natural affection
+        hasRelationship('boyfriend'),
+        seq(
+          'He takes your hand as you walk, threading his fingers through yours.',
+          say('I love this. Just walking with you. No agenda, no tour script — just us.'),
+          branch('Squeeze his hand',
+            'You squeeze his hand. He lifts yours to his lips and kisses your knuckles.',
+            say('I\'m a lucky man.'),
+            addNpcStat('affection', 2, { max: 70, hidden: true }),
+          ),
+          branch('Tease him about his tour script',
+            say('Oi! I\'ll have you know that script is very well written.'),
+            'He grins and bumps your shoulder.',
+            addNpcStat('affection', 1, { max: 70, hidden: true }),
+          ),
+        ),
+        // High affection: vulnerable moment
         npcStat('affection', { min: 15 }),
         seq(
           say('You know, I used to do these tours and it was just... work. Talking to strangers. But with you it\'s different.'),
@@ -272,6 +305,7 @@ function robRepeatTour(): Instruction {
             ),
           ),
         ),
+        // Default
         seq(
           say('Getting to know the backstreets takes a while. Lots of little turns and dead ends.'),
           'He points out a few landmarks — a bakery with a brass chimney, a wall covered in old playbills.',
@@ -280,19 +314,26 @@ function robRepeatTour(): Instruction {
     ),
     // Farewell
     scene(
-      random(
+      cond(
+        hasRelationship('boyfriend'),
         seq(
-          say('Same time next time?'),
-          'He catches himself.',
-          say('I mean — if you want. No pressure.'),
+          say('See you later, love.'),
+          'He kisses you — quick, warm, familiar — then heads off with a wave.',
         ),
-        seq(
-          say('I always enjoy our little walks. Is that odd to say?'),
-          'He scratches the back of his neck, smiling.',
-        ),
-        seq(
-          say('Right then. Back to the station for me.'),
-          'He lingers a moment, as though he\'s forgotten something. Then he gives a small wave.',
+        random(
+          seq(
+            say('Same time next time?'),
+            'He catches himself.',
+            say('I mean — if you want. No pressure.'),
+          ),
+          seq(
+            say('I always enjoy our little walks. Is that odd to say?'),
+            'He scratches the back of his neck, smiling.',
+          ),
+          seq(
+            say('Right then. Back to the station for me.'),
+            'He lingers a moment, as though he\'s forgotten something. Then he gives a small wave.',
+          ),
         ),
       ),
       addNpcStat('affection', 1, { hidden: true }),
@@ -363,8 +404,10 @@ registerNPC('tour-guide', {
       inLocation('dorm-suite'),
       npcInteract('roomChat'),
       seq(
-        // Greeting varies based on shared history
+        // Greeting varies based on shared history and relationship
         cond(
+          hasRelationship('boyfriend'),
+          say('There you are! I was hoping you\'d come by.'),
           hasCard('date'),
           say('Hello again! Looking forward to later.'),
           npcStat('hotelVisited'),
@@ -384,6 +427,9 @@ registerNPC('tour-guide', {
         ),
         when(hasStat('Flirtation', 1),
           option('Flirt', npcInteract('flirt')),
+        ),
+        when(hasRelationship('boyfriend'),
+          option('Break up', npcInteract('breakup')),
         ),
         npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
       ),
@@ -457,6 +503,9 @@ registerNPC('tour-guide', {
       when(hasStat('Flirtation', 1),
         option('Flirt', 'npc:flirt'),
       ),
+      when(hasRelationship('boyfriend'),
+        option('Break up', 'npc:breakup'),
+      ),
       option('Depart Room', 'npc:leaveRoom'),
       npcLeaveOption(),
     ),
@@ -467,6 +516,36 @@ registerNPC('tour-guide', {
       say('Right you are. Thanks for the visit — quite the treat!'),
       moveNpc('tour-guide', null),
       move('hotel', 1),
+    ),
+
+    // ----------------------------------------------------------------
+    // BREAKUP — only available when in a relationship
+    // ----------------------------------------------------------------
+    breakup: scenes(
+      scene(
+        'You tell Rob that you want to talk about your relationship.',
+        say('Oh. I — what do you mean?'),
+        'His smile fades. He can see it in your face already.',
+      ),
+      scene(
+        say('You\'re breaking up with me. Aren\'t you.'),
+        'It isn\'t really a question. His voice is steady but his hands are shaking.',
+        branch('Yes',
+          say('Right. I — right.'),
+          'He takes a deep breath. His eyes are bright but he doesn\'t cry.',
+          say('I understand. I do. I just... I thought we were happy.'),
+          'He manages a small, broken smile.',
+          say('I\'ll always care about you. I hope you know that.'),
+          setRelationship(''),
+          addNpcStat('affection', -40, { min: 5 }),
+          npcLeaveOption('Rob leaves quietly. He doesn\'t look back.'),
+        ),
+        branch('I changed my mind',
+          say('Don\'t scare me like that!'),
+          'He exhales, relieved, and shakes his head.',
+          say('My heart nearly stopped. Come here.'),
+        ),
+      ),
     ),
 
     // ----------------------------------------------------------------
@@ -625,6 +704,204 @@ registerNPC('tour-guide', {
 // ROB'S DATE — BRANCHING PATHS
 // ============================================================================
 
+/** Normal date — the full lake/pier/garden sequence for non-boyfriend dates. */
+function robNormalDate(): Instruction {
+  return scenes(
+    // ── Scene 1: Setting off from City Centre ──
+    scene(
+      hideNpcImage(),
+      'Rob offers you his arm, and together you set off through the lamplit streets.',
+      move('lake', 15),
+      'The city fades behind you as you approach the lake. The evening air is cool and fragrant with coal smoke and distant flowers.',
+    ),
+
+    // ── Scene 2: Arriving at the Lake ──
+    scene(
+      'Steam rises from the lake in languid spirals, catching the last amber light. The surface is mirror-still.',
+      showNpcImage(),
+      say('I come here sometimes after work. It\'s the one place in Aetheria where you can actually hear yourself think.'),
+      'He gazes out across the water, the steam wreathing around you both like something from a dream.',
+    ),
+
+    // ── Scene 3: Lakeside conversation — intimacy choice ──
+    scene(
+      say('You know, when I first came to the city I was terrified. Couldn\'t tell a steam valve from a kettle. But there\'s something about this place that gets under your skin.'),
+      'He glances at you, his expression earnest.',
+      say('I\'m glad you came tonight. Really glad.'),
+      'He moves a little closer on the bench. His arm rests along the back, not quite touching your shoulder.',
+      // Player choice: show intimacy or hold back
+      branch('Lean against him',
+        'You lean against his shoulder. He tenses for a moment, then relaxes, letting out a slow breath.',
+        addNpcStat('affection', 3, { max: 45 }),
+        say('This is... really nice.'),
+        'His voice is barely above a whisper. You feel the warmth of him through his coat.',
+      ),
+      branch('Stay where you are',
+        'You keep a comfortable distance, watching the steam curl over the water.',
+        say('It\'s peaceful here, isn\'t it? Away from all the noise.'),
+        'He smiles — a little wistful, but genuine.',
+      ),
+    ),
+
+    // ── Scene 4: Skill check — Perception reveals something special ──
+    scene(
+      'You sit together in the quiet, watching the last of the daylight dissolve into deep blue.',
+      skillCheck('Perception', 10,
+        seq(
+          'Something catches your eye — a streak of light arcing across the sky, trailing sparks like a tiny clockwork firework.',
+          say('A shooting star! Did you see that? Quick — make a wish!'),
+          'Rob closes his eyes tight, grinning like a child. When he opens them, he catches you watching and goes pink.',
+          say('I\'m not telling you what I wished for. That\'s the rule.'),
+          addNpcStat('affection', 2, { max: 45 }),
+        ),
+        seq(
+          'The stars are beginning to appear, faint pinpricks in the deepening sky.',
+          say('Beautiful night for it. Couldn\'t have asked for better weather.'),
+        ),
+      ),
+    ),
+
+    // ── Scene 5: Route choice — Pier (default) or secret garden (high affection) ──
+    scene(
+      say('Shall we walk a bit further? I know a few spots around here.'),
+      // High-affection path: Rob knows a secret garden
+      cond(
+        npcStat('affection', { min: 35 }),
+        seq(
+          'He hesitates, then lowers his voice.',
+          say('Actually... there\'s a place I\'ve never shown anyone. A garden, hidden behind the old waterworks. It\'s a bit of a scramble to get to, but it\'s worth it. If you trust me.'),
+          'His eyes are bright with a mix of nerves and excitement.',
+          branch('Go to the hidden garden', robGardenPath()),
+          branch('Stick to the pier', robPierPath()),
+        ),
+        // Default: just the pier
+        seq(
+          'He gestures along the lakeside path where lanterns glow like a string of earthbound stars.',
+          say('The pier\'s lovely at night. Come on.'),
+          branch('Walk to the pier', robPierPath()),
+        ),
+      ),
+    ),
+  )
+}
+
+// ============================================================================
+// ROB'S BOYFRIEND DATE
+// ============================================================================
+
+/** Boyfriend date — relaxed, affectionate, intimate. */
+function robBoyfriendDate(): Instruction {
+  return scenes(
+    // ── Scene 1: Setting off — easy warmth ──
+    scene(
+      hideNpcImage(),
+      random(
+        seq(
+          'Rob takes your hand the moment you set off, lacing his fingers through yours as though it\'s the most natural thing in the world.',
+          say('I\'ve been looking forward to this all day, love.'),
+        ),
+        seq(
+          'He pulls you close and kisses your temple before you even say hello.',
+          say('Come on. I\'ve got plans for us tonight.'),
+        ),
+        seq(
+          say('There\'s my favourite person.'),
+          'He wraps an arm around your shoulders as you fall into step together.',
+        ),
+      ),
+      move('lake', 15),
+      'The city fades behind you. There\'s no need to fill the silence — it\'s comfortable, warm, yours.',
+    ),
+
+    // ── Scene 2: Lake — callback to first date ──
+    scene(
+      'The lake is quiet tonight. Steam curls across the surface in slow, silver spirals.',
+      showNpcImage(),
+      random(
+        seq(
+          say('Remember the first time I brought you here? I was so nervous I could barely string a sentence together.'),
+          'He laughs, shaking his head.',
+          say('Now look at us.'),
+        ),
+        seq(
+          say('I was thinking about that shooting star. The wish I wouldn\'t tell you about.'),
+          'He squeezes your hand.',
+          say('It came true, by the way.'),
+        ),
+        seq(
+          say('Same bench, same view, same steam. But it\'s different now, isn\'t it?'),
+          'He looks at you, and his expression is so tender it makes your chest ache.',
+          say('Better. Much better.'),
+        ),
+      ),
+      addNpcStat('affection', 2, { max: 70, hidden: true }),
+    ),
+
+    // ── Scene 3: Intimacy choice ──
+    scene(
+      'You sit together on the bench. Rob\'s arm settles around you, warm and solid.',
+      say('You know what I like about being with you? I don\'t have to try to be interesting. I can just... be.'),
+      branch('Lean into him',
+        'You rest your head against his shoulder. He presses his cheek against your hair.',
+        say('This. Right here. This is everything.'),
+        addNpcStat('affection', 3, { max: 70 }),
+      ),
+      branch('Tease him',
+        'You tell him he was never interesting to begin with.',
+        say('Oi! That\'s — that\'s just rude, that is.'),
+        'But he\'s grinning. He tickles your side until you squirm.',
+        say('Take it back!'),
+        addNpcStat('affection', 2, { max: 70, hidden: true }),
+      ),
+    ),
+
+    // ── Scene 4: Random vignette ──
+    scene(
+      random(
+        // Street performer
+        seq(
+          'A clockwork busker plays a wheezy accordion on the lakeside path. The tune is awful.',
+          say('Our song, love.'),
+          'He offers you his hand with exaggerated formality.',
+          branch('Dance with him',
+            'You sway together to the terrible music, laughing too hard to keep time. Other walkers give you odd looks. Neither of you cares.',
+            addNpcStat('affection', 3, { max: 70 }),
+          ),
+          branch('Applaud the busker',
+            'You clap enthusiastically. The clockwork performer bows, gears clicking.',
+            say('Encore! ... Actually, please don\'t.'),
+          ),
+        ),
+        // Food stall
+        seq(
+          'A vendor is selling roasted chestnuts from a steam-powered cart. The smell is irresistible.',
+          say('My treat. Don\'t argue.'),
+          'He buys a bag and holds it between you, your fingers brushing as you reach in.',
+          'You eat chestnuts and walk in comfortable silence, shoulders bumping.',
+          addNpcStat('affection', 2, { max: 70, hidden: true }),
+        ),
+        // Stargazing
+        seq(
+          'Rob stops and tilts his head back, looking up.',
+          say('There — the Engineer\'s Star. Remember? My granddad\'s favourite.'),
+          skillCheck('Perception', 8,
+            seq(
+              'You spot a second, fainter star just beside it.',
+              say('That one\'s new — or I\'ve never noticed it before. A companion star, maybe.'),
+              'He looks at you with an expression that makes the metaphor very clear.',
+              addNpcStat('affection', 2, { max: 70, hidden: true }),
+            ),
+          ),
+          say('I used to look up and think about all the places I\'d never go. Now I just think about how glad I am to be right here.'),
+        ),
+      ),
+    ),
+
+    // ── Walk home ──
+    ...robWalkHome(),
+  )
+}
+
 /** Pier path — the default scenic route with gift and stargazing. */
 function robPierPath(): Instruction {
   return scenes(
@@ -722,24 +999,88 @@ function robGardenPath(): Instruction {
   )
 }
 
+/**
+ * Rob may ask the player to be his girlfriend/boyfriend.
+ * Conditions: affection > 50, not already in a relationship, 30% chance.
+ * Returns a scene array (empty-looking scene auto-skips if conditions fail).
+ */
+function robMaybeAskRelationship(): Instruction[] {
+  return [
+    scene(
+      cond(
+        and(
+          npcStat('affection', { min: 51 }),
+          not(hasRelationship()),
+          chance(0.3),
+        ),
+        seq(
+          'He takes a breath. His hand finds yours again.',
+          say('I need to say something. I\'ve been thinking about it for a while and if I don\'t say it now I never will.'),
+          'He meets your eyes, and for once there\'s no fidgeting, no looking away.',
+          say('I like you. A lot. More than — well, more than I\'ve liked anyone. And I was wondering if — if you\'d want to be... together. Properly. You and me.'),
+          'His voice cracks on the last word. He\'s trembling.',
+          branch('Yes',
+            say('Really? You mean it?'),
+            'His face lights up — pure, unguarded joy. He squeezes your hand tight.',
+            say('I\'ll be good to you. I promise. I\'ll be the best — I\'ll try, anyway.'),
+            'He laughs, half-crying, and pulls you into a hug that lifts you off your feet.',
+            setRelationship('boyfriend'),
+            addNpcStat('affection', 5, { hidden: true, max: 70 }),
+          ),
+          branch('I\'m not ready',
+            'His smile freezes, then slowly crumbles.',
+            say('Right. No — of course. I understand. I shouldn\'t have — sorry. I\'m sorry.'),
+            'He lets go of your hand and takes a step back. He\'s trying to smile but his eyes are bright.',
+            say('Forget I said anything. Please.'),
+            addNpcStat('affection', -10),
+          ),
+        ),
+      ),
+    ),
+  ]
+}
+
 /** Shared walk-home and farewell scenes. Both paths converge here. */
 function robWalkHome(): Instruction[] {
   return [
     // Walk home
     scene(
       hideNpcImage(),
-      'The evening has grown late. Rob walks you back through the quiet streets, taking the long way round.',
-      move('backstreets', 20),
-      'The backstreets are hushed, the gas lamps flickering. Your footsteps echo in companionable rhythm.',
+      cond(
+        hasRelationship('boyfriend'),
+        seq(
+          'Rob takes your hand as you walk back through the quiet streets. There\'s no hurry.',
+          move('backstreets', 20),
+          'The gas lamps paint warm circles on the cobbles. He hums something tuneless and content.',
+        ),
+        seq(
+          'The evening has grown late. Rob walks you back through the quiet streets, taking the long way round.',
+          move('backstreets', 20),
+          'The backstreets are hushed, the gas lamps flickering. Your footsteps echo in companionable rhythm.',
+        ),
+      ),
     ),
-    // Farewell — affection-gated kiss
+    // Farewell — conditioned on relationship
     scene(
       showNpcImage(),
-      say('I had a really lovely time tonight. Thank you for coming.'),
-      // High affection: Rob asks to kiss you
       cond(
+        // ── Boyfriend farewell: natural kiss, no asking ──
+        hasRelationship('boyfriend'),
+        seq(
+          'He stops under a streetlamp and turns to you. The amber light catches the warmth in his eyes.',
+          say('I never get tired of this, you know. Being with you.'),
+          'He cups your face gently and kisses you — unhurried, sure, the kind of kiss that feels like coming home.',
+          addNpcStat('affection', 3, { hidden: true, max: 70 }),
+          say('Same time next time?'),
+          'He grins. It\'s not really a question.',
+          say('Get home safe, love. I\'ll see you soon.'),
+          'He squeezes your hand one last time, then walks into the steam, whistling.',
+          endDate(),
+        ),
+        // ── High affection: Rob asks to kiss you ──
         npcStat('affection', { min: 40 }),
         seq(
+          say('I had a really lovely time tonight. Thank you for coming.'),
           'He stops under a streetlamp, its amber glow soft on his face. He turns to you, and for once he doesn\'t look away.',
           say('I... would it be all right if I kissed you?'),
           'His voice is barely a whisper. His ears are crimson.',
@@ -749,12 +1090,14 @@ function robWalkHome(): Instruction[] {
               'You close the distance between you. The kiss is gentle, a little clumsy, and over too soon. When you pull apart his eyes are shining.',
               say('I\'ll remember this. Always.'),
               'He touches his lips as though he can\'t quite believe it happened. Then he smiles — the widest, most unguarded smile you\'ve seen from him.',
+              addNpcStat('affection', 5, { hidden: true, max: 55 }),
             ),
+            // Relationship ask — affection > 50, not already together, 30% chance
+            ...robMaybeAskRelationship(),
             // Farewell
             scene(
               say('Get home safe. Please.'),
               'He backs away slowly, still smiling, then turns and disappears into the steam.',
-              addNpcStat('affection', 5, { hidden: true, max: 55 }),
               endDate(),
             ),
           )),
@@ -766,8 +1109,9 @@ function robWalkHome(): Instruction[] {
             endDate(),
           ),
         ),
-        // Below threshold: standard farewell, no kiss
+        // ── Below threshold: standard farewell, no kiss ──
         seq(
+          say('I had a really lovely time tonight. Thank you for coming.'),
           'He hesitates, opens his mouth, closes it again, then settles for a warm smile.',
           say('Get home safe. And... I hope we can do this again sometime.'),
           'He gives a small, almost bashful wave, then turns and disappears into the steam.',
@@ -789,86 +1133,18 @@ registerDatePlan({
   meetLocationName: 'the City Centre',
   waitMinutes: 120,
 
-  onGreeting: standardGreeting('You came! I was starting to worry. You look wonderful. Shall we?'),
+  onGreeting: cond(
+    hasRelationship('boyfriend'),
+    standardGreeting('There you are, love. I\'ve been counting the minutes. Shall we?'),
+    standardGreeting('You came! I was starting to worry. You look wonderful. Shall we?'),
+  ),
   onCancel: standardCancel('Oh. Right. No, that\'s... that\'s fine. Maybe another time.', 20),
   onNoShow: standardNoShow('Rob', 'Rob waited in the City Centre for two hours, but you never showed.', 15),
   onComplete: standardComplete(0),
 
-  dateScene: scenes(
-    // ── Scene 1: Setting off from City Centre ──
-    scene(
-      hideNpcImage(),
-      'Rob offers you his arm, and together you set off through the lamplit streets.',
-      move('lake', 15),
-      'The city fades behind you as you approach the lake. The evening air is cool and fragrant with coal smoke and distant flowers.',
-    ),
-
-    // ── Scene 2: Arriving at the Lake ──
-    scene(
-      'Steam rises from the lake in languid spirals, catching the last amber light. The surface is mirror-still.',
-      showNpcImage(),
-      say('I come here sometimes after work. It\'s the one place in Aetheria where you can actually hear yourself think.'),
-      'He gazes out across the water, the steam wreathing around you both like something from a dream.',
-    ),
-
-    // ── Scene 3: Lakeside conversation — intimacy choice ──
-    scene(
-      say('You know, when I first came to the city I was terrified. Couldn\'t tell a steam valve from a kettle. But there\'s something about this place that gets under your skin.'),
-      'He glances at you, his expression earnest.',
-      say('I\'m glad you came tonight. Really glad.'),
-      'He moves a little closer on the bench. His arm rests along the back, not quite touching your shoulder.',
-      // Player choice: show intimacy or hold back
-      branch('Lean against him',
-        'You lean against his shoulder. He tenses for a moment, then relaxes, letting out a slow breath.',
-        addNpcStat('affection', 3, { max: 45 }),
-        say('This is... really nice.'),
-        'His voice is barely above a whisper. You feel the warmth of him through his coat.',
-      ),
-      branch('Stay where you are',
-        'You keep a comfortable distance, watching the steam curl over the water.',
-        say('It\'s peaceful here, isn\'t it? Away from all the noise.'),
-        'He smiles — a little wistful, but genuine.',
-      ),
-    ),
-
-    // ── Scene 4: Skill check — Perception reveals something special ──
-    scene(
-      'You sit together in the quiet, watching the last of the daylight dissolve into deep blue.',
-      skillCheck('Perception', 10,
-        seq(
-          'Something catches your eye — a streak of light arcing across the sky, trailing sparks like a tiny clockwork firework.',
-          say('A shooting star! Did you see that? Quick — make a wish!'),
-          'Rob closes his eyes tight, grinning like a child. When he opens them, he catches you watching and goes pink.',
-          say('I\'m not telling you what I wished for. That\'s the rule.'),
-          addNpcStat('affection', 2, { max: 45 }),
-        ),
-        seq(
-          'The stars are beginning to appear, faint pinpricks in the deepening sky.',
-          say('Beautiful night for it. Couldn\'t have asked for better weather.'),
-        ),
-      ),
-    ),
-
-    // ── Scene 5: Route choice — Pier (default) or secret garden (high affection) ──
-    scene(
-      say('Shall we walk a bit further? I know a few spots around here.'),
-      // High-affection path: Rob knows a secret garden
-      cond(
-        npcStat('affection', { min: 35 }),
-        seq(
-          'He hesitates, then lowers his voice.',
-          say('Actually... there\'s a place I\'ve never shown anyone. A garden, hidden behind the old waterworks. It\'s a bit of a scramble to get to, but it\'s worth it. If you trust me.'),
-          'His eyes are bright with a mix of nerves and excitement.',
-          branch('Go to the hidden garden', robGardenPath()),
-          branch('Stick to the pier', robPierPath()),
-        ),
-        // Default: just the pier
-        seq(
-          'He gestures along the lakeside path where lanterns glow like a string of earthbound stars.',
-          say('The pier\'s lovely at night. Come on.'),
-          branch('Walk to the pier', robPierPath()),
-        ),
-      ),
-    ),
+  dateScene: cond(
+    hasRelationship('boyfriend'),
+    robBoyfriendDate(),
+    robNormalDate(),
   ),
 })

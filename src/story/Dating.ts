@@ -103,77 +103,39 @@ export interface DatePlan {
 }
 
 // ============================================================================
-// SCRIPT BUILDERS — sensible defaults from simple parameters
+// DSL ACCESSORS — thin wrappers around registered scripts
 // ============================================================================
 
 /**
- * Build a standard greeting script. The NPC says a greeting line and
- * the player gets Cancel / Go options.
- *
- * The accept button label defaults to "Go with him/her/them" based on
- * the NPC's pronouns, or can be overridden with a custom label.
+ * Standard date greeting. NPC says a greeting line and the player
+ * gets Cancel / Go options.
  *
  * @param greeting - Custom greeting text (default: 'You came! Shall we go?')
  * @param goLabel - Custom label for the accept option (default: uses NPC pronouns)
  */
-export function standardGreeting(greeting?: string, goLabel?: string): Script {
-  return (game: Game) => {
-    const npc = game.npc
-    npc.say(greeting ?? 'You came! Shall we go?')
-    const label = goLabel ?? `Go with ${npc.pronouns.object}`
-    game.addOption(['dateCancel', { npc: game.scene.npc }], 'Cancel the date')
-    game.addOption(['dateStart', { npc: game.scene.npc }], label)
-  }
+export function standardGreeting(greeting?: string, goLabel?: string): Instruction {
+  return run('standardGreeting', { greeting, goLabel })
 }
 
 /**
- * Build a standard cancel script. The NPC says something sad,
- * affection drops, and the date card is removed.
+ * Standard cancel. NPC says something sad, affection drops, card removed.
  */
-export function standardCancel(response?: string, penalty = 20): Script {
-  return (game: Game) => {
-    const npcId = game.scene.npc
-    if (!npcId) return
-    const npc = game.getNPC(npcId)
-    npc.say(response ?? 'Oh. Right. Maybe some other time, then.')
-    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
-    game.removeCard('date', true)
-    if (npc.template.onMove) game.run(npc.template.onMove)
-  }
+export function standardCancel(response?: string, penalty = 20): Instruction {
+  return run('standardCancel', { response, penalty })
 }
 
 /**
- * Build a standard no-show script. Narration of the NPC leaving,
- * affection drops, and the date card is removed.
+ * Standard no-show. Narration + affection penalty + card removed.
  */
-export function standardNoShow(npcDisplayName: string, narration?: string, penalty = 15): Script {
-  return (game: Game) => {
-    const card = getDateCard(game)
-    if (!card) return
-    const data = dateCardData(card)
-    const npcId = data.npc
-    game.add(narration ?? `${npcDisplayName} waited for you, but you never came.`)
-    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
-    card.failed = true
-    game.removeCard('date', true)
-  }
+export function standardNoShow(npcDisplayName: string, narration?: string, penalty = 15): Instruction {
+  return run('standardNoShow', { npcDisplayName, narration, penalty })
 }
 
 /**
- * Build a standard completion script. Affection bonus, card removed,
- * NPC returned to schedule.
+ * Standard completion. Affection bonus + card removed + NPC returned to schedule.
  */
-export function standardComplete(bonus = 15): Script {
-  return (game: Game) => {
-    const card = getDateCard(game)
-    if (!card) return
-    const data = dateCardData(card)
-    const npcId = data.npc
-    const npc = game.getNPC(npcId)
-    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: bonus, max: 100 })
-    game.removeCard('date', true)
-    if (npc.template.onMove) game.run(npc.template.onMove)
-  }
+export function standardComplete(bonus = 15): Instruction {
+  return run('standardComplete', { bonus })
 }
 
 // ============================================================================
@@ -382,6 +344,58 @@ registerCardDefinition('date', dateCardDefinition)
 // ============================================================================
 
 const dateScripts = {
+  // ── Standard date helpers (called via DSL accessors) ──
+
+  /** Standard greeting: NPC says hello, player gets Cancel / Go options. */
+  standardGreeting: (game: Game, params: { greeting?: string; goLabel?: string }) => {
+    const npc = game.npc
+    npc.say(params.greeting ?? 'You came! Shall we go?')
+    const label = params.goLabel ?? `Go with ${npc.pronouns.object}`
+    game.addOption(['dateCancel', { npc: game.scene.npc }], 'Cancel the date')
+    game.addOption(['dateStart', { npc: game.scene.npc }], label)
+  },
+
+  /** Standard cancel: NPC says something sad, affection drops, card removed. */
+  standardCancel: (game: Game, params: { response?: string; penalty?: number }) => {
+    const npcId = game.scene.npc
+    if (!npcId) return
+    const npc = game.getNPC(npcId)
+    const penalty = params.penalty ?? 20
+    npc.say(params.response ?? 'Oh. Right. Maybe some other time, then.')
+    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
+    game.removeCard('date', true)
+    if (npc.template.onMove) game.run(npc.template.onMove)
+  },
+
+  /** Standard no-show: narration + affection penalty + card removed. */
+  standardNoShow: (game: Game, params: { npcDisplayName?: string; narration?: string; penalty?: number }) => {
+    const card = getDateCard(game)
+    if (!card) return
+    const data = dateCardData(card)
+    const npcId = data.npc
+    const penalty = params.penalty ?? 15
+    const name = params.npcDisplayName ?? 'They'
+    game.add(params.narration ?? `${name} waited for you, but you never came.`)
+    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
+    card.failed = true
+    game.removeCard('date', true)
+  },
+
+  /** Standard completion: affection bonus + card removed + NPC returned to schedule. */
+  standardComplete: (game: Game, params: { bonus?: number }) => {
+    const card = getDateCard(game)
+    if (!card) return
+    const data = dateCardData(card)
+    const npcId = data.npc
+    const npc = game.getNPC(npcId)
+    const bonus = params.bonus ?? 15
+    game.run('addNpcStat', { npc: npcId, stat: 'affection', change: bonus, max: 100 })
+    game.removeCard('date', true)
+    if (npc.template.onMove) game.run(npc.template.onMove)
+  },
+
+  // ── Date lifecycle scripts ──
+
   /** NPC approaches the player at the meeting point. */
   dateApproach: (game: Game, params: { npc?: string }) => {
     const card = getDateCard(game)
