@@ -174,10 +174,10 @@ registerLocation('tavern', {
 
 ### Event Hooks
 
-- **`onFirstArrive`** -- first visit only (discovery scenes)
-- **`onArrive`** -- every visit (ambient description)
-- **`onRelax`** -- player rests here
-- **`onWait`** -- each 10-minute chunk during `wait()`. Creates a scene to interrupt
+Location definitions have some hooks that allow plugging in custom behaviour.
+- **`onFirstArrive`** -- first visit only (typical flavour / discovery scenes)
+- **`onArrive`** -- triggered every visit. Use for immediate scenes / effects on arrival.
+- **`onWait`** -- each 10-minute chunk during `wait()`. May create a scene to interrupt. Use for periodic / random events
 
 ## NPCs
 
@@ -211,20 +211,20 @@ registerNPC('barkeeper', {
   onMove: (g) => { g.getNPC('barkeeper').followSchedule(g, [[10, 23, 'tavern']]) },
 
   scripts: {
-    // DSL -- simple interactions
+    // DSL -- simple interactions (preferred)
     onBuyDrink: seq(
       say('What\'ll it be?'),
       option('Sweet wine (5 Kr)', 'onOrderWine'),
       npcLeaveOption('You change your mind.', 'Suit yourself.'),
     ),
 
-    // DSL -- multi-scene sequence
+    // DSL -- multi-scene sequence (preferred)
     tour: scenes(
       scene(hideNpcImage(), 'You set off together.', move('market', 15)),
       scene(showNpcImage(), say('I hope that helps!'), npcLeaveOption()),
     ),
 
-    // Imperative -- complex logic
+    // Imperative -- complex logic (fallback, use only if necessary)
     flirt: (game: Game) => {
       const npc = game.getNPC('barkeeper')
       if (npc.affection >= 30) {
@@ -276,6 +276,28 @@ registerItemDefinition('blouse-silk', extendItem('base-top', {
   description: 'A fine silk blouse with mother-of-pearl buttons.',
   calcStats: (player) => { player.modifyStat('Charm', 3) },
 }))
+```
+
+## Impressions
+
+Impressions (`decency`, `appearance`, `attraction`) are 0--100 scores representing how NPCs perceive the player. NPCs should react to impressions rather than checking clothing directly.
+
+Use `indecent()` for public decency gates and `impression()` for NPC-specific reactions:
+
+```typescript
+// Public decency check (default threshold 40, skipped in private locations)
+cond(
+  indecent(), ejectPlayer('city-centre')
+  ....
+)
+
+// NPC reacts to how well-dressed the player is
+when(impression('appearance', { min: 70 }), say('You look wonderful tonight.'))
+
+// NPC comments on low decency
+when(impression('decency', { max: 59 }),
+  say('You might want to put some proper clothes on.'),
+)
 ```
 
 ## Stat Gains from Events
