@@ -1,5 +1,6 @@
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
+import { publicChecks } from './Public'
 
 // Location definitions for the Pier
 const PIER_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -11,6 +12,7 @@ const PIER_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'lake', time: 10 },
     ],
+    onTick: publicChecks(8, 18),
   },
 }
 

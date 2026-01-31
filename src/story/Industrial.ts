@@ -1,5 +1,6 @@
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
+import { dangerousIndecency } from './Public'
 
 // Location definitions for the Industrial District
 const INDUSTRIAL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -14,6 +15,7 @@ const INDUSTRIAL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'warehouse', time: 3 },
       { dest: 'pipeworks', time: 5 },
     ],
+    onTick: dangerousIndecency(6, 20),
   },
   factory: {
     name: 'Factory',

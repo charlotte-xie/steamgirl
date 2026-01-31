@@ -19,7 +19,7 @@ import {
   seq,
 } from '../model/ScriptDSL'
 import { freshenUp } from './Effects'
-import { publicChecks } from './Public'
+import { publicChecks, staffDecencyGate, decencyCheck } from './Public'
 import { getNextLesson, getLessonInProgress, TIMETABLE } from './school/Lessons'
 
 /** Collect unique professor NPC IDs from the timetable. */
@@ -27,6 +27,28 @@ const PROFESSOR_NPCS = [...new Set(Object.values(TIMETABLE).map(t => t.npc))]
 
 /** Professors without timetable classes who appear on campus. */
 const CAMPUS_NPCS = ['prof-nicholas-denver', 'prof-eleanor-hurst']
+
+// ============================================================================
+// INDECENCY GATES
+// ============================================================================
+
+const hallwayGate = staffDecencyGate(40, 'school', [
+  'A university administrator blocks your path in the corridor. "I beg your pardon — you cannot walk around the university dressed like that. Leave the premises at once."',
+  'A porter steps out of his lodge and holds up a hand. "Not a chance. You\'re not coming through here like that. Out. Now."',
+  'A stern-faced professor stops dead in the corridor and stares. "This is an institution of learning, not a — get out. Immediately."',
+])
+
+const greatHallGate = staffDecencyGate(40, 'hallway', [
+  'Every head in the Great Hall turns as you enter. A porter hurries over, red-faced. "You can\'t be in here like that! Back to the corridors — and for heaven\'s sake, sort yourself out."',
+  'The hum of conversation dies as students stare. A dining hall attendant rushes to intercept you. "Out. Please. You\'re causing a scene."',
+])
+
+const libraryGate = staffDecencyGate(40, 'courtyard', [
+  'The librarian looks up from her desk and her eyes go wide. She removes her spectacles with deliberate calm. "Get. Out. Of my library."',
+  'A sharp "Shh!" cuts through the silence — but it\'s not about the noise. The librarian points firmly at the door. "Not in here. Not dressed like that."',
+])
+
+const lessonDecencyCheck = decencyCheck(40, 'You can\'t attend a lesson dressed like that. The professor would send you straight out.')
 
 // ============================================================================
 // LOCATION DEFINITIONS
@@ -45,6 +67,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'courtyard', time: 2 },
       { dest: 'university-toilets', time: 1, label: 'Toilets' },
     ],
+    onArrive: hallwayGate,
     activities: [
       {
         name: 'Attend Lesson',
@@ -52,6 +75,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         label: 'Attend Lesson',
         script: (g: Game) => g.run('attendLesson', {}),
         condition: (g: Game) => !!getNextLesson(g),
+        checkAccess: lessonDecencyCheck,
       },
     ],
   },
@@ -62,6 +86,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hallway', time: 2 },
     ],
+    onArrive: greatHallGate,
     activities: [
       {
         name: 'Socialise in Great Hall',
@@ -124,6 +149,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         label: 'Attend Lesson',
         script: (g: Game) => g.run('attendLesson', {}),
         condition: (g: Game) => !!getNextLesson(g),
+        checkAccess: lessonDecencyCheck,
       },
     ],
   },
@@ -156,6 +182,8 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'courtyard', time: 2 },
     ],
     onArrive: (g: Game) => {
+      libraryGate(g)
+      if (g.currentLocation !== 'library') return
       for (const id of CAMPUS_NPCS) g.getNPC(id)
     },
     activities: [

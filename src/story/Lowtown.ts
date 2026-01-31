@@ -3,6 +3,7 @@ import { registerNPC } from '../model/NPC'
 import type { ScheduleEntry } from '../model/NPC'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
+import { dangerousIndecency } from './Public'
 
 // Location definitions for Lowtown
 const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -26,6 +27,7 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       g.getNPC('elvis-crowe')
       g.getNPC('jonny-elric')
     },
+    onTick: dangerousIndecency(0, 24),
   },
   'back-alley': {
     name: 'Back Alley',
@@ -34,6 +36,7 @@ const LOWTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'lowtown', time: 2 },
     ],
+    onTick: dangerousIndecency(0, 24),
   },
 }
 

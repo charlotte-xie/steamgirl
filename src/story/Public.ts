@@ -9,6 +9,51 @@ import {
   branch, choice, skillCheck,
 } from '../model/ScriptDSL'
 
+// ── Generic indecency helpers ────────────────────────────────────────────
+
+/**
+ * Returns a `checkAccess` function that blocks access when decency is below
+ * the given threshold. Use on links or activities.
+ */
+export function decencyCheck(threshold: number, message: string) {
+  return (game: Game): string | null => {
+    const d = calcBaseImpression(game, 'decency')
+    return d < threshold ? message : null
+  }
+}
+
+/**
+ * Returns an `onArrive` script for upscale venues. If decency is below
+ * the threshold, shows a random refusal text and ejects the player.
+ */
+export function staffDecencyGate(threshold: number, ejectTo: string, texts: string[]) {
+  return (game: Game) => {
+    const d = calcBaseImpression(game, 'decency')
+    if (d >= threshold) return
+    game.run(seq(random(...texts.map(t => text(t))), ejectPlayer(ejectTo)))
+  }
+}
+
+/**
+ * Returns an `onTick` script for dangerous areas (no police presence).
+ * If the player is indecent during active hours, there is a chance of
+ * attracting unwanted attention from bad characters.
+ */
+export function dangerousIndecency(startHour: number, endHour: number): Script {
+  return (game: Game) => {
+    const hour = game.hourOfDay
+    if (hour < startHour || hour >= endHour) return
+
+    const decency = calcBaseImpression(game, 'decency')
+    if (decency >= 40) return
+
+    // ~30% chance per 10-minute chunk
+    if (Math.random() > 0.3) return
+
+    game.run('dangerousApproach')
+  }
+}
+
 // ── Police station locations ─────────────────────────────────────────────
 
 const POLICE_DEFINITIONS: Record<LocationId, LocationDefinition> = {
@@ -159,7 +204,61 @@ const escortScene = scenes(
   ),
 )
 
+// ── Dangerous area encounter ─────────────────────────────────────────────
+
+const dangerousApproachText = random(
+  text('A rough-looking man detaches himself from a doorway and saunters toward you, eyes travelling up and down with undisguised interest. "Well, well. What have we here?"'),
+  text('Two men loitering by a lamp post nudge each other and start walking your way. The taller one grins unpleasantly. "You lost, sweetheart? Dressed like that round here?"'),
+  text('A figure steps out of the shadows ahead of you, blocking the narrow street. He cracks his knuckles slowly. "Bit bold, aren\'t you? Walking around like that in this part of town."'),
+  text('You catch movement in the corner of your eye. A wiry man with a scarred lip falls into step beside you, too close. "Interesting look you\'ve got there. Brave choice for these streets."'),
+)
+
+const dangerousEscape = random(
+  text('You quicken your pace and duck around a corner. Footsteps follow for a moment, then fade. Your heart is hammering.'),
+  text('You turn sharply and walk the other way, fast. A coarse laugh follows you but no one gives chase. This time.'),
+  text('You break into a run. Behind you, someone shouts something crude, but the footsteps don\'t follow. You don\'t stop until you\'re well clear.'),
+)
+
+const dangerousEscapeFail = seq(
+  random(
+    text('A hand catches your sleeve and yanks you back. "Not so fast." Rough fingers dig into your arm. By the time you wrench free, your coin purse feels lighter.'),
+    text('You try to slip away but someone grabs your shoulder from behind. There\'s a brief, ugly struggle before they shove you against a wall and you feel a hand in your pocket. Then they\'re gone.'),
+  ),
+  addStat('Mood', -5),
+)
+
+const dangerousStandSuccess = random(
+  text('You meet his gaze steadily and don\'t flinch. Something in your expression gives him pause. He holds up his hands with a mocking smile. "All right, all right. No harm meant." He backs off, but his eyes linger.'),
+  text('"I\'d think carefully about your next move," you say, keeping your voice level. He blinks, reassesses, then shrugs. "Suit yourself." He melts back into the shadows.'),
+)
+
+const dangerousStandFail = seq(
+  random(
+    text('"Oh, she\'s got spirit." He laughs and moves closer. You stand your ground but there\'s nowhere to go. By the time he loses interest and swaggers away, you\'re shaking and your purse is gone.'),
+    text('Your bravado doesn\'t impress him. He crowds you against the wall, breath hot and sour on your face. "Brave little thing." When he finally leaves, your pockets are empty and your nerves are shot.'),
+  ),
+  addStat('Mood', -8),
+)
+
 makeScripts({
+  dangerousApproach: (g: Game) => {
+    g.run(dangerousApproachText)
+    g.run(choice(
+      branch('Try to get away',
+        skillCheck('Agility', 20,
+          dangerousEscape,
+          dangerousEscapeFail,
+        ),
+      ),
+      branch('Stand your ground',
+        skillCheck('Charm', 30,
+          dangerousStandSuccess,
+          dangerousStandFail,
+        ),
+      ),
+    ))
+  },
+
   policemanWarning: (g: Game) => {
     g.run(warningApproach)
     g.run(choice(

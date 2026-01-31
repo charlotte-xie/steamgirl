@@ -5,7 +5,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { script, seq, scenes, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run, indecent, ejectPlayer } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
-import { publicChecks } from './Public'
+import { publicChecks, staffDecencyGate } from './Public'
 
 // -- Salon scripts ----------------------------------------------------------
 
@@ -107,6 +107,18 @@ makeScripts({
   },
 })
 
+// -- Indecency gates for upscale venues ------------------------------------
+
+const cafeGate = staffDecencyGate(50, 'uptown', [
+  'The café hostess takes one look at you and positions herself squarely in the doorway. "I\'m sorry, but The Gilt Lily has a dress code. You\'ll need to come back properly attired."',
+  'A waiter intercepts you before you can take a seat. "I\'m afraid we can\'t have you in here like that, miss. Our clientele expect a certain standard."',
+])
+
+const arcadeGate = staffDecencyGate(40, 'uptown', [
+  'A shopkeeper steps out from behind her counter as you enter the arcade. "Excuse me, miss — you can\'t walk around in here like that. You\'re disturbing the customers."',
+  'The arcade\'s uniformed attendant hurries over, looking pained. "I\'m going to have to ask you to leave, miss. We have a reputation to maintain."',
+])
+
 const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   uptown: {
     name: 'Uptown',
@@ -192,9 +204,13 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'uptown', time: 2 },
     ],
     onFirstArrive: (g: Game) => {
+      cafeGate(g)
+      if (g.currentLocation !== 'uptown-cafe') return
       g.add('The café is all polished wood, etched glass, and the rich smell of coffee. Small brass tables crowd the floor, each occupied by someone who looks like they belong. A mechanical coffee engine hisses and gurgles behind the counter, tended by a woman with sharp eyes and a sharper smile.')
     },
     onArrive: (g: Game) => {
+      cafeGate(g)
+      if (g.currentLocation !== 'uptown-cafe') return
       g.run(random(
         text('The Gilt Lily is busy today. Conversation hums beneath the clink of porcelain and the steady hiss of the coffee engine.'),
         text('A waiter navigates the crowded tables with mechanical precision, balancing a brass tray of tiny pastries.'),
@@ -237,9 +253,13 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'uptown', time: 2 },
     ],
     onFirstArrive: (g: Game) => {
+      arcadeGate(g)
+      if (g.currentLocation !== 'uptown-arcade') return
       g.add('The arcade is a cathedral of commerce — a long gallery of iron and glass, with shops lining both sides and a vaulted roof that lets in pale, filtered light. Brass railings and ornamental clockwork decorate every surface. The air smells of leather, perfume, and new money.')
     },
     onArrive: (g: Game) => {
+      arcadeGate(g)
+      if (g.currentLocation !== 'uptown-arcade') return
       g.run(random(
         text('The Brass Arcade is alive with shoppers, browsers, and idlers. Mechanical window displays rotate and whir, competing for attention.'),
         text('A fortune-telling automaton beckons from a glass booth, its brass hand crooked invitingly. A small queue has formed.'),

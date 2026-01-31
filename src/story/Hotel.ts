@@ -9,6 +9,7 @@ import type { Instruction } from '../model/ScriptDSL'
 import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
 import { freshenUp, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
+import { staffDecencyGate } from './Public'
 
 // ============================================================================
 // HOTEL BOOKING CARD
@@ -675,6 +676,12 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'hotel-kitchens', time: 2 },
     ],
     onArrive: (g: Game) => {
+      staffDecencyGate(50, 'default', [
+        'The doorman takes one look at you and steps firmly into your path. "I\'m sorry, madam, but I cannot allow you into the Imperial dressed like that. Standards must be maintained."',
+        'A uniformed bellhop intercepts you before you reach the front desk. "I\'m afraid we have a strict dress code, madam. You\'ll need to come back properly attired."',
+        'The concierge looks up, and his professional smile freezes. He rises from behind the counter. "Madam, I must ask you to leave. The Imperial has a reputation to uphold."',
+      ])(g)
+      if (g.currentLocation !== 'hotel') return
       g.add('The lobby is warm and softly lit. A concierge in a tailored waistcoat nods from behind a polished brass counter.')
     },
     activities: [
@@ -745,6 +752,11 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hotel', time: 1, label: 'Back to Lobby' },
     ],
+    onArrive: staffDecencyGate(50, 'hotel', [
+      'The barman looks up from polishing a glass and frowns. "I\'m going to have to ask you to leave, madam. We have standards here."',
+      'A waiter hurries over before you can sit down. "I\'m sorry, but you can\'t be in here like that. Back to the lobby, please."',
+      'The barman sets down his cocktail shaker with a pointed look. "Not dressed like that, you\'re not. Out."',
+    ]),
     onWait: (g: Game) => {
       // 20% chance per 10-minute chunk of a rich patron approaching
       if (Math.random() < 0.2) {
@@ -796,6 +808,11 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hotel', time: 1, label: 'Back to Lobby' },
     ],
+    onArrive: staffDecencyGate(60, 'hotel', [
+      'The maître d\' steps smoothly into your path. "I\'m terribly sorry, madam, but I cannot seat you. The restaurant has a dress code." He gestures firmly toward the lobby.',
+      'A waiter intercepts you at the entrance. "I\'m afraid we can\'t allow — that is to say, the restaurant requires appropriate attire, madam."',
+      'The maître d\' takes one look at you and shakes his head with practised diplomacy. "Perhaps when you are more suitably dressed, madam. Good day."',
+    ]),
     activities: [
       {
         name: 'Light Lunch (25 Kr)',
@@ -897,6 +914,10 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hotel', time: 2, label: 'Back to Lobby (Lift)' },
     ],
+    onArrive: staffDecencyGate(40, 'hotel', [
+      'A garden attendant hurries over, looking flustered. "I\'m sorry, madam, but you can\'t be up here like that. I\'ll have to ask you to go back to the lobby."',
+      'The lift attendant gives you a scandalised look as the doors open onto the garden. "I think you\'d better go back down, madam. Dressed like that, you\'ll frighten the orchids."',
+    ]),
     onFirstArrive: script(
       text('The lift doors open onto an unexpected paradise. Green leaves and bright flowers surround you, impossibly lush against the industrial skyline. You can see the whole city from here — the university spires, the factory smokestacks, the distant gleam of the river.'),
     ),
