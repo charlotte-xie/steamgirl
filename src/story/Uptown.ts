@@ -331,7 +331,7 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             text('"The doctor sends his apologies. He was called away rather suddenly — a colleague in need of consultation. These things happen." She smiles thinly.'),
             text('"I\'m afraid there\'s no one else who can see you at present. The doctor is very particular about who practises under his name." She straightens a stack of papers.'),
           ))
-          g.timeLapse(5)
+          g.timeLapse(5)  
         },
       },
       {
