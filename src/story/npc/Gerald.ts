@@ -109,10 +109,13 @@ import {
   addItem, addQuest,
   npcStat, addNpcStat,
   stat, skillCheck,
-  chance,
+  chance, gt,
 } from '../../model/ScriptDSL'
 
 const WEEKDAYS = [1, 2, 3, 4, 5]
+
+/** Lust has overtaken affection — Gerald's behaviour shifts. */
+const isLustful = () => gt(npcStat('lust'), npcStat('affection'))
 
 registerNPC('landlord', {
   name: 'Gerald Moss',
@@ -123,6 +126,8 @@ registerNPC('landlord', {
 
   generate: (_game: Game, npc) => {
     npc.location = null
+    npc.stats.set('affection', 0)
+    npc.stats.set('lust', 0)
   },
 
   onMove: (game: Game) => {
@@ -135,8 +140,27 @@ registerNPC('landlord', {
 
   onApproach: seq(
     // First meeting handled by showAround, so this is for repeat encounters
-    // Greetings vary by affection level
+    // Greetings vary by affection level and lust
     cond(
+      // Lustful — his gaze lingers, he's distracted
+      and(isLustful(), npcStat('lust', { min: 10 })),
+      random(
+        seq(
+          text('Gerald looks up when you enter. His eyes travel over you before he catches himself.'),
+          say('Ah. Hello. Come in. I was just... thinking.'),
+          text('He shuffles papers that don\'t need shuffling.'),
+        ),
+        seq(
+          text('Gerald straightens up when he sees you, smoothing his waistcoat.'),
+          say('Well, well. To what do I owe the pleasure?'),
+          text('There\'s a warmth in his voice that isn\'t quite fatherly.'),
+        ),
+        seq(
+          text('Gerald is staring at the doorway when you appear, as though he was expecting you. Or hoping.'),
+          say('I was hoping you\'d stop by. I mean — I had a question about your room. About the radiator.'),
+          text('He clearly didn\'t have a question about the radiator.'),
+        ),
+      ),
       npcStat('affection', { min: 25 }),
       random(
         seq(
@@ -188,10 +212,19 @@ registerNPC('landlord', {
   ),
 
   onWait: when(chance(0.2),
-    random(
-      text('Gerald turns a page in his ledger and sighs.'),
-      text('Gerald sips his tea and stares at a damp patch on the wall with evident resignation.'),
-      text('Gerald scratches something out in his ledger and rewrites it, shaking his head.'),
+    cond(
+      isLustful(),
+      random(
+        text('Gerald glances at you over his ledger, then looks away quickly when you notice.'),
+        text('Gerald clears his throat and adjusts his collar. He seems warm, despite the draught.'),
+        text('You catch Gerald watching you. He pretends to be reading.'),
+      ),
+      // Normal ambient
+      random(
+        text('Gerald turns a page in his ledger and sighs.'),
+        text('Gerald sips his tea and stares at a damp patch on the wall with evident resignation.'),
+        text('Gerald scratches something out in his ledger and rewrites it, shaking his head.'),
+      ),
     ),
   ),
 
@@ -201,6 +234,27 @@ registerNPC('landlord', {
     // he warms to the player.
     onChat: seq(
       cond(
+        // Lustful — he's distracted, conversation is strained
+        and(isLustful(), npcStat('lust', { min: 10 })),
+        random(
+          seq(
+            text('You make conversation, but Gerald keeps losing the thread. His eyes drift.'),
+            say('Sorry, what were you saying? I was... miles away.'),
+            text('He wasn\'t miles away. He was about two feet away, looking at your collar.'),
+            addNpcStat('affection', 1, { max: 30 }),
+          ),
+          seq(
+            text('Gerald offers you tea. His hand brushes yours when he passes the cup and he pulls back as if stung.'),
+            say('Sorry. Clumsy of me. Sugar?'),
+            text('The conversation that follows is oddly formal, as if he\'s compensating.'),
+            addNpcStat('affection', 1, { max: 30 }),
+          ),
+          seq(
+            say('You\'re looking well today. I mean — healthy. The building agrees with you.'),
+            text('He buries his face in his tea mug.'),
+            addNpcStat('affection', 1, { max: 30 }),
+          ),
+        ),
         npcStat('affection', { min: 20 }),
         // Warmer — he's starting to enjoy the company
         random(
@@ -323,6 +377,66 @@ registerNPC('landlord', {
         ),
       ),
       time(5),
+    ),
+
+    // ── Bathroom intrusion ──────────────────────────────────────────
+    // Triggered by lodgings bathroom onWait when Gerald is around.
+    // Player is behind the folding screen. Behaviour varies by lust/affection.
+    // Always +2 lust (capped 40) — accidental, but it lingers on his mind.
+    bathroomIntrusion: seq(
+      cond(
+        // Lustful — he lingers, finds excuses
+        isLustful(),
+        random(
+          seq(
+            say('Occupied? Sorry, sorry — I just need to check the pipes.'),
+            text('He doesn\'t leave immediately. You hear him moving around on the other side of the screen, taking his time.'),
+            say('Right. All looks fine. I\'ll, er... leave you to it.'),
+            text('The door closes. You\'re not sure he needed to check anything.'),
+          ),
+          seq(
+            say('Oh! Didn\'t realise anyone was in here.'),
+            text('There\'s a pause. He doesn\'t leave.'),
+            say('You know, the lock on this door needs fixing. I should... I\'ll get round to it.'),
+            text('He leaves, eventually. The lock doesn\'t get fixed.'),
+          ),
+          seq(
+            say('Just me. Need to check the, ah... the pressure gauge.'),
+            text('You hear him standing very still on the other side of the screen. The pressure gauge is in the stairwell.'),
+            say('All fine. All fine. Carry on.'),
+            text('The door closes slowly.'),
+          ),
+        ),
+        // Moderate affection — friendly and embarrassed
+        npcStat('affection', { min: 15 }),
+        random(
+          seq(
+            say('Oh! Sorry, love — didn\'t know you were in here. I\'ll come back.'),
+            text('The door clicks shut. You hear him muttering an apology as he retreats down the hall.'),
+          ),
+          seq(
+            say('Occupied? Right, right. My mistake. Shout when you\'re done, will you?'),
+            text('He\'s gone before you can answer. At least he knocked.'),
+          ),
+        ),
+        // Default — purely functional
+        random(
+          seq(
+            say('Anyone in here? I need to check the boiler pressure.'),
+            text('You call out from behind the screen. There\'s a grunt of acknowledgement.'),
+            say('Right. I\'ll come back.'),
+            text('The door closes.'),
+          ),
+          seq(
+            text('The door opens a crack.'),
+            say('Hello? Just me — need to read the meter.'),
+            text('You tell him you\'re bathing. The door shuts quickly.'),
+            say('Sorry. Carry on.'),
+          ),
+        ),
+      ),
+      // Always builds lust — he didn't see anything, but he knows you were undressed
+      addNpcStat('lust', 2, { max: 40, hidden: true }),
     ),
 
     showAround: scenes(

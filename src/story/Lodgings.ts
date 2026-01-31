@@ -2,7 +2,12 @@ import { Game } from '../model/Game'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { makeScripts } from '../model/Scripts'
-import { takeWash, freshenUp, applyRelaxation } from './Effects'
+import {
+  when, and, chance, seq,
+  text, setNpc, npcInteract,
+  hourBetween, isWeekday,
+} from '../model/ScriptDSL'
+import { freshenUp } from './Effects'
 import { bedActivity } from './Sleep'
 
 // Location definitions for the player's lodgings
@@ -50,12 +55,19 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   },
   bathroom: {
     name: 'Bathroom',
-    description: 'A small shared bathroom with steam-powered fixtures.',
+    description: 'A small shared bathroom with steam-powered fixtures. A folding screen separates the bath from the door.',
     image: '/images/bathroom.jpg',
     links: [
       { dest: 'bedroom', time: 1, label: 'Back to Your Room' },
       { dest: 'stairwell', time: 1 },
     ],
+    onWait: when(and(isWeekday(), hourBetween(12, 16), chance(0.15)),
+      seq(
+        text('You hear heavy footsteps on the landing, then a knock at the bathroom door.'),
+        setNpc('landlord'),
+        npcInteract('bathroomIntrusion'),
+      ),
+    ),
     activities: [
       {
         name: 'Freshen Up',
@@ -63,20 +75,11 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       },
       {
         name: 'Take Shower',
-        script: (g: Game, _params: {}) => {
-          g.add('You step into the shower. The warm steam-powered water cascades over you, washing away the grime of the city. The brass fixtures gleam as steam rises around you.')
-          g.timeLapse(10)
-          takeWash(g)
-        },
+        script: ['shower', { text: 'You step into the shower. The warm steam-powered water cascades over you, washing away the grime of the city. The brass fixtures gleam as steam rises around you.' }],
       },
       {
         name: 'Relaxing Bath',
-        script: (g: Game, _params: {}) => {
-          g.add('You fill the tub with steaming hot water and sink into its warmth. The steam-powered heating coils keep the water at a perfect temperature. You close your eyes and let the stress of the day melt away.')
-          g.timeLapse(60)
-          takeWash(g)
-          applyRelaxation(g, 60, 1.0)
-        },
+        script: ['bath', { text: 'You undress and fill the tub with steaming hot water. The steam-powered heating coils keep the water at a perfect temperature. You sink in and let the stress of the day melt away.' }],
       },
     ],
   },

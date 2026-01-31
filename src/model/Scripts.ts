@@ -898,6 +898,12 @@ const coreScripts: Record<string, ScriptFn> = {
     return loc ? loc.discovered : false
   },
 
+  /** Check if the current day is a weekday (Mon-Fri) */
+  isWeekday: (game: Game): boolean => {
+    const day = game.date.getDay()
+    return day >= 1 && day <= 5
+  },
+
   /** Check if the current hour is within a range (supports wrap-around, e.g. 22 to 6) */
   hourBetween: (game: Game, params: { from?: number; to?: number }): boolean => {
     const from = params.from ?? 0

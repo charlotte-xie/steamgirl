@@ -102,6 +102,8 @@ registerNPC('jonny-elric', {
 
   generate: (_game: Game, npc) => {
     npc.location = 'lowtown'
+    npc.stats.set('affection', 0)
+    npc.stats.set('lust', 0)
   },
 
   onMove: (game: Game) => {

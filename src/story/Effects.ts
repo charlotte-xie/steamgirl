@@ -399,3 +399,67 @@ export function applyRelaxation(game: Game, minutes: number, quality: number): v
     game.add({ type: 'text', text: `+${Math.round(actualGain)} Energy`, color: '#10b981' })
   }
 }
+
+// ── Bath & Shower scenes ─────────────────────────────────────────────────
+// Shared scripts used by every bathroom. Flavour text passed as params.
+
+const SOAK_TEXTS = [
+  'You close your eyes and let the warmth soak into your muscles.',
+  'The steam curls around you as you sink a little deeper.',
+  'You rest your head on the rim and let your thoughts drift.',
+  'The hot water works its way into every ache and tension.',
+]
+
+/** Get dressed from saved outfit after washing. */
+makeScript('getDressed', (game: Game) => {
+  game.player.wearOutfit('_before-wash')
+  game.player.deleteOutfit('_before-wash')
+  game.player.calcStats()
+  game.add('You dry off and get dressed.')
+})
+
+/** Bath menu — options to soak longer or get out. Re-runs itself for the loop. */
+makeScript('bathMenu', (game: Game, params: { quality?: number; mood?: number }) => {
+  const quality = params.quality ?? 1.0
+  const mood = params.mood ?? 0
+  game.addOption(['bathSoak', { quality, mood }], 'Soak a while longer')
+  game.addOption('getDressed', 'Get out')
+})
+
+/** Soak longer in bath — wait (can trigger scenes), relaxation, then re-show menu. */
+makeScript('bathSoak', (game: Game, params: { quality?: number; mood?: number }) => {
+  const quality = params.quality ?? 1.0
+  const mood = params.mood ?? 0
+  const text = SOAK_TEXTS[Math.floor(Math.random() * SOAK_TEXTS.length)]
+  game.run('wait', { minutes: 15, text })
+  if (game.inScene) return // wait was interrupted by an event
+  applyRelaxation(game, 15, quality)
+  if (mood > 0) game.player.modifyStat('Mood', Math.round(mood / 2))
+  game.run('bathMenu', { quality, mood })
+})
+
+/** Take a shower. Strips, washes, offers to get dressed. */
+makeScript('shower', (game: Game, params: { text?: string }) => {
+  game.player.saveOutfit('_before-wash')
+  game.player.stripAll()
+  game.player.calcStats()
+  game.add(params.text ?? 'You undress and step into the shower. Hot water cascades over you, washing away the grime of the day.')
+  game.timeLapse(10)
+  takeWash(game)
+  game.addOption('getDressed', 'Get dressed')
+})
+
+/** Take a bath. Strips, washes, offers to soak or get out. */
+makeScript('bath', (game: Game, params: { text?: string; quality?: number; mood?: number }) => {
+  const quality = params.quality ?? 1.0
+  const mood = params.mood ?? 0
+  game.player.saveOutfit('_before-wash')
+  game.player.stripAll()
+  game.player.calcStats()
+  game.add(params.text ?? 'You undress and fill the tub with steaming water. Sinking in, you let the warmth envelop you.')
+  game.timeLapse(30)
+  takeWash(game)
+  applyRelaxation(game, 30, quality)
+  if (mood > 0) game.player.modifyStat('Mood', mood)
+  game.run('bathMenu', { quality, mood })
+})

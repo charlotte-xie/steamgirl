@@ -698,6 +698,10 @@ export const cardCompleted = (cardId: string): Instruction =>
 export const locationDiscovered = (location: string): Instruction =>
   run('locationDiscovered', { location })
 
+/** Check if the current day is a weekday (Mon-Fri) */
+export const isWeekday = (): Instruction =>
+  run('isWeekday', {})
+
 /** Check if the current hour is within a range (supports wrap-around, e.g. hourBetween(22, 6) for night) */
 export const hourBetween = (from: number, to: number): Instruction =>
   run('hourBetween', { from, to })

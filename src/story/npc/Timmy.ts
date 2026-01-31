@@ -111,6 +111,8 @@ registerNPC('spice-dealer', {
 
   generate: (_game: Game, npc) => {
     npc.location = 'lowtown'
+    npc.stats.set('affection', 0)
+    npc.stats.set('respect', 0)
   },
 
   onMove: (game: Game) => {

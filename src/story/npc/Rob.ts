@@ -402,6 +402,7 @@ registerNPC('tour-guide', {
 
   generate: (_game: Game, npc: NPC) => {
     npc.location = 'station'
+    npc.stats.set('affection', 0)
   },
 
   onMove: (game: Game) => {

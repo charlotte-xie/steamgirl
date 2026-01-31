@@ -38,7 +38,7 @@ export function getOutfitThumbnail(outfits: OutfitData, name: OutfitName): strin
  * Get all outfit names
  */
 export function getOutfitNames(outfits: OutfitData): OutfitName[] {
-  return Object.keys(outfits)
+  return Object.keys(outfits).filter(name => !name.startsWith('_'))
 }
 
 /**

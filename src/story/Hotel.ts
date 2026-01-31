@@ -7,7 +7,7 @@ import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
 import { script, text, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck } from '../model/ScriptDSL'
-import { freshenUp, takeWash, consumeAlcohol, applyRelaxation } from './Effects'
+import { freshenUp, consumeAlcohol, applyRelaxation } from './Effects'
 import { bedActivity } from './Sleep'
 
 // ============================================================================
@@ -720,20 +720,11 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       },
       {
         name: 'Take Shower',
-        script: (g: Game) => {
-          g.add('You step into the spotless shower cubicle. Hot water flows instantly — the hotel\'s boilers are clearly well maintained.')
-          g.timeLapse(10)
-          takeWash(g)
-        },
+        script: ['shower', { text: 'You undress and step into the spotless shower cubicle. Hot water flows instantly — the hotel\'s boilers are clearly well maintained.' }],
       },
       {
         name: 'Relaxing Bath',
-        script: (g: Game) => {
-          g.add('You fill the claw-footed tub with steaming water and lower yourself in. The brass taps gleam as fragrant steam curls around you. This is considerably nicer than the lodgings.')
-          g.timeLapse(60)
-          takeWash(g)
-          applyRelaxation(g, 60, 1.5)
-        },
+        script: ['bath', { text: 'You undress and fill the claw-footed tub with steaming water. The brass taps gleam as fragrant steam curls around you. This is considerably nicer than the lodgings.', quality: 1.5 }],
       },
     ],
   },
@@ -977,21 +968,11 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       },
       {
         name: 'Take Shower',
-        script: (g: Game) => {
-          g.add('You step into the marble-clad shower. Multiple brass heads rain hot water from every angle.')
-          g.timeLapse(10)
-          takeWash(g)
-        },
+        script: ['shower', { text: 'You undress and step into the marble-clad shower. Multiple brass heads rain hot water from every angle.' }],
       },
       {
         name: 'Luxurious Bath',
-        script: (g: Game) => {
-          g.add('You fill the enormous marble tub with steaming water and add fragrant oils from cut-glass bottles. Sinking in, you feel like royalty. The heated towel rail keeps your robe warm for when you emerge.')
-          g.timeLapse(60)
-          takeWash(g)
-          g.player.modifyStat('Mood', 10)
-          applyRelaxation(g, 60, 2.0)
-        },
+        script: ['bath', { text: 'You undress and fill the enormous marble tub with steaming water, adding fragrant oils from cut-glass bottles. Sinking in, you feel like royalty.', quality: 2.0, mood: 10 }],
       },
     ],
   },
