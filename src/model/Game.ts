@@ -55,6 +55,7 @@ export interface GameData {
   currentLocation?: string
   scene: SceneData
   time: number
+  settings?: Record<string, boolean>
 }
 
 /** 
@@ -83,6 +84,7 @@ export class Game {
   currentLocation: string
   scene: SceneData
   time: number
+  settings: Map<string, boolean>
 
   // Transient UI state (not serialized, survives HMR)
   uiScreen: string = 'game'
@@ -95,6 +97,7 @@ export class Game {
     this.locations = new Map<string, Location>()
     this.npcs = new Map<string, NPC>()
     this.npcsPresent = []
+    this.settings = new Map([['steamy', false]])
     this.currentLocation = 'station'
     this.scene = {
       type: 'story',
@@ -579,6 +582,10 @@ export class Game {
       npcsRecord[id] = npc.toJSON()
     })
     
+    // Convert settings map to Record for JSON serialization
+    const settingsRecord: Record<string, boolean> = {}
+    this.settings.forEach((value, key) => { settingsRecord[key] = value })
+
     return {
       version: this.version,
       score: this.score,
@@ -588,6 +595,7 @@ export class Game {
       currentLocation: this.currentLocation,
       scene: this.scene,
       time: this.time,
+      settings: settingsRecord,
     }
   }
 
@@ -608,7 +616,14 @@ export class Game {
     game.player = Player.fromJSON(data.player)
     game.currentLocation = data.currentLocation ?? 'station'
     game.time = data.time ?? game.time // Use provided time or keep default from constructor
-    
+
+    // Deserialize settings map (backwards-compatible: old saves won't have it)
+    if (data.settings) {
+      for (const [key, value] of Object.entries(data.settings)) {
+        game.settings.set(key, !!value)
+      }
+    }
+
     // Recalculate stats after loading player
     game.player.calcStats()
     

@@ -915,6 +915,11 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.isDebug
   },
 
+  /** True when steamy content is enabled */
+  steamy: (game: Game): boolean => {
+    return game.settings.get('steamy') ?? false
+  },
+
   /** Check if at least `minutes` have elapsed since a recorded timer */
   timeElapsed: (game: Game, params: { timer?: string; minutes?: number }): boolean => {
     if (!params.timer || typeof params.timer !== 'string') {

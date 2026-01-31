@@ -34,6 +34,7 @@ export function SettingsScreen() {
   const { saveGame, loadGame, hasManualSave, returnToStart } = useGameLoader()
   const debugEnabled = useDebugMode()
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [, forceUpdate] = useState(0)
 
   const toggleDebug = () => {
     const next = !debugEnabled
@@ -90,6 +91,33 @@ export function SettingsScreen() {
             <BrassButton onClick={handleExit}>
               Exit
             </BrassButton>
+          </div>
+        </Panel>
+
+        <Panel>
+          <h3>Game Settings</h3>
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <span className="setting-label">Steamy Content</span>
+              <span className="setting-desc">Enable more detailed intimate scenes</span>
+            </div>
+            <button
+              type="button"
+              className={`steam-toggle ${game.settings.get('steamy') ? 'on' : ''}`}
+              onClick={() => {
+                const next = !game.settings.get('steamy')
+                game.settings.set('steamy', next)
+                saveGame(game)
+                forceUpdate(n => n + 1)
+              }}
+              aria-pressed={game.settings.get('steamy') ?? false}
+              title={game.settings.get('steamy') ? 'Disable steamy content' : 'Enable steamy content'}
+            >
+              <span className="steam-toggle-track">
+                <span className="steam-toggle-knob" />
+              </span>
+            </button>
           </div>
         </Panel>
 

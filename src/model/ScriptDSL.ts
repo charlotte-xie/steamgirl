@@ -706,6 +706,10 @@ export const timeElapsed = (timer: string, minutes: number): Instruction =>
 export const debug = (): Instruction =>
   run('debug', {})
 
+/** True when steamy content is enabled in game settings */
+export const steamy = (): Instruction =>
+  run('steamy', {})
+
 /** True with the given probability (0-1). Evaluated at runtime. */
 export const chance = (probability: number): Instruction =>
   run('chance', { probability })
