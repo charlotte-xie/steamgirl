@@ -7,7 +7,7 @@ import { Thumbnail } from '../components/Thumbnail'
 import { TabbedView } from '../components/TabbedView'
 import { getLocation } from '../model/Location'
 import { capitalise } from '../model/Text'
-import { calcImpression, getImpressionNames } from '../model/Impression'
+import { getImpressionStat, impression, getImpressionNames } from '../model/Impression'
 import type { NPC } from '../model/NPC'
 
 // Capitalize each word in a string (for unames like "spice dealer" -> "Spice Dealer")
@@ -93,12 +93,21 @@ function NpcDetail({ npc }: { npc: NPC }) {
             )}
             <div className="npc-detail-stats">
               <h4>Impressions</h4>
-              {getImpressionNames().map(name => (
-                <div key={name} className="npc-stat-row">
-                  <span className="npc-stat-name">{capitalise(name)}</span>
-                  <span className="npc-stat-value">{calcImpression(game, name, npc.id)}</span>
-                </div>
-              ))}
+              {getImpressionNames().map(name => {
+                const base = getImpressionStat(game, name)
+                const npcScore = impression(game, name, npc.id)
+                return (
+                  <div key={name} className="npc-stat-row">
+                    <span className="npc-stat-name">{capitalise(name)}</span>
+                    <span className="npc-stat-value">
+                      {base !== npcScore
+                        ? <>{base} <span style={{ color: 'var(--text-muted)' }}>→</span> {npcScore}</>
+                        : base
+                      }
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 

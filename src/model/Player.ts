@@ -1,6 +1,7 @@
 import { Item, type ItemData, ensureItem, type ClothingSlotKey, type ClothingPosition, type ClothingLayer } from './Item'
 import { Card, type CardData } from './Card'
 import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO } from './Stats'
+import { getImpressionCalculators } from './Impression'
 import { type OutfitData, saveOutfit, deleteOutfit, getOutfitItems } from './Outfits'
 
 export type ItemSpec = string | Item
@@ -511,6 +512,11 @@ export class Player {
     this.basestats.forEach((value, statName) => {
       this.stats.set(statName, value)
     })
+
+    // Compute impression base values from registered calculators
+    for (const [name, calc] of getImpressionCalculators()) {
+      this.stats.set(name, calc(this))
+    }
 
     // Apply modifiers from inventory items
     this.inventory.forEach(item => {

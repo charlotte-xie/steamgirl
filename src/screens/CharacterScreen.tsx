@@ -1,7 +1,9 @@
 import { useGame } from '../context/GameContext'
 import { Frame } from '../components/Frame'
 import { Card } from '../components/Card'
-import { SKILL_NAMES, SKILL_INFO } from '../model/Stats'
+import { SKILL_NAMES, SKILL_INFO, IMPRESSION_NAMES } from '../model/Stats'
+import { capitalise } from '../model/Text'
+import { getImpressionCalculators } from '../model/Impression'
 import type { TimerName } from '../model/Player'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -99,6 +101,37 @@ export function CharacterScreen() {
                       <span className="timer-value">{formatTimerValue(value, game.time)}</span>
                     </div>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {IMPRESSION_NAMES.length > 0 && (
+              <section className="info-section">
+                <h3>Impressions</h3>
+                <div className="info-list">
+                  {IMPRESSION_NAMES.map(name => {
+                    const calculators = getImpressionCalculators()
+                    const rawBase = calculators.get(name)?.(game.player) ?? 0
+                    const base = Math.max(0, Math.min(100, Math.round(rawBase)))
+                    const modified = Math.max(0, Math.min(100, Math.round(game.player.stats.get(name) ?? 0)))
+                    const diff = modified - base
+                    return (
+                      <div key={name} className="skill-item">
+                        <span className="skill-name">{capitalise(name)}</span>
+                        <span className="skill-value">
+                          {base}
+                          {diff !== 0 && (
+                            <span style={{ color: diff > 0 ? '#10b981' : '#ef4444' }}>
+                              {' '}{diff > 0 ? '+' : ''}{diff}
+                            </span>
+                          )}
+                          {diff !== 0 && (
+                            <span style={{ color: 'var(--text-muted)' }}> = {modified}</span>
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </section>
             )}

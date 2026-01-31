@@ -25,7 +25,8 @@ import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
 import { getReputation, type ReputationId } from './Faction'
-import { calcImpression, calcBaseImpression, type ImpressionName } from './Impression'
+import { impression, getImpressionStat } from './Impression'
+import type { ImpressionName } from './Stats'
 
 // ============================================================================
 // SCRIPT TYPES
@@ -862,7 +863,7 @@ const coreScripts: Record<string, ScriptFn> = {
   impression: (game: Game, params: { impression?: string; npc?: string; min?: number; max?: number }): number | boolean => {
     const npcId = params.npc ?? game.scene.npc
     if (!npcId || !params.impression) return 0
-    const value = calcImpression(game, params.impression as ImpressionName, npcId)
+    const value = impression(game, params.impression as ImpressionName, npcId)
     if (params.min === undefined && params.max === undefined) return value
     if (params.min !== undefined && value < params.min) return false
     if (params.max !== undefined && value > params.max) return false
@@ -919,7 +920,7 @@ const coreScripts: Record<string, ScriptFn> = {
   indecent: (game: Game, params: { level?: number } = {}): boolean => {
     const loc = game.location.template
     if (loc.private || loc.isBedroom) return false
-    return calcBaseImpression(game, 'decency') < (params.level ?? 40)
+    return getImpressionStat(game, 'decency') < (params.level ?? 40)
   },
 
   /** Move the player to a destination immediately (no time cost). Used for ejecting from locations. */

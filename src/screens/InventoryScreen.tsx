@@ -6,6 +6,7 @@ import { Panel } from '../components/Panel'
 import { ClothingGrid } from '../components/ClothingGrid'
 import { OutfitManagement } from '../components/OutfitManagement'
 import { capitalise } from '../model/Text'
+import { getImpressionStat } from '../model/Impression'
 import type { Item, ItemCategory } from '../model/Item'
 
 type FilterOption = 'All' | 'Worn' | ItemCategory
@@ -208,7 +209,9 @@ export function InventoryScreen({ onUseItem }: InventoryViewProps) {
             onSelectItem={handleSelectFromGrid}
           />
         </div>
-
+        <div style={{ textAlign: 'center', padding: 'var(--space-sm)', color: 'var(--text-muted)', fontSize: 'var(--font-sm)' }}>
+          Decency: <strong style={{ color: 'var(--text-color)' }}>{getImpressionStat(game, 'decency')}</strong>
+        </div>
       </div>
     </div>
   )

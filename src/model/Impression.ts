@@ -1,48 +1,57 @@
 /**
- * Impression system — computed scores (0-100) representing how an NPC
- * perceives the player. Calculated on demand from player stats, clothing,
- * cards, NPC relationship state, etc.
+ * Impression system — computed scores (0-100) representing how others
+ * perceive the player. Impressions are unified with the stats system:
+ * their base values are computed from player state (clothing, stats),
+ * then item/card modifiers are applied via the standard calcStats pipeline.
  *
- * Impressions are NOT stored — they're derived each time from current state.
- * This means they shift naturally as the player changes clothes, gains
- * effects, or builds relationships.
+ * Each impression has a base calculator registered here. The calculators
+ * run inside Player.calcStats() to set starting values in the stats map.
+ * Items and cards can then modify impressions using player.modifyStat().
  *
- * Each impression type has a calculate function that takes game + npcId
- * and returns a number 0-100.
+ * NPC-specific modifiers are applied on top via impression(). NPCs
+ * can potentially have radically different impressions based on their own
+ * preferences.
  */
 
 import type { Game } from './Game'
+import type { ImpressionName } from './Stats'
 import type { ClothingPosition } from './Item'
 import type { Player } from './Player'
 
-export type ImpressionName = 'attraction' | 'decency'
+type ImpressionCalculator = (player: Player) => number
 
-type ImpressionCalculator = (game: Game, npcId: string) => number
+const baseCalculators = new Map<ImpressionName, ImpressionCalculator>()
 
-const impressions = new Map<ImpressionName, ImpressionCalculator>()
-
-/** Register an impression calculator. */
+/** Register a base impression calculator. */
 export function registerImpression(name: ImpressionName, calc: ImpressionCalculator): void {
-  impressions.set(name, calc)
+  baseCalculators.set(name, calc)
+}
+
+/** Get all registered impression base calculators. */
+export function getImpressionCalculators(): Map<ImpressionName, ImpressionCalculator> {
+  return baseCalculators
 }
 
 /** Get all registered impression names. */
 export function getImpressionNames(): ImpressionName[] {
-  return Array.from(impressions.keys())
+  return Array.from(baseCalculators.keys())
 }
 
-/** Calculate the base impression score (0-100) without NPC modifiers. */
-export function calcBaseImpression(game: Game, name: ImpressionName): number {
-  const calc = impressions.get(name)
-  if (!calc) return 0
-  return Math.max(0, Math.min(100, Math.round(calc(game, ''))))
+/**
+ * Get the impression stat (0-100) from the stats map.
+ * This is the player's impression score after item/card modifiers,
+ * but before NPC-specific adjustments.
+ */
+export function getImpressionStat(game: Game, name: ImpressionName): number {
+  return Math.max(0, Math.min(100, Math.round(game.player.stats.get(name) ?? 0)))
 }
 
-/** Calculate an impression score (0-100) for an NPC. Returns 0 if unknown. */
-export function calcImpression(game: Game, name: ImpressionName, npcId: string): number {
-  const calc = impressions.get(name)
-  if (!calc) return 0
-  let score = calc(game, npcId)
+/**
+ * Get the final impression (0-100) for an NPC.
+ * Starts from the impression stat, then applies NPC-specific modifiers.
+ */
+export function impression(game: Game, name: ImpressionName, npcId: string): number {
+  let score = game.player.stats.get(name) ?? 0
 
   // Let the NPC modify the score based on their preferences
   const npc = game.npcs.get(npcId)
@@ -61,19 +70,15 @@ function isExposed(player: Player, position: ClothingPosition): boolean {
   return layers.every(layer => !player.getWornAt(position, layer))
 }
 
-// ── Impression definitions ────────────────────────────────────────────────
+// ── Impression base calculators ──────────────────────────────────────────
 
-registerImpression('attraction', (game: Game, _npcId: string) => {
-  // Stub: base attraction from Charm. Will be modified by clothing,
-  // exposure, cards, NPC preferences, etc.
-  const charm = game.player.stats.get('Charm') ?? 0
-  return charm
+registerImpression('attraction', (player: Player) => {
+  // Base attraction from Charm. Item/card modifiers add on top.
+  return player.stats.get('Charm') ?? 0
 })
 
-registerImpression('decency', (game: Game, _npcId: string) => {
+registerImpression('decency', (player: Player) => {
   // 0=shameless, 20=naked, 40=barely acceptable, 60=normal, 80=well dressed, 100=exceptional
-  const player = game.player
-
   // Chest/hips exposed: hard caps (override everything else)
   if (isExposed(player, 'hips')) return 20
   if (isExposed(player, 'chest')) return 30

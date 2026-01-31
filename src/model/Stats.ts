@@ -28,7 +28,9 @@ export type MeterName =
   | 'Pain'
   | 'Mood'
 
-export type StatName = MainStatName | SkillName | MeterName
+export type ImpressionName = 'decency' | 'attraction'
+
+export type StatName = MainStatName | SkillName | MeterName | ImpressionName
 
 /**
  * Information about a stat, including description and other metadata.
@@ -155,6 +157,27 @@ export const METER_INFO: Record<MeterName, MeterInfo> = {
     alwaysDisplay: true, // Always show mood meter
   },
 }
+
+/**
+ * Information about an impression stat (computed base, no persistent base).
+ */
+export interface ImpressionInfo {
+  description: string
+}
+
+/**
+ * Map of all impression names to their information.
+ */
+export const IMPRESSION_INFO: Record<ImpressionName, ImpressionInfo> = {
+  decency: {
+    description: 'How appropriately dressed you appear. Affected by clothing and exposure.',
+  },
+  attraction: {
+    description: 'How attractive you appear to others. Based on Charm and modified by clothing and effects.',
+  },
+}
+
+export const IMPRESSION_NAMES: ImpressionName[] = Object.keys(IMPRESSION_INFO) as ImpressionName[]
 
 /**
  * Type for stat modifiers - a function that modifies stats.

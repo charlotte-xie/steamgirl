@@ -40,7 +40,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { consumeAlcohol, freshenUp } from './Effects'
 import { makeScripts } from '../model/Scripts'
-import { calcBaseImpression } from '../model/Impression'
+import { getImpressionStat } from '../model/Impression'
 import {
   say, seq, random, when, cond,
   npcLeaveOption, option,
@@ -79,7 +79,7 @@ const TAVERN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       g.getNPC('elvis-crowe')
       g.getNPC('jonny-elric')
       // Ivan comments if you're indecent, but doesn't kick you out — it's Lowtown
-      const d = calcBaseImpression(g, 'decency')
+      const d = getImpressionStat(g, 'decency')
       if (d < 30) {
         g.run(random(
           '{npc(ivan-hess)} looks you up and down and shakes {npc(ivan-hess):his} head slowly. "You\'re going to get yourself into trouble dressed like that, lass. I\'m saying nothing more."',
@@ -92,7 +92,7 @@ const TAVERN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         name: 'Hang at Bar',
         symbol: '🍺',
         checkAccess: (g: Game) => {
-          const d = calcBaseImpression(g, 'decency')
+          const d = getImpressionStat(g, 'decency')
           return d < 30 ? '{npc(ivan-hess)} gives you a look. "Sort yourself out before you sit at my bar."' : null
         },
         script: (g: Game) => {

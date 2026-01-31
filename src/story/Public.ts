@@ -1,6 +1,6 @@
 import { Game } from '../model/Game'
 import { makeScripts, type Script } from '../model/Scripts'
-import { calcBaseImpression } from '../model/Impression'
+import { getImpressionStat } from '../model/Impression'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import {
@@ -17,7 +17,7 @@ import {
  */
 export function decencyCheck(threshold: number, message: string) {
   return (game: Game): string | null => {
-    const d = calcBaseImpression(game, 'decency')
+    const d = getImpressionStat(game, 'decency')
     return d < threshold ? message : null
   }
 }
@@ -28,7 +28,7 @@ export function decencyCheck(threshold: number, message: string) {
  */
 export function staffDecencyGate(threshold: number, ejectTo: string, texts: string[]) {
   return (game: Game) => {
-    const d = calcBaseImpression(game, 'decency')
+    const d = getImpressionStat(game, 'decency')
     if (d >= threshold) return
     game.run(seq(random(...texts.map(t => text(t))), ejectPlayer(ejectTo)))
   }
@@ -44,7 +44,7 @@ export function dangerousIndecency(startHour: number, endHour: number): Script {
     const hour = game.hourOfDay
     if (hour < startHour || hour >= endHour) return
 
-    const decency = calcBaseImpression(game, 'decency')
+    const decency = getImpressionStat(game, 'decency')
     if (decency >= 40) return
 
     // ~30% chance per 10-minute chunk
@@ -285,7 +285,7 @@ makeScripts({
   },
 
   policemanIndecency: (g: Game) => {
-    const decency = calcBaseImpression(g, 'decency')
+    const decency = getImpressionStat(g, 'decency')
     if (decency < 30) {
       g.run('policemanSevere')
     } else {
@@ -307,7 +307,7 @@ export function publicChecks(startHour: number, endHour: number): Script {
     if (hour < startHour || hour >= endHour) return
 
     // Indecency: decency < 40 in a public place during busy hours
-    const decency = calcBaseImpression(game, 'decency')
+    const decency = getImpressionStat(game, 'decency')
     if (decency >= 40) return
 
     // ~50% chance per 10-minute chunk
