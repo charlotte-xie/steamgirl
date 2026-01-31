@@ -45,7 +45,7 @@ import {
   move, time,
   hideNpcImage, showNpcImage,
   hasStat, npcStat, skillCheck,
-  run, and, not, hasCard, inLocation,
+  run, and, not, or, hasCard, inLocation,
   hasRelationship, setRelationship, chance,
   inBedroom, kiss,
 } from '../../model/ScriptDSL'
@@ -452,6 +452,9 @@ registerNPC('tour-guide', {
           option('Flirt', npcInteract('flirt')),
         ),
         when(hasRelationship('boyfriend'),
+          option('Kiss him', npcInteract('quickKiss')),
+        ),
+        when(hasRelationship('boyfriend'),
           option('Break up', npcInteract('breakup')),
         ),
         npcLeaveOption(undefined, 'No worries. Safe travels!', 'Decline'),
@@ -460,6 +463,27 @@ registerNPC('tour-guide', {
   ),
 
   scripts: {
+    // Quick boyfriend kiss — usable from any chat context
+    quickKiss: seq(
+      random(
+        seq(
+          'You lean in and kiss him. He smiles against your lips.',
+          say('What was that for?'),
+          'You tell him you felt like it.',
+        ),
+        seq(
+          'You catch his hand and pull him close for a kiss.',
+          say('Mmm. Hello to you too.'),
+        ),
+        seq(
+          'You press a quick kiss to the corner of his mouth. He turns his head to catch it properly.',
+          say('You missed. Let me help.'),
+        ),
+      ),
+      time(1),
+      kiss(3),
+    ),
+
     // ----------------------------------------------------------------
     // CITY TOUR
     // ----------------------------------------------------------------
@@ -523,6 +547,9 @@ registerNPC('tour-guide', {
         say('My flat has a window that looks onto a brick wall. This is... rather different.'),
       ),
       option('Chat', 'npc:roomChat'),
+      when(hasRelationship('boyfriend'),
+        option('Kiss him', 'npc:quickKiss'),
+      ),
       when(hasStat('Flirtation', 1),
         option('Flirt', 'npc:flirt'),
       ),
@@ -583,6 +610,9 @@ registerNPC('tour-guide', {
       ),
       option('Chat', 'npc:lodgingsChat'),
       option('Kiss him', 'npc:lodgingsKiss'),
+      when(or(hasCard('flushed'), hasStat('Flirtation', 20)),
+        option('Pull him to the bed', 'npc:makeOut'),
+      ),
       npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
       option('Ask him to leave', 'npc:leaveLodgings'),
     ),
@@ -607,12 +637,105 @@ registerNPC('tour-guide', {
         ),
       ),
       addNpcStat('affection', 2, { max: 75, hidden: true }),
-      time(5),
+      time(2),
       kiss(5),
       option('Chat', 'npc:lodgingsChat'),
       option('Kiss him again', 'npc:lodgingsKiss'),
+      when(or(hasCard('flushed'), hasStat('Flirtation', 20)),
+        option('Pull him to the bed', 'npc:makeOut'),
+      ),
       npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
       option('Ask him to leave', 'npc:leaveLodgings'),
+    ),
+
+    // Making out in bed — escalation from kissing
+    makeOut: seq(
+      'You take his hand and pull him towards the bed. He follows without resistance.',
+      random(
+        seq(
+          say('Are you sure? I mean — I\'m not complaining, I just—'),
+          'You silence him with a kiss. He stops talking.',
+        ),
+        seq(
+          'He lets out a shaky breath as you pull him down beside you.',
+          say('Right. Yes. This is — this is happening.'),
+        ),
+        seq(
+          say('I\'ve been thinking about this all evening.'),
+          'He pulls you close, one hand tangling in your hair.',
+        ),
+      ),
+      kiss(8),
+      time(2),
+      npcInteract('makeOutMenu'),
+    ),
+
+    // Looping menu for the makeout scene
+    makeOutMenu: seq(
+      random(
+        seq(
+          'His hands trace the curve of your waist. His breath is warm against your neck.',
+          say('You\'re so beautiful. I can\'t think straight.'),
+        ),
+        seq(
+          'He kisses the hollow of your throat, then your collarbone, then finds your mouth again.',
+          'The world outside your room ceases to exist.',
+        ),
+        seq(
+          'You press against him and he makes a soft, helpless sound.',
+          say('Don\'t stop. Please don\'t stop.'),
+        ),
+        seq(
+          'His fingers trace along your jawline. He kisses you slowly, deliberately, as if memorising the shape of you.',
+        ),
+        seq(
+          'You run your hands through his hair and he shivers.',
+          say('You have no idea what you do to me.'),
+        ),
+      ),
+      kiss(5),
+      time(3),
+      addNpcStat('affection', 1, { max: 80, hidden: true }),
+      option('Keep going', 'npc:makeOutMenu'),
+      option('Kiss him', 'npc:makeOutKiss'),
+      branch('Slow down',
+        'You gently press a hand to his chest. He pulls back immediately, eyes searching yours.',
+        say('Too much? I\'m sorry — I got carried away.'),
+        'You tell him it\'s fine. He brushes a strand of hair from your face and smiles.',
+        say('I\'ll take whatever you\'re willing to give. Always.'),
+        npcInteract('lodgingsChat'),
+      ),
+    ),
+
+    // Kissing within the makeout scene — more intense
+    makeOutKiss: seq(
+      random(
+        seq(
+          'You kiss him hard. He gasps against your mouth, his hands tightening on your hips.',
+          say('God, you\'re—'),
+          'He doesn\'t finish the sentence. He doesn\'t need to.',
+        ),
+        seq(
+          'You cup his face and kiss him, deep and unhurried. He melts into you, boneless.',
+          'When you finally pull apart, his eyes are dark and dazed.',
+        ),
+        seq(
+          'He catches your lower lip gently between his teeth. A thrill runs through you.',
+          say('Sorry — was that—'),
+          'You kiss him again before he can apologise.',
+        ),
+      ),
+      kiss(8),
+      time(2),
+      addNpcStat('affection', 1, { max: 80, hidden: true }),
+      option('Keep going', 'npc:makeOutMenu'),
+      option('Kiss him again', 'npc:makeOutKiss'),
+      branch('Slow down',
+        say('We should probably... stop. Before I lose what\'s left of my self-control.'),
+        'He presses his forehead against yours, breathing hard.',
+        say('You\'re going to be the death of me. In the best possible way.'),
+        npcInteract('lodgingsChat'),
+      ),
     ),
 
     // Rob leaves your room
