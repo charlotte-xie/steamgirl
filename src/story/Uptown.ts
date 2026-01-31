@@ -5,6 +5,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { script, seq, scenes, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run, indecent, ejectPlayer } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
+import { publicChecks } from './Public'
 
 // -- Salon scripts ----------------------------------------------------------
 
@@ -179,6 +180,7 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         ),
       },
     ],
+    onTick: publicChecks(8, 22),
   },
 
   'uptown-cafe': {

@@ -10,6 +10,7 @@ import { Item } from '../model/Item'
 import { registerItemDefinition } from '../model/Item'
 import { registerNPC } from '../model/NPC'
 import { makeScripts } from '../model/Scripts'
+import { publicChecks } from './Public'
 import { text, option, seq, random, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, script, run } from '../model/ScriptDSL'
 import { eatFood, consumeAlcohol } from './Effects'
 
@@ -356,6 +357,7 @@ const marketLocation: LocationDefinition = {
       script: enterMarketShopping,
     },
   ],
+  onTick: publicChecks(7, 18),
 }
 
 registerLocation('market', marketLocation)

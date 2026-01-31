@@ -1180,6 +1180,13 @@ const coreScripts: Record<string, ScriptFn> = {
         }
       }
 
+      // Location onTick hook — system-level checks (indecency, curfew, etc.)
+      const onTick = game.location.template.onTick
+      if (onTick) {
+        game.run(onTick, { minutes: chunk })
+      }
+      if (game.inScene) return // onTick created a scene — stop waiting
+
       // Location onWait hook — ambient events, random encounters
       const onWait = game.location.template.onWait
       if (onWait) {

@@ -19,6 +19,7 @@ import {
   seq,
 } from '../model/ScriptDSL'
 import { freshenUp } from './Effects'
+import { publicChecks } from './Public'
 import { getNextLesson, getLessonInProgress, TIMETABLE } from './school/Lessons'
 
 /** Collect unique professor NPC IDs from the timetable. */
@@ -145,6 +146,7 @@ const SCHOOL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         script: (g: Game) => g.run(seq(...socialiseCourtyard)),
       },
     ],
+    onTick: publicChecks(8, 18),
   },
   library: {
     name: 'Library',

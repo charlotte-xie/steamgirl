@@ -3,6 +3,7 @@ import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { script, seq, random, text, time, wait, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
+import { publicChecks } from './Public'
 
 // Location definitions for the city of Aetheria
 // These are the standard locations. Others might be added elsewhere
@@ -71,6 +72,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         ),
       },
     ],
+    onTick: publicChecks(6, 23),
   },
   default: {
     name: 'City Centre',
@@ -143,6 +145,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         ),
       },
     ],
+    onTick: publicChecks(7, 22),
   },
   backstreets: {
     name: 'Backstreets',
@@ -211,6 +214,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     onArrive: (g: Game) => {
       g.getNPC('jonny-elric')
     },
+    onTick: publicChecks(8, 20),
   },
   school: {
     name: 'University',
@@ -315,6 +319,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         ),
       },
     ],
+    onTick: publicChecks(8, 18),
   },
   lake: {
     name: 'The Lake',

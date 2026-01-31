@@ -1,5 +1,6 @@
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
+import { publicChecks } from './Public'
 
 const DOCKS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
   docks: {
@@ -13,6 +14,7 @@ const DOCKS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'subway-docks', time: 2, label: 'Underground' },
       { dest: 'industrial-district', time: 10 },
     ],
+    onTick: publicChecks(8, 17),
   },
 }
 

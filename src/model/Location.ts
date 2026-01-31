@@ -36,6 +36,12 @@ export interface LocationDefinition {
    * Fires after NPC onWait hooks (so NPC interactions take priority over ambient events).
    */
   onWait?: Script
+  /**
+   * Called each 10-minute chunk when the player waits at this location, before onWait.
+   * Used for system-level checks (public indecency, curfew, etc.) that are separate
+   * from ambient flavour events. May create a scene to interrupt the wait.
+   */
+  onTick?: Script
   /** If true, this is a bedroom — NPCs can visit/stay overnight. */
   isBedroom?: boolean
   /** If true, this is a private space (bedroom, bathroom, etc.) — player cannot be indecent here. */

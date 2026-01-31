@@ -10,6 +10,9 @@
 // Register effect definitions first (used by other modules)
 import './Effects'
 
+// Register public area checks (used by location modules)
+import './Public'
+
 // Register sleep system
 import './Sleep'
 
