@@ -12,7 +12,7 @@ registerItemDefinition(
       'An elaborate skirt with a pronounced bustle and layers of ruffled fabric.',
     value: 30,
     calcStats: (player) => {
-      player.modifyStat('Agility', -2)
+      player.modifyStat('Dexterity', -2)
       player.modifyStat('appearance', 3)
     },
   })
@@ -57,7 +57,7 @@ registerItemDefinition(
     icon: 'trousers',
     value: 22,
     calcStats: (player) => {
-      player.modifyStat('Agility', 3)
+      player.modifyStat('Dexterity', 3)
     },
   })
 )

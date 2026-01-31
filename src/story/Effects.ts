@@ -38,10 +38,10 @@ export const intoxicatedEffect: CardDefinition = {
     }
     
     // Apply penalties based on alcohol level
-    // Base penalty to Agility (scales with alcohol)
+    // Base penalty to Dexterity (scales with alcohol)
     const agilityPenalty = Math.floor(alcohol / 10) // -1 per 10 alcohol, up to -10 at 100
     if (agilityPenalty > 0) {
-      player.modifyStat('Agility', -agilityPenalty)
+      player.modifyStat('Dexterity', -agilityPenalty)
     }
     
     // Perception penalty starts at alcohol >= 30
@@ -147,7 +147,7 @@ export const starvingEffect: CardDefinition = {
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
     player.modifyStat('Strength', -10)
-    player.modifyStat('Agility', -10)
+    player.modifyStat('Dexterity', -10)
     player.modifyStat('Perception', -20)
     player.modifyStat('Wits', -20)
     player.modifyStat('Charm', -20)
@@ -212,14 +212,18 @@ export function applyKiss(game: Game, intensity: number, max = 50): void {
 
 export const makeupEffect: CardDefinition = {
   name: 'Made Up',
-  description: 'Your makeup is carefully applied, enhancing your appearance.',
+  description: 'Your makeup enhances your appearance.',
   type: 'Effect',
   color: '#f472b6', // Pink
+  // quality: 0 = poor, 1 = passable, 2 = good, 3 = flawless
   onAdded: (game: Game, card: Card) => {
     card.addedAt = game.time
   },
-  calcStats: (player: Player) => {
-    player.modifyStat('appearance', 10)
+  calcStats: (player: Player, card: Card) => {
+    const quality = (card.quality as number) ?? 1
+    const bonus = [2, 5, 10, 15][quality] ?? 5
+    player.modifyStat('appearance', bonus)
+    if (quality >= 3) player.modifyStat('Charm', 3)
   },
   onTime: (game: Game, card: Card) => {
     const addedAt = (card.addedAt as number) ?? 0
@@ -228,6 +232,280 @@ export const makeupEffect: CardDefinition = {
       game.removeCard(card.id)
       game.add({ type: 'text', text: 'Your makeup is starting to look a little tired.', color: '#f472b6' })
     }
+  },
+}
+
+// --- Sweaty effect ---
+
+export const sweatyEffect: CardDefinition = {
+  name: 'Sweaty',
+  description: 'You are flushed and damp with perspiration. Not a good look.',
+  type: 'Effect',
+  color: '#ea580c', // Orange-red
+  calcStats: (player: Player) => {
+    player.modifyStat('Charm', -5)
+    player.modifyStat('appearance', -10)
+    player.modifyStat('Composure', -5)
+  },
+  onTime: (game: Game, card: Card, seconds: number) => {
+    // Sweaty wears off after ~45 minutes (grace 20 min, then 2% per minute)
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - addedAt
+    if (elapsed < 20 * 60) return
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.02, minutes)
+      if (Math.random() > chanceNone) {
+        game.removeCard(card.id)
+        // Being sweaty too long can make you grubby
+        riskDirty(game, 0.5)
+      }
+    }
+  },
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+    game.add({ type: 'text', text: 'You are perspiring noticeably.', color: '#ea580c' })
+  },
+}
+
+// --- Tired effects (escalating: Tired → Exhausted) ---
+
+export const tiredEffect: CardDefinition = {
+  name: 'Tired',
+  description: 'Weariness is catching up with you. Everything takes a little more effort.',
+  type: 'Effect',
+  color: '#6366f1', // Indigo
+  subsumedBy: ['exhausted'],
+  calcStats: (player: Player) => {
+    player.modifyStat('Wits', -5)
+    player.modifyStat('Perception', -5)
+    player.modifyStat('Dexterity', -3)
+    player.modifyStat('Mood', -5)
+  },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    return [{ text: 'You could do with some rest.', urgency: 'info', cardId: card.id }]
+  },
+  onTime: (game: Game, _card: Card, seconds: number) => {
+    // Escalate to Exhausted: 0.2% per minute
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.002, minutes)
+      if (Math.random() > chanceNone) {
+        game.addEffect('exhausted')
+      }
+    }
+  },
+}
+
+export const exhaustedEffect: CardDefinition = {
+  name: 'Exhausted',
+  description: 'You can barely keep your eyes open. Your body is screaming for rest.',
+  type: 'Effect',
+  color: '#4338ca', // Darker indigo
+  replaces: ['tired'],
+  calcStats: (player: Player) => {
+    player.modifyStat('Wits', -15)
+    player.modifyStat('Perception', -15)
+    player.modifyStat('Dexterity', -10)
+    player.modifyStat('Strength', -10)
+    player.modifyStat('Charm', -10)
+    player.modifyStat('Mood', -15)
+    player.modifyStat('Willpower', -10)
+  },
+  onAdded: (game: Game) => {
+    if (!game.player.sleeping) {
+      game.add({ type: 'text', text: 'You are utterly spent. You need to sleep.', color: '#4338ca' })
+    }
+  },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    return [{ text: 'You desperately need sleep!', urgency: 'urgent', cardId: card.id, detail: 'Exhaustion is crippling your abilities.' }]
+  },
+}
+
+// --- Dizzy effect ---
+
+export const dizzyEffect: CardDefinition = {
+  name: 'Dizzy',
+  description: 'The world tilts and sways around you. Concentration is difficult.',
+  type: 'Effect',
+  color: '#a855f7', // Purple
+  calcStats: (player: Player) => {
+    player.modifyStat('Dexterity', -10)
+    player.modifyStat('Perception', -10)
+    player.modifyStat('Wits', -5)
+    player.modifyStat('Composure', -10)
+  },
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+    game.add({ type: 'text', text: 'Your head swims and the room lurches sideways.', color: '#a855f7' })
+  },
+  onTime: (game: Game, card: Card, seconds: number) => {
+    // Dizzy clears after ~20 minutes (grace 10 min, then 5% per minute)
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - addedAt
+    if (elapsed < 10 * 60) return
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.05, minutes)
+      if (Math.random() > chanceNone) {
+        game.removeCard(card.id)
+      }
+    }
+  },
+}
+
+// --- High effects (from spice — escalating: Euphoric → Spaced Out → Comedown) ---
+
+export const euphoricEffect: CardDefinition = {
+  name: 'Euphoric',
+  description: 'A warm golden haze suffuses everything. The world is beautiful and nothing hurts.',
+  type: 'Effect',
+  color: '#f59e0b', // Amber/gold
+  subsumedBy: ['spaced-out'],
+  calcStats: (player: Player) => {
+    player.modifyStat('Charm', 5)
+    player.modifyStat('Mood', 20)
+    player.modifyStat('Pain', -20)
+    player.modifyStat('Stress', -15)
+    player.modifyStat('Wits', -5)
+    player.modifyStat('Willpower', -10)
+    player.modifyStat('Perception', -5)
+  },
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+    game.add({ type: 'text', text: 'A blissful warmth spreads through you. Everything feels wonderful.', color: '#f59e0b' })
+  },
+  onTime: (game: Game, card: Card, seconds: number) => {
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - addedAt
+    // After 30 minutes, chance to escalate to Spaced Out (0.5% per minute)
+    if (elapsed >= 30 * 60) {
+      const minutes = Math.floor(seconds / 60)
+      if (minutes > 0) {
+        const chanceNone = Math.pow(1 - 0.005, minutes)
+        if (Math.random() > chanceNone) {
+          game.addEffect('spaced-out')
+          return
+        }
+      }
+    }
+    // After 60 minutes, transition to Comedown
+    if (elapsed >= 60 * 60) {
+      game.removeCard(card.id, true)
+      game.addEffect('comedown')
+    }
+  },
+}
+
+export const spacedOutEffect: CardDefinition = {
+  name: 'Spaced Out',
+  description: 'You have taken too much. Reality is distant and unreliable.',
+  type: 'Effect',
+  color: '#d97706', // Darker amber
+  replaces: ['euphoric'],
+  calcStats: (player: Player) => {
+    player.modifyStat('Wits', -20)
+    player.modifyStat('Perception', -20)
+    player.modifyStat('Dexterity', -10)
+    player.modifyStat('Willpower', -15)
+    player.modifyStat('Charm', -10)
+    player.modifyStat('Pain', -30)
+    player.modifyStat('Mood', 10)
+  },
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+    game.add({ type: 'text', text: 'The edges of the world blur and recede. You are floating.', color: '#d97706' })
+  },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    return [{ text: 'You are heavily intoxicated on spice.', urgency: 'warning', cardId: card.id }]
+  },
+  onTime: (game: Game, card: Card) => {
+    // Transitions to Comedown after 45 minutes
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - addedAt
+    if (elapsed >= 45 * 60) {
+      game.removeCard(card.id, true)
+      game.addEffect('comedown')
+    }
+  },
+}
+
+export const comedownEffect: CardDefinition = {
+  name: 'Comedown',
+  description: 'The high has faded, leaving a hollow ache. Everything feels flat and grey.',
+  type: 'Effect',
+  color: '#78716c', // Stone grey
+  replaces: ['euphoric', 'spaced-out'],
+  calcStats: (player: Player) => {
+    player.modifyStat('Mood', -20)
+    player.modifyStat('Willpower', -10)
+    player.modifyStat('Charm', -5)
+    player.modifyStat('Energy', -10)
+  },
+  onAdded: (game: Game, card: Card) => {
+    card.addedAt = game.time
+    game.add({ type: 'text', text: 'The warmth drains away, leaving you feeling hollow and spent.', color: '#78716c' })
+  },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    return [{ text: 'You are coming down from spice.', urgency: 'info', cardId: card.id }]
+  },
+  onTime: (game: Game, card: Card, seconds: number) => {
+    // Comedown clears after ~90 minutes (grace 30 min, then 1% per minute)
+    const addedAt = (card.addedAt as number) ?? 0
+    const elapsed = game.time - addedAt
+    if (elapsed < 30 * 60) return
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.01, minutes)
+      if (Math.random() > chanceNone) {
+        game.removeCard(card.id)
+      }
+    }
+  },
+}
+
+// --- Dirty effects (escalating: Grubby → Filthy) ---
+
+export const grubbyEffect: CardDefinition = {
+  name: 'Grubby',
+  description: 'You are looking a bit unkempt and could do with a wash.',
+  type: 'Effect',
+  color: '#a8a29e', // Warm grey
+  subsumedBy: ['filthy'],
+  replaces: ['fresh'],
+  calcStats: (player: Player) => {
+    player.modifyStat('appearance', -5)
+    player.modifyStat('Charm', -3)
+  },
+  onTime: (game: Game, _card: Card, seconds: number) => {
+    // Escalate to Filthy: 0.2% per minute
+    const minutes = Math.floor(seconds / 60)
+    if (minutes > 0) {
+      const chanceNone = Math.pow(1 - 0.002, minutes)
+      if (Math.random() > chanceNone) {
+        game.addEffect('filthy')
+      }
+    }
+  },
+}
+
+export const filthyEffect: CardDefinition = {
+  name: 'Filthy',
+  description: 'You are visibly dirty. People wrinkle their noses as you pass.',
+  type: 'Effect',
+  color: '#78716c', // Stone
+  replaces: ['grubby', 'fresh'],
+  calcStats: (player: Player) => {
+    player.modifyStat('appearance', -15)
+    player.modifyStat('Charm', -10)
+    player.modifyStat('Mood', -5)
+    player.modifyStat('decency', -5)
+  },
+  onAdded: (game: Game) => {
+    game.add({ type: 'text', text: 'You are really quite grubby now. A wash is in order.', color: '#78716c' })
+  },
+  reminders: (_game: Game, card: Card): Reminder[] => {
+    return [{ text: 'You need a wash!', urgency: 'warning', cardId: card.id, detail: 'Your appearance and charm are suffering.' }]
   },
 }
 
@@ -240,6 +518,15 @@ registerCardDefinition('hungry', hungryEffect)
 registerCardDefinition('starving', starvingEffect)
 registerCardDefinition('fresh', freshEffect)
 registerCardDefinition('makeup', makeupEffect)
+registerCardDefinition('sweaty', sweatyEffect)
+registerCardDefinition('tired', tiredEffect)
+registerCardDefinition('exhausted', exhaustedEffect)
+registerCardDefinition('dizzy', dizzyEffect)
+registerCardDefinition('euphoric', euphoricEffect)
+registerCardDefinition('spaced-out', spacedOutEffect)
+registerCardDefinition('comedown', comedownEffect)
+registerCardDefinition('grubby', grubbyEffect)
+registerCardDefinition('filthy', filthyEffect)
 
 // Register scripts
 makeScript('timeEffects', (game: Game, params: { seconds?: number }) => {
@@ -257,15 +544,19 @@ makeScript('eatFood', (game: Game, params: { quantity?: number }) => {
   eatFood(game, params.quantity ?? 100)
 })
 
+makeScript('riskDirty', (game: Game, params: { chance?: number }) => {
+  riskDirty(game, params.chance ?? 0.3)
+})
+
 /**
  * Run standard time-based effect processing. Called from timeLapse.
  * This is the general entry point for systems that accumulate over time.
  */
 export function timeEffects(game: Game, seconds: number): void {
   accumulateHunger(game, seconds)
+  accumulateTiredness(game)
   decayArousal(game, seconds)
   accumulateFlushed(game)
-  // Future: accumulateFatigue, etc.
 }
 
 /** Decay arousal naturally over time — approximately 1 per minute. */
@@ -324,6 +615,36 @@ export function accumulateHunger(game: Game, seconds: number): void {
   }
 }
 
+/**
+ * Accumulate tiredness based on Energy meter.
+ * Tired appears when Energy drops below 20; Exhausted escalation is handled by the card's onTime.
+ * Both are removed when Energy rises above 30 (e.g. after sleeping).
+ */
+function accumulateTiredness(game: Game): void {
+  const energy = game.player.stats.get('Energy') ?? 50
+  const hasTired = game.player.hasCard('tired')
+  const hasExhausted = game.player.hasCard('exhausted')
+
+  if (energy < 20 && !hasTired && !hasExhausted) {
+    game.addEffect('tired')
+  } else if (energy >= 30 && (hasTired || hasExhausted)) {
+    if (hasExhausted) game.removeCard('exhausted', true)
+    if (hasTired) game.removeCard('tired', true)
+  }
+}
+
+/**
+ * Risk getting dirty from an event (working in bar, street encounter, etc.).
+ * @param chance - probability 0-1 of becoming grubby (default 0.3)
+ */
+export function riskDirty(game: Game, chance = 0.3): void {
+  if (game.player.hasCard('grubby') || game.player.hasCard('filthy')) return
+  if (Math.random() < chance) {
+    game.removeCard('fresh', true)
+    game.addEffect('grubby')
+  }
+}
+
 /** Hunger card IDs in descending severity order, with the downgrade target for each. */
 const HUNGER_CHAIN: { id: string; downgrade?: string }[] = [
   { id: 'starving', downgrade: 'hungry' },
@@ -362,10 +683,13 @@ export function removeHunger(game: Game, quantity: number): void {
   }
 }
 
-/** Common logic for washing (shower, bath, etc.). Records the timer and applies the Fresh effect. Washes off makeup. */
+/** Common logic for washing (shower, bath, etc.). Records the timer and applies the Fresh effect. Washes off makeup and removes dirtiness. */
 export function takeWash(game: Game): void {
   game.player.setTimer('lastWash', game.time)
   game.removeCard('makeup', true)
+  game.removeCard('grubby', true)
+  game.removeCard('filthy', true)
+  game.removeCard('sweaty', true)
   game.addEffect('fresh')
 }
 
@@ -383,11 +707,43 @@ export function freshenUp(game: Game): void {
   game.run('wait', { minutes: 5 })
 }
 
-/** Apply makeup. Adds the makeup effect (or resets its timer). */
+/**
+ * Apply makeup. Tests the Makeup skill to determine quality:
+ * - Flawless (3): pass at difficulty 40
+ * - Good (2): pass at difficulty 20
+ * - Passable (1): pass at difficulty 0
+ * - Poor (0): fail all checks
+ *
+ * Each application trains the Makeup skill slightly.
+ */
 export function applyMakeup(game: Game): void {
   game.removeCard('makeup', true)
-  game.addEffect('makeup')
-  game.add({ type: 'text', text: 'You carefully apply your makeup, finishing with a satisfied look in the mirror.', color: '#f472b6' })
+
+  let quality = 0
+  if (game.player.skillTest('Makeup', 0)) {
+    quality = 1
+    if (game.player.skillTest('Makeup', 20)) {
+      quality = 2
+      if (game.player.skillTest('Makeup', 40)) {
+        quality = 3
+      }
+    }
+  }
+
+  game.addEffect('makeup', { quality })
+
+  const messages = [
+    'You dab on some makeup, though the result is a little uneven.',
+    'You apply your makeup neatly enough.',
+    'You apply your makeup with a practised hand. It looks good.',
+    'You apply your makeup flawlessly. The effect is striking.',
+  ]
+  game.add({ type: 'text', text: messages[quality], color: '#f472b6' })
+
+  // Skill gain capped by quality ceiling — routine application stops teaching
+  const cap = [20, 30, 40, 50][quality] ?? 30
+  game.run('addStat', { stat: 'Makeup', change: 1, max: cap, chance: 0.5, hidden: false })
+
   game.run('wait', { minutes: 15 })
 }
 

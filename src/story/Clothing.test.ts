@@ -85,7 +85,7 @@ registerItemDefinition(
     description: 'A jacket for testing',
     calcStats: (player) => {
       player.modifyStat('Charm', 2)
-      player.modifyStat('Agility', -1)
+      player.modifyStat('Dexterity', -1)
     },
   })
 )
@@ -121,7 +121,7 @@ registerItemDefinition(
     name: 'test boots',
     description: 'Boots for testing',
     calcStats: (player) => {
-      player.modifyStat('Agility', 2)
+      player.modifyStat('Dexterity', 2)
     },
   })
 )
@@ -301,7 +301,7 @@ describe('Clothing', () => {
       player = new Player()
       player.name = 'Test'
       player.basestats.set('Charm', 50)
-      player.basestats.set('Agility', 50)
+      player.basestats.set('Dexterity', 50)
     })
 
     it('should apply stat bonuses from worn items', () => {
@@ -313,12 +313,12 @@ describe('Clothing', () => {
     })
 
     it('should apply stat penalties from worn items', () => {
-      player.addItem('test-jacket') // +2 Charm, -1 Agility
+      player.addItem('test-jacket') // +2 Charm, -1 Dexterity
       player.wearItem('test-jacket')
       player.calcStats()
 
       expect(player.stats.get('Charm')).toBe(52)
-      expect(player.stats.get('Agility')).toBe(49)
+      expect(player.stats.get('Dexterity')).toBe(49)
     })
 
     it('should stack bonuses from multiple worn items', () => {

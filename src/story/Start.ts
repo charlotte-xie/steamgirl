@@ -110,7 +110,7 @@ export const startScripts = {
     pc.name = 'Elise'
 
     // Set base stats to 30
-    pc.basestats.set('Agility', 30)
+    pc.basestats.set('Dexterity', 30)
     pc.basestats.set('Perception', 30)
     pc.basestats.set('Wits', 30)
     pc.basestats.set('Charm', 30)

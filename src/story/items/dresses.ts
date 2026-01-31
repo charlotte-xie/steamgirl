@@ -31,7 +31,7 @@ registerItemDefinition(
       'An elegant gown of midnight blue velvet with silver embroidery and a sweeping train.',
     value: 50,
     calcStats: (player) => {
-      player.modifyStat('Agility', -4)
+      player.modifyStat('Dexterity', -4)
       player.modifyStat('appearance', 5)
     },
   })

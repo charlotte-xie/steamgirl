@@ -2080,6 +2080,49 @@ img {
   min-width: 12.5rem;
 }
 
+.debug-effects {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+.debug-effect-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.debug-effect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.2em 0.6em;
+  font-size: var(--font-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.debug-effect-btn:hover {
+  opacity: 0.8;
+}
+
+.debug-effect-btn.active {
+  background: var(--surface-raised);
+}
+
+.debug-effect-dot {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+}
+
 .skill-item {
   display: flex;
   justify-content: space-between;

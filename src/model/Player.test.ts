@@ -53,7 +53,7 @@ describe('Player', () => {
     const playerData: PlayerData = {
       name: 'TestPlayer',
       basestats: {
-        Agility: 1,
+        Dexterity: 1,
         Strength: 2,
         Wits: 3,
         Charm: 4,

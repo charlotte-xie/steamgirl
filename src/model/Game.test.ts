@@ -134,8 +134,8 @@ describe('Game', () => {
     expect(acceptanceLetter).toBeDefined()
     expect(acceptanceLetter?.number).toBe(1)
 
-    // Check that Agility is >10 (should be 30 from init script)
-    const agility = game.player.stats.get('Agility')
+    // Check that Dexterity is >10 (should be 30 from init script)
+    const agility = game.player.stats.get('Dexterity')
     expect(agility).toBeDefined()
     expect(agility!).toBeGreaterThan(10)
     expect(agility).toBe(30) // Should be exactly 30
@@ -927,7 +927,7 @@ describe('Game', () => {
       const game = bareGame()
       game.addEffect('starving')
       expect(game.player.stats.get('Strength')).toBe(40)
-      expect(game.player.stats.get('Agility')).toBe(40)
+      expect(game.player.stats.get('Dexterity')).toBe(40)
       expect(game.player.stats.get('Perception')).toBe(30)
       expect(game.player.stats.get('Wits')).toBe(30)
       expect(game.player.stats.get('Charm')).toBe(30)

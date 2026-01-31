@@ -129,6 +129,12 @@ export function getCard(id: CardId): CardDefinition | undefined {
   return CARD_DEFINITIONS[id]
 }
 
+/** Return all registered definitions of a given type, as [id, definition] pairs. */
+export function getCardDefinitions(type: CardType): [CardId, CardDefinition][] {
+  return Object.entries(CARD_DEFINITIONS)
+    .filter(([, def]) => def.type === type) as [CardId, CardDefinition][]
+}
+
 // Export for use in story files
 export function registerCardDefinition(id: CardId, definition: CardDefinition): void {
   CARD_DEFINITIONS[id] = definition

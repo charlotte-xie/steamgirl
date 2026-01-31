@@ -170,7 +170,7 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
     colour: '#8868a8',
     onConsume: (game: Game, _params: {}) => {
       // Add +5 to all main stats with 50% chance each
-      const mainStats = ['Agility', 'Perception', 'Wits', 'Charm', 'Willpower', 'Strength']
+      const mainStats = ['Dexterity', 'Perception', 'Wits', 'Charm', 'Willpower', 'Strength']
       mainStats.forEach(statName => {
         game.run('addStat', {
           stat: statName,

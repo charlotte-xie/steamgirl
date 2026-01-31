@@ -71,7 +71,7 @@ registerItemDefinition(
     image: '/images/steamgirl/Boots.PNG',
     value: 15,
     calcStats: (player) => {
-      player.modifyStat('Agility', 2)
+      player.modifyStat('Dexterity', 2)
     },
   })
 )
@@ -83,7 +83,7 @@ registerItemDefinition(
     description: 'Elegant boots with a modest heel and delicate button closures.',
     value: 25,
     calcStats: (player) => {
-      player.modifyStat('Agility', -1)
+      player.modifyStat('Dexterity', -1)
       player.modifyStat('appearance', 2)
     },
   })
@@ -97,7 +97,7 @@ registerItemDefinition(
     value: 20,
     calcStats: (player) => {
       player.modifyStat('Dancing', 5)
-      player.modifyStat('Agility', 2)
+      player.modifyStat('Dexterity', 2)
     },
   })
 )

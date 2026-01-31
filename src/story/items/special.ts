@@ -83,7 +83,7 @@ registerItemDefinition(
     image: '/images/steamgirl/SteamStockings.PNG',
     value: 40,
     calcStats: (player) => {
-      player.modifyStat('Agility', 5)
+      player.modifyStat('Dexterity', 5)
       player.modifyStat('appearance', 2)
     },
   })

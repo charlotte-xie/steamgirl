@@ -245,7 +245,7 @@ makeScripts({
     g.run(dangerousApproachText)
     g.run(choice(
       branch('Try to get away',
-        skillCheck('Agility', 20,
+        skillCheck('Dexterity', 20,
           dangerousEscape,
           dangerousEscapeFail,
         ),

@@ -286,7 +286,7 @@ describe('ScriptDSL', () => {
       })
 
       it('addStat() produces addStat instruction', () => {
-        expect(addStat('Agility', 5)).toEqual(['addStat', { stat: 'Agility', change: 5 }])
+        expect(addStat('Dexterity', 5)).toEqual(['addStat', { stat: 'Dexterity', change: 5 }])
       })
 
       it('addQuest() produces addQuest instruction', () => {
@@ -313,8 +313,8 @@ describe('ScriptDSL', () => {
       })
 
       it('stat() produces stat instruction', () => {
-        expect(stat('Agility', 30)).toEqual(['stat', { stat: 'Agility', min: 30, max: undefined }])
-        expect(stat('Agility', 10, 50)).toEqual(['stat', { stat: 'Agility', min: 10, max: 50 }])
+        expect(stat('Dexterity', 30)).toEqual(['stat', { stat: 'Dexterity', min: 30, max: undefined }])
+        expect(stat('Dexterity', 10, 50)).toEqual(['stat', { stat: 'Dexterity', min: 10, max: 50 }])
       })
 
       it('inLocation() produces inLocation instruction', () => {
@@ -567,11 +567,11 @@ describe('ScriptDSL', () => {
       })
 
       it('stat checks player stats', () => {
-        // Player starts with Agility 30
-        expect(game.run(stat('Agility', 30))).toBe(true)
-        expect(game.run(stat('Agility', 50))).toBe(false)
-        expect(game.run(stat('Agility', 0, 50))).toBe(true)
-        expect(game.run(stat('Agility', 0, 20))).toBe(false)
+        // Player starts with Dexterity 30
+        expect(game.run(stat('Dexterity', 30))).toBe(true)
+        expect(game.run(stat('Dexterity', 50))).toBe(false)
+        expect(game.run(stat('Dexterity', 0, 50))).toBe(true)
+        expect(game.run(stat('Dexterity', 0, 20))).toBe(false)
       })
 
       it('inLocation checks current location', () => {
@@ -852,9 +852,9 @@ describe('ScriptDSL', () => {
       })
 
       it('addStat modifies player stats', () => {
-        const initial = game.player.basestats.get('Agility') ?? 0
-        game.run(addStat('Agility', 5))
-        expect(game.player.basestats.get('Agility')).toBe(initial + 5)
+        const initial = game.player.basestats.get('Dexterity') ?? 0
+        game.run(addStat('Dexterity', 5))
+        expect(game.player.basestats.get('Dexterity')).toBe(initial + 5)
       })
 
       it('recordTime records current time to a timer', () => {

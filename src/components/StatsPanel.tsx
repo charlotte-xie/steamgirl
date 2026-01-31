@@ -4,7 +4,7 @@ import { MeterPanel } from './MeterPanel'
 import { Frame } from './Frame'
 
 const STAT_ABBREV: Record<MainStatName, string> = {
-  Agility: 'Ag',
+  Dexterity: 'Dx',
   Strength: 'St',
   Perception: 'Pe',
   Wits: 'Wi',

@@ -3,8 +3,8 @@
  * Stats are 0-100 values that represent character attributes.
  */
 
-export type MainStatName = 
-  | 'Agility'
+export type MainStatName =
+  | 'Dexterity'
   | 'Perception'
   | 'Wits'
   | 'Charm'
@@ -16,6 +16,7 @@ export type SkillName =
   | 'Dancing'
   | 'Fitness'
   | 'Etiquette'
+  | 'Makeup'
   | 'Mechanics'
   | 'Flirtation'
   | 'Haggling'
@@ -55,8 +56,8 @@ export interface MeterInfo {
  * Map of all main stat names to their information.
  */
 export const MAIN_STAT_INFO: Record<MainStatName, StatInfo> = {
-  Agility: {
-    description: 'Your speed, reflexes, and physical coordination.',
+  Dexterity: {
+    description: 'Your manual skill, reflexes, and physical coordination.',
   },
   Perception: {
     description: 'Your ability to notice details and observe your surroundings.',
@@ -85,7 +86,7 @@ export const SKILL_INFO: Record<SkillName, StatInfo> = {
   },
   Dancing: {
     description: 'Your ability to move gracefully and perform dance moves.',
-    basedOn: 'Agility',
+    basedOn: 'Dexterity',
   },
   Fitness: {
     description: 'Your overall physical fitness and endurance.',
@@ -94,6 +95,10 @@ export const SKILL_INFO: Record<SkillName, StatInfo> = {
   Etiquette: {
     description: 'Your knowledge of social norms and proper behavior in high society.',
     basedOn: 'Charm',
+  },
+  Makeup: {
+    description: 'Your skill at applying cosmetics for a polished, attractive look.',
+    basedOn: 'Dexterity',
   },
   Mechanics: {
     description: 'Your understanding of mechanical devices and steam-powered technology.',

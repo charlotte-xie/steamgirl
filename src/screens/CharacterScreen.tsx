@@ -4,6 +4,9 @@ import { Card } from '../components/Card'
 import { SKILL_NAMES, SKILL_INFO, IMPRESSION_NAMES } from '../model/Stats'
 import { capitalise } from '../model/Text'
 import { getImpressionCalculators } from '../model/Impression'
+import { getCardDefinitions } from '../model/Card'
+import { useDebugMode } from './SettingsScreen'
+import { GAME_SAVE_AUTO } from '../constants/storage'
 import type { TimerName } from '../model/Player'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -49,10 +52,25 @@ function formatTimerValue(timerSeconds: number, nowSeconds: number): string {
 }
 
 export function CharacterScreen() {
-  const { game } = useGame()
+  const { game, refresh } = useGame()
+  const debugMode = useDebugMode()
 
   const skillsWithBase = SKILL_NAMES.filter((name) => (game.player.basestats.get(name) || 0) > 0)
   const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
+
+  const allEffects = debugMode ? getCardDefinitions('Effect') : []
+  const activeIds = new Set(effectCards.map(c => c.id))
+
+  const toggleEffect = (id: string) => {
+    if (activeIds.has(id)) {
+      game.removeCard(id, true)
+    } else {
+      game.addEffect(id)
+    }
+    game.player.calcStats()
+    refresh()
+    localStorage.setItem(GAME_SAVE_AUTO, JSON.stringify(game.toJSON()))
+  }
 
   const timerEntries = (Object.keys(TIMER_LABELS) as TimerName[])
     .filter(name => game.player.timers.has(name))
@@ -146,6 +164,29 @@ export function CharacterScreen() {
                 {effectCards.map((card, index) => (
                   card ? <Card key={`${card.id}-${index}`} card={card} /> : null
                 ))}
+              </div>
+            )}
+
+            {debugMode && allEffects.length > 0 && (
+              <div className="debug-effects">
+                <h4 className="text-muted">Debug: Toggle Effects</h4>
+                <div className="debug-effect-grid">
+                  {allEffects.map(([id, def]) => (
+                    <button
+                      key={id}
+                      className={`debug-effect-btn ${activeIds.has(id) ? 'active' : ''}`}
+                      style={{ borderColor: (def.color as string) ?? 'var(--border)' }}
+                      onClick={() => toggleEffect(id)}
+                      title={def.description as string ?? id}
+                    >
+                      <span
+                        className="debug-effect-dot"
+                        style={{ background: activeIds.has(id) ? ((def.color as string) ?? 'var(--text)') : 'transparent' }}
+                      />
+                      {def.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </section>
