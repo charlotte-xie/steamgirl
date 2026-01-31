@@ -90,6 +90,24 @@ export function DevControls() {
         <span className="dev-btn-icon">+</span>
         <span className="dev-btn-label">Stats+</span>
       </button>
+      <button
+        className="dev-btn"
+        onClick={() => {
+          for (const stat of STAT_NAMES) {
+            const cur = game.player.basestats.get(stat) ?? 0
+            game.player.basestats.set(stat, Math.max(0, cur - 10))
+          }
+          for (const skill of SKILL_NAMES) {
+            const cur = game.player.basestats.get(skill) ?? 0
+            game.player.basestats.set(skill, Math.max(0, cur - 10))
+          }
+          applyAndSave()
+        }}
+        title="Subtract 10 from all stats and skills"
+      >
+        <span className="dev-btn-icon">-</span>
+        <span className="dev-btn-label">Stats-</span>
+      </button>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, choice, gatedBranch, stat, move, not, addItem, changeOutfit, saveOutfit, wearOutfit, menu, exit, skillCheck, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
+import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, move, moveNpc, addItem, menu, exit, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
 import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
 import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
 import { bedActivity } from './Sleep'
@@ -153,343 +153,6 @@ makeScripts({
 })
 
 // ============================================================================
-// BAR PATRON RANDOM ENCOUNTER (DSL)
-// ============================================================================
-
-// The patron leans in to kiss — the player responds.
-// Uses a Flirtation skill check (Charm + Flirtation vs difficulty 30):
-//   - Early player (Charm 10, Flirtation 5): ~0% — the moment is awkward
-//   - Mid player (Charm 25, Flirtation 20): ~15% — sometimes it clicks
-//   - Late player (Charm 40, Flirtation 60): ~70% — natural chemistry
-function patronKissAttempt(farewell: Instruction): Instruction {
-  return seq(
-    random(
-      'He turns to face you. His hand lifts — hesitates — then brushes a strand of hair from your face. His eyes search yours.',
-      'The conversation trails off into silence. He\'s looking at you with an expression that leaves little to the imagination. His hand finds yours.',
-    ),
-    text('"I\'ve been wanting to do this all evening," he murmurs, and leans in.'),
-    choice(
-      branch('Let him',
-        skillCheck('Flirtation', 30,
-          // Success — the kiss works
-          scenes(
-            scene(
-              random(
-                'His lips meet yours. The kiss is brief but electric — the taste of gin and something sweeter. When he pulls back, his eyes are bright.',
-                'His hand finds the small of your back as he kisses you. It\'s gentle, unhurried, and when it ends neither of you speaks for a moment.',
-              ),
-              addStat('Flirtation', 1, { max: 40, chance: 0.5 }),
-              addStat('Charm', 1, { max: 40, chance: 0.3 }),
-              addStat('Arousal', 3, { max: 100 }),
-            ),
-            scene(
-              text('He holds your gaze, something shifting behind his eyes. When he speaks, his voice is low.'),
-              random(
-                '"I have a room upstairs — 533. We could have a drink, just the two of us. No pressure." His smile is warm, inviting, entirely without menace.',
-                '"My room is just upstairs. 533. It seems a shame to end the evening here." He lets the suggestion hang, watching your reaction.',
-              ),
-              choice(
-                branch('Go with him',
-                  'You nod. His smile widens and he offers his arm.',
-                  run('restorePoolOutfit'),
-                  'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
-                  move('room-533', 2),
-                  run('room533Scene'),
-                ),
-                branch('Decline',
-                  random(
-                    'You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.',
-                    'You smile but step back. "Not tonight." He takes it well.',
-                  ),
-                  '"Of course. It was a wonderful evening regardless." He kisses your hand and bids you goodnight.',
-                  addStat('Mood', 5, { max: 85 }),
-                  farewell,
-                ),
-              ),
-            ),
-          ),
-          // Failure — the moment is awkward
-          seq(
-            random(
-              'You let him, but the timing is off somehow. The kiss is clumsy, and when he pulls back you both laugh nervously.',
-              'His lips brush yours, but the spark isn\'t there. He senses it too and draws back with a rueful smile.',
-            ),
-            addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
-            random(
-              '"Well," he says, recovering quickly. "It\'s been a delightful evening." He smiles warmly, but the moment has passed.',
-              'He clears his throat. "I should probably call it a night. But I\'ve enjoyed your company tremendously."',
-            ),
-            farewell,
-          ),
-        ),
-      ),
-      branch('Turn away',
-        random(
-          'You turn your head slightly — just enough. He stops, reads the gesture, and straightens up. No offence taken.',
-          'You put a gentle hand on his chest. He pauses, then nods with a warm smile. The tension dissolves.',
-        ),
-        '"It\'s been a wonderful evening," he says, and means it.',
-        addStat('Mood', 5, { max: 85 }),
-        farewell,
-      ),
-    ),
-  )
-}
-
-// Garden farewell — plays when the player doesn't go to Room 533
-function gardenFarewell(): Instruction {
-  return seq(
-    'He walks you back to the lobby, his hand hovering at the small of your back.',
-    random(
-      '"Thank you for the company. This city can be lonely, even in the best hotels." He tips an imaginary hat and disappears into the night.',
-      '"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.',
-    ),
-    move('hotel-bar'),
-  )
-}
-
-// Garden path — walk, talk, repeatable menu, patron escalates
-function patronGardenPath(): Instruction {
-  return scene(
-    'You follow him through the lobby and into the brass lift. He presses the top button with a confident smile.',
-    move('hotel-garden', 5),
-    'The lift opens onto the rooftop garden. The city stretches below, gaslights tracing the streets like scattered jewels. The air is cool and fragrant with night-blooming flowers.',
-    '"Worth the trip, wouldn\'t you say?" He stands close, one hand resting lightly on the railing beside yours.',
-    time(10),
-    run('consumeAlcohol', { amount: 15 }),
-    menu(
-      branch('Talk',
-        random(
-          'The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.',
-          'You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.',
-          'He points out landmarks across the skyline — the university clock tower, the great chimney of the steamworks. You find yourself leaning into him as you look.',
-          'He asks about your studies and listens with genuine curiosity. The night air is cool, and you stand close for warmth.',
-        ),
-        time(10),
-        addStat('Charm', 1, { max: 40, chance: 0.3 }),
-      ),
-      branch('Have a drink',
-        random(
-          'He produces a silver hip flask and pours you something that smells of honey and smoke.',
-          'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
-        ),
-        run('consumeAlcohol', { amount: 15 }),
-        time(5),
-      ),
-      branch('Enjoy the view',
-        random(
-          'You lean against the railing together, watching the gaslights flicker across the rooftops. The city hums softly below.',
-          'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
-          'You watch an airship drift silently across the moon, its running lights winking red and green.',
-        ),
-        time(10),
-        addStat('Mood', 2, { max: 85 }),
-      ),
-      exit('Call it a night',
-        random(
-          'You tell him you should be heading back. He nods, not pushy about it.',
-          'The evening air is getting chilly. You suggest heading inside.',
-        ),
-        '"Of course. It\'s been a wonderful evening." He smiles warmly.',
-        addStat('Mood', 3, { max: 85 }),
-        gardenFarewell(),
-      ),
-      exit('Stay a while longer...',
-        random(
-          'A comfortable silence settles between you. The city glitters below, impossibly beautiful.',
-          'The conversation fades into something quieter. You stand close together, the cool air pressing you near.',
-        ),
-        patronKissAttempt(gardenFarewell()),
-      ),
-    ),
-  )
-}
-
-// Pool farewell — plays when the player doesn't go to Room 533
-function poolFarewell(): Instruction {
-  return seq(
-    'He climbs out and wraps himself in a monogrammed robe.',
-    random(
-      '"Thank you for the company. This city can be lonely, even in the best hotels." He gives you a warm smile and disappears towards the lobby.',
-      '"You\'re quite unlike anyone I\'ve met here," he says. A final lingering look, and then he\'s gone.',
-    ),
-    'You towel off and change back into your clothes.',
-    wearOutfit('_before-pool', { delete: true }),
-    'You have the pool to yourself now. The water laps gently against the marble.',
-  )
-}
-
-// Pool path — change into swimwear, repeatable menu, patron escalates
-function patronPoolPath(): Instruction {
-  return scenes(
-    scene(
-      'He leads you through a side corridor and down a flight of marble stairs. The air grows warm and humid.',
-      move('hotel-pool', 5),
-      'The pool glimmers under the vaulted glass ceiling, lit from below by brass lanterns. You have the place entirely to yourselves.',
-      // Offer to buy a bikini if the player doesn't have one
-      when(not(hasItem('bikini-top')),
-        'You hesitate — you don\'t have anything to swim in.',
-        'He notices your expression and waves a hand. "Leave it to me." He has a quiet word with an attendant, who returns minutes later with a neatly folded bikini in hotel packaging.',
-        '"A gift," he says with a smile. "Consider it an investment in the evening."',
-        addItem('bikini-top'),
-        addItem('bikini-bottom'),
-      ),
-      saveOutfit('_before-pool'),
-      'You slip into the changing room and emerge in your bikini. The warm, humid air feels pleasant on your skin.',
-      changeOutfit(['bikini-top', 'bikini-bottom']),
-    ),
-    scene(
-      random(
-        'You lower yourself into the heated water. It\'s blissfully warm — the hotel\'s boilers keep it at a perfect temperature.',
-        'You dive in. The water is warm and silky, lit from below so it glows a deep aquamarine.',
-      ),
-      time(10),
-      run('consumeAlcohol', { amount: 15 }),
-      menu(
-        branch('Swim',
-          random(
-            'You swim lazy lengths together, the water warm and silky against your skin. The echo of splashing fills the vaulted space.',
-            'You race him to the far end. He lets you win — or perhaps you\'re simply faster. Either way, you\'re both laughing.',
-            'You float on your back, gazing up through the glass ceiling at the stars. He drifts beside you, close enough to touch.',
-          ),
-          time(10),
-          addStat('Fitness', 1, { max: 50, chance: 0.2 }),
-        ),
-        branch('Talk',
-          random(
-            'He tells you about his travels — the canals of Veneto, the hot springs of Nordheim. His hand brushes yours beneath the water, not quite by accident.',
-            'He asks about your studies, and seems genuinely interested. You talk until your fingers wrinkle, drifting closer with each exchange.',
-            'You rest your arms on the pool\'s edge and talk. The warm water makes everything feel languid and easy.',
-            'He describes the mechanical baths of Praag — heated by volcanic springs, with brass jets that massage your shoulders. "Nothing like this, though," he adds, looking at you.',
-          ),
-          time(10),
-          addStat('Charm', 1, { max: 40, chance: 0.3 }),
-        ),
-        branch('Have a drink',
-          random(
-            'He climbs out briefly and returns with two glasses from the poolside cabinet. You drink treading water, which makes you both laugh.',
-            'An attendant materialises with a tray of cocktails. You sip yours with your elbows propped on the marble edge.',
-          ),
-          run('consumeAlcohol', { amount: 15 }),
-          time(5),
-        ),
-        exit('Get out',
-          'You\'ve had enough swimming. You pull yourself up onto the marble edge, water streaming from your skin.',
-          random(
-            'He follows suit, shaking water from his hair. "Had enough?"',
-            'He watches you from the water, then hauls himself out beside you.',
-          ),
-          'You towel off and change back into your clothes.',
-          wearOutfit('_before-pool', { delete: true }),
-          addStat('Mood', 3, { max: 85 }),
-          poolFarewell(),
-        ),
-        exit('Float together',
-          random(
-            'You drift closer until you\'re floating side by side. His arm slips around your waist beneath the water.',
-            'The swimming slows. You find yourselves treading water close together, the warm glow from below casting soft light on his face.',
-          ),
-          patronKissAttempt(poolFarewell()),
-        ),
-      ),
-    ),
-  )
-}
-
-// After flirting, the patron suggests going somewhere more interesting
-function patronOuting(): Instruction {
-  return scenes(
-    scene(
-      random(
-        seq(
-          text('He sets down his glass and glances towards the lobby. "You know, the rooftop garden is rather spectacular at this hour. Care to see it?"'),
-          branch('Go with him', patronGardenPath()),
-        ),
-        seq(
-          text('He leans back with an appraising look. "The hotel has a rather lovely pool, you know. Heated by the boilers. Fancy a swim?"'),
-          branch('Go with him', patronPoolPath()),
-        ),
-      ),
-      branch('Decline gracefully',
-        text('You smile but shake your head. You tell him you\'ll stay here, but thank him for the drink and the conversation.'),
-        text('He nods, not offended. "The pleasure was entirely mine." He settles his bill and leaves you to the quiet hum of the bar.'),
-        addStat('Mood', 2, { max: 85 }),
-      ),
-    ),
-  )
-}
-
-const barPatronScene = scenes(
-  // A well-dressed stranger approaches — varies each time
-  scene(
-    random(
-      text('A well-dressed man in a tailored waistcoat slides onto the stool beside you. His cufflinks are polished brass, and he smells faintly of expensive cologne.'),
-      text('A gentleman with silver-streaked hair and an impeccable suit takes the stool beside you. He orders a whisky without looking at the menu.'),
-      text('A broad-shouldered man in a velvet smoking jacket settles onto the neighbouring stool. He catches the barman\'s eye with a practised gesture.'),
-    ),
-    random(
-      text('"Forgive the intrusion," he says, signalling the barman. "But it seems a shame for a young lady to drink alone. Might I buy you something?"'),
-      text('"I don\'t believe I\'ve seen you here before," he says, turning to you with an easy smile. "Allow me to buy you a drink?"'),
-    ),
-    branch('Accept the drink',
-      run('consumeAlcohol', { amount: 25 }),
-      random(
-        text('The barman sets down two cocktails — something with gin and elderflower that catches the light.'),
-        text('Two glasses of champagne arrive, the bubbles catching the amber lamplight.'),
-      ),
-      text('He raises his glass. "To new acquaintances." His eyes linger on you a moment longer than strictly necessary.'),
-      choice(
-        gatedBranch(stat('Flirtation', 1), 'Flirt back',
-          // Flirtation check (difficulty 20): early players mostly fail, experienced players succeed
-          skillCheck('Flirtation', 20,
-            // Success — he's charmed
-            scenes(
-              scene(
-                'You hold his gaze and let a slow smile play across your lips. He leans in, clearly intrigued.',
-                random(
-                  'The conversation turns playful. He\'s witty and attentive, and keeps finding excuses to touch your hand.',
-                  'You trade barbs and compliments in equal measure. He laughs easily, charmed by your boldness.',
-                ),
-                time(30),
-                run('consumeAlcohol', { amount: 20 }),
-                addStat('Flirtation', 1, { max: 40, chance: 0.4 }),
-              ),
-              // After flirting — he suggests going somewhere
-              patronOuting(),
-            ),
-            // Failure — the flirtation falls flat
-            seq(
-              random(
-                'You try to catch his eye with a coy smile, but the delivery falls flat. He gives a polite laugh and changes the subject.',
-                'You attempt a witty remark, but it lands awkwardly. He smiles graciously and steers the conversation elsewhere.',
-              ),
-              time(20),
-              addStat('Flirtation', 1, { max: 40, chance: 0.3, hidden: true }),
-              'After a pleasant but unremarkable chat, he finishes his drink. "Well, it\'s been a pleasure. Do enjoy your evening."',
-            ),
-          ),
-        ),
-        branch('Keep it casual',
-          'You steer the conversation to safer waters — the city, the weather, a new exhibition at the museum.',
-          'He seems genuine enough, and the chat is pleasant. After a while he finishes his drink and bids you a courteous good evening.',
-          time(20),
-          addStat('Mood', 3, { max: 85 }),
-        ),
-        branch('Excuse yourself',
-          'You thank him for the drink but explain you were just leaving.',
-          'He looks faintly disappointed but recovers quickly. "Of course. It was a pleasure." You leave him nursing his cocktail alone.',
-        ),
-      ),
-    ),
-    branch('Politely decline',
-      text('You decline with a polite smile. He inclines his head graciously.'),
-      text('"Of course. Enjoy your evening." He takes his drink and moves to a table across the room.'),
-    ),
-  ),
-)
-
-
-// ============================================================================
 // ROOM 533 — PATRON'S ROOM (DSL MENU)
 // ============================================================================
 
@@ -546,6 +209,7 @@ const room533Scene = scenes(
           'You set down your glass and tell him you should go. He nods, rising to walk you to the door.\n\n"Thank you for a memorable evening," he says, pressing a kiss to the back of your hand. "Truly."',
           'You stand and smooth your clothes. He doesn\'t try to stop you — just smiles, warm and genuine.\n\n"I won\'t forget tonight," he says quietly. The door clicks shut behind you, and you make your way to the lift.',
         ),
+        moveNpc('bar-patron', null),
         'You step out into the corridor, your heart still racing slightly, and take the lift back down to the lobby.',
         move('hotel'),
       ),
@@ -754,15 +418,21 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     links: [
       { dest: 'hotel', time: 1, label: 'Back to Lobby' },
     ],
-    onArrive: staffDecencyGate(50, 'hotel', [
-      seq('The barman looks up from polishing a glass and frowns.', say('I\'m going to have to ask you to leave, madam. We have standards here.')),
-      seq('A waiter hurries over before you can sit down.', say('I\'m sorry, but you can\'t be in here like that. Back to the lobby, please.')),
-      seq('The barman sets down his cocktail shaker with a pointed look.', say('Not dressed like that, you\'re not. Out.')),
-    ]),
+    onArrive: (g: Game) => {
+      staffDecencyGate(50, 'hotel', [
+        seq('The barman looks up from polishing a glass and frowns.', say('I\'m going to have to ask you to leave, madam. We have standards here.')),
+        seq('A waiter hurries over before you can sit down.', say('I\'m sorry, but you can\'t be in here like that. Back to the lobby, please.')),
+        seq('The barman sets down his cocktail shaker with a pointed look.', say('Not dressed like that, you\'re not. Out.')),
+      ])(g)
+      if (g.currentLocation !== 'hotel-bar') return
+    },
     onWait: (g: Game) => {
-      // 20% chance per 10-minute chunk of a rich patron approaching
-      if (Math.random() < 0.2) {
-        g.run(barPatronScene)
+      // Only appears 8pm–10pm, 20% chance per chunk while sitting at the bar
+      const hour = g.hourOfDay
+      if (hour < 20 || hour >= 22) return
+      const patron = g.getNPC('bar-patron')
+      if (patron.location === 'hotel-bar' && Math.random() < 0.2) {
+        g.run('approach', { npc: 'bar-patron' })
       }
     },
     activities: [

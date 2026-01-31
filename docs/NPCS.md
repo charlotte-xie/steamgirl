@@ -158,6 +158,37 @@ registerNPC('gerald-ashworth', {
 })
 ```
 
+### Impression Gating: NPC Action, Not Player Choice
+
+Impressions gate **what the NPC does**, not what the player can attempt. The player should always see their options and be free to try; the NPC's reaction changes based on how the player looks.
+
+**Rule:** Never hide or disable a player option based on an impression score. Instead, branch the NPC's response:
+
+```typescript
+// WRONG — removes player agency
+when(impression('appearance', { min: 50 }),
+  option('Flirt', npcInteract('flirt')),   // hidden if appearance < 50
+)
+
+// RIGHT — player can always try; NPC reacts differently
+option('Flirt', npcInteract('flirt')),     // always visible
+
+// Inside the flirt script:
+cond(
+  impression('appearance', { min: 50 }),
+  // He's receptive — run skill check for execution quality
+  skillCheck('Flirtation', 20, charmSuccess, awkwardFail),
+  // He's not interested — polite brush-off
+  seq(say('Charming. If you\'ll excuse me.'), npcLeaveOption()),
+)
+```
+
+This gives the player clear feedback ("he wasn't interested — I need to look better") without silently removing choices. The player learns the rules of the world by attempting things and observing NPC reactions, not by noticing missing buttons.
+
+**Exceptions:**
+- **Decency gates on locations** (staff ejecting you) are fine — these are NPC-initiated and happen on arrival, not as disabled options.
+- **Skill gates** (`gatedBranch(hasStat(...))`) on player actions are fine — these represent the player's own ability, not NPC perception. You can't attempt a backflip if you've never trained gymnastics.
+
 ## Wait Encounters
 
 The `onWait` hook fires each 10-minute chunk when the player waits at a location where the NPC is present. It can create a scene to interrupt the wait -- useful for ambient encounters and one-shot events.

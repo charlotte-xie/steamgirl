@@ -282,6 +282,8 @@ registerItemDefinition('blouse-silk', extendItem('base-top', {
 
 Impressions (`decency`, `appearance`, `attraction`) are 0--100 scores representing how NPCs perceive the player. NPCs should react to impressions rather than checking clothing directly.
 
+**Key rule:** Impressions gate **NPC behaviour**, not player choices. The player should always be able to attempt an action; the NPC's response changes based on how the player looks. Never hide or disable a player option based on an impression score. See [NPCS.md](./NPCS.md#impression-gating-npc-action-not-player-choice) for the full rationale and examples.
+
 Use `indecent()` for public decency gates and `impression()` for NPC-specific reactions:
 
 ```typescript
@@ -291,12 +293,21 @@ cond(
   ....
 )
 
-// NPC reacts to how well-dressed the player is
+// NPC reacts to how well-dressed the player is (flavour, not option gating)
 when(impression('appearance', { min: 70 }), say('You look wonderful tonight.'))
 
 // NPC comments on low decency
 when(impression('decency', { max: 59 }),
   say('You might want to put some proper clothes on.'),
+)
+
+// NPC receptiveness gated on appearance — player always has the option
+option('Flirt', npcInteract('flirt')),
+// ... inside flirt script:
+cond(
+  impression('appearance', { min: 50 }),
+  skillCheck('Flirtation', 20, success, fail), // receptive
+  seq(say('If you\'ll excuse me.'), npcLeaveOption()), // not interested
 )
 ```
 
@@ -409,18 +420,17 @@ Use this sparingly. Most interactions should leave the player in control. But th
 
 ## Exemplars
 
-### Hotel Bar Patron
+### Lord Ashworth — Impression-Gated NPC
 
-`src/story/Hotel.ts` demonstrates most features working together in a complete random event:
+`src/story/hotel/Patrons.ts` demonstrates impression-gated NPC interactions:
 
-- **Random trigger**: `onWait` with 20% chance per chunk
-- **Anonymous NPC**: varied descriptions via `random()`
-- **Branching**: `scenes()` → `choice()` → `branch()` with nested `scenes()`
-- **Skill gating**: `gatedBranch(hasStat('Flirtation', 1), ...)`
-- **Repeatable menus**: garden/pool/room use `menu()` with `branch()` + `exit()`
-- **Costume changes**: pool path with `saveOutfit`/`changeOutfit`/`wearOutfit`
+- **Impression gates NPC action**: Flirt option always visible; `impression('appearance', { min: 50 })` gates whether *he* reciprocates — player learns the rules by trying, not by missing buttons
+- **Layered checks**: appearance gates receptiveness → skill check gates execution quality → affection tracks warmth over time
+- **Multi-location arc**: bar → garden/pool outing → room 533 via NPC script chaining (`npcInteract`)
+- **Repeatable menus**: garden/pool use `menu()` with `branch()` + `exit()`
+- **Costume changes**: pool path with `saveOutfit`/`changeOutfit`/`wearOutfit` and bikini gift
 - **Parameterised farewell**: `patronKissAttempt(farewell)` with path-specific cleanup
-- **NPC-initiates escalation**: patron leans in, player responds
+- **NPC-initiated escalation**: patron leans in for a kiss, player responds
 
 ### Rob Hayes — Long-Running Romance
 
@@ -439,5 +449,6 @@ Use this sparingly. Most interactions should leave the player in control. But th
 | `src/story/World.ts` | Central import point (dependency order) |
 | `src/model/ScriptDSL.ts` | DSL helper functions |
 | `src/model/Scripts.ts` | Core scripts and registry |
-| `src/story/Hotel.ts` | Exemplar: random events, branching, menus |
+| `src/story/hotel/Patrons.ts` | Exemplar: impression-gated NPC, multi-location arc |
+| `src/story/Hotel.ts` | Exemplar: location hooks, activities, decency gates |
 | `src/story/items/` | Item and clothing definitions |
