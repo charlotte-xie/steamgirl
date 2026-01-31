@@ -44,6 +44,7 @@ import './City' // Register city locations
 import './Market' // Register market shops and NPCs
 import './Lodgings' // Register lodgings locations and scripts
 import './Hotel' // Register hotel locations
+import './Uptown' // Register uptown locations (café, arcade)
 import './Lowtown' // Register lowtown location and NPCs
 import './Tavern' // Register tavern locations and NPCs
 import './School' // Register university interior locations

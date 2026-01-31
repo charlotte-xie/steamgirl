@@ -81,6 +81,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'station', time: 8 },
       { dest: 'backstreets', time: 8 },
       { dest: 'school', time: 8 },
+      { dest: 'uptown', time: 10 },
       { dest: 'market', time: 5 },
       { dest: 'hotel', time: 3 },
     ],
@@ -102,6 +103,9 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
             // Discover the Hotel
             and(not(locationDiscovered('hotel')), skillCheck('Perception', 0)),
             discoverLocation('hotel', 'Turning a corner on the main boulevard, you spot a grand brass-and-marble facade: the Imperial Hotel. Its revolving doors gleam invitingly.', '#3b82f6'),
+            // Discover Uptown
+            and(not(locationDiscovered('uptown')), skillCheck('Perception', 0)),
+            discoverLocation('uptown', 'Following a tree-lined boulevard northward, the buildings grow taller and the streets wider. Brass lanterns and manicured hedges mark the boundary of a more fashionable quarter — Uptown.', '#3b82f6'),
             // Morning (6am–12pm)
             hourBetween(6, 12),
             random(
@@ -215,8 +219,9 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     mainLocation: true,
     secret: true,
     links: [
-      { dest: 'default', time: 8 }, 
-      { dest: 'lake', time: 8 }, 
+      { dest: 'default', time: 8 },
+      { dest: 'lake', time: 8 },
+      { dest: 'uptown', time: 10 },
       { dest: 'subway-university', time: 2, label: 'Subway' },
       { 
         dest: 'hallway', 
