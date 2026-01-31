@@ -25,6 +25,7 @@ import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
 import { getReputation, type ReputationId } from './Faction'
+import { calcImpression, type ImpressionName } from './Impression'
 
 // ============================================================================
 // SCRIPT TYPES
@@ -857,6 +858,17 @@ const coreScripts: Record<string, ScriptFn> = {
     return true
   },
 
+  /** Computed impression score: returns value (0-100) if no range, boolean if min/max specified. Uses scene NPC if npc omitted. */
+  impression: (game: Game, params: { impression?: string; npc?: string; min?: number; max?: number }): number | boolean => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId || !params.impression) return 0
+    const value = calcImpression(game, params.impression as ImpressionName, npcId)
+    if (params.min === undefined && params.max === undefined) return value
+    if (params.min !== undefined && value < params.min) return false
+    if (params.max !== undefined && value > params.max) return false
+    return true
+  },
+
   /** Check if player has a card */
   hasCard: (game: Game, params: { cardId?: string }): boolean => {
     if (!params.cardId) return false
@@ -896,6 +908,11 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!params.location) return false
     const loc = game.locations.get(params.location)
     return loc ? loc.discovered : false
+  },
+
+  /** Check that no NPCs are present at the current location */
+  nobodyPresent: (game: Game): boolean => {
+    return game.npcsPresent.length === 0
   },
 
   /** Check if the current day is a weekday (Mon-Fri) */

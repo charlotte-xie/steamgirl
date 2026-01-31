@@ -674,6 +674,10 @@ export const hasContent = (): Instruction =>
 export const npcStat = (stat: string, options?: { npc?: string; min?: number; max?: number }): Instruction =>
   run('npcStat', { stat, ...(options ?? {}) })
 
+/** Computed impression score (0-100): returns value if no range, boolean if min/max specified. Uses scene NPC if npc omitted. */
+export const impression = (name: string, options?: { npc?: string; min?: number; max?: number }): Instruction =>
+  run('impression', { impression: name, ...(options ?? {}) })
+
 /** Faction reputation: returns value if no range, boolean if min/max specified. */
 export const reputation = (reputation: string, options?: { min?: number; max?: number }): Instruction =>
   run('reputation', { reputation, ...(options ?? {}) })
@@ -697,6 +701,10 @@ export const cardCompleted = (cardId: string): Instruction =>
 /** Check if a location has been discovered */
 export const locationDiscovered = (location: string): Instruction =>
   run('locationDiscovered', { location })
+
+/** Check that no NPCs are present at the current location */
+export const nobodyPresent = (): Instruction =>
+  run('nobodyPresent', {})
 
 /** Check if the current day is a weekday (Mon-Fri) */
 export const isWeekday = (): Instruction =>
