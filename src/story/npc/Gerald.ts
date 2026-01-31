@@ -109,7 +109,7 @@ import {
   addItem, addQuest,
   npcStat, addNpcStat,
   stat, skillCheck,
-  chance, gt,
+  chance, gt, impression,
 } from '../../model/ScriptDSL'
 
 const WEEKDAYS = [1, 2, 3, 4, 5]
@@ -307,6 +307,23 @@ registerNPC('landlord', {
             text('You ask about the building. Gerald answers in as few words as possible.'),
             say('It\'s old. It works. Don\'t touch the boiler.'),
             addNpcStat('affection', 1, { max: 30 }),
+          ),
+        ),
+      ),
+      // Low decency — he notices what you're wearing (or not wearing)
+      when(and(impression('decency', { max: 59 }), chance(0.5)),
+        random(
+          seq(
+            text('His gaze drops for a moment before he catches himself.'),
+            addNpcStat('lust', 2, { max: 40, hidden: true }),
+          ),
+          seq(
+            text('He looks you up and down, then busies himself with his ledger.'),
+            addNpcStat('lust', 2, { max: 40, hidden: true }),
+          ),
+          seq(
+            text('Gerald clears his throat and keeps his eyes fixed firmly on his desk. The effort is visible.'),
+            addNpcStat('lust', 2, { max: 40, hidden: true }),
           ),
         ),
       ),

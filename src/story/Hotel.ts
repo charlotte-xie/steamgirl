@@ -710,6 +710,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'En-Suite Bathroom',
     description: 'A small but immaculate bathroom with gleaming brass taps, a claw-footed tub, and fluffy towels monogrammed with the Imperial crest. The mirror is framed in ornate copper scrollwork.',
     image: '/images/nice-bathroom.jpg',
+    private: true,
     links: [
       { dest: 'dorm-suite', time: 1, label: 'Back to Room' },
     ],
@@ -852,6 +853,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Pool Changing Room',
     description: 'A clean, tiled changing room with wooden cubicles, brass hooks, and a long mirror. Folded towels are stacked on a marble shelf, and the air carries the warmth and mineral scent of the pool beyond.',
     image: '/images/lowtown/ladies.jpg',
+    private: true,
     links: [
       { dest: 'hotel-pool', time: 1, label: 'Back to Pool' },
     ],
@@ -958,6 +960,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Suite Bathroom',
     description: 'A palatial bathroom with a marble tub large enough to swim in, brass taps shaped like swan necks, and mirrors that seem to go on forever. Fresh flowers sit in crystal vases, and monogrammed towels are stacked on heated rails.',
     image: '/images/nice-bathroom.jpg',
+    private: true,
     links: [
       { dest: 'hotel-suite', time: 1, label: 'Back to Suite' },
     ],

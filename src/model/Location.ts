@@ -38,6 +38,8 @@ export interface LocationDefinition {
   onWait?: Script
   /** If true, this is a bedroom — NPCs can visit/stay overnight. */
   isBedroom?: boolean
+  /** If true, this is a private space (bedroom, bathroom, etc.) — player cannot be indecent here. */
+  private?: boolean
   secret?: boolean // If true, location starts as undiscovered (discovered = false)
   /** If true, this is a main area for travel (e.g. City Centre, Station). Links between two mainLocation sites appear under Travel. */
   mainLocation?: boolean

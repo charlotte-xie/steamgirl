@@ -93,6 +93,14 @@ export interface NPCDefinition {
    * The NPC's location is updated after this script runs — no need to call moveNpc.
    */
   onLeavePlayer?: Script
+  /**
+   * Modify a computed impression score for this NPC. Called after the base
+   * impression is calculated. Use to express NPC-specific preferences
+   * (e.g. Gerald prefers modesty, Rob likes confidence).
+   * Return the adjusted score (will be clamped to 0-100).
+   * Access game via npc.game if needed.
+   */
+  modifyImpression?: (npc: NPC, impression: string, score: number) => number
   /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */
   scripts?: Record<string, Script>
 }

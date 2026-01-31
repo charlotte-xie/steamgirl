@@ -61,6 +61,7 @@ function loadFromState(state: Record<string, unknown> | null): Game | null {
     return game
   } catch (e) {
     console.error('Failed to load game from storage:', e)
+    console.error('Autosave JSON length:', localStorage.getItem(GAME_SAVE_AUTO)?.length ?? 'none')
     return null
   }
 }

@@ -3,7 +3,7 @@ import { makeScripts } from '../model/Scripts'
 import type { Hairstyle } from '../model/Player'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
-import { script, seq, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run } from '../model/ScriptDSL'
+import { script, seq, scenes, random, text, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, run, indecent, ejectPlayer } from '../model/ScriptDSL'
 import { applyRelaxation } from './Effects'
 
 // -- Salon scripts ----------------------------------------------------------
@@ -57,6 +57,26 @@ function addSalonOptions(g: Game) {
 }
 
 makeScripts({
+  salonDecencyCheck: (g: Game) => {
+    g.run(cond(
+      indecent(40),
+      scenes(
+        random(
+          text('Every head in the salon turns. Madame Voss takes one look at you and her expression hardens. "Out. Now. I will not have this establishment made a spectacle." She steps from behind the counter and physically steers you toward the door. "Come back when you are dressed like a civilised person."'),
+          text('Madame Voss spots you from across the salon. Her face goes white with outrage. "Absolutely not. Get out of my salon this instant." She snaps her fingers and her apprentice hurries to hold the door open. "You are not setting foot in here dressed like that. Have you no shame?"'),
+        ),
+        seq(ejectPlayer('uptown'), text('You stand on the pavement outside, the salon door firmly shut behind you. A passing couple give you a wide berth.')),
+      ),
+      indecent(60),
+      scenes(
+        random(
+          text('Madame Voss looks you over from behind the counter. Her gaze lingers on your attire, and her lips thin. "I\'m afraid I cannot receive you like this, dear. This is a respectable establishment. Do come back when you are properly dressed."'),
+          text('Madame Voss glances up as you enter, and her welcoming smile fades. She sets down her hairpins and approaches you quietly. "I\'m sorry, dear, but I really can\'t have you in the salon like this. My clients expect a certain standard. Come back when you\'ve sorted yourself out, hmm?"'),
+        ),
+        seq(ejectPlayer('uptown'), text('You find yourself back on the street, the salon\'s frosted glass door closing quietly behind you.')),
+      ),
+    ))
+  },
   salonMenu: (g: Game) => {
     addSalonOptions(g)
   },
@@ -261,10 +281,14 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
       { dest: 'uptown', time: 2 },
     ],
     onFirstArrive: (g: Game) => {
+      g.run('salonDecencyCheck')
+      if (g.inScene) return
       g.add('The salon is a haven of velvet and vanity. Gilt-framed mirrors line the walls, reflecting a dozen versions of yourself back at you. The air is thick with the scent of rosewater and heated tongs. A woman with silver-streaked hair and immaculate posture looks you over from behind the counter.')
       g.add('"Welcome, dear. I am Madame Voss. Sit — let me see what we have to work with."')
     },
     onArrive: (g: Game) => {
+      g.run('salonDecencyCheck')
+      if (g.inScene) return
       g.run(random(
         text('Madame Voss is attending to a client, pinning an elaborate updo into place with brass clips. She acknowledges you with a nod.'),
         text('The salon hums with quiet conversation. A mechanical hair-dryer whirs softly in the corner, its brass nozzle shaped like a swan\'s neck.'),

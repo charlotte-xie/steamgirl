@@ -706,6 +706,14 @@ export const locationDiscovered = (location: string): Instruction =>
 export const nobodyPresent = (): Instruction =>
   run('nobodyPresent', {})
 
+/** Move the player to a destination immediately (no time cost). Used for ejecting from locations. */
+export const ejectPlayer = (location: string): Instruction =>
+  run('ejectPlayer', { location })
+
+/** True if the player is indecently dressed in a public place (decency below level, not in a private location). Default level 40. */
+export const indecent = (level?: number): Instruction =>
+  run('indecent', { ...(level !== undefined ? { level } : {}) })
+
 /** Check if the current day is a weekday (Mon-Fri) */
 export const isWeekday = (): Instruction =>
   run('isWeekday', {})

@@ -57,6 +57,7 @@ const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     name: 'Bathroom',
     description: 'A small shared bathroom with steam-powered fixtures. A folding screen separates the bath from the door.',
     image: '/images/bathroom.jpg',
+    private: true,
     links: [
       { dest: 'bedroom', time: 1, label: 'Back to Your Room' },
       { dest: 'stairwell', time: 1 },

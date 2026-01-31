@@ -25,7 +25,7 @@ import { capitalise } from './Text'
 import { getLocation } from './Location'
 import { getItem } from './Item'
 import { getReputation, type ReputationId } from './Faction'
-import { calcImpression, type ImpressionName } from './Impression'
+import { calcImpression, calcBaseImpression, type ImpressionName } from './Impression'
 
 // ============================================================================
 // SCRIPT TYPES
@@ -915,6 +915,22 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.npcsPresent.length === 0
   },
 
+  /** True if the player is indecently dressed in a public place (decency below level, not private). Default level 40. */
+  indecent: (game: Game, params: { level?: number } = {}): boolean => {
+    const loc = game.location.template
+    if (loc.private || loc.isBedroom) return false
+    return calcBaseImpression(game, 'decency') < (params.level ?? 40)
+  },
+
+  /** Move the player to a destination immediately (no time cost). Used for ejecting from locations. */
+  ejectPlayer: (game: Game, params: { location?: string } = {}) => {
+    const locationId = params.location
+    if (!locationId || typeof locationId !== 'string') {
+      throw new Error('ejectPlayer script requires a location parameter')
+    }
+    game.run('move', { location: locationId })
+  },
+
   /** Check if the current day is a weekday (Mon-Fri) */
   isWeekday: (game: Game): boolean => {
     const day = game.date.getDay()
@@ -1233,7 +1249,7 @@ const coreScripts: Record<string, ScriptFn> = {
       game.run(gameLocation.template.onFirstArrive)
     }
 
-    if (gameLocation.template.onArrive) {
+    if (!game.inScene && gameLocation.template.onArrive) {
       game.run(gameLocation.template.onArrive)
     }
   },
