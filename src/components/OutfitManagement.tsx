@@ -51,6 +51,11 @@ export function OutfitManagement() {
     refresh()
   }
 
+  const handleRandom = () => {
+    player.randomDress()
+    refresh()
+  }
+
   const handleWear = () => {
     if (selectedOutfit) {
       player.wearOutfit(selectedOutfit)
@@ -157,6 +162,7 @@ export function OutfitManagement() {
           <Button onClick={handleWear} disabled={!selectedOutfit || inScene} title={inScene ? sceneTooltip : selectedOutfit ? `Strip and wear the ${selectedOutfit} outfit` : 'Select an outfit to wear'}>Wear</Button>
           <Button onClick={handleAdd} disabled={!selectedOutfit || inScene} title={inScene ? sceneTooltip : selectedOutfit ? `Add the clothes in ${selectedOutfit} to what you are currently wearing` : 'Select an outfit to add'}>Add</Button>
           <Button onClick={handleStrip} disabled={inScene} title={inScene ? sceneTooltip : 'Remove all worn clothes'}>Strip</Button>
+          <Button onClick={handleRandom} disabled={inScene} title={inScene ? sceneTooltip : 'Strip and dress randomly until decent'}>Random</Button>
           <Button onClick={handleSaveAs} title="Save current clothes as a new outfit">Save As...</Button>
           <Button onClick={handleUpdate} disabled={!selectedOutfit} title={selectedOutfit ? `Update ${selectedOutfit} to match current clothes` : 'Select an outfit to update'}>Update</Button>
           <Button onClick={handleDelete} disabled={!selectedOutfit} title={selectedOutfit ? `Delete the ${selectedOutfit} outfit` : 'Select an outfit to delete'}>Delete</Button>

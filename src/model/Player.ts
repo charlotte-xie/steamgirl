@@ -477,6 +477,32 @@ export class Player {
   }
 
   /**
+   * Strip all clothes and wear random items from inventory until decency reaches
+   * the target threshold (default 50). Items are shuffled and tried in random order;
+   * each item that is successfully worn triggers a stat recalc to check decency.
+   */
+  randomDress(targetDecency: number = 50): void {
+    this.stripAll()
+
+    // Collect all wearable, unworn inventory items
+    const candidates = this.inventory.filter(item =>
+      !item.worn && item.template.positions?.length && item.template.layer
+    )
+
+    // Fisher-Yates shuffle
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[candidates[i], candidates[j]] = [candidates[j], candidates[i]]
+    }
+
+    for (const item of candidates) {
+      this.wearItem(item)
+      this.calcStats()
+      if ((this.stats.get('decency') ?? 0) >= targetDecency) break
+    }
+  }
+
+  /**
    * Apply a temporary modifier to a stat. The stat can go outside 0-100 during calculation,
    * but will be bounded when calcStats completes. This is used by calcStats callbacks
    * (items, effects) to apply bonuses/penalties that reset each time stats are recalculated.
