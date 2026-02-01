@@ -47,8 +47,6 @@ import {
   scenes,
   scene,
   branch,
-  choice,
-  gatedBranch,
   menu,
   exit,
   // Execution
@@ -364,7 +362,7 @@ describe('ScriptDSL', () => {
       })
     })
 
-    describe('scene(), choice(), gatedBranch() builders', () => {
+    describe('scene() builders', () => {
       it('scene() wraps elements in seq', () => {
         const result = scene(text('A'), text('B'))
         expect(result).toEqual(seq(text('A'), text('B')))
@@ -394,119 +392,6 @@ describe('ScriptDSL', () => {
           text('Page A'),
           run('pushScenePages', { pages: [text('Page B')] }),
         ))
-      })
-
-      it('choice() with branches only returns seq of branches unchanged', () => {
-        const b1 = branch('A', text('Path A'))
-        const b2 = branch('B', text('Path B'))
-        expect(choice(b1, b2)).toEqual(seq(b1, b2))
-      })
-
-      it('choice() with epilogue merges into last page of each branch', () => {
-        const result = choice(
-          branch('Kiss', text('You kiss.')),
-          branch('Leave', text('You leave.')),
-          addStat('Charm', 5),
-        )
-
-        // Both branches should have the epilogue merged via seq wrapping
-        const [, params] = result
-        const instructions = (params as { instructions: Instruction[] }).instructions
-
-        // First branch (Kiss): action = ['advanceScene', { push: [seq(...)] }]
-        const [, kissParams] = instructions[0]
-        const kissPush = (kissParams as any).action[1].push
-        expect(kissPush).toEqual([
-          seq(seq(text('You kiss.')), addStat('Charm', 5)),
-        ])
-
-        // Second branch (Leave): action = ['advanceScene', { push: [seq(...)] }]
-        const [, leaveParams] = instructions[1]
-        const leavePush = (leaveParams as any).action[1].push
-        expect(leavePush).toEqual([
-          seq(seq(text('You leave.')), addStat('Charm', 5)),
-        ])
-      })
-
-      it('choice() with multi-scene branch appends epilogue to branch content', () => {
-        const branchContent = scenes(
-          scene(text('Scene 1')),
-          scene(text('Scene 2')),
-        )
-        const result = choice(
-          branch('Garden', branchContent),
-          text('Epilogue text'),
-        )
-
-        const [, params] = result
-        const instructions = (params as { instructions: Instruction[] }).instructions
-        const [, branchParams] = instructions[0]
-        const push = (branchParams as any).action[1].push
-
-        // Single push entry: seq(branch content, epilogue)
-        expect(push).toHaveLength(1)
-        expect(push[0]).toEqual(seq(seq(branchContent), text('Epilogue text')))
-      })
-
-      it('gatedBranch() produces when(condition, branch(...))', () => {
-        const result = gatedBranch(
-          hasItem('gold'),
-          'Secret path',
-          text('You found it!'),
-        )
-        expect(result).toEqual(
-          when(hasItem('gold'), branch('Secret path', text('You found it!')))
-        )
-      })
-
-      it('gatedBranch() with scenes() produces when(condition, branch(scenes(...)))', () => {
-        const multiPage = scenes(
-          scene(text('Scene 1')),
-          scene(text('Scene 2')),
-        )
-        const result = gatedBranch(
-          npcStat('affection', { npc: 'npc', min: 35 }),
-          'Hidden path',
-          multiPage,
-        )
-        expect(result).toEqual(
-          when(npcStat('affection', { npc: 'npc', min: 35 }), branch('Hidden path', multiPage))
-        )
-      })
-
-      it('choice() with gatedBranch() merges epilogue into inner branch', () => {
-        const result = choice(
-          gatedBranch(hasItem('gold'), 'Rich path', text('Gold!')),
-          branch('Default', text('Normal.')),
-          addStat('Charm', 1),
-        )
-
-        const [, params] = result
-        const instructions = (params as { instructions: Instruction[] }).instructions
-
-        // First instruction is the gated branch (when)
-        const [whenName, whenParams] = instructions[0]
-        expect(whenName).toBe('when')
-        // Inside the when, the branch should have epilogue merged
-        const innerBranch = (whenParams as { then: Instruction[] }).then[0]
-        const innerPush = (innerBranch as any)[1].action[1].push
-        expect(innerPush).toEqual([seq(seq(text('Gold!')), addStat('Charm', 1))])
-
-        // Second instruction is the plain branch
-        const [, defaultParams] = instructions[1]
-        const defaultPush = (defaultParams as any).action[1].push
-        expect(defaultPush).toEqual([seq(seq(text('Normal.')), addStat('Charm', 1))])
-      })
-
-      it('choice() is JSON-serializable', () => {
-        const instruction = choice(
-          branch('A', text('Path A')),
-          branch('B', text('Path B')),
-          addStat('Charm', 5),
-        )
-        const json = JSON.stringify(instruction)
-        const parsed = JSON.parse(json)
-        expect(parsed).toEqual(instruction)
       })
     })
 
@@ -1233,87 +1118,15 @@ describe('ScriptDSL', () => {
       })
     })
 
-    describe('choice() and gatedBranch() execution', () => {
+    describe('when() gates branches', () => {
       beforeEach(() => {
         game.dismissScene()
       })
 
-      it('choice() with epilogue runs epilogue inline (no extra Continue)', () => {
-        const dateScene = scenes(
-          scene(
-            text('Choose'),
-            choice(
-              branch('Kiss', 'You kiss.'),
-              branch('Leave', 'You leave.'),
-              'Shared ending.',
-            ),
-          ),
-        )
-        game.run(dateScene)
-
-        // Two options shown
-        expect(game.scene.options.length).toBe(2)
-        expect(game.scene.options[0].label).toBe('Kiss')
-        expect(game.scene.options[1].label).toBe('Leave')
-
-        // Click Kiss — should show branch content AND epilogue on same page
-        const kiss = game.scene.options[0]
-        game.clearScene()
-        game.run(kiss.action)
-        expect(game.scene.content.length).toBe(2) // 'You kiss.' + 'Shared ending.'
-        expect((game.scene.content[0] as any).content[0].text).toBe('You kiss.')
-        expect((game.scene.content[1] as any).content[0].text).toBe('Shared ending.')
-        // No extra Continue — epilogue merged inline
-        expect(game.scene.options.length).toBe(0)
-      })
-
-      it('choice() inside scenes() resumes outer continuation via stack', () => {
-        const dateScene = scenes(
-          'Scene 1',
-          scene(
-            text('Choose'),
-            choice(
-              branch('Path A', 'Branch A'),
-              branch('Path B', 'Branch B'),
-              'Shared.',
-            ),
-          ),
-          'Scene 3 — after branch',
-        )
-        game.run(dateScene)
-
-        // Scene 1 + Continue
-        expect(game.scene.options.length).toBe(1)
-        const cont1 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont1.action)
-
-        // Scene 2 — two branch options
-        expect(game.scene.options.length).toBe(2)
-
-        // Click Path A
-        const pathA = game.scene.options[0]
-        game.clearScene()
-        game.run(pathA.action)
-
-        // Branch A content + epilogue on same page
-        expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
-        expect((game.scene.content[1] as any).content[0].text).toBe('Shared.')
-        // Continue button to Scene 3 (outer continuation on stack)
-        expect(game.scene.options.length).toBe(1)
-
-        // Click Continue → Scene 3
-        const cont3 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont3.action)
-        expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
-        expect(game.scene.options.length).toBe(0)
-      })
-
-      it('gatedBranch with true condition shows option', () => {
+      it('when(true) shows branch', () => {
         // Player starts with crown
         game.run(seq(
-          gatedBranch(hasItem('crown'), 'Rich path', text('Gold!')),
+          when(hasItem('crown'), branch('Rich path', text('Gold!'))),
           branch('Default', text('Normal.')),
         ))
         expect(game.scene.options.length).toBe(2)
@@ -1321,72 +1134,13 @@ describe('ScriptDSL', () => {
         expect(game.scene.options[1].label).toBe('Default')
       })
 
-      it('gatedBranch with false condition hides option', () => {
+      it('when(false) hides branch', () => {
         game.run(seq(
-          gatedBranch(hasItem('nonexistent'), 'Hidden path', text('Secret!')),
+          when(hasItem('nonexistent'), branch('Hidden path', text('Secret!'))),
           branch('Default', text('Normal.')),
         ))
-        // Only the default branch should appear
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Default')
-      })
-
-      it('choice() with gatedBranch runs epilogue on chosen branch', () => {
-        game.run(
-          choice(
-            gatedBranch(hasItem('crown'), 'Rich path', text('Gold!')),
-            branch('Default', text('Normal.')),
-            text('Epilogue.'),
-          ),
-        )
-
-        // Player has crown, so both options shown
-        expect(game.scene.options.length).toBe(2)
-
-        // Click Rich path
-        const richPath = game.scene.options[0]
-        game.clearScene()
-        game.run(richPath.action)
-        expect(game.scene.content.length).toBe(2)
-        expect((game.scene.content[0] as any).content[0].text).toBe('Gold!')
-        expect((game.scene.content[1] as any).content[0].text).toBe('Epilogue.')
-      })
-
-      it('does not mutate shared choice() objects across playthroughs', () => {
-        const dateScene = scenes(
-          'Scene 1',
-          choice(
-            branch('A', 'Path A'),
-            branch('B', 'Path B'),
-            'Shared.',
-          ),
-          'After',
-        )
-
-        // First playthrough
-        game.run(dateScene)
-        const cont1 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont1.action) // Scene 2 — branch options
-        const a1 = game.scene.options[0]
-        game.clearScene()
-        game.run(a1.action)
-        expect((game.scene.content[0] as any).content[0].text).toBe('Path A')
-        expect((game.scene.content[1] as any).content[0].text).toBe('Shared.')
-        expect(game.scene.options.length).toBe(1) // Continue to After
-
-        // Second playthrough — should produce identical results
-        game.dismissScene()
-        game.run(dateScene)
-        const cont2 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont2.action)
-        const a2 = game.scene.options[0]
-        game.clearScene()
-        game.run(a2.action)
-        expect((game.scene.content[0] as any).content[0].text).toBe('Path A')
-        expect((game.scene.content[1] as any).content[0].text).toBe('Shared.')
-        expect(game.scene.options.length).toBe(1) // Still exactly 1
       })
     })
 
@@ -1436,7 +1190,7 @@ describe('ScriptDSL', () => {
         game.run(menu(
           branch('Option A', text('You chose A.')),
           branch('Option B', text('You chose B.')),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         expect(game.scene.options).toHaveLength(3)
@@ -1448,7 +1202,7 @@ describe('ScriptDSL', () => {
       it('non-exit branch loops back to the menu', () => {
         game.run(menu(
           branch('Drink', text('You drink.')),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         // Click "Drink"
@@ -1475,7 +1229,7 @@ describe('ScriptDSL', () => {
       it('exit branch does not loop back', () => {
         game.run(menu(
           branch('Drink', text('You drink.')),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         // Click "Leave"
@@ -1498,7 +1252,7 @@ describe('ScriptDSL', () => {
             branch('Kiss', text('You kiss.')),
           ),
           branch('Chat', text('You chat.')),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         // Kiss should not appear (Flirtation < 20)
@@ -1516,7 +1270,7 @@ describe('ScriptDSL', () => {
             branch('Kiss', text('You kiss.')),
           ),
           branch('Chat', text('You chat.')),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         // Kiss should appear (Flirtation >= 20)
@@ -1531,9 +1285,9 @@ describe('ScriptDSL', () => {
         game.run(menu(
           branch('Kiss', text('You kiss.'), addStat('Arousal', 5, { max: 100 })),
           when(stat('Arousal', 50),
-            exit('Things escalate...', text('...')),
+            branch('Things escalate...', text('...'), exit()),
           ),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         // "Things escalate" should not appear (Arousal < 50)
@@ -1549,9 +1303,9 @@ describe('ScriptDSL', () => {
         game.run(menu(
           branch('Kiss', addStat('Arousal', 30, { max: 100, hidden: true })),
           when(stat('Arousal', 25),
-            exit('Things get heated...', text('...')),
+            branch('Things get heated...', text('...'), exit()),
           ),
-          exit('Leave', text('Goodbye.')),
+          branch('Leave', text('Goodbye.'), exit()),
         ))
 
         // Initially 2 options (Kiss + Leave)

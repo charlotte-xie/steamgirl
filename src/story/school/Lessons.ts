@@ -3,7 +3,7 @@ import type { Instruction } from '../../model/Scripts'
 import type { Card, CardDefinition, Reminder } from '../../model/Card'
 import { registerCardDefinition } from '../../model/Card'
 import { makeScripts } from '../../model/Scripts'
-import { random, timeUntil, run, seq, scenes, choice, branch, lessonTime, say } from '../../model/ScriptDSL'
+import { random, timeUntil, run, seq, scenes, scene, branch, lessonTime, say } from '../../model/ScriptDSL'
 
 // ============================================================================
 // TIMETABLE STRUCTURE
@@ -342,23 +342,24 @@ const lessonScripts = {
       g.run('move', { location: 'classroom' })
       g.add(EARLY_ARRIVAL_FLAVOUR[Math.floor(Math.random() * EARLY_ARRIVAL_FLAVOUR.length)])
       g.add({ type: 'text', text: `${next.name} begins at ${formatHour(next.slot.startHour)}.`, color: '#d0b691' })
-      g.run(choice(
-        branch('Wait quietly',
-          timeUntil(next.slot.startHour),
-          'You sit quietly and wait, watching students file in as the start time approaches.',
-          'The lecturer arrives and begins setting up.',
+      g.run(scenes(
+        scene(
+          branch('Wait quietly',
+            timeUntil(next.slot.startHour),
+            'You sit quietly and wait, watching students file in as the start time approaches.',
+            'The lecturer arrives and begins setting up.',
+          ),
+          branch('Study your notes',
+            timeUntil(next.slot.startHour),
+            'You review your notes from previous sessions, refreshing the key concepts in your mind.',
+            'The lecturer arrives and begins setting up.',
+          ),
+          branch('Chat with classmates',
+            timeUntil(next.slot.startHour),
+            'You chat with nearby students, swapping impressions of the course and comparing notes.',
+            'The lecturer arrives and begins setting up.',
+          ),
         ),
-        branch('Study your notes',
-          timeUntil(next.slot.startHour),
-          'You review your notes from previous sessions, refreshing the key concepts in your mind.',
-          'The lecturer arrives and begins setting up.',
-        ),
-        branch('Chat with classmates',
-          timeUntil(next.slot.startHour),
-          'You chat with nearby students, swapping impressions of the course and comparing notes.',
-          'The lecturer arrives and begins setting up.',
-        ),
-        // Epilogue: runs after the chosen branch completes
         run('lessonBegin', beginParams),
         ...(body ? [body] : []),
       ))

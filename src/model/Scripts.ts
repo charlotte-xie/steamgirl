@@ -723,36 +723,40 @@ const coreScripts: Record<string, ScriptFn> = {
   },
 
   /**
-   * Repeatable choice menu. Presents options; non-exit branches loop back,
-   * exit branches break out. Conditions are re-evaluated each display.
+   * Repeatable choice menu. Runs items to collect options, then appends
+   * a self-reference (menuSelf) to each option's stack push so the menu
+   * loops. Items that contain exit() clear the stack, preventing the loop.
    */
-  menu: (game: Game, params: {
-    entries?: Array<{
-      label: string
-      content: Instruction
-      isExit: boolean
-      condition?: Instruction
-    }>
-  }) => {
-    const entries = params.entries
-    if (!entries || entries.length === 0) return
+  menu: (game: Game, params: { items?: Instruction[] }) => {
+    const items = params.items
+    if (!items || items.length === 0) return
 
-    // The menu instruction itself, for re-pushing onto the stack
     const menuSelf: Instruction = ['menu', params]
+    const optionsBefore = game.scene.options.length
 
-    for (const entry of entries) {
-      // Check condition if gated
-      if (entry.condition) {
-        const result = exec(game, entry.condition)
-        if (!isTruthy(result)) continue
+    // Run items — they add options to the scene (via branch/option)
+    for (const item of items) {
+      game.run(item)
+    }
+
+    // Append menuSelf to each newly-added option's push array
+    for (let i = optionsBefore; i < game.scene.options.length; i++) {
+      const opt = game.scene.options[i]
+      const action = opt.action
+      if (Array.isArray(action) && action[0] === 'advanceScene') {
+        const orig = (action[1] ?? {}) as { push?: Instruction[] }
+        const push = [...(orig.push ?? []), menuSelf]
+        game.scene.options[i] = { ...opt, action: ['advanceScene', { ...orig, push }] as Instruction }
       }
+    }
+  },
 
-      if (entry.isExit) {
-        // Exit: push content only — no loop back
-        game.addOption(['advanceScene', { push: [entry.content] }], entry.label)
-      } else {
-        // Loop: push content then re-push the menu
-        game.addOption(['advanceScene', { push: [entry.content, menuSelf] }], entry.label)
+  /** Clear the stack and optionally run content. Used inside option content to break out of loops/scenes. */
+  exitScene: (game: Game, params: { then?: Instruction[] }) => {
+    game.scene.stack = []
+    if (params.then) {
+      for (const instr of params.then) {
+        game.run(instr)
       }
     }
   },

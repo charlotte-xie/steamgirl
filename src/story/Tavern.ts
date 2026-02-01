@@ -537,9 +537,10 @@ registerNPC('ivan-hess', {
         branch('The dealer',
           ...ivanOnTimmy(g),
         ),
-        exit('That\'s enough gossip',
+        branch('That\'s enough gossip',
           say("I've said too much already. Forget you heard any of it."),
           'He picks up a glass and starts polishing — conversation over.',
+          exit(),
         ),
       ))
     },

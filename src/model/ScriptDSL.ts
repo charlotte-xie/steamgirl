@@ -264,219 +264,37 @@ export function branch(label: string, ...rest: SceneElement[]): Instruction {
   return option(label, ['advanceScene', { push: [seq(...rest)] }])
 }
 
-// --- Branch detection & epilogue helpers (internal) ---
-
-/** True if instruction is an option targeting advanceScene (i.e. output of branch()) */
-function isBranchOption(instr: Instruction): boolean {
-  const [name, params] = instr
-  if (name !== 'option') return false
-  const action = (params as { action?: string | Instruction }).action
-  if (typeof action === 'string') return action === 'advanceScene'
-  if (Array.isArray(action)) return action[0] === 'advanceScene'
-  return false
-}
-
-/** True if instruction is a branch or a gated branch (when wrapping a single branch) */
-function isBranchLike(instr: Instruction): boolean {
-  if (isBranchOption(instr)) return true
-  const [name, params] = instr
-  if (name === 'when') {
-    const thenInstrs = (params as { then?: Instruction[] }).then
-    return !!thenInstrs && thenInstrs.length === 1 && isBranchOption(thenInstrs[0])
-  }
-  return false
-}
-
-/** Append epilogue to the last page of a branch option's push array */
-function appendEpilogueToBranch(instr: Instruction, epilogue: Instruction[]): Instruction {
-  const [name, params] = instr
-  const p = params as { label: string; action: Instruction }
-  const advanceParams = (p.action[1] ?? {}) as { push?: Instruction[] }
-  const push = advanceParams.push ?? []
-
-  const newPush = push.length === 0
-    ? [seq(...epilogue)]
-    : push.map((page, i) =>
-      i === push.length - 1 ? seq(page, ...epilogue) : page
-    )
-
-  return [name, { ...params, action: ['advanceScene', { ...advanceParams, push: newPush }] }]
-}
-
-/** Append epilogue to a branch-like instruction (plain branch or gated branch) */
-function appendEpilogue(instr: Instruction, epilogue: Instruction[]): Instruction {
-  if (isBranchOption(instr)) {
-    return appendEpilogueToBranch(instr, epilogue)
-  }
-  // gatedBranch pattern: when(condition, branch(...))
-  const [name, params] = instr
-  const p = params as { condition: Instruction; then: Instruction[] }
-  return [name, { ...p, then: [appendEpilogueToBranch(p.then[0], epilogue)] }]
-}
-
 /**
- * Group branches with an optional shared epilogue.
- *
- * Arguments are a mix of `branch()` / `gatedBranch()` results and plain
- * SceneElements. Branches become player options; non-branch elements
- * form the shared epilogue, merged into the **last page** of each branch
- * (no extra Continue click).
- *
- * Convention: list branches first, then epilogue elements.
+ * Clear the stack and optionally run content. Place inside a branch/option
+ * to break out of a menu loop or end a scene sequence.
  *
  * @example
- * choice(
- *   branch('Kiss him', 'You kiss.', say('Wow.')),
- *   branch('Not tonight', 'You decline gracefully.'),
- *   addNpcStat('affection', 5, { npc: 'tour-guide', hidden: true, max: 55 }),
- *   endDate(),
- * )
+ * branch('Leave', say('Goodnight.'), exit(move('hotel')))
+ * branch('Stop chatting', say('You excuse yourself.'), exit())
  */
-export function choice(...args: SceneElement[]): Instruction {
-  const branches: Instruction[] = []
-  const epilogue: Instruction[] = []
-
-  for (const arg of args) {
-    const instr = toInstruction(arg)
-    if (isBranchLike(instr)) {
-      branches.push(instr)
-    } else {
-      epilogue.push(instr)
-    }
-  }
-
-  if (epilogue.length === 0) {
-    return seq(...branches)
-  }
-
-  return seq(...branches.map(b => appendEpilogue(b, epilogue)))
+export function exit(...rest: SceneElement[]): Instruction {
+  return run('exitScene', { then: rest.map(toInstruction) })
 }
 
 /**
- * A branch that only appears when a condition is met.
- * Compiles to `when(condition, branch(label, ...))`.
+ * A repeatable choice menu. All branch options loop back automatically.
+ * Use `exit()` inside a branch's content to break out of the loop.
  *
- * Works inside `choice()` — the epilogue will be merged through the gate.
- *
- * @example
- * choice(
- *   gatedBranch(npcStat('affection', { min: 35 }),
- *     'Go to the hidden garden', ...gardenPath()),
- *   branch('Walk to the pier', ...pierPath()),
- *   endDate(),
- * )
- */
-export function gatedBranch(
-  condition: Instruction, label: string, ...rest: SceneElement[]
-): Instruction {
-  return when(condition, branch(label, ...rest))
-}
-
-// --- Branch info extraction (internal) ---
-
-/** Extract label and content from a branch option instruction */
-function extractBranchInfo(instr: Instruction): { label: string; content: Instruction } | null {
-  if (!isBranchOption(instr)) return null
-  const params = instr[1] as { label?: string; action?: Instruction }
-  const label = params.label ?? ''
-  const advanceParams = (Array.isArray(params.action) ? params.action[1] : {}) as { push?: Instruction[] }
-  const push = (advanceParams?.push ?? []) as Instruction[]
-  return { label, content: push.length === 1 ? push[0] : run('seq', { instructions: push }) }
-}
-
-/** True if instruction is an exit() marker */
-function isExitInstruction(instr: Instruction): boolean {
-  return instr[0] === '_menuExit'
-}
-
-/** Extract label and content from an exit() marker */
-function extractExitInfo(instr: Instruction): { label: string; content: Instruction } | null {
-  if (!isExitInstruction(instr)) return null
-  const params = instr[1] as { label: string; body: Instruction[] }
-  return { label: params.label, content: seq(...params.body) }
-}
-
-/**
- * A terminal branch inside a `menu()` — choosing this exits the loop.
- *
- * @example
- * menu(
- *   branch('Kiss him', 'You kiss.', addStat('Arousal', 5)),
- *   branch('Have a drink', 'He pours you a drink.'),
- *   exit('Call it a night', 'You leave.', move('hotel')),
- * )
- */
-export function exit(label: string, ...rest: SceneElement[]): Instruction {
-  return run('_menuExit', { label, body: rest.map(toInstruction) })
-}
-
-/**
- * A repeatable choice menu. Presents options to the player; non-exit
- * branches loop back to re-present the menu, exit branches break out.
- *
- * Accepts `branch()`, `exit()`, and `when(condition, branch/exit)`.
- * Conditions are re-evaluated each time the menu is shown, so options
- * can appear or disappear based on changing game state.
- *
- * Between each action, the player sees a "Continue" button before the
- * menu reappears — giving them time to read the result.
+ * Accepts `branch()` and `when(condition, branch(...))`.
+ * Conditions are re-evaluated each time the menu is shown.
  *
  * @example
  * menu(
  *   when(hasStat('Flirtation', 20),
  *     branch('Kiss him', 'You kiss.', addStat('Arousal', 5)),
  *   ),
- *   branch('Have a drink', 'He pours you a drink.', run('consumeAlcohol', { amount: 20 })),
+ *   branch('Have a drink', 'He pours you a drink.'),
  *   branch('Chat', 'You talk for a while.'),
- *   exit('Leave', 'You say goodnight.', move('hotel')),
+ *   branch('Leave', 'You say goodnight.', exit(move('hotel'))),
  * )
  */
 export function menu(...args: SceneElement[]): Instruction {
-  type MenuEntry = {
-    label: string
-    content: Instruction
-    isExit: boolean
-    condition?: Instruction
-  }
-  const entries: MenuEntry[] = []
-
-  for (const arg of args) {
-    const instr = toInstruction(arg)
-
-    // exit('Label', ...)
-    const exitInfo = extractExitInfo(instr)
-    if (exitInfo) {
-      entries.push({ ...exitInfo, isExit: true })
-      continue
-    }
-
-    // branch('Label', ...)
-    const branchInfo = extractBranchInfo(instr)
-    if (branchInfo) {
-      entries.push({ ...branchInfo, isExit: false })
-      continue
-    }
-
-    // when(condition, branch/exit)
-    if (instr[0] === 'when') {
-      const p = instr[1] as { condition: Instruction; then: Instruction[] }
-      if (p.then && p.then.length === 1) {
-        const inner = p.then[0]
-        const innerExit = extractExitInfo(inner)
-        if (innerExit) {
-          entries.push({ ...innerExit, isExit: true, condition: p.condition })
-          continue
-        }
-        const innerBranch = extractBranchInfo(inner)
-        if (innerBranch) {
-          entries.push({ ...innerBranch, isExit: false, condition: p.condition })
-          continue
-        }
-      }
-    }
-  }
-
-  return run('menu', { entries })
+  return run('menu', { items: args.map(toInstruction) })
 }
 
 /**
