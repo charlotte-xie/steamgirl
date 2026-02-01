@@ -32,6 +32,11 @@ export type ActiveShop = {
   items: ShopItemEntry[]
 }
 
+/** A single stack frame. Frames isolate nested contexts (e.g. a menu inside a scenes() sequence). */
+export interface StackFrame {
+  pages: Instruction[]
+}
+
 export type SceneData = {
   type: 'story'
   content: Content[]
@@ -42,8 +47,8 @@ export type SceneData = {
   hideNpcImage?: boolean
   /** When set, the scene renders as a shop interface. */
   shop?: ActiveShop
-  /** Pending scene pages. Each entry is a single Instruction (e.g. seq). Consumed front-to-back; branches prepend. */
-  stack: Instruction[]
+  /** Stack frames for nested scene contexts. stack[0] is the top (innermost) frame. */
+  stack: StackFrame[]
 }
 
 export interface GameData {
@@ -171,7 +176,30 @@ export class Game {
 
   /** Checks if we are currently in a scene. This usually disables other actions like waiting. */
   get inScene(): boolean {
-    return this.scene.options.length > 0 || this.scene.stack.length > 0 || !!this.scene.shop
+    return this.scene.options.length > 0 || this.hasPages || !!this.scene.shop
+  }
+
+  /** True if any stack frame has pages remaining. */
+  get hasPages(): boolean {
+    return this.scene.stack.some(f => f.pages.length > 0)
+  }
+
+  /** Top (innermost) stack frame. Creates one if stack is empty. */
+  get topFrame(): StackFrame {
+    if (this.scene.stack.length === 0) {
+      this.scene.stack.unshift({ pages: [] })
+    }
+    return this.scene.stack[0]
+  }
+
+  /** Push a new frame onto the stack (becomes innermost). */
+  pushFrame(pages: Instruction[] = []): void {
+    this.scene.stack.unshift({ pages })
+  }
+
+  /** Pop the top (innermost) frame entirely, discarding its pages. */
+  popFrame(): StackFrame | undefined {
+    return this.scene.stack.shift()
   }
 
   /** Gets the current NPC. Throws if no NPC is in the current scene. */
@@ -314,7 +342,7 @@ export class Game {
     })
 
     // Unset npc when there are no scene options and no pending scene pages
-    if (this.scene.options.length === 0 && this.scene.stack.length === 0) {
+    if (this.scene.options.length === 0 && !this.hasPages) {
       this.scene.npc = undefined
       this.scene.hideNpcImage = undefined
     }
@@ -652,8 +680,13 @@ export class Game {
       // If scene exists but doesn't match expected format, keep default from constructor
     }
 
-    // Ensure scene stack is initialized (old saves may not have it)
-    if (!game.scene.stack) game.scene.stack = []
+    // Ensure scene stack is initialized and migrated to frame format
+    if (!game.scene.stack) {
+      game.scene.stack = []
+    } else if (game.scene.stack.length > 0 && !('pages' in game.scene.stack[0])) {
+      // Migrate old flat Instruction[] stack to StackFrame[]
+      game.scene.stack = [{ pages: game.scene.stack as unknown as Instruction[] }]
+    }
 
     // Deserialize locations map - create copies from prototypes and apply serialized changes
     if (data.locations) {

@@ -921,7 +921,7 @@ describe('ScriptDSL', () => {
         game.run(scenes('Only scene'))
         expect(game.scene.content.length).toBe(1)
         expect(game.scene.options.length).toBe(0)
-        expect(game.scene.stack.length).toBe(0)
+        expect(game.hasPages).toBe(false)
       })
 
       it('scenes with multiple scenes pushes remaining onto stack', () => {
@@ -932,8 +932,9 @@ describe('ScriptDSL', () => {
         // Continue button (via pushScenePages)
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Continue')
-        // Stack has remaining pages
-        expect(game.scene.stack.length).toBe(2)
+        // Stack has remaining pages (1 frame with 2 pages)
+        expect(game.hasPages).toBe(true)
+        expect(game.scene.stack[0].pages.length).toBe(2)
       })
 
       it('Continue button advances through all scenes via stack', () => {
@@ -955,7 +956,7 @@ describe('ScriptDSL', () => {
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3')
         expect(game.scene.options.length).toBe(0) // No more scenes
-        expect(game.scene.stack.length).toBe(0) // Stack fully drained
+        expect(game.hasPages).toBe(false) // Stack fully drained
       })
 
       it('branch within scenes resumes outer continuation from stack', () => {
@@ -1061,11 +1062,11 @@ describe('ScriptDSL', () => {
       it('non-stack action clears the stack via takeAction', () => {
         game.clearScene()
         game.run(scenes('Scene 1', 'Scene 2'))
-        expect(game.scene.stack.length).toBe(1) // pages on stack
+        expect(game.hasPages).toBe(true) // pages on stack
 
         // takeAction with a non-advanceScene script clears the stack
         game.takeAction('endScene')
-        expect(game.scene.stack.length).toBe(0)
+        expect(game.hasPages).toBe(false)
       })
 
       it('does not mutate shared DSL objects across playthroughs', () => {
@@ -1203,14 +1204,14 @@ describe('ScriptDSL', () => {
       it('scene stack survives JSON serialization', () => {
         game.clearScene()
         game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
-        expect(game.scene.stack.length).toBe(2)
+        expect(game.scene.stack[0].pages.length).toBe(2)
 
         // Serialize and deserialize
         const json = game.toJSON()
-        expect(json.scene.stack.length).toBe(2)
+        expect(json.scene.stack[0].pages.length).toBe(2)
 
         const restored = Game.fromJSON(json)
-        expect(restored.scene.stack.length).toBe(2)
+        expect(restored.scene.stack[0].pages.length).toBe(2)
 
         // Continue should still work after restore
         const continueBtn = restored.scene.options[0]
@@ -1222,10 +1223,10 @@ describe('ScriptDSL', () => {
       it('dismissScene clears the stack', () => {
         game.clearScene()
         game.run(scenes('Scene 1', 'Scene 2'))
-        expect(game.scene.stack.length).toBe(1)
+        expect(game.hasPages).toBe(true)
 
         game.dismissScene()
-        expect(game.scene.stack.length).toBe(0)
+        expect(game.hasPages).toBe(false)
         expect(game.scene.options.length).toBe(0)
       })
     })

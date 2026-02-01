@@ -1428,11 +1428,11 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /** Push remaining scene pages onto the stack and add a Continue button. Called inline during scene setup. */
+  /** Push remaining scene pages onto the top stack frame and add a Continue button. */
   pushScenePages: (game: Game, params: { pages?: Instruction[] }) => {
     const pages = params.pages
     if (!pages || pages.length === 0) return
-    game.scene.stack.unshift(...pages)
+    game.topFrame.pages.unshift(...pages)
     if (game.scene.options.length === 0) {
       game.addOption('advanceScene', 'Continue')
     }
@@ -1443,26 +1443,32 @@ const coreScripts: Record<string, ScriptFn> = {
    *  must respond to the sub-scene before the outer scene can continue. */
   replaceScene: (game: Game, params: { pages?: Instruction[] }) => {
     if (!params.pages || params.pages.length === 0) return
-    game.scene.stack.unshift(...params.pages)
+    game.topFrame.pages.unshift(...params.pages)
     game.clearScene()
     game.run('advanceScene')
   },
 
-  /** Advance the scene: shift the next page off the stack and run it. Branches prepend their pages first.
-   *  Auto-skips pages that produce no content or options (e.g. conditional lessonTime segments). */
+  /** Advance the scene: pop the next page from the top stack frame and run it.
+   *  Exhausted frames are popped so outer contexts resume. Auto-skips no-op pages. */
   advanceScene: (game: Game, params: { push?: Instruction[] }) => {
     if (params.push) {
-      game.scene.stack.unshift(...params.push)
+      game.topFrame.pages.unshift(...params.push)
     }
-    while (game.scene.stack.length > 0) {
+    while (game.hasPages) {
+      const frame = game.scene.stack[0]
+      if (frame.pages.length === 0) {
+        // Frame exhausted — pop it, continue with parent
+        game.scene.stack.shift()
+        continue
+      }
       const contentBefore = game.scene.content.length
-      const page = game.scene.stack.shift()!
+      const page = frame.pages.shift()!
       game.run(page)
       // If the page produced content or options, stop and show to user
       if (game.scene.content.length > contentBefore || game.scene.options.length > 0) break
       // Otherwise the page was a no-op — continue to next page
     }
-    if (game.scene.options.length === 0 && game.scene.stack.length > 0) {
+    if (game.scene.options.length === 0 && game.hasPages) {
       game.addOption('advanceScene', 'Continue')
     }
   },

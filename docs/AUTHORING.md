@@ -1,6 +1,36 @@
 # Content Authoring
 
-Guide to writing narrative content for SteamGirl. For the scripting API reference, see [SCRIPTING.md](./SCRIPTING.md).
+Authoring is about creating interesting content for the player. This doc explains narrative content for SteamGirl.
+For the scripting API reference, see [SCRIPTING.md](./SCRIPTING.md).
+
+## Golden Rule
+
+Everything must lead to a interesting player decision. The standard format should .
+- Say what happens as a result of the player's last decision
+- Present new information / flavour / twists as needed
+- Give the player a new decision
+
+## Scenes
+
+Scenes are narrative units structured as pages. Each page should comprise:
+- NPC image (optional - see showNPCImage and hideNPCImage, may omit to focus on location)
+- Some content
+- The next decision for the player
+
+Decision options present meaningful choices
+- Choosing a particular path / route
+- Passive: let the NPC lead, in which case NPC should drive action forward on next page
+- Active: attempt something to achieve a goal (steal, charm, flirt etc.) 
+
+Options should be expressed as single verbs or short verb phrases ("Stay", "Run away"). Add tooltip text to options if needed for extra clarity / flavour
+
+A single option ("Leave", "Move on" etc.) etc is acceptable to end a scene
+
+Use a single option ("Continue", "Follow", "Listen") to longer scenes into smaller pages. Single pages should not be more than 10 lines.
+
+Scenes can have subscenes, which return to the main scene flow once normally concluded.
+
+When scenes conclude, giving no options will return the player to the location view (player chooses where to go / what to do next)
 
 ## Writing Rules
 
@@ -35,7 +65,6 @@ say('"Welcome to Aetheria," she says.')
 say('Welcome to Aetheria.')
 'She gestures towards the courtyard.'
 ```
-
 Separate narration from dialogue. Keep narration in plain strings; keep speech in `say()`.
 
 ### Text Interpolation
