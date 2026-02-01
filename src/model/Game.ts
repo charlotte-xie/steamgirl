@@ -310,12 +310,6 @@ export class Game {
     // Clear the scene before running a new script
     this.clearScene()
 
-    // Non-scene-management actions abandon the scene stack
-    const actionName = typeof action === 'string' ? action : action[0]
-    if (actionName !== 'advanceScene') {
-      this.scene.stack = []
-    }
-
     try {
       this.run(action)
     } catch (error) {
@@ -341,8 +335,9 @@ export class Game {
       this.run(card.template.afterUpdate)
     })
 
-    // Unset npc when there are no scene options and no pending scene pages
-    if (this.scene.options.length === 0 && !this.hasPages) {
+    // If no options remain, the scene is complete — abandon any stale stack and clear NPC
+    if (this.scene.options.length === 0) {
+      this.scene.stack = []
       this.scene.npc = undefined
       this.scene.hideNpcImage = undefined
     }

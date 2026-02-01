@@ -1059,14 +1059,16 @@ describe('ScriptDSL', () => {
         expect(opt.action).toEqual(['someOtherScript', { foo: 'bar' }])
       })
 
-      it('non-stack action clears the stack via takeAction', () => {
+      it('non-stack action clears the stack via afterAction cleanup', () => {
         game.clearScene()
         game.run(scenes('Scene 1', 'Scene 2'))
         expect(game.hasPages).toBe(true) // pages on stack
 
-        // takeAction with a non-advanceScene script clears the stack
+        // takeAction runs the action; afterAction cleans up when no options remain
         game.takeAction('endScene')
-        expect(game.hasPages).toBe(false)
+        expect(game.hasPages).toBe(true) // stack still intact after takeAction
+        game.afterAction()
+        expect(game.hasPages).toBe(false) // afterAction cleaned up
       })
 
       it('does not mutate shared DSL objects across playthroughs', () => {
@@ -1597,6 +1599,87 @@ describe('ScriptDSL', () => {
 
         // Last entry is addStat, which doesn't add to content but modifies stat
         vi.restoreAllMocks()
+      })
+    })
+
+    describe('StackFrame and frame-level clearing', () => {
+      it('pushFrame / popFrame basics', () => {
+        game.scene.stack = []
+        expect(game.hasPages).toBe(false)
+
+        game.pushFrame([text('page1'), text('page2')])
+        expect(game.hasPages).toBe(true)
+        expect(game.scene.stack.length).toBe(1)
+        expect(game.scene.stack[0].pages.length).toBe(2)
+
+        const popped = game.popFrame()
+        expect(popped).toBeDefined()
+        expect(popped!.pages.length).toBe(2)
+        expect(game.hasPages).toBe(false)
+      })
+
+      it('topFrame creates frame lazily', () => {
+        game.scene.stack = []
+        const frame = game.topFrame
+        expect(frame).toBeDefined()
+        expect(frame.pages).toEqual([])
+        expect(game.scene.stack.length).toBe(1)
+      })
+
+      it('hasPages returns false for empty frames', () => {
+        game.scene.stack = [{ pages: [] }]
+        expect(game.hasPages).toBe(false)
+      })
+
+      it('afterAction cleans up abandoned stack when no options remain', () => {
+        // Set up two frames: outer (parent) and inner (current)
+        game.scene.stack = []
+        game.pushFrame([text('outer continuation')])
+        game.pushFrame([text('inner page 1'), text('inner page 2')])
+        expect(game.scene.stack.length).toBe(2)
+
+        // Fire-and-forget action: takeAction just runs it
+        game.takeAction(['endScene', {}])
+        // Stack still intact after takeAction (no special-casing)
+        expect(game.scene.stack.length).toBe(2)
+
+        // afterAction cleans up since endScene produced no options
+        game.afterAction()
+        expect(game.scene.stack.length).toBe(0)
+        expect(game.hasPages).toBe(false)
+      })
+
+      it('advanceScene preserves stack and pops pages normally', () => {
+        game.scene.stack = []
+        game.pushFrame([text('page 1'), text('page 2')])
+
+        // advanceScene does NOT pop the frame — it pops pages within it
+        game.clearScene()
+        game.run('advanceScene')
+        expect(game.scene.content.length).toBe(1)
+        expect((game.scene.content[0] as any).content[0].text).toBe('page 1')
+        expect(game.scene.stack[0].pages.length).toBe(1) // page 2 remains
+      })
+
+      it('advanceScene pops exhausted frames to reach parent', () => {
+        game.scene.stack = []
+        game.pushFrame([text('parent page')])
+        game.pushFrame([text('child page')])
+
+        // First advance: pops child page
+        game.clearScene()
+        game.run('advanceScene')
+        expect((game.scene.content[0] as any).content[0].text).toBe('child page')
+
+        // Child frame exhausted, parent has a page — Continue should appear
+        expect(game.scene.options.length).toBe(1)
+        expect(game.scene.options[0].label).toBe('Continue')
+
+        // Second advance: child frame auto-popped, parent page runs
+        game.clearScene()
+        game.run('advanceScene')
+        expect((game.scene.content[0] as any).content[0].text).toBe('parent page')
+        expect(game.hasPages).toBe(false)
       })
     })
   })
