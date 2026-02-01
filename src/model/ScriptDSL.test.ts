@@ -1681,6 +1681,72 @@ describe('ScriptDSL', () => {
         expect((game.scene.content[0] as any).content[0].text).toBe('parent page')
         expect(game.hasPages).toBe(false)
       })
+
+      it('afterAction auto-continues into parent frame when inner frame is exhausted', () => {
+        // Outer frame has a page waiting. Inner frame has one page.
+        game.scene.stack = []
+        game.pushFrame([text('outer page')])
+        game.pushFrame([text('inner page')])
+
+        // Advance consumes inner page. Inner frame now empty but still on stack.
+        game.clearScene()
+        game.run('advanceScene')
+        expect((game.scene.content[0] as any).content[0].text).toBe('inner page')
+        // advanceScene sees inner frame empty, outer has pages → Continue
+        expect(game.scene.options.length).toBe(1)
+
+        // Player clicks a fire-and-forget option instead of Continue
+        // (simulating: inner context offered options, player chose to leave)
+        game.takeAction(['endScene', {}])
+        // endScene produces text but no options. Inner frame is empty.
+        // afterAction should pop the exhausted inner frame and auto-continue outer.
+        game.afterAction()
+
+        // Outer page should have been auto-continued
+        expect((game.scene.content[0] as any).content[0].text).toBe('outer page')
+        expect(game.hasPages).toBe(false)
+      })
+
+      it('afterAction auto-continues through multiple exhausted frames', () => {
+        game.scene.stack = []
+        game.pushFrame([text('root page')])
+        game.pushFrame([])  // middle frame, already empty
+        game.pushFrame([])  // inner frame, already empty
+
+        game.takeAction(['endScene', {}])
+        game.afterAction()
+
+        // Should have popped both empty frames and auto-continued root
+        expect((game.scene.content[0] as any).content[0].text).toBe('root page')
+        expect(game.hasPages).toBe(false)
+      })
+
+      it('afterAction cleans up when all frames are exhausted', () => {
+        game.scene.stack = []
+        game.pushFrame([])  // single empty frame
+        game.scene.npc = 'test-npc'
+
+        game.takeAction(['endScene', {}])
+        game.afterAction()
+
+        // Frame popped, nothing left → NPC cleared
+        expect(game.scene.stack.length).toBe(0)
+        expect(game.scene.npc).toBeUndefined()
+      })
+
+      it('afterAction clears stale pages from fire-and-forget (single frame)', () => {
+        // Single frame with remaining pages — fire-and-forget should abandon them
+        game.scene.stack = []
+        game.pushFrame([text('stale page 1'), text('stale page 2')])
+        game.scene.npc = 'test-npc'
+
+        game.takeAction(['endScene', {}])
+        game.afterAction()
+
+        // Top frame had pages → fire-and-forget → everything cleared
+        expect(game.scene.stack.length).toBe(0)
+        expect(game.scene.npc).toBeUndefined()
+      })
     })
   })
 })

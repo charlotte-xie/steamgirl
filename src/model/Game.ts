@@ -335,11 +335,33 @@ export class Game {
       this.run(card.template.afterUpdate)
     })
 
-    // If no options remain, the scene is complete — abandon any stale stack and clear NPC
+    // If no options remain, determine whether to auto-continue or clean up
     if (this.scene.options.length === 0) {
-      this.scene.stack = []
-      this.scene.npc = undefined
-      this.scene.hideNpcImage = undefined
+      if (this.scene.stack.length > 0 && this.scene.stack[0].pages.length === 0) {
+        // Current frame exhausted — pop it and any other empty frames
+        while (this.scene.stack.length > 0 && this.scene.stack[0].pages.length === 0) {
+          this.scene.stack.shift()
+        }
+        if (this.hasPages) {
+          // Parent frame has pages — auto-continue into it
+          this.run('advanceScene')
+          // advanceScene failed to produce content/options — give up
+          if (this.scene.options.length === 0) {
+            this.scene.stack = []
+            this.scene.npc = undefined
+            this.scene.hideNpcImage = undefined
+          }
+        } else {
+          // All frames exhausted — scene complete
+          this.scene.npc = undefined
+          this.scene.hideNpcImage = undefined
+        }
+      } else {
+        // Top frame still has pages (stale from fire-and-forget) or no frames at all — clear
+        this.scene.stack = []
+        this.scene.npc = undefined
+        this.scene.hideNpcImage = undefined
+      }
     }
 
     // Recalculate stats to ensure UI reflects any basestat changes from the action
