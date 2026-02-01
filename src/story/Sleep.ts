@@ -185,13 +185,22 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   // Set sleeping flag
   game.player.sleeping = true
 
-  // Process sleep in chunks using wait, allowing interruption
+  // Process sleep in chunks using wait, allowing interruption.
+  // Energy is restored incrementally each chunk so that timeEffects
+  // (which runs during wait) sees the rising energy and clears
+  // Tired/Exhausted naturally during sleep rather than after.
   let minutesSlept = 0
   let interrupted = false
 
   while (minutesSlept < targetMinutes) {
     const remaining = targetMinutes - minutesSlept
     const chunk = Math.min(remaining, SLEEP_CHUNK_MINUTES)
+
+    // Restore energy for this chunk before wait, so timeEffects sees it
+    const currentEnergy = game.player.basestats.get('Energy') ?? 0
+    const chunkEnergy = chunk * effectiveEnergyPerMinute
+    const newChunkEnergy = Math.min(MAX_ENERGY, currentEnergy + chunkEnergy)
+    game.player.basestats.set('Energy', Math.round(newChunkEnergy))
 
     // Use wait to allow events to trigger
     game.run('wait', { minutes: chunk })
@@ -208,15 +217,9 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   // Clear sleeping flag (player is now awake)
   game.player.sleeping = false
 
-  // Calculate actual energy restored based on time slept
-  const energyRestored = Math.min(
-    minutesSlept * effectiveEnergyPerMinute,
-    MAX_ENERGY - startEnergy
-  )
-
-  // Apply energy restoration
-  const newEnergy = Math.min(MAX_ENERGY, startEnergy + energyRestored)
-  game.player.basestats.set('Energy', Math.round(newEnergy))
+  // Calculate total energy restored for the wakeup message
+  const finalEnergy = game.player.basestats.get('Energy') ?? 0
+  const energyRestored = finalEnergy - startEnergy
 
   // Set lastSleep timer for full sleep (even if interrupted)
   if (isFullSleep && minutesSlept >= (min ?? 0)) {
@@ -224,7 +227,7 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   }
 
   // Generate wakeup message
-  const wakeupMessage = getWakeupMessage(wakeupReason, newEnergy)
+  const wakeupMessage = getWakeupMessage(wakeupReason, finalEnergy)
 
   if (interrupted) {
     // Prepend wakeup message to existing scene content

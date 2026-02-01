@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, branch, move, moveNpc, addItem, menu, exit, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
+import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
 import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
 import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
 import { bedActivity } from './Sleep'
@@ -152,74 +152,7 @@ makeScripts({
   },
 })
 
-// ============================================================================
-// ROOM 533 — PATRON'S ROOM (DSL MENU)
-// ============================================================================
-
-const room533Scene = scenes(
-  scene(
-    random(
-      'The room is warm and softly lit, the city glittering beyond the window. He pours two drinks from a crystal decanter and hands you one.',
-      'He closes the door behind you and crosses to the drinks cabinet. "Make yourself comfortable." The room smells of sandalwood and expensive leather.',
-    ),
-    'He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.',
-    menu(
-      branch('Kiss him',
-        random(
-          'You lean into him and his arms wrap around you. The kiss is slow and deliberate, tasting of whisky and wanting. Your pulse quickens.',
-          'You close the distance between you. His hand slides to your waist as your lips meet — gentle at first, then with growing urgency.',
-          'He cups your face in his hands and kisses you deeply. The room seems to narrow to just the two of you, the city forgotten beyond the glass.',
-          'You kiss him again, harder this time. He makes a soft sound of surprise, then pulls you closer. The warmth of his body is intoxicating.',
-        ),
-        addStat('Arousal', 5, { max: 100 }),
-        addStat('Flirtation', 1, { max: 40, chance: 0.3 }),
-        time(5),
-        random(
-          'He draws back just far enough to look at you, slightly breathless. "You are full of surprises."',
-          'When you finally pull apart, his eyes are bright. He runs a hand through his hair, composing himself.',
-          'He exhales slowly, a smile tugging at his lips. "I think I could get used to that."',
-        ),
-      ),
-      branch('Have a drink',
-        random(
-          'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
-          'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
-          'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
-        ),
-        run('consumeAlcohol', { amount: 20 }),
-        time(10),
-        random(
-          'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
-          'You clink glasses. The room feels cosier now, the city lights softening through the window.',
-        ),
-      ),
-      branch('Chat',
-        random(
-          'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
-          'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
-          'The conversation drifts to dreams and ambitions. He speaks carefully, choosing his words, and you realise he\'s more thoughtful than his polished exterior suggests.',
-          'He asks about your life before Aetheria. You find yourself sharing more than you expected, drawn out by his quiet attentiveness. In turn, he tells you about growing up in the country — a different world from this gilded hotel room.',
-        ),
-        time(15),
-        addStat('Charm', 1, { max: 40, chance: 0.3 }),
-        addStat('Mood', 2, { max: 85 }),
-      ),
-      exit('Call it a night',
-        random(
-          'You set down your glass and tell him you should go. He nods, rising to walk you to the door.\n\n"Thank you for a memorable evening," he says, pressing a kiss to the back of your hand. "Truly."',
-          'You stand and smooth your clothes. He doesn\'t try to stop you — just smiles, warm and genuine.\n\n"I won\'t forget tonight," he says quietly. The door clicks shut behind you, and you make your way to the lift.',
-        ),
-        moveNpc('bar-patron', null),
-        'You step out into the corridor, your heart still racing slightly, and take the lift back down to the lobby.',
-        move('hotel'),
-      ),
-    ),
-  ),
-)
-
-makeScripts({
-  room533Scene: (g: Game) => g.run(room533Scene),
-})
+// Room 533 location is defined below — all Ashworth scripts live in hotel/Patrons.ts
 
 // ============================================================================
 // ACTIVITY SCRIPTS (DSL)
