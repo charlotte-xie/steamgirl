@@ -1079,12 +1079,16 @@ const coreScripts: Record<string, ScriptFn> = {
   /**
    * Add an option button to the scene. Content is pushed as a stack frame
    * when the player clicks; when it exhausts, control returns to the parent context.
+   * An option with no content acts as a "continue" button (advances the stack).
    */
   option: (game: Game, params: { label?: string; content?: Instruction[] }) => {
     const label = params.label
     if (!label) return
     const content = params.content
-    if (!content || content.length === 0) return
+    if (!content || content.length === 0) {
+      game.addOption('continue', label)
+      return
+    }
     const action: Instruction = content.length === 1 ? content[0] : ['seq', { instructions: content }]
     game.addOption(action, label)
   },
