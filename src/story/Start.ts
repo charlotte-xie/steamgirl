@@ -5,7 +5,7 @@ import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
 import { discoverAllLocations } from '../story/Utility'
-import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option, time } from '../model/ScriptDSL'
+import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option, time, run } from '../model/ScriptDSL'
 import type { Specialty } from '../screens/NewCharacterScreen'
 import '../story/Effects' // Register effect definitions
 import '../story/Lodgings' // Register lodgings scripts
@@ -38,9 +38,9 @@ registerNPC('automaton-greeter', {
   onApproach: seq(
     text('The automaton greeter clicks and whirs, its brass voicebox producing a mechanical greeting:'),
     say('Welcome to Ironspark Terminus. How may I assist you today?'),
-    option('Get directions', 'npc:onGetDirections'),
-    option('Flirt', 'npc:onFlirt'),
-    option('???', 'npc:onGlitch'),
+    option('Get directions', run('npc:onGetDirections')),
+    option('Flirt', run('npc:onFlirt')),
+    option('???', run('npc:onGlitch')),
     npcLeaveOption('The automaton whirs softly as you depart.', 'Safe travels. May your gears never seize.', 'Say goodbye'),
   ),
   scripts: {

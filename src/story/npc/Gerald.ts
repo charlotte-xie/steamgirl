@@ -100,7 +100,7 @@
 import { Game } from '../../model/Game'
 import { registerNPC } from '../../model/NPC'
 import {
-  say, npcLeaveOption,
+  say, npcLeaveOption, run,
   seq, random, when, cond, and,
   text, time, move,
   scene, scenes, option,
@@ -204,9 +204,9 @@ registerNPC('landlord', {
       ),
     ),
     // Options
-    option('Chat', 'npc:onChat'),
+    option('Chat', run('npc:onChat')),
     when(stat('Flirtation', 20),
-      option('Flirt', 'npc:onFlirt'),
+      option('Flirt', run('npc:onFlirt')),
     ),
     npcLeaveOption('You leave Gerald to his paperwork.', 'Right then. You know where I am.', 'Leave'),
   ),

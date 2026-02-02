@@ -257,7 +257,7 @@ const universityInduction: Instruction[] = [
   say('Ah, you\'re the new student. Welcome to the University of Aetheria. Your induction begins now.'),
   text('She leads you through the grand entrance.'),
   discoverLocation('hallway'),
-  option('Follow the Administrator', 'inductionHallway'),
+  option('Follow the Administrator', run('inductionHallway')),
 ]
 
 // Scene 2: Move to hallway
@@ -266,7 +266,7 @@ const inductionHallway: Instruction[] = [
   text('You step into the university hallways. The corridors stretch before you, lined with brass fixtures and mechanical displays.'),
   say('These are the main hallways. They connect all the important areas of the university.'),
   text('As you walk, you notice the intricate clockwork mechanisms embedded in the walls, the gentle hum of steam pipes, and the scholarly atmosphere that permeates every corner.'),
-  option('Continue the Tour', 'inductionGreatHall'),
+  option('Continue the Tour', run('inductionGreatHall')),
 ]
 
 // Scene 3: Move to great hall
@@ -275,7 +275,7 @@ const inductionGreatHall: Instruction[] = [
   text('The administrator leads you into the Great Hall. The dining hall stretches before you, with long tables and brass chandeliers overhead.'),
   say('This is where students gather for meals. Breakfast, lunch, and dinner are served here daily. It\'s also a popular place for students to socialise and discuss their studies.'),
   text('You can see steam-powered serving mechanisms moving along tracks on the ceiling, ready to deliver meals to the tables below.'),
-  option('Continue the Tour', 'inductionClassroom'),
+  option('Continue the Tour', run('inductionClassroom')),
 ]
 
 // Scene 4: Move to classroom
@@ -284,7 +284,7 @@ const inductionClassroom: Instruction[] = [
   text('Next, the administrator shows you a lecture hall. Rows of desks face a brass lectern and mechanical projection devices.'),
   say('This is where you\'ll attend lectures on the mechanical arts, steam engineering, and clockwork theory. Pay attention during your classes — knowledge here is both practical and essential.'),
   text('The walls are lined with diagrams of complex mechanisms, and you can see various steam-powered teaching aids ready for demonstrations.'),
-  option('Finish the Tour', 'inductionComplete'),
+  option('Finish the Tour', run('inductionComplete')),
 ]
 
 // Scene 5: Complete induction back in hallway

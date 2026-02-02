@@ -555,7 +555,7 @@ makeScript('tryRemoveClothing', (game: Game) => {
     pickRandom(FUMBLE_NARRATION)(itemName),
     say(pickRandom(FUMBLE_ASK)),
     option(`Let ${npc.pronouns.object}`, ['tryStripAllow', { item: item.id }]),
-    option(`Stop ${npc.pronouns.object}`, 'tryStripResist'),
+    option(`Stop ${npc.pronouns.object}`, run('tryStripResist')),
   )] })
 })
 

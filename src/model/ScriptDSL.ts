@@ -88,34 +88,29 @@ export const npcName = (npc?: string): Instruction =>
   run('npcName', { npc })
 
 /**
- * Add an option button to the scene — fire-and-forget navigation.
+ * Add an option button to the scene.
  *
- * When clicked the named script runs and takes over completely; there is
- * no automatic return to the current scene. Use for menu items, NPC
- * interactions, "Leave" buttons, and any navigation that exits the
- * current context.
+ * Content is pushed as a stack frame when clicked; when the content
+ * exhausts, control returns to the parent context (e.g. back to a menu).
+ * Use `exit()` inside content to break out of the current context.
  *
- * For player choices **within** a `scenes()` sequence that should resume
- * afterwards, use `branch()` instead.
+ * Script calls use `run()`:
+ *   option('Buy a Drink', run('npc:buyDrink'))
+ *   option('Leave', exit(run('npc:farewell')))
  *
- * Script resolution:
- * - 'npc:scriptName' - explicitly call NPC script
- * - 'global:scriptName' - explicitly call global script
- * - 'scriptName' (no prefix) - context-aware:
- *   - If in NPC scene, tries NPC script first, falls back to global
- *   - Otherwise uses global script
+ * Inline content:
+ *   option('Kiss him', text('You kiss.'), addNpcStat('affection', 5))
  *
- * If script is omitted, derives it from label (lowercase, spaces removed).
- *
- * @param label - Button label shown to player (required)
- * @param action - String expression or Instruction to run when clicked (default: derived from label)
+ * @param label - Button label shown to player
+ * @param content - SceneElements to execute when clicked
  */
-export const option = (label: string, action?: string | Instruction): Instruction =>
-  run('option', { label, action: action ?? label.toLowerCase().replace(/[^a-z0-9]/g, '') })
+export function option(label: string, ...content: SceneElement[]): Instruction {
+  return run('option', { label, content: content.map(toInstruction) })
+}
 
-/** Standard NPC conversation leave option */
+/** Standard NPC conversation leave option — includes exit() to end the conversation. */
 export const npcLeaveOption = (text?: string, reply?: string, label = 'Leave'): Instruction =>
-  run('npcLeaveOption', { text, reply, label })
+  option(label, run('endConversation', { text, reply }), exit())
 
 /** Run a named script on the current scene NPC (calls the 'interact' script). */
 export const npcInteract = (script: string, params?: object): Instruction =>
@@ -207,7 +202,7 @@ export const scenes = (...pages: SceneElement[]): Instruction => {
   const instructions = pages.map(toInstruction)
   if (instructions.length === 1) return instructions[0]
   const [first, ...rest] = instructions
-  return seq(first, run('pushScenePages', { pages: rest }))
+  return seq(first, run('pushPages', { pages: rest }))
 }
 
 /**
@@ -240,29 +235,10 @@ export const replaceScene = (...elements: SceneElement[]): Instruction =>
   run('replaceScene', { pages: [seq(...elements)] })
 
 /**
- * Create a player-choice option that **continues** the current `scenes()`
- * sequence after its content plays out.
- *
- * Unlike `option()` (fire-and-forget — runs a script, no return), `branch()`
- * pushes its content onto the scene stack so the outer sequence resumes
- * automatically once the branch finishes. Use `branch()` for story choices
- * inside narrative sequences; use `option()` for menu navigation.
- *
- * Single-page branch:
- *   branch('Kiss him', 'You kiss.', addNpcStat('affection', 5))
- *
- * Multi-page branch — wrap in scenes():
- *   branch('Go to the garden', scenes(
- *     scene(move('garden'), 'You arrive at the garden.'),
- *     scene('The roses are beautiful.', endDate()),
- *   ))
- *
- * @param label - Button label shown to the player
- * @param rest - SceneElements to display when chosen (strings auto-wrap to text())
+ * @deprecated Use option() instead — option now pushes content onto the stack
+ * and returns to the parent context by default.
  */
-export function branch(label: string, ...rest: SceneElement[]): Instruction {
-  return option(label, ['advanceScene', { push: [seq(...rest)] }])
-}
+export const branch = option
 
 /**
  * Clear the stack and optionally run content. Place inside a branch/option

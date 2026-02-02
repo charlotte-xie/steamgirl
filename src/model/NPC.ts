@@ -254,9 +254,13 @@ export class NPC {
     return this
   }
 
-  /** Ends the conversation by adding an endConversation option. Returns this for fluent chaining. */
+  /** Ends the conversation by adding an endConversation option with exit. Returns this for fluent chaining. */
   leaveOption(text?: string, reply?: string, label: string = 'Leave'): this {
-    this.game.addOption(['endConversation', { text, reply }], label)
+    const action: [string, Record<string, unknown>] = ['seq', { instructions: [
+      ['endConversation', { text, reply }],
+      ['exitScene', {}],
+    ] }]
+    this.game.addOption(action, label)
     return this
   }
 

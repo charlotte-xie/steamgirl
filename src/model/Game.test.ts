@@ -460,52 +460,59 @@ describe('Game', () => {
       const leaveOption = game.scene.options[2]
       expect(leaveOption.type).toBe('button')
       expect(leaveOption.label).toBe('Leave')
-      expect(leaveOption.action[0]).toBe('endConversation')
-      expect(leaveOption.action[1]).toEqual({ text: 'You step away.', reply: 'Goodbye!' })
+      // leaveOption now wraps in seq(endConversation, exitScene)
+      expect(leaveOption.action[0]).toBe('seq')
+      const instructions = (leaveOption.action[1] as { instructions: unknown[] }).instructions
+      expect(instructions[0]).toEqual(['endConversation', { text: 'You step away.', reply: 'Goodbye!' }])
+      expect(instructions[1]).toEqual(['exitScene', {}])
     })
 
     it('should allow npc.leaveOption() with custom label', () => {
       const game = new Game()
-      
+
       registerNPC('fluent-leave-label-npc', {
         name: 'Fluent Leave Label NPC',
         description: 'An NPC for testing leave with custom label',
       })
-      
+
       game.scene.npc = 'fluent-leave-label-npc'
       const npc = game.getNPC('fluent-leave-label-npc')
-      
+
       // Use leaveOption() with custom label
       npc.leaveOption('Farewell!', 'See you later!', 'Say Goodbye')
-      
+
       // Check the option
       expect(game.scene.options.length).toBe(1)
       const leaveOption = game.scene.options[0]
       expect(leaveOption.label).toBe('Say Goodbye')
-      expect(leaveOption.action[0]).toBe('endConversation')
-      expect(leaveOption.action[1]).toEqual({ text: 'Farewell!', reply: 'See you later!' })
+      expect(leaveOption.action[0]).toBe('seq')
+      const instructions = (leaveOption.action[1] as { instructions: unknown[] }).instructions
+      expect(instructions[0]).toEqual(['endConversation', { text: 'Farewell!', reply: 'See you later!' }])
+      expect(instructions[1]).toEqual(['exitScene', {}])
     })
 
     it('should allow npc.leaveOption() without parameters', () => {
       const game = new Game()
-      
+
       registerNPC('fluent-leave-default-npc', {
         name: 'Fluent Leave Default NPC',
         description: 'An NPC for testing leave with defaults',
       })
-      
+
       game.scene.npc = 'fluent-leave-default-npc'
       const npc = game.getNPC('fluent-leave-default-npc')
-      
+
       // Use leaveOption() without parameters
       npc.leaveOption()
-      
+
       // Check the option uses defaults
       expect(game.scene.options.length).toBe(1)
       const leaveOption = game.scene.options[0]
       expect(leaveOption.label).toBe('Leave')
-      expect(leaveOption.action[0]).toBe('endConversation')
-      expect(leaveOption.action[1]).toEqual({ text: undefined, reply: undefined })
+      expect(leaveOption.action[0]).toBe('seq')
+      const instructions = (leaveOption.action[1] as { instructions: unknown[] }).instructions
+      expect(instructions[0]).toEqual(['endConversation', { text: undefined, reply: undefined }])
+      expect(instructions[1]).toEqual(['exitScene', {}])
     })
 
     it('should allow npc.chat() to run onGeneralChat script', () => {
@@ -585,8 +592,10 @@ describe('Game', () => {
       expect(game.scene.options[0].label).toBe('Option 1')
       expect(game.scene.options[1].label).toBe('Option 2')
       expect(game.scene.options[2].label).toBe('Leave')
-      expect(game.scene.options[2].action[0]).toBe('endConversation')
-      expect(game.scene.options[2].action[1]).toEqual({ text: 'Goodbye!', reply: 'Farewell!' })
+      expect(game.scene.options[2].action[0]).toBe('seq')
+      const leaveInstructions = (game.scene.options[2].action[1] as { instructions: unknown[] }).instructions
+      expect(leaveInstructions[0]).toEqual(['endConversation', { text: 'Goodbye!', reply: 'Farewell!' }])
+      expect(leaveInstructions[1]).toEqual(['exitScene', {}])
     })
 
     it('should use NPC speech color when say() is called', () => {

@@ -8,7 +8,7 @@
  * Core scripts are:
  * - Game actions: timeLapse, move, gainItem, loseItem, addStat, calcStats, addNpcStat, setNpcLocation, addReputation
  * - Control flow: seq, when, cond
- * - Scene stack: pushScenePages, advanceScene
+ * - Scene stack: pushPages (step() in Game handles interpreter loop)
  * - Predicates: hasItem, hasStat, hasReputation, inLocation, inScene, hasCard, cardCompleted, npcStat, debug, not, and, or
  * - Content: text, paragraph, say, option, npcLeaveOption
  * - Cards: addQuest, completeQuest, addEffect
@@ -723,31 +723,17 @@ const coreScripts: Record<string, ScriptFn> = {
   },
 
   /**
-   * Repeatable choice menu. Runs items to collect options, then appends
-   * a self-reference (menuSelf) to each option's stack push so the menu
-   * loops. Items that contain exit() clear the stack, preventing the loop.
+   * Repeatable choice menu. Pushes a self-reference onto the current stack
+   * frame so the menu re-shows after any option's content exhausts.
+   * exit() inside option content clears the stack, breaking the loop.
    */
   menu: (game: Game, params: { items?: Instruction[] }) => {
     const items = params.items
     if (!items || items.length === 0) return
-
     const menuSelf: Instruction = ['menu', params]
-    const optionsBefore = game.scene.options.length
-
-    // Run items — they add options to the scene (via branch/option)
+    game.topFrame.pages.unshift(menuSelf)
     for (const item of items) {
       game.run(item)
-    }
-
-    // Append menuSelf to each newly-added option's push array
-    for (let i = optionsBefore; i < game.scene.options.length; i++) {
-      const opt = game.scene.options[i]
-      const action = opt.action
-      if (Array.isArray(action) && action[0] === 'advanceScene') {
-        const orig = (action[1] ?? {}) as { push?: Instruction[] }
-        const push = [...(orig.push ?? []), menuSelf]
-        game.scene.options[i] = { ...opt, action: ['advanceScene', { ...orig, push }] as Instruction }
-      }
     }
   },
 
@@ -1086,21 +1072,25 @@ const coreScripts: Record<string, ScriptFn> = {
   },
 
   /**
-   * Add an option button to the scene.
-   * Action can be a string expression (resolved via game.run at click time)
-   * or an Instruction (executed directly at click time).
-   * If action is omitted, derives a script name from label.
+   * Add an option button to the scene. Content is pushed as a stack frame
+   * when the player clicks; when it exhausts, control returns to the parent context.
    */
-  option: (game: Game, params: { label?: string; action?: string | Instruction }) => {
+  option: (game: Game, params: { label?: string; content?: Instruction[] }) => {
     const label = params.label
     if (!label) return
-    const action = params.action ?? label.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const content = params.content
+    if (!content || content.length === 0) return
+    const action: Instruction = content.length === 1 ? content[0] : ['seq', { instructions: content }]
     game.addOption(action, label)
   },
 
-  /** Standard NPC conversation leave option */
+  /** Standard NPC conversation leave option — includes exitScene to break out of menu loops. */
   npcLeaveOption: (game: Game, params: { text?: string; reply?: string; label?: string }) => {
-    game.addOption(['endConversation', { text: params.text, reply: params.reply }], params.label ?? 'Leave')
+    const action: Instruction = ['seq', { instructions: [
+      ['endConversation', { text: params.text, reply: params.reply }] as Instruction,
+      ['exitScene', {}] as Instruction,
+    ] }]
+    game.addOption(action, params.label ?? 'Leave')
   },
 
   // -------------------------------------------------------------------------
@@ -1432,14 +1422,10 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /** Push remaining scene pages onto the top stack frame and add a Continue button. */
-  pushScenePages: (game: Game, params: { pages?: Instruction[] }) => {
-    const pages = params.pages
-    if (!pages || pages.length === 0) return
-    game.topFrame.pages.unshift(...pages)
-    if (game.scene.options.length === 0) {
-      game.addOption('advanceScene', 'Continue')
-    }
+  /** Push remaining scene pages onto the top stack frame. step() handles Continue. */
+  pushPages: (game: Game, params: { pages?: Instruction[] }) => {
+    if (!params.pages?.length) return
+    game.topFrame.pages.unshift(...params.pages)
   },
 
   /** Push a sub-scene that replaces the current content and options.
@@ -1449,32 +1435,7 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!params.pages || params.pages.length === 0) return
     game.topFrame.pages.unshift(...params.pages)
     game.clearScene()
-    game.run('advanceScene')
-  },
-
-  /** Advance the scene: pop the next page from the top stack frame and run it.
-   *  Exhausted frames are popped so outer contexts resume. Auto-skips no-op pages. */
-  advanceScene: (game: Game, params: { push?: Instruction[] }) => {
-    if (params.push) {
-      game.topFrame.pages.unshift(...params.push)
-    }
-    while (game.hasPages) {
-      const frame = game.scene.stack[0]
-      if (frame.pages.length === 0) {
-        // Frame exhausted — pop it, continue with parent
-        game.scene.stack.shift()
-        continue
-      }
-      const contentBefore = game.scene.content.length
-      const page = frame.pages.shift()!
-      game.run(page)
-      // If the page produced content or options, stop and show to user
-      if (game.scene.content.length > contentBefore || game.scene.options.length > 0) break
-      // Otherwise the page was a no-op — continue to next page
-    }
-    if (game.scene.options.length === 0 && game.hasPages) {
-      game.addOption('advanceScene', 'Continue')
-    }
+    game.step()
   },
 }
 

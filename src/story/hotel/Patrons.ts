@@ -4,7 +4,7 @@ import type { Instruction } from '../../model/ScriptDSL'
 import {
   seq, say, option, npcInteract, npcLeaveOption, addNpcStat,
   random, hideNpcImage, showNpcImage, learnNpcName, paragraph, hl,
-  scenes, scene, branch, exit, menu, move, moveNpc, time, run,
+  scenes, scene, exit, menu, move, moveNpc, time, run,
 
   addStat, skillCheck, when, not, hasItem, addItem, inScene,
   saveOutfit, changeOutfit, wearOutfit, npcStat, cond, impression,
@@ -47,7 +47,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
     ),
     say('I\'ve been wanting to do this all evening.'),
     'He leans in.',
-    branch('Let him',
+    option('Let him',
       skillCheck('Flirtation', 30,
         // Success
         scenes(
@@ -67,7 +67,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
               say('My room is just upstairs. 533. It seems a shame to end the evening here.'),
             ),
             'His smile is warm, inviting, entirely without menace.',
-            branch('Go with him',
+            option('Go with him',
               'You nod. His smile widens and he offers his arm.',
               run('restorePoolOutfit'),
               hideNpcImage(),
@@ -75,7 +75,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
               move('room-533', 2),
               npcInteract('room533'),
             ),
-            branch('Decline',
+            option('Decline',
               random(
                 'You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.',
                 'You smile but step back. "Not tonight." He takes it well.',
@@ -103,7 +103,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
         ),
       ),
     ),
-    branch('Turn away',
+    option('Turn away',
       random(
         'You turn your head slightly — just enough. He stops, reads the gesture, and straightens up. No offence taken.',
         'You put a gentle hand on his chest. He pauses, then nods with a warm smile. The tension dissolves.',
@@ -282,15 +282,15 @@ registerNPC('bar-patron', {
               seq(
                 showNpcImage(),
                 say('You know, the rooftop garden is rather spectacular at this hour. Care to see it?'),
-                branch('Go with him', npcInteract('garden')),
+                option('Go with him', npcInteract('garden')),
               ),
               seq(
                 showNpcImage(),
                 say('The hotel has a rather lovely pool, you know. Heated by the boilers. Fancy a swim?'),
-                branch('Go with him', npcInteract('pool')),
+                option('Go with him', npcInteract('pool')),
               ),
             ),
-            branch('Stay at the bar',
+            option('Stay at the bar',
               say('Well, there\'s no rush. Another round?'),
             ),
             patronMenu(),
@@ -342,7 +342,7 @@ registerNPC('bar-patron', {
         time(10),
         run('consumeAlcohol', { amount: 15 }),
         menu(
-          branch('Talk',
+          option('Talk',
             random(
               'The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.',
               'You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.',
@@ -352,7 +352,7 @@ registerNPC('bar-patron', {
             time(10),
             addStat('Charm', 1, { max: 40, chance: 0.3 }),
           ),
-          branch('Have a drink',
+          option('Have a drink',
             random(
               'He produces a silver hip flask and pours you something that smells of honey and smoke.',
               'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
@@ -360,7 +360,7 @@ registerNPC('bar-patron', {
             run('consumeAlcohol', { amount: 15 }),
             time(5),
           ),
-          branch('Enjoy the view',
+          option('Enjoy the view',
             random(
               'You lean against the railing together, watching the gaslights flicker across the rooftops. The city hums softly below.',
               'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
@@ -369,7 +369,7 @@ registerNPC('bar-patron', {
             time(10),
             addStat('Mood', 2, { max: 85 }),
           ),
-          branch('Call it a night',
+          option('Call it a night',
             random(
               'You tell him you should be heading back. He nods, not pushy about it.',
               'The evening air is getting chilly. You suggest heading inside.',
@@ -379,7 +379,7 @@ registerNPC('bar-patron', {
             addNpcStat('affection', 2, { max: 20 }),
             exit(gardenFarewell()),
           ),
-          branch('Stay a while longer...',
+          option('Stay a while longer...',
             showNpcImage(),
             random(
               'A comfortable silence settles between you. The city glitters below, impossibly beautiful.',
@@ -409,7 +409,7 @@ registerNPC('bar-patron', {
           seq('He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.'),
         ),
         menu(
-          branch('Have a drink',
+          option('Have a drink',
             random(
               'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
               'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
@@ -422,7 +422,7 @@ registerNPC('bar-patron', {
               'You clink glasses. The room feels cosier now, the city lights softening through the window.',
             ),
           ),
-          branch('Chat',
+          option('Chat',
             random(
               'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
               'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
@@ -433,7 +433,7 @@ registerNPC('bar-patron', {
             addStat('Charm', 1, { max: 40, chance: 0.3 }),
             addStat('Mood', 2, { max: 85 }),
           ),
-          branch('Kiss him',
+          option('Kiss him',
             random(
               'You lean into him. He catches you halfway, one hand at the back of your neck.',
               'You close the distance between you. His response is immediate — his arm around your waist, pulling you in.',
@@ -443,7 +443,7 @@ registerNPC('bar-patron', {
             time(5),
             exit(npcInteract('makeOut')),
           ),
-          branch('Call it a night',
+          option('Call it a night',
             random(
               'You set down your glass and tell him you should go.',
               'You stand and smooth your clothes.',
@@ -514,7 +514,7 @@ registerNPC('bar-patron', {
             say('Let me see all of you. Or do it yourself — I don\'t mind watching.'),
           ),
         ),
-        branch('Undress for him',
+        option('Undress for him',
           saveOutfit('_before-ashworth'),
           random(
             'You hold his gaze as you undress, piece by piece. His eyes never leave you. When you\'re done he lets out a slow breath.',
@@ -526,7 +526,7 @@ registerNPC('bar-patron', {
           npcInteract('makeLove'),
         ),
         // Refuses to strip — he's done. Polite but final.
-        branch('Refuse',
+        option('Refuse',
           'You hesitate, suddenly self-conscious. He reads it instantly.',
           say('I see.'),
           'He straightens his waistcoat and pours himself a drink. The warmth in his eyes has cooled to something polite and distant.',
@@ -727,7 +727,7 @@ registerNPC('bar-patron', {
         time(10),
         run('consumeAlcohol', { amount: 15 }),
         menu(
-          branch('Swim',
+          option('Swim',
             random(
               'You swim lazy lengths together, the water warm and silky against your skin. The echo of splashing fills the vaulted space.',
               'You race him to the far end. He lets you win — or perhaps you\'re simply faster. Either way, you\'re both laughing.',
@@ -736,7 +736,7 @@ registerNPC('bar-patron', {
             time(10),
             addStat('Fitness', 1, { max: 50, chance: 0.2 }),
           ),
-          branch('Talk',
+          option('Talk',
             random(
               'He tells you about his travels — the canals of Veneto, the hot springs of Nordheim. His hand brushes yours beneath the water, not quite by accident.',
               'He asks about your studies, and seems genuinely interested. You talk until your fingers wrinkle, drifting closer with each exchange.',
@@ -746,7 +746,7 @@ registerNPC('bar-patron', {
             time(10),
             addStat('Charm', 1, { max: 40, chance: 0.3 }),
           ),
-          branch('Have a drink',
+          option('Have a drink',
             random(
               'He climbs out briefly and returns with two glasses from the poolside cabinet. You drink treading water, which makes you both laugh.',
               'An attendant materialises with a tray of cocktails. You sip yours with your elbows propped on the marble edge.',
@@ -754,7 +754,7 @@ registerNPC('bar-patron', {
             run('consumeAlcohol', { amount: 15 }),
             time(5),
           ),
-          branch('Get out',
+          option('Get out',
             'You\'ve had enough swimming. You pull yourself up onto the marble edge, water streaming from your skin.',
             random(
               'He follows suit, shaking water from his hair.',
@@ -767,7 +767,7 @@ registerNPC('bar-patron', {
             addNpcStat('affection', 2, { max: 20 }),
             exit(poolFarewell()),
           ),
-          branch('Float together',
+          option('Float together',
             showNpcImage(),
             random(
               'You drift closer until you\'re floating side by side. His arm slips around your waist beneath the water.',

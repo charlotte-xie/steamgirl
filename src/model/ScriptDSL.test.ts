@@ -117,40 +117,33 @@ describe('ScriptDSL', () => {
         expect(npcName('barkeeper')).toEqual(['npcName', { npc: 'barkeeper' }])
       })
 
-      it('option() produces option instruction', () => {
-        expect(option('Click me', ['nextScript', { x: 1 }])).toEqual(['option', { label: 'Click me', action: ['nextScript', { x: 1 }] }])
-        expect(option('Next')).toEqual(['option', { label: 'Next', action: 'next' }])
+      it('option() produces option instruction with content', () => {
+        expect(option('Click me', run('nextScript', { x: 1 }))).toEqual(['option', {
+          label: 'Click me',
+          content: [['nextScript', { x: 1 }]],
+        }])
       })
 
-      it('branch() with inline instructions wraps in seq push', () => {
-        const result = branch('Kiss him', text('You kiss.'), addStat('Charm', 5))
+      it('option() with multiple content elements', () => {
+        const result = option('Kiss him', text('You kiss.'), addStat('Charm', 5))
         expect(result).toEqual(['option', {
           label: 'Kiss him',
-          action: ['advanceScene', {
-            push: [seq(text('You kiss.'), addStat('Charm', 5))],
-          }],
+          content: [text('You kiss.'), addStat('Charm', 5)],
         }])
       })
 
-      it('branch() with scenes() wraps multi-page content', () => {
-        const result = branch('Go to garden', scenes(
-          scene(text('Scene 1')),
-          scene(text('Scene 2')),
-        ))
-        expect(result).toEqual(['option', {
-          label: 'Go to garden',
-          action: ['advanceScene', {
-            push: [seq(scenes(
-              scene(text('Scene 1')),
-              scene(text('Scene 2')),
-            ))],
-          }],
-        }])
+      it('branch() is an alias for option()', () => {
+        const result = branch('Kiss him', text('You kiss.'), addStat('Charm', 5))
+        expect(result).toEqual(option('Kiss him', text('You kiss.'), addStat('Charm', 5)))
       })
 
-      it('npcLeaveOption() produces npcLeaveOption instruction', () => {
-        expect(npcLeaveOption('Goodbye', 'See you!')).toEqual(['npcLeaveOption', { text: 'Goodbye', reply: 'See you!', label: 'Leave' }])
-        expect(npcLeaveOption()).toEqual(['npcLeaveOption', { text: undefined, reply: undefined, label: 'Leave' }])
+      it('npcLeaveOption() produces option with endConversation + exit', () => {
+        expect(npcLeaveOption('Goodbye', 'See you!')).toEqual(
+          option('Leave', run('endConversation', { text: 'Goodbye', reply: 'See you!' }), exit())
+        )
+        expect(npcLeaveOption()).toEqual(
+          option('Leave', run('endConversation', { text: undefined, reply: undefined }), exit())
+        )
       })
     })
 
@@ -390,7 +383,7 @@ describe('ScriptDSL', () => {
         const result = scenes('Page A', 'Page B')
         expect(result).toEqual(seq(
           text('Page A'),
-          run('pushScenePages', { pages: [text('Page B')] }),
+          run('pushPages', { pages: [text('Page B')] }),
         ))
       })
     })
@@ -814,10 +807,7 @@ describe('ScriptDSL', () => {
         game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
         // Scene 1 content shown
         expect(game.scene.content.length).toBe(1)
-        // Continue button (via pushScenePages)
-        expect(game.scene.options.length).toBe(1)
-        expect(game.scene.options[0].label).toBe('Continue')
-        // Stack has remaining pages (1 frame with 2 pages)
+        // pushPages pushed remaining pages onto stack (step() adds Continue in real flow)
         expect(game.hasPages).toBe(true)
         expect(game.scene.stack[0].pages.length).toBe(2)
       })
@@ -826,18 +816,14 @@ describe('ScriptDSL', () => {
         game.clearScene()
         game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
 
-        // Click Continue → Scene 2
-        const continueBtn1 = game.scene.options[0]
-        game.clearScene()
-        game.run(continueBtn1.action)
+        // Advance to Scene 2 via takeAction('continue')
+        game.takeAction('continue')
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 2')
         expect(game.scene.options.length).toBe(1) // Continue to Scene 3
 
-        // Click Continue → Scene 3
-        const continueBtn2 = game.scene.options[0]
-        game.clearScene()
-        game.run(continueBtn2.action)
+        // Advance to Scene 3
+        game.takeAction('continue')
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3')
         expect(game.scene.options.length).toBe(0) // No more scenes
@@ -850,29 +836,25 @@ describe('ScriptDSL', () => {
           'Scene 1',
           scene(
             text('Choose a path'),
-            branch('Path A', text('Branch A content')),
-            branch('Path B', text('Branch B content')),
+            option('Path A', text('Branch A content')),
+            option('Path B', text('Branch B content')),
           ),
           'Scene 3 — after branch',
           'Scene 4 — finale',
         ))
 
-        // Click Continue → Scene 2 (the branching scene)
-        const continueBtn = game.scene.options[0]
-        game.clearScene()
-        game.run(continueBtn.action)
+        // Advance to Scene 2 (the branching scene)
+        game.takeAction('continue')
 
-        // Scene 2 shows its content and two branch options
+        // Scene 2 shows its content and two options
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Choose a path')
         expect(game.scene.options.length).toBe(2)
         expect(game.scene.options[0].label).toBe('Path A')
         expect(game.scene.options[1].label).toBe('Path B')
 
-        // Click Path A → branch pushes its pages, then pops and runs
-        const pathA = game.scene.options[0]
-        game.clearScene()
-        game.run(pathA.action)
+        // Click Path A → content pushed as frame, runs, then outer continuation
+        game.takeAction(game.scene.options[0].action)
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A content')
         // Continue to Scene 3 (outer continuation on stack)
@@ -880,16 +862,12 @@ describe('ScriptDSL', () => {
         expect(game.scene.options[0].label).toBe('Continue')
 
         // Click Continue → Scene 3
-        const cont3 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont3.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
         expect(game.scene.options.length).toBe(1) // Continue to Scene 4
 
         // Click Continue → Scene 4
-        const cont4 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont4.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 4 — finale')
         expect(game.scene.options.length).toBe(0)
       })
@@ -899,61 +877,54 @@ describe('ScriptDSL', () => {
         game.run(scenes(
           'Scene 1',
           scene(
-            branch('Path A', text('Branch A')),
-            branch('Path B', text('Branch B')),
+            option('Path A', text('Branch A')),
+            option('Path B', text('Branch B')),
           ),
           'After branch',
         ))
 
-        // Click Continue → Scene 2
-        const continueBtn = game.scene.options[0]
-        game.clearScene()
-        game.run(continueBtn.action)
+        // Advance to Scene 2
+        game.takeAction('continue')
         expect(game.scene.options.length).toBe(2)
 
         // Click Path B
-        const pathB = game.scene.options[1]
-        game.clearScene()
-        game.run(pathB.action)
+        game.takeAction(game.scene.options[1].action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch B')
         expect(game.scene.options.length).toBe(1) // Continue
 
-        const cont = game.scene.options[0]
-        game.clearScene()
-        game.run(cont.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('After branch')
         expect(game.scene.options.length).toBe(0)
       })
 
-      it('non-advanceScene options are left untouched', () => {
+      it('option with run() content works within scenes', () => {
         game.clearScene()
         game.run(scenes(
           'Scene 1',
-          option('Custom action', ['someOtherScript', { foo: 'bar' }]),
+          option('Custom action', run('someOtherScript', { foo: 'bar' })),
           'Scene 3',
         ))
 
-        // Click Continue → Scene 2
-        const continueBtn = game.scene.options[0]
-        game.clearScene()
-        game.run(continueBtn.action)
+        // Advance to Scene 2
+        game.takeAction('continue')
 
-        // Scene 2 has only the custom option — no Continue injected
+        // Scene 2 has the custom option (content wraps the run instruction)
         expect(game.scene.options.length).toBe(1)
         const opt = game.scene.options[0]
         expect(opt.action).toEqual(['someOtherScript', { foo: 'bar' }])
       })
 
-      it('non-stack action clears the stack via afterAction cleanup', () => {
+      it('exit clears the stack, afterAction confirms cleanup', () => {
         game.clearScene()
-        game.run(scenes('Scene 1', 'Scene 2'))
-        expect(game.hasPages).toBe(true) // pages on stack
+        game.pushFrame([scenes('Scene 1', 'Scene 2')])
+        game.step()
+        expect(game.hasPages).toBe(true) // Scene 2 on stack
 
-        // takeAction runs the action; afterAction cleans up when no options remain
-        game.takeAction('endScene')
-        expect(game.hasPages).toBe(true) // stack still intact after takeAction
+        // exitScene clears the stack
+        game.takeAction(['exitScene', {}])
+        expect(game.hasPages).toBe(false) // stack cleared by exitScene
         game.afterAction()
-        expect(game.hasPages).toBe(false) // afterAction cleaned up
+        expect(game.scene.stack.length).toBe(0)
       })
 
       it('does not mutate shared DSL objects across playthroughs', () => {
@@ -969,32 +940,26 @@ describe('ScriptDSL', () => {
 
         // First playthrough
         game.clearScene()
-        game.run(dateScene)
-        const cont1 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont1.action) // Scene 2
+        game.pushFrame([dateScene])
+        game.step() // Scene 1
+        game.takeAction('continue') // Scene 2: Choose + Path A
         const pathA1 = game.scene.options[0]
-        game.clearScene()
-        game.run(pathA1.action) // Branch A
+        game.takeAction(pathA1.action) // Branch A
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
         expect(game.scene.options.length).toBe(1) // Continue to Scene 3
 
         // Second playthrough — should produce identical results
         game.dismissScene()
-        game.run(dateScene)
-        const cont2 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont2.action) // Scene 2
+        game.pushFrame([dateScene])
+        game.step() // Scene 1
+        game.takeAction('continue') // Scene 2
         const pathA2 = game.scene.options[0]
-        game.clearScene()
-        game.run(pathA2.action) // Branch A
+        game.takeAction(pathA2.action) // Branch A
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A')
         // CRITICAL: still exactly 1 Continue, not corrupted by first playthrough
         expect(game.scene.options.length).toBe(1)
 
-        const finalCont = game.scene.options[0]
-        game.clearScene()
-        game.run(finalCont.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
         expect(game.scene.options.length).toBe(0)
       })
@@ -1014,7 +979,7 @@ describe('ScriptDSL', () => {
 
       it('branch() helper works with inline instructions', () => {
         game.clearScene()
-        game.run(scenes(
+        game.pushFrame([scenes(
           'Scene 1',
           scene(
             text('Choose'),
@@ -1022,19 +987,16 @@ describe('ScriptDSL', () => {
             branch('Path B', text('Branch B content')),
           ),
           'Scene 3 — after branch',
-        ))
+        )])
+        game.step() // Scene 1
 
         // Click Continue → Scene 2
-        const cont = game.scene.options[0]
-        game.clearScene()
-        game.run(cont.action)
+        game.takeAction('continue')
         expect(game.scene.options.length).toBe(2)
         expect(game.scene.options[0].label).toBe('Path A')
 
         // Click Path A
-        const pathA = game.scene.options[0]
-        game.clearScene()
-        game.run(pathA.action)
+        game.takeAction(game.scene.options[0].action)
         // Two content items from inline branch
         expect(game.scene.content.length).toBe(2)
         expect((game.scene.content[0] as any).content[0].text).toBe('Branch A content')
@@ -1042,56 +1004,49 @@ describe('ScriptDSL', () => {
         // Continue to Scene 3
         expect(game.scene.options.length).toBe(1)
 
-        const cont3 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont3.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('Scene 3 — after branch')
       })
 
       it('branch() helper works with multi-page branch via scenes()', () => {
         game.clearScene()
-        game.run(scenes(
+        game.pushFrame([scenes(
           'Scene 1',
           branch('Garden path', scenes(
             text('Garden scene 1'),
             text('Garden scene 2'),
           )),
           'After garden',
-        ))
+        )])
+        game.step() // Scene 1
 
         // Click Continue → Scene 2
-        const cont = game.scene.options[0]
-        game.clearScene()
-        game.run(cont.action)
+        game.takeAction('continue')
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Garden path')
 
         // Click Garden path → Garden scene 1
-        const garden = game.scene.options[0]
-        game.clearScene()
-        game.run(garden.action)
+        game.takeAction(game.scene.options[0].action)
         expect((game.scene.content[0] as any).content[0].text).toBe('Garden scene 1')
         expect(game.scene.options.length).toBe(1) // Continue
 
         // Continue → Garden scene 2
-        const cont2 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont2.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('Garden scene 2')
         expect(game.scene.options.length).toBe(1) // Continue to After garden
 
         // Continue → After garden
-        const cont3 = game.scene.options[0]
-        game.clearScene()
-        game.run(cont3.action)
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('After garden')
         expect(game.scene.options.length).toBe(0)
       })
 
       it('scene stack survives JSON serialization', () => {
         game.clearScene()
-        game.run(scenes('Scene 1', 'Scene 2', 'Scene 3'))
+        game.pushFrame([scenes('Scene 1', 'Scene 2', 'Scene 3')])
+        game.step() // Scene 1 shown, 2 pages remain
         expect(game.scene.stack[0].pages.length).toBe(2)
+        expect(game.scene.options[0].label).toBe('Continue')
 
         // Serialize and deserialize
         const json = game.toJSON()
@@ -1101,9 +1056,7 @@ describe('ScriptDSL', () => {
         expect(restored.scene.stack[0].pages.length).toBe(2)
 
         // Continue should still work after restore
-        const continueBtn = restored.scene.options[0]
-        restored.clearScene()
-        restored.run(continueBtn.action)
+        restored.takeAction('continue')
         expect((restored.scene.content[0] as any).content[0].text).toBe('Scene 2')
       })
 
@@ -1206,10 +1159,8 @@ describe('ScriptDSL', () => {
         ))
 
         // Click "Drink"
-        const drinkScript = game.scene.options[0].action
         expect(game.scene.options[0].label).toBe('Drink')
-        game.clearScene()
-        game.run(drinkScript)
+        game.takeAction(game.scene.options[0].action)
 
         // Branch content runs, then Continue to re-show menu
         expect(game.scene.content.length).toBeGreaterThan(0)
@@ -1217,9 +1168,7 @@ describe('ScriptDSL', () => {
         expect(game.scene.options[0].label).toBe('Continue')
 
         // Click Continue — menu re-appears
-        const continueScript = game.scene.options[0].action
-        game.clearScene()
-        game.run(continueScript)
+        game.takeAction('continue')
 
         expect(game.scene.options).toHaveLength(2)
         expect(game.scene.options[0].label).toBe('Drink')
@@ -1311,15 +1260,9 @@ describe('ScriptDSL', () => {
         // Initially 2 options (Kiss + Leave)
         expect(game.scene.options).toHaveLength(2)
 
-        // Click "Kiss" to raise Arousal
-        const kissScript = game.scene.options[0].action
-        game.clearScene()
-        game.run(kissScript)
-
-        // Continue back to menu
-        const continueScript = game.scene.options[0].action
-        game.clearScene()
-        game.run(continueScript)
+        // Click "Kiss" to raise Arousal — addStat is hidden so no content,
+        // step() continues through to menuSelf which re-shows the menu
+        game.takeAction(game.scene.options[0].action)
 
         // Now "Things get heated" should appear (Arousal >= 25)
         expect(game.scene.options).toHaveLength(3)
@@ -1386,62 +1329,61 @@ describe('ScriptDSL', () => {
       })
 
       it('afterAction cleans up abandoned stack when no options remain', () => {
-        // Set up two frames: outer (parent) and inner (current)
+        // Set up two frames with pages but no options
+        game.clearScene()
         game.scene.stack = []
         game.pushFrame([text('outer continuation')])
         game.pushFrame([text('inner page 1'), text('inner page 2')])
         expect(game.scene.stack.length).toBe(2)
 
-        // Fire-and-forget action: takeAction just runs it
-        game.takeAction(['endScene', {}])
-        // Stack still intact after takeAction (no special-casing)
-        expect(game.scene.stack.length).toBe(2)
-
-        // afterAction cleans up since endScene produced no options
+        // No options on scene — afterAction cleans up stale stack
+        expect(game.scene.options.length).toBe(0)
         game.afterAction()
         expect(game.scene.stack.length).toBe(0)
         expect(game.hasPages).toBe(false)
       })
 
-      it('advanceScene preserves stack and pops pages normally', () => {
+      it('step() pops pages from top frame', () => {
         game.scene.stack = []
         game.pushFrame([text('page 1'), text('page 2')])
 
-        // advanceScene does NOT pop the frame — it pops pages within it
         game.clearScene()
-        game.run('advanceScene')
+        game.step()
         expect(game.scene.content.length).toBe(1)
         expect((game.scene.content[0] as any).content[0].text).toBe('page 1')
         expect(game.scene.stack[0].pages.length).toBe(1) // page 2 remains
+        expect(game.scene.options.length).toBe(1) // Continue
+        expect(game.scene.options[0].label).toBe('Continue')
       })
 
-      it('advanceScene pops exhausted frames to reach parent', () => {
+      it('step() pops exhausted frames to reach parent', () => {
         game.scene.stack = []
         game.pushFrame([text('parent page')])
         game.pushFrame([text('child page')])
 
-        // First advance: pops child page
+        // First step: pops child page
         game.clearScene()
-        game.run('advanceScene')
+        game.step()
         expect((game.scene.content[0] as any).content[0].text).toBe('child page')
 
         // Child frame exhausted, parent has a page — Continue should appear
         expect(game.scene.options.length).toBe(1)
         expect(game.scene.options[0].label).toBe('Continue')
 
-        // Second advance: child frame auto-popped, parent page runs
-        game.clearScene()
-        game.run('advanceScene')
+        // Second step via continue: child frame auto-popped, parent page runs
+        game.takeAction('continue')
         expect((game.scene.content[0] as any).content[0].text).toBe('parent page')
         expect(game.hasPages).toBe(false)
       })
 
       it('afterAction clears stack and NPC when no options remain', () => {
+        game.clearScene()
         game.scene.stack = []
         game.pushFrame([text('stale page 1'), text('stale page 2')])
         game.scene.npc = 'test-npc'
 
-        game.takeAction(['endScene', {}])
+        // No options on scene — afterAction clears stack and NPC
+        expect(game.scene.options.length).toBe(0)
         game.afterAction()
 
         expect(game.scene.stack.length).toBe(0)
@@ -1449,12 +1391,9 @@ describe('ScriptDSL', () => {
       })
 
       it('afterAction preserves stack when options exist', () => {
-        game.scene.stack = []
-        game.pushFrame([text('next page')])
-
-        // advanceScene adds a Continue option when pages remain
         game.clearScene()
-        game.run(scenes('Page 1', 'Page 2'))
+        game.pushFrame([scenes('Page 1', 'Page 2')])
+        game.step() // Page 1 shown, Page 2 on stack → Continue button
         expect(game.scene.options.length).toBe(1) // Continue
 
         game.afterAction()

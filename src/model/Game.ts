@@ -202,6 +202,25 @@ export class Game {
     return this.scene.stack.shift()
   }
 
+  /**
+   * Native interpreter loop. Pops pages from the stack and runs them until
+   * content or options are produced (or the stack empties). Adds a Continue
+   * button when pages remain but no options exist.
+   */
+  step(): void {
+    while (this.hasPages) {
+      const frame = this.scene.stack[0]
+      if (frame.pages.length === 0) { this.scene.stack.shift(); continue }
+      const contentBefore = this.scene.content.length
+      const page = frame.pages.shift()!
+      this.run(page)
+      if (this.scene.content.length > contentBefore || this.scene.options.length > 0) break
+    }
+    if (this.scene.options.length === 0 && this.hasPages) {
+      this.addOption('continue', 'Continue')
+    }
+  }
+
   /** Gets the current NPC. Throws if no NPC is in the current scene. */
   get npc(): NPC {
     if (!this.scene.npc) {
@@ -311,7 +330,22 @@ export class Game {
     this.clearScene()
 
     try {
-      this.run(action)
+      if (action === 'continue') {
+        // Built-in: just advance the interpreter
+        this.step()
+      } else if (action === 'advanceScene' || (Array.isArray(action) && action[0] === 'advanceScene')) {
+        // Save-compat shim: old saves may have advanceScene as Continue button action
+        if (Array.isArray(action)) {
+          const params = (action[1] ?? {}) as { push?: Instruction[] }
+          if (params.push) this.topFrame.pages.unshift(...params.push)
+        }
+        this.step()
+      } else {
+        // Push action as a new frame and step the interpreter
+        const instr: Instruction = typeof action === 'string' ? [action, {}] : action
+        this.pushFrame([instr])
+        this.step()
+      }
     } catch (error) {
       // Display a graceful error message to the player
       // Don't clear scene - preserve any content that was added before the error

@@ -7,7 +7,7 @@ import type { Instruction } from '../model/ScriptDSL'
 import {
   text, random, seq, scenes, scene, move,
   ejectPlayer, addStat, time, option,
-  branch, skillCheck,
+  skillCheck,
 } from '../model/ScriptDSL'
 
 // ── Generic indecency helpers ────────────────────────────────────────────
@@ -245,13 +245,13 @@ makeScripts({
   dangerousApproach: (g: Game) => {
     g.run(dangerousApproachText)
     g.run(seq(
-      branch('Try to get away',
+      option('Try to get away',
         skillCheck('Dexterity', 20,
           dangerousEscape,
           dangerousEscapeFail,
         ),
       ),
-      branch('Stand your ground',
+      option('Stand your ground',
         skillCheck('Charm', 30,
           dangerousStandSuccess,
           dangerousStandFail,
@@ -263,11 +263,11 @@ makeScripts({
   policemanWarning: (g: Game) => {
     g.run(warningApproach)
     g.run(seq(
-      branch('Apologise and hurry away',
+      option('Apologise and hurry away',
         warningApologise,
         addStat('Mood', -2),
       ),
-      branch('Try to talk your way out',
+      option('Try to talk your way out',
         skillCheck('Charm', 30,
           warningCharmSuccess,
           warningCharmFailure,

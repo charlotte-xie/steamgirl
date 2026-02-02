@@ -49,7 +49,7 @@ import {
   time,
   learnNpcName,
   scene, scenes,
-  branch, menu, exit,
+  menu, exit,
   run,
 } from '../model/ScriptDSL'
 
@@ -181,8 +181,8 @@ registerNPC('ivan-hess', {
     say('New in town, are you? After a drink? Or looking for something else?'),
     say("Either way, I'm your man. Ivan Hess at your service."),
     learnNpcName(),
-    option('Buy a Drink (10 Kr)', 'npc:buyDrink'),
-    option('Just looking', 'npc:onGeneralChat'),
+    option('Buy a Drink (10 Kr)', run('npc:buyDrink')),
+    option('Just looking', run('npc:onGeneralChat')),
     npcLeaveOption('You nod politely and step away from the bar.', 'Come back whenever you\'re thirsty.'),
   ),
 
@@ -262,13 +262,13 @@ registerNPC('ivan-hess', {
     // ----------------------------------------------------------------
 
     onGeneralChat: seq(
-      option('Buy a Drink (10 Kr)', 'npc:buyDrink'),
-      option('Ask for gossip', 'npc:gossip'),
-      option('Ask for work', 'npc:work'),
+      option('Buy a Drink (10 Kr)', run('npc:buyDrink')),
+      option('Ask for gossip', run('npc:gossip')),
+      option('Ask for work', run('npc:work')),
       when(npcStat('affection', { min: 5 }),
-        option('Ask about the regulars', 'npc:askRegulars'),
+        option('Ask about the regulars', run('npc:askRegulars')),
       ),
-      option('Leave', 'npc:farewell'),
+      option('Leave', run('npc:farewell')),
     ),
 
     farewell: seq(
@@ -528,16 +528,16 @@ registerNPC('ivan-hess', {
       g.timeLapse(5)
 
       g.run(menu(
-        branch('The boss in the corner',
+        option('The boss in the corner',
           ...ivanOnElvis(g),
         ),
-        branch('The enforcer',
+        option('The enforcer',
           ...ivanOnJonny(g),
         ),
-        branch('The dealer',
+        option('The dealer',
           ...ivanOnTimmy(g),
         ),
-        branch('That\'s enough gossip',
+        option('That\'s enough gossip',
           say("I've said too much already. Forget you heard any of it."),
           'He picks up a glass and starts polishing — conversation over.',
           exit(),

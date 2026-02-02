@@ -188,11 +188,11 @@ registerNPC('tinker-grosz', {
 
 const enterMarketShopping = seq(
   text('The market buzzes with commerce. Several shops catch your eye.'),
-  option("Madame Voss's Boutique", 'enterClothingShop'),
-  option("Grosz's Components", 'enterComponentsShop'),
-  option("Maeve's Delicacies", 'enterSnackShop'),
-  option('Lucky Dip', 'enterLuckyDip'),
-  option('Leave', 'endScene'),
+  option("Madame Voss's Boutique", run('enterClothingShop')),
+  option("Grosz's Components", run('enterComponentsShop')),
+  option("Maeve's Delicacies", run('enterSnackShop')),
+  option('Lucky Dip', run('enterLuckyDip')),
+  option('Leave', run('endScene')),
 )
 makeScripts({
   enterClothingShop: (game: Game) => {
