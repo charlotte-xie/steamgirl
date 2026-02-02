@@ -9,7 +9,7 @@ import {
   addStat, skillCheck, when, not, hasItem, addItem, inScene,
   saveOutfit, changeOutfit, wearOutfit, npcStat, cond, impression,
   kiss, replaceScene, wantsIntimacy, madeLove, hourBetween,
-  discoverLocation, npcPresent, setNpc, inLocation, stripAll,
+  discoverLocation, npcPresent, setNpc, inLocation, stripAll, fixClothing,
 } from '../../model/ScriptDSL'
 
 // ============================================================================
@@ -194,6 +194,7 @@ function gardenFarewell(): Instruction {
 // Dismiss — he's done with the player for the evening
 function ashworthDismiss(): Instruction {
   return seq(
+    fixClothing(),
     moveNpc('bar-patron', null),
     'You step out into the corridor. The door clicks shut behind you.',
     'You take the lift back down to the lobby.',

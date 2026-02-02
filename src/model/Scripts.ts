@@ -438,6 +438,31 @@ const coreScripts: Record<string, ScriptFn> = {
     game.player.calcStats()
   },
 
+  /** Ensure essential clothing slots are covered (chest & hips, under & inner layers). No-op if already dressed. */
+  fixClothing: (game: Game) => {
+    const p = game.player
+    const slots: [string, string][] = [
+      ['chest', 'under'], ['chest', 'inner'],
+      ['hips', 'under'], ['hips', 'inner'],
+    ]
+    let dressed = false
+    for (const [position, layer] of slots) {
+      if (p.getWornAt(position as any, layer as any)) continue
+      // Find an unworn item that covers this slot
+      const item = p.inventory.find(i =>
+        !i.worn && i.template.layer === layer && i.template.positions?.includes(position as any)
+      )
+      if (item) {
+        p.wearItem(item)
+        dressed = true
+      }
+    }
+    if (dressed) {
+      p.calcStats()
+      game.add('You hastily fix your clothing.')
+    }
+  },
+
   /** Save the current outfit under a name (for later restoration with wearOutfit). */
   saveOutfit: (game: Game, params: { name?: string } = {}) => {
     const name = params.name

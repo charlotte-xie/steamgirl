@@ -310,6 +310,10 @@ export const wearItem = (item: string): Instruction =>
 export const stripAll = (opts: { force?: boolean; position?: string; layer?: string } = {}): Instruction =>
   run('stripAll', opts)
 
+/** Ensure essential clothing slots are covered (chest & hips, under & inner). No-op if already dressed. */
+export const fixClothing = (): Instruction =>
+  run('fixClothing', {})
+
 /** Strip all clothing and wear a list of items */
 export const changeOutfit = (items: string[], force = false): Instruction =>
   run('changeOutfit', { items, force })
