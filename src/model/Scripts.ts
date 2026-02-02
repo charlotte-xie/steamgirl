@@ -1115,6 +1115,12 @@ const coreScripts: Record<string, ScriptFn> = {
     game.addEffect(params.effectId, params.args ?? {})
   },
 
+  /** Add a trait card */
+  addTrait: (game: Game, params: { traitId?: string; args?: Record<string, unknown> }) => {
+    if (!params.traitId) return
+    game.addTrait(params.traitId, params.args ?? {})
+  },
+
   // -------------------------------------------------------------------------
   // PLAYER ACTIONS
   // -------------------------------------------------------------------------

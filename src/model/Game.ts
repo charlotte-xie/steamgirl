@@ -578,6 +578,14 @@ export class Game {
     return this
   }
 
+  /** Add a trait card to the player. Pass silent=true to suppress onAdded messages. Returns this for fluent chaining. */
+  addTrait(traitId: string, args: Record<string, unknown> = {}, silent: boolean = false): this {
+    if (this.addCard(traitId, 'Trait', args, silent)) {
+      this.player.calcStats()
+    }
+    return this
+  }
+
   /** Calculate the number of interval boundaries crossed based on game time. */
   calcTicks(secondsElapsed: number, interval: number): number {
     return intervalsCrossed(this.time - secondsElapsed, this.time, interval)

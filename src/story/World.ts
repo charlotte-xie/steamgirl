@@ -10,6 +10,9 @@
 // Register effect definitions first (used by other modules)
 import './Effects'
 
+// Register trait definitions (semi-permanent character traits)
+import './Traits'
+
 // Register public area checks (used by location modules)
 import './Public'
 

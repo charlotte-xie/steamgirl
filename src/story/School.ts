@@ -17,6 +17,7 @@ import {
   run,
   registerDslScript,
   seq,
+  socialise,
 } from '../model/ScriptDSL'
 import { freshenUp } from './Effects'
 import { publicChecks, staffDecencyGate, decencyCheck } from './Public'
@@ -218,6 +219,7 @@ const socialiseGreatHall: Instruction[] = [
   time(30),
   text('You mingle with other students in the Great Hall.'),
   addStat('Mood', 1, { max: 80, chance: 0.5 }),
+  socialise(30),
 ]
 
 const breakfastGreatHall: Instruction[] = [
@@ -245,6 +247,7 @@ const socialiseCourtyard: Instruction[] = [
   time(30),
   text('You chat with others in the courtyard.'),
   addStat('Mood', 1, { max: 80, chance: 0.5 }),
+  socialise(30),
 ]
 
 // ============================================================================

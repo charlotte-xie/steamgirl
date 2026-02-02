@@ -374,6 +374,14 @@ export const completeQuest = (questId: string): Instruction =>
 export const addEffect = (effectId: string, args?: object): Instruction =>
   run('addEffect', { effectId, args })
 
+/** Add a trait card */
+export const addTrait = (traitId: string, args?: object): Instruction =>
+  run('addTrait', { traitId, args })
+
+/** Apply socialise trait effects for the given duration */
+export const socialise = (minutes: number): Instruction =>
+  run('socialise', { minutes })
+
 /** Record the current game time to a named timer */
 export const recordTime = (timer: string): Instruction =>
   run('recordTime', { timer })

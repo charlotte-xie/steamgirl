@@ -57,15 +57,17 @@ export function CharacterScreen() {
 
   const skillsWithBase = SKILL_NAMES.filter((name) => (game.player.basestats.get(name) || 0) > 0)
   const effectCards = game.player.cards.filter(card => card && card.type === 'Effect') || []
+  const traitCards = game.player.cards.filter(card => card && card.type === 'Trait') || []
 
   const allEffects = debugMode ? getCardDefinitions('Effect') : []
-  const activeIds = new Set(effectCards.map(c => c.id))
+  const allTraits = debugMode ? getCardDefinitions('Trait') : []
+  const activeIds = new Set([...effectCards, ...traitCards].map(c => c.id))
 
-  const toggleEffect = (id: string) => {
+  const toggleCard = (id: string, addFn: (id: string) => unknown) => {
     if (activeIds.has(id)) {
       game.removeCard(id, true)
     } else {
-      game.addEffect(id)
+      addFn(id)
     }
     game.player.calcStats()
     refresh()
@@ -176,7 +178,43 @@ export function CharacterScreen() {
                       key={id}
                       className={`debug-effect-btn ${activeIds.has(id) ? 'active' : ''}`}
                       style={{ borderColor: (def.color as string) ?? 'var(--border)' }}
-                      onClick={() => toggleEffect(id)}
+                      onClick={() => toggleCard(id, (id) => game.addEffect(id))}
+                      title={def.description as string ?? id}
+                    >
+                      <span
+                        className="debug-effect-dot"
+                        style={{ background: activeIds.has(id) ? ((def.color as string) ?? 'var(--text)') : 'transparent' }}
+                      />
+                      {def.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="info-section character-right">
+            <h3>Traits</h3>
+            {traitCards.length === 0 ? (
+              <p className="text-muted">No traits.</p>
+            ) : (
+              <div className="cards-container">
+                {traitCards.map((card, index) => (
+                  card ? <Card key={`${card.id}-${index}`} card={card} /> : null
+                ))}
+              </div>
+            )}
+
+            {debugMode && allTraits.length > 0 && (
+              <div className="debug-effects">
+                <h4 className="text-muted">Debug: Toggle Traits</h4>
+                <div className="debug-effect-grid">
+                  {allTraits.map(([id, def]) => (
+                    <button
+                      key={id}
+                      className={`debug-effect-btn ${activeIds.has(id) ? 'active' : ''}`}
+                      style={{ borderColor: (def.color as string) ?? 'var(--border)' }}
+                      onClick={() => toggleCard(id, (id) => game.addTrait(id))}
                       title={def.description as string ?? id}
                     >
                       <span

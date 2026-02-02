@@ -118,6 +118,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Apply starting trait based on specialty
+    if (options.specialty === 'Aetherics') {
+      game.addTrait('introvert', {}, true)
+    } else if (options.specialty === 'Flirtation') {
+      game.addTrait('extrovert', {}, true)
+    }
+
     // Recalculate stats after applying bonuses
     game.player.calcStats()
 

@@ -852,3 +852,27 @@ makeScript('bath', (game: Game, params: { text?: string; quality?: number; mood?
   if (mood > 0) game.player.modifyStat('Mood', mood)
   game.run('bathMenu', { quality, mood })
 })
+
+// ============================================================================
+// SOCIALISE EFFECT — trait-based energy/mood changes from socialising
+// ============================================================================
+
+/** Apply socialising energy/mood changes based on Introvert/Extrovert traits. */
+export function socialiseEffect(game: Game, minutes: number): void {
+  const hasIntrovert = game.player.cards.some(c => c.id === 'introvert')
+  const hasExtrovert = game.player.cards.some(c => c.id === 'extrovert')
+
+  if (hasIntrovert) {
+    // Socialising costs energy for introverts
+    game.player.addBaseStat('Energy', -Math.ceil(minutes / 10))
+  } else if (hasExtrovert) {
+    // Socialising gives energy and mood for extroverts
+    game.player.addBaseStat('Energy', Math.ceil(minutes / 15))
+    game.player.addBaseStat('Mood', Math.ceil(minutes / 15))
+  }
+  // No trait = no special effect (neutral)
+}
+
+makeScript('socialise', (game: Game, params: { minutes?: number }) => {
+  socialiseEffect(game, params.minutes ?? 30)
+})
