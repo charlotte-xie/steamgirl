@@ -17,7 +17,7 @@ Scenes are narrative units structured as pages. Each page should comprise:
 - Some content
 - The next decision for the player
 
-Decision options present meaningful choices
+Decision options present meaningful choices e.g.
 - Choosing a particular path / route
 - Passive: let the NPC lead, in which case NPC should drive action forward on next page
 - Active: attempt something to achieve a goal (steal, charm, flirt etc.) 
@@ -26,7 +26,7 @@ Options should be expressed as single verbs or short verb phrases ("Stay", "Run 
 
 A single option ("Leave", "Move on" etc.) etc is acceptable to end a scene
 
-Use a single option ("Continue", "Follow", "Listen") to longer scenes into smaller pages. Single pages should not be more than 10 lines.
+Use a single option ("Continue", "Follow", "Listen") to break longer scenes into smaller pages. Single pages should not be more than 10 lines.
 
 Scenes can have subscenes, which return to the main scene flow once normally concluded.
 
@@ -51,7 +51,7 @@ This applies everywhere -- `text()`, `leaveOption` departure text, branch labels
 
 ### Context awareness
 
-Gate or branch based on game context, e.g. time of day if necessary to ensure content is appropriate to the context. This is especially important for interactions that could happen at any time (random encounters etc.)
+Gate or branch based on context, e.g. time of day if necessary to ensure content is appropriate to the context. This is especially important for interactions that could happen at any time (random encounters, activities in locations etc.)
 
 ### NPC Speech
 
@@ -122,19 +122,17 @@ Good scenes offer both paths so the player can shape the dynamic:
 
 ```typescript
 menu(
-  // Active -- player pursues
+  // Active -- player pursues if they have the Flirtation skill
   when(hasStat('Flirtation', 1),
-    branch('Flirt', skillCheck('Flirtation', 20, flirtSuccess, flirtFail)),
+    option('Flirt', skillCheck('Flirtation', 20, flirtSuccess, flirtFail)),
   ),
-  branch('Ask about his work', 'He talks about the shipping business...'),
+  option('Ask about his work', 'He talks about the shipping business...'),
 
   // Passive -- NPC drives, player responds
   exit('Stay a while longer...',
     'He turns to face you and brushes a strand of hair from your face.',
-    choice(
-      branch('Let him', skillCheck('Flirtation', 30, ...)),
-      branch('Turn away', 'You put a gentle hand on his chest.'),
-    ),
+    option('Let him', skillCheck('Flirtation', 30, ...)),
+    option('Turn away', 'You put a gentle hand on his chest.'),
   ),
   exit('Call it a night', 'You tell him you should go.'),
 )
@@ -227,13 +225,13 @@ registerNPC('barkeeper', {
   onFirstApproach: seq(
     say('Welcome, stranger.'),
     learnNpcName(),
-    option('Ask about the tavern', 'onAskTavern'),
+    option('Ask about the tavern', run('npc:onAskTavern')),
     npcLeaveOption(),
   ),
 
   onApproach: seq(
     say('Back again?'),
-    option('Buy a drink', 'onBuyDrink'),
+    option('Buy a drink', run('npc:onBuyDrink')),
     npcLeaveOption(),
   ),
 
@@ -243,7 +241,7 @@ registerNPC('barkeeper', {
     // DSL -- simple interactions (preferred)
     onBuyDrink: seq(
       say('What\'ll it be?'),
-      option('Sweet wine (5 Kr)', 'onOrderWine'),
+      option('Sweet wine (5 Kr)', run('npc:onOrderWine')),
       npcLeaveOption('You change your mind.', 'Suit yourself.'),
     ),
 
@@ -309,7 +307,7 @@ registerItemDefinition('blouse-silk', extendItem('base-top', {
 
 ## Impressions
 
-Impressions (`decency`, `appearance`, `attraction`) are 0--100 scores representing how NPCs perceive the player. NPCs should react to impressions rather than checking clothing directly.
+Impressions (`decency`, `appearance`, `attraction`) are 0-100 scores representing how NPCs perceive the player. NPCs should react to impressions rather than checking clothing directly.
 
 **Key rule:** Impressions gate **NPC behaviour**, not player choices. The player should always be able to attempt an action; the NPC's response changes based on how the player looks. Never hide or disable a player option based on an impression score. See [NPCS.md](./NPCS.md#impression-gating-npc-action-not-player-choice) for the full rationale and examples.
 
@@ -366,8 +364,8 @@ Formula: `Charm + Skill - Difficulty`. Set difficulty to create meaningful progr
 Gate the option itself to prevent zero-skill attempts:
 
 ```typescript
-gatedBranch(hasStat('Flirtation', 1), 'Flirt back',
-  skillCheck('Flirtation', 20, successContent, failureContent),
+when(hasStat('Flirtation', 1),
+  option('Flirt back', skillCheck('Flirtation', 20, successContent, failureContent)),
 )
 ```
 
@@ -392,7 +390,7 @@ changeOutfit(['bikini-top', 'bikini-bottom']),
 wearOutfit('_before-pool', { delete: true }),
 ```
 
-Prefix temporary saves with `_` to distinguish from player-created outfits. Ensure **every exit path** restores.
+Prefix temporary saves with `_` to distinguish from player-created outfits. Ensure **every exit path** restores if it makes sense for the scene.
 
 ### Parameterised Scenes
 
@@ -400,9 +398,11 @@ When branching paths share logic but differ in cleanup, extract the shared struc
 
 ```typescript
 function kissAttempt(farewell: Instruction): Instruction {
-  return choice(
-    branch('Let him', skillCheck('Flirtation', 30, successPath, seq(awkwardText, farewell))),
-    branch('Turn away', rejectionText, farewell),
+  return scenes(
+    scene(
+      option('Let him', skillCheck('Flirtation', 30, successPath, seq(awkwardText, farewell))),
+      option('Turn away', rejectionText, farewell),
+    ),
   )
 }
 
@@ -412,12 +412,12 @@ poolPath()   → kissAttempt(poolFarewell())
 
 ### Repeatable Menus
 
-`menu()` loops until an `exit()` branch is chosen. Gate entries with `when()` -- conditions re-evaluate each display:
+`menu()` loops until an `exit()` is chosen. `option()` entries loop back to the menu after their content plays. Gate entries with `when()` -- conditions re-evaluate each display:
 
 ```typescript
 menu(
-  branch('Kiss him', random('The kiss is slow...', 'He cups your face...')),
-  branch('Have a drink', run('consumeAlcohol', { amount: 20 })),
+  option('Kiss him', random('The kiss is slow...', 'He cups your face...')),
+  option('Have a drink', run('consumeAlcohol', { amount: 20 })),
   when(hasStat('Arousal', 50), exit('Things escalate...', escalationContent)),
   exit('Call it a night', 'You tell him you should go.'),
 )
@@ -443,7 +443,7 @@ For romance arcs, skill checks become the lever that makes high affection achiev
 
 ### NPC-Initiated Escalation
 
-Sometimes the NPC acts and the player must respond. A kiss that turns urgent. A confession that demands an answer. A sudden mood shift. Use `replaceScene()` to clear the current options and force a direct response — the player can't browse a menu while someone is asking them to come to bed.
+Sometimes the NPC acts and the player must respond. A kiss that turns urgent. A confession that demands an answer. A sudden mood shift. Use `replaceScene()` to clear the current scene and force a direct response — the player can't browse a menu while someone is asking them to come to bed.
 
 Use this sparingly. Most interactions should leave the player in control. But the moments where the NPC takes initiative — and the player has to decide *right now* — are what make relationships feel alive rather than transactional.
 
@@ -456,7 +456,7 @@ Use this sparingly. Most interactions should leave the player in control. But th
 - **Impression gates NPC action**: Flirt option always visible; `impression('appearance', { min: 50 })` gates whether *he* reciprocates — player learns the rules by trying, not by missing buttons
 - **Layered checks**: appearance gates receptiveness → skill check gates execution quality → affection tracks warmth over time
 - **Multi-location arc**: bar → garden/pool outing → room 533 via NPC script chaining (`npcInteract`)
-- **Repeatable menus**: garden/pool use `menu()` with `branch()` + `exit()`
+- **Repeatable menus**: garden/pool use `menu()` with `option()` + `exit()`
 - **Costume changes**: pool path with `saveOutfit`/`changeOutfit`/`wearOutfit` and bikini gift
 - **Parameterised farewell**: `patronKissAttempt(farewell)` with path-specific cleanup
 - **NPC-initiated escalation**: patron leans in for a kiss, player responds

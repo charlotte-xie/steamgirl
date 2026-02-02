@@ -1,5 +1,5 @@
-import type { CardDefinition } from '../model/Card'
-import { registerCardDefinition } from '../model/Card'
+import type { CardDefinition } from '../../model/Card'
+import { registerCardDefinition } from '../../model/Card'
 
 export const introvertTrait: CardDefinition = {
   name: 'Introvert',

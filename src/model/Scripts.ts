@@ -817,6 +817,11 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.location.template.isBedroom === true
   },
 
+  /** Check if player is in a private location (bedroom, bathroom, etc.) */
+  inPrivate: (game: Game): boolean => {
+    return game.location.template.private === true
+  },
+
   /** True if a body position is exposed (nothing worn at under, inner, or outer layers). */
   exposed: (game: Game, params: { position?: string }): boolean => {
     const position = params.position

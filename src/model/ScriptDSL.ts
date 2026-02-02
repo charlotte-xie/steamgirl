@@ -460,6 +460,10 @@ export const inLocation = (location: string): Instruction =>
 export const inBedroom = (): Instruction =>
   run('inBedroom', {})
 
+/** Check if player is in a private location (bedroom, bathroom, etc.) */
+export const inPrivate = (): Instruction =>
+  run('inPrivate', {})
+
 /** True if a body position is exposed (nothing worn at under, inner, or outer layers). */
 export const exposed = (position: string): Instruction =>
   run('exposed', { position })

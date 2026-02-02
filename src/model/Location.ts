@@ -7,6 +7,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {}
 
 // Register location definitions (can be called from story modules)
 export function registerLocation(id: LocationId, definition: LocationDefinition): void {
+  if (definition.isBedroom) definition.private = true
   LOCATION_DEFINITIONS[id] = definition
 }
 
@@ -42,9 +43,9 @@ export interface LocationDefinition {
    * from ambient flavour events. May create a scene to interrupt the wait.
    */
   onTick?: Script
-  /** If true, this is a bedroom — NPCs can visit/stay overnight. */
+  /** If true, this is a bedroom — NPCs can visit/stay overnight. Implies `private`. */
   isBedroom?: boolean
-  /** If true, this is a private space (bedroom, bathroom, etc.) — player cannot be indecent here. */
+  /** If true, this is a private space (bedroom, bathroom, etc.) — player cannot be indecent here. Set automatically for bedrooms. */
   private?: boolean
   secret?: boolean // If true, location starts as undiscovered (discovered = false)
   /** If true, this is a main area for travel (e.g. City Centre, Station). Links between two mainLocation sites appear under Travel. */

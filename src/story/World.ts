@@ -11,7 +11,7 @@
 import './Effects'
 
 // Register trait definitions (semi-permanent character traits)
-import './Traits'
+import './systems/Traits'
 
 // Register public area checks (used by location modules)
 import './Public'

@@ -68,7 +68,7 @@ import {
   stat, npcStat, skillCheck,
   run, and, not, or, hasCard, inLocation,
   hasRelationship, setRelationship, chance,
-  inBedroom, kiss, exposed, replaceScene,
+  inBedroom, inPrivate, kiss, exposed, replaceScene,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, endDate,
@@ -425,7 +425,7 @@ registerNPC('tour-guide', {
     handleDateApproach(game, 'tour-guide')
   },
 
-  onLeavePlayer: npcInteract('morningDepart'),
+  onLeavePlayer: when(inPrivate(), npcInteract('morningDepart')),
 
   onWait: (game: Game) => {
     // Auto-greet at station if not yet met

@@ -41,8 +41,8 @@ seq(text('You enter the room.'), say('Welcome!'))
 | `say(...parts)` | NPC speech in scene NPC's colour. Supports `{interpolation}`. Do not include quotation marks |
 | `paragraph(...content)` | Formatted paragraph with `hl()` highlights |
 | `playerName()` / `npcName(npc?)` | Inline name with colour (for use inside `text()` or `say()`) |
-| `option(label, script?, params?)` | Fire-and-forget button |
-| `npcLeaveOption(text?, reply?, label?)` | Standard conversation exit |
+| `option(label, ...content)` | Player choice. Content runs, then returns to context (stack) |
+| `npcLeaveOption(text?, reply?, label?)` | Standard conversation exit (includes `exit()`) |
 | `npcInteract(script, params?)` | Run a named NPC script |
 
 ### Control Flow
@@ -61,11 +61,8 @@ seq(text('You enter the room.'), say('Welcome!'))
 |---------|-------------|
 | `scenes(...pages)` | Multi-page sequence with auto Continue buttons |
 | `scene(...elements)` | Group elements into one page (alias for `seq`) |
-| `branch(label, ...elements)` | Player choice with auto-resume. Use `scenes()` for multi-page |
-| `choice(...branches, ...epilogue)` | Branches with shared ending |
-| `gatedBranch(cond, label, ...elements)` | Conditional branch |
-| `menu(...entries)` | Repeatable choice loop (`branch` loops, `exit` breaks) |
-| `exit(label, ...elements)` | Terminal branch inside `menu()` |
+| `menu(...options)` | Repeatable choice loop. `option()` loops back; `exit()` breaks out |
+| `exit(...content)` | Terminal option inside `menu()`. Clears the stack frame |
 
 ### Game Actions
 
@@ -88,6 +85,8 @@ seq(text('You enter the room.'), say('Welcome!'))
 | `recordTime(timer)` | Store time for cooldowns |
 | `addQuest(id, args?)` / `completeQuest(id)` | Quest lifecycle |
 | `addEffect(id, args?)` | Add effect card |
+| `addTrait(id, args?)` | Add trait card |
+| `socialise(minutes)` | Apply trait-based socialising effects (energy/mood) |
 | `eatFood(quantity)` | Feed the player |
 | `lessonTime(minutes, ...content)` | Conditional lesson segment (see [LESSONS.md](./LESSONS.md)) |
 
@@ -129,39 +128,50 @@ scenes(
 
 Each page runs, then a Continue button auto-appears if more pages follow. Pages that add their own options (e.g. `npcLeaveOption`) suppress the Continue button.
 
-### option() vs branch()
+### Stack-Based Options
 
-- **`option()`** -- fire-and-forget. Runs a script, no return.
-- **`branch()`** -- inline detour. Content plays, then the outer `scenes()` resumes.
+`option(label, ...content)` is the unified choice construct. When a player clicks an option, its content is pushed as a new stack frame. When that frame exhausts, control returns to the parent context (e.g. the next page of a `scenes()` sequence, or the menu loop).
+
+To call a named script from an option, wrap it with `run()`:
+
+```typescript
+option('Buy a drink', run('npc:onBuyDrink'))
+option('Flirt', run('npc:onFlirt'))
+```
+
+### Conditional Options
+
+Gate options with `when()`:
+
+```typescript
+when(hasStat('Flirtation', 1), option('Flirt', run('npc:onFlirt'))),
+when(npcStat('affection', { min: 35 }), option('Hidden garden', gardenPath())),
+option('Walk to the pier', pierPath()),
+```
 
 ### Branching with Shared Epilogue
 
-```typescript
-choice(
-  branch('Kiss him', 'You kiss.'),
-  branch('Not tonight', 'You decline.'),
-  endDate(),  // runs after whichever branch is chosen
-)
-```
-
-### Conditional Branches
+Options inside a `scenes()` sequence naturally resume at the next page after their content completes:
 
 ```typescript
-choice(
-  gatedBranch(npcStat('affection', {min: 35}), 'Hidden garden', gardenPath()),
-  branch('Walk to the pier', pierPath()),
-  endDate(),
+scenes(
+  scene(
+    'He leans closer.',
+    option('Kiss him', 'You kiss.'),
+    option('Not tonight', 'You decline.'),
+  ),
+  scene(endDate()),  // runs after whichever option is chosen
 )
 ```
 
 ### Repeatable Menus
 
-`menu()` loops -- the player returns after each non-exit choice. `when()` conditions re-evaluate each display:
+`menu()` loops -- the player returns after each `option()` choice. `exit()` breaks out by clearing the stack frame. `when()` conditions re-evaluate each display:
 
 ```typescript
 menu(
-  branch('Talk', random('He tells you...', 'You discuss...')),
-  when(hasStat('Flirtation', 1), branch('Flirt', flirtContent)),
+  option('Talk', random('He tells you...', 'You discuss...')),
+  when(hasStat('Flirtation', 1), option('Flirt', flirtContent)),
   exit('Leave', 'You say goodnight.'),
 )
 ```
@@ -312,14 +322,6 @@ Common scripts already defined in `Scripts.ts`:
 | `wearOutfit` | `{name, delete?}` | Restore outfit |
 | `changeOutfit` | `{items, force?}` | Strip and wear |
 | `menu` | `{entries}` | Repeatable choice loop |
-
-## Option Resolution
-
-The `option()` builder supports namespace prefixes:
-
-- `option('Chat', 'npc:onChat')` -- NPC script
-- `option('Leave', 'global:endScene')` -- global script
-- `option('Chat', 'onChat')` -- auto-resolves: NPC scripts first, then global
 
 ## File Organisation
 
