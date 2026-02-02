@@ -43,6 +43,8 @@ export interface LocationDefinition {
    * from ambient flavour events. May create a scene to interrupt the wait.
    */
   onTick?: Script
+  /** Called after every player action while at this location. */
+  afterUpdate?: Script
   /** If true, this is a bedroom — NPCs can visit/stay overnight. Implies `private`. */
   isBedroom?: boolean
   /** If true, this is a private space (bedroom, bathroom, etc.) — player cannot be indecent here. Set automatically for bedrooms. */

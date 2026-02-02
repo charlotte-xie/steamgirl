@@ -432,9 +432,9 @@ const coreScripts: Record<string, ScriptFn> = {
     game.player.calcStats()
   },
 
-  /** Unwear all clothing (respects locks unless force is true) */
-  stripAll: (game: Game, params: { force?: boolean } = {}) => {
-    game.player.stripAll(params.force ?? false)
+  /** Unwear clothing. Optionally filter by position and/or layer. Respects locks unless force is true. */
+  stripAll: (game: Game, params: { force?: boolean; position?: string; layer?: string } = {}) => {
+    game.player.stripAll(params.force ?? false, params.position, params.layer)
     game.player.calcStats()
   },
 
@@ -911,6 +911,35 @@ const coreScripts: Record<string, ScriptFn> = {
     return game.npcsPresent.length === 0
   },
 
+  /** Check if a specific NPC is at the player's current location */
+  npcPresent: (game: Game, params: { npc?: string } = {}): boolean => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) return false
+    const npc = game.getNPC(npcId)
+    return npc.location === game.currentLocation
+  },
+
+  /** Get an NPC's current location ID, or check if they're at a specific location (predicate mode). */
+  npcLocation: (game: Game, params: { npc?: string; location?: string } = {}): string | null | boolean => {
+    const npcId = params.npc ?? game.scene.npc
+    if (!npcId) return params.location ? false : null
+    const npc = game.getNPC(npcId)
+    if (params.location) return npc.location === params.location
+    return npc.location
+  },
+
+  // --- Generic value & arithmetic scripts ---
+
+  /** Returns the current game time (epoch seconds). */
+  gameTime: (game: Game): number => game.time,
+
+  /** Subtract: evaluates `a` and `b` (numbers or Instructions) and returns a - b. */
+  sub: (game: Game, params: { a?: number | Instruction; b?: number | Instruction }): number => {
+    const a = typeof params.a === 'number' ? params.a : Number(game.run(params.a) ?? 0)
+    const b = typeof params.b === 'number' ? params.b : Number(game.run(params.b) ?? 0)
+    return a - b
+  },
+
   /** True if the player is indecently dressed in a public place (decency below level, not private). Default level 40. */
   indecent: (game: Game, params: { level?: number } = {}): boolean => {
     const loc = game.location.template
@@ -981,11 +1010,11 @@ const coreScripts: Record<string, ScriptFn> = {
 
   // ── Comparison predicates ───────────────────────────────────────
 
-  /** Compare two value-returning instructions. op: '>' (default), '<', '>=', '<=', '==' */
-  compare: (game: Game, params: { a?: Instruction; b?: Instruction; op?: string }): boolean => {
-    if (!params.a || !params.b) return false
-    const a = game.run(params.a) as number
-    const b = game.run(params.b) as number
+  /** Compare two values. Operands can be numbers or value-returning instructions. op: '>' (default), '<', '>=', '<=', '==' */
+  compare: (game: Game, params: { a?: Instruction | number; b?: Instruction | number; op?: string }): boolean => {
+    if (params.a == null || params.b == null) return false
+    const a = typeof params.a === 'number' ? params.a : Number(game.run(params.a) ?? 0)
+    const b = typeof params.b === 'number' ? params.b : Number(game.run(params.b) ?? 0)
     switch (params.op) {
       case '<': return a < b
       case '>=': return a >= b

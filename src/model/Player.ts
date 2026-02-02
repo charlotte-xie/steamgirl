@@ -413,11 +413,13 @@ export class Player {
    * Skips locked items unless force is true.
    * @param force - If true, removes even locked items
    */
-  stripAll(force: boolean = false): void {
+  stripAll(force: boolean = false, position?: string, layer?: string): void {
     this.inventory.forEach(item => {
-      if (item.worn && (force || !item.locked)) {
-        item.worn = false
-      }
+      if (!item.worn) return
+      if (!force && item.locked) return
+      if (position && !item.template.positions?.includes(position as ClothingPosition)) return
+      if (layer && item.template.layer !== layer) return
+      item.worn = false
     })
   }
 

@@ -306,9 +306,9 @@ export const removeItem = (item: string, number = 1): Instruction =>
 export const wearItem = (item: string): Instruction =>
   run('wearItem', { item })
 
-/** Unwear all clothing (respects locks unless force is true) */
-export const stripAll = (force = false): Instruction =>
-  run('stripAll', { force })
+/** Unwear clothing. Optionally filter by position and/or layer. Respects locks unless force is true. */
+export const stripAll = (opts: { force?: boolean; position?: string; layer?: string } = {}): Instruction =>
+  run('stripAll', opts)
 
 /** Strip all clothing and wear a list of items */
 export const changeOutfit = (items: string[], force = false): Instruction =>
@@ -524,6 +524,21 @@ export const locationDiscovered = (location: string): Instruction =>
 export const nobodyPresent = (): Instruction =>
   run('nobodyPresent', {})
 
+/** Check if a specific NPC is at the player's current location. Uses scene NPC if not specified. */
+export const npcPresent = (npc?: string): Instruction =>
+  run('npcPresent', { npc })
+
+/** Get an NPC's location, or check if they're at a specific location (predicate mode). */
+export const npcLocation = (npc: string, location?: string): Instruction =>
+  run('npcLocation', { npc, location })
+
+/** Current game time (epoch seconds). */
+export const gameTime = (): Instruction => run('gameTime', {})
+
+/** Subtract: a - b. Operands can be numbers or Instructions that return numbers. */
+export const sub = (a: Instruction | number, b: Instruction | number): Instruction =>
+  run('sub', { a, b })
+
 /** Move the player to a destination immediately (no time cost). Used for ejecting from locations. */
 export const ejectPlayer = (location: string): Instruction =>
   run('ejectPlayer', { location })
@@ -560,16 +575,16 @@ export const chance = (probability: number): Instruction =>
 // Use npcStat/hasStat/hasReputation with no min/max to get raw values for comparisons.
 // e.g. gt(npcStat('lust'), npcStat('affection'))
 
-/**  True when a > b. a and b are value-returning instructions (e.g. npcStat, hasStat). */
-export const gt = (a: Instruction, b: Instruction): Instruction =>
+/**  True when a > b. Operands can be numbers or value-returning instructions (e.g. npcStat, hasStat, sub). */
+export const gt = (a: Instruction | number, b: Instruction | number): Instruction =>
   run('compare', { a, b, op: '>' })
 
 /** True when a < b. */
-export const lt = (a: Instruction, b: Instruction): Instruction =>
+export const lt = (a: Instruction | number, b: Instruction | number): Instruction =>
   run('compare', { a, b, op: '<' })
 
 /** True when a >= b. */
-export const gte = (a: Instruction, b: Instruction): Instruction =>
+export const gte = (a: Instruction | number, b: Instruction | number): Instruction =>
   run('compare', { a, b, op: '>=' })
 
 /** True when a <= b. */

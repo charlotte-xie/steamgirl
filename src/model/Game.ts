@@ -364,6 +364,16 @@ export class Game {
    * - Recalculate stats to reflect any basestat changes
    */
   afterAction(): void {
+    // Run location afterUpdate
+    this.run(this.location.template.afterUpdate)
+
+    // Run afterUpdate for NPCs present at the player's location
+    for (const npc of this.npcs.values()) {
+      if (npc.location === this.currentLocation && npc.template.afterUpdate) {
+        this.run(npc.template.afterUpdate)
+      }
+    }
+
     // Run afterUpdate scripts for all cards
     this.player.cards.forEach(card => {
       this.run(card.template.afterUpdate)

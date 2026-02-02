@@ -101,6 +101,8 @@ export interface NPCDefinition {
    * Access game via npc.game if needed.
    */
   modifyImpression?: (npc: NPC, impression: string, score: number) => number
+  /** Called after every player action while this NPC is at the player's location. */
+  afterUpdate?: Script
   /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */
   scripts?: Record<string, Script>
 }

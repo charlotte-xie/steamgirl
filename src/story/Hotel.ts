@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
+import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait, discoverLocation, hasCard, npcLocation, move, lt, sub, gameTime, not, inScene, hourBetween, chance, wantsIntimacy } from '../model/ScriptDSL'
 import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
 import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
 import { bedActivity } from './systems/Sleep'
@@ -68,31 +68,24 @@ registerCardDefinition('suite-booking', suiteBookingCard)
 // RECEPTION SCRIPTS
 // ============================================================================
 
-const addReceptionOptions = (g: Game) => {
-  const crowns = g.player.inventory.find(i => i.id === 'crown')?.number ?? 0
-  if (!g.player.hasCard('hotel-booking')) {
-    g.scene.options.push({ type: 'button', action: 'receptionBookRoom', label: `Book a Room (${ROOM_PRICE} Kr)`, disabled: crowns < ROOM_PRICE })
-  }
-  if (!g.player.hasCard('suite-booking')) {
-    g.scene.options.push({ type: 'button', action: 'receptionBookSuite', label: `Book the Suite (${SUITE_PRICE} Kr)`, disabled: crowns < SUITE_PRICE })
-  }
-  g.addOption('receptionAskWork', 'Ask About Work')
-  g.addOption('receptionLeave', 'Leave')
-}
-
-const receptionScripts = {
-  receptionScene: (g: Game) => {
-    if (g.player.hasCard('hotel-booking')) {
-      g.add('The concierge looks up and smiles. "Welcome back. Your room is ready, of course — Room 101, just through there."')
-    } else {
-      g.add('You approach the polished brass counter. The concierge straightens his waistcoat and offers a practised smile.')
-      g.add('"Good day. Welcome to the Imperial. How may I be of service?"')
-    }
-    addReceptionOptions(g)
-  },
+// ----- RECEPTION: Book a Room (imperative — needs runtime crown/date checks) -----
+makeScripts({
   receptionBookRoom: (g: Game) => {
+    g.add('"Certainly. We have the following available:"')
+    const crowns = g.player.inventory.find(i => i.id === 'crown')?.number ?? 0
+    if (!g.player.hasCard('hotel-booking')) {
+      g.scene.options.push({ type: 'button', action: 'receptionDoBookRoom', label: `Room 101 (${ROOM_PRICE} Kr)`, disabled: crowns < ROOM_PRICE })
+    }
+    if (!g.player.hasCard('suite-booking')) {
+      g.scene.options.push({ type: 'button', action: 'receptionDoBookSuite', label: `Imperial Suite (${SUITE_PRICE} Kr)`, disabled: crowns < SUITE_PRICE })
+    }
+    if (g.player.hasCard('hotel-booking') && g.player.hasCard('suite-booking')) {
+      g.add('"You already have rooms booked with us, madam."')
+    }
+    g.addOption('receptionScene', 'Back')
+  },
+  receptionDoBookRoom: (g: Game) => {
     g.player.removeItem('crown', ROOM_PRICE)
-    // Expires at 11am the next day
     const tomorrow = new Date(g.date)
     tomorrow.setDate(tomorrow.getDate() + 1)
     tomorrow.setHours(11, 0, 0, 0)
@@ -102,9 +95,9 @@ const receptionScripts = {
     g.add('The concierge produces a polished brass key from a hook behind the counter.')
     g.add('"Room 101, up the stairs and first on the left. Checkout is at eleven tomorrow morning. Enjoy your stay."')
     g.add({ type: 'text', text: `Paid ${ROOM_PRICE} Krona.`, color: '#d4af37' })
-    addReceptionOptions(g)
+    g.addOption('receptionScene', 'Back')
   },
-  receptionBookSuite: (g: Game) => {
+  receptionDoBookSuite: (g: Game) => {
     g.player.removeItem('crown', SUITE_PRICE)
     const tomorrow = new Date(g.date)
     tomorrow.setDate(tomorrow.getDate() + 1)
@@ -115,23 +108,80 @@ const receptionScripts = {
     g.add('The concierge\'s eyes widen slightly as you produce the payment. He retrieves an ornate brass key from a velvet-lined case.')
     g.add('"The Imperial Suite, madam. Top floor, take the lift. You\'ll find every luxury at your disposal. Checkout is at eleven tomorrow."')
     g.add({ type: 'text', text: `Paid ${SUITE_PRICE} Krona.`, color: '#c9a227' })
-    addReceptionOptions(g)
+    g.addOption('receptionScene', 'Back')
   },
-  receptionAskWork: (g: Game) => {
-    g.add('The concierge raises an eyebrow. "We do take on staff from time to time — chambermaids, kitchen hands, that sort of thing. Speak to the head cook if you\'re interested. The kitchens are through the back."')
-    const kitchens = g.getLocation('hotel-kitchens')
-    if (!kitchens.discovered) {
-      kitchens.discovered = true
-      g.add({ type: 'text', text: 'You note the way to the kitchens.', color: '#3b82f6' })
-    }
-    addReceptionOptions(g)
-  },
-  receptionLeave: (g: Game) => {
-    g.run('endScene', { text: 'You step away from the reception desk.' })
-  },
-}
+})
 
-makeScripts(receptionScripts)
+// ----- RECEPTION: DSL scripts -----
+
+const VISIT_COOLDOWN = 6 * 60 * 60 // 6 hours in seconds
+
+const receptionAshworthBusy: Instruction = seq(
+  '"I\'m sorry, Lord Ashworth is busy at the moment. Perhaps try again later."',
+  option('Back', run('receptionScene')),
+)
+
+const receptionAskAshworthScene: Instruction = cond(
+  npcLocation('bar-patron', 'hotel-bar'),
+  seq(
+    '"Lord Ashworth? I believe he\'s in the bar, madam."',
+    'The concierge gestures towards the bar entrance.',
+    option('Go there',
+      move('hotel-bar'),
+      run('approach', { npc: 'bar-patron' }),
+    ),
+    option('Maybe later', run('receptionScene')),
+  ),
+  npcLocation('bar-patron', 'room-533'),
+  cond(
+    lt(sub(gameTime(), npcStat('lastVisited', { npc: 'bar-patron' })), VISIT_COOLDOWN),
+    receptionAshworthBusy,
+    seq(
+      '"Lord Ashworth is in his room, madam. Room 533."',
+      'The concierge lowers his voice. "Shall I send you up?"',
+      option('Go there',
+        discoverLocation('room-533'),
+        move('room-533', 2),
+        run('interact', { npc: 'bar-patron', script: 'room533Welcome' }),
+      ),
+      option('Maybe later', run('receptionScene')),
+    ),
+  ),
+  seq(
+    '"I\'m sorry, Lord Ashworth is not available at the moment. Perhaps try again later this evening — he\'s usually at the bar from eight."',
+    option('Back', run('receptionScene')),
+  ),
+)
+
+const receptionAskFor: Instruction = seq(
+  '"Of course. What can I help you with?"',
+  option('Work',
+    'The concierge raises an eyebrow. "We do take on staff from time to time — chambermaids, kitchen hands, that sort of thing. Speak to the head cook if you\'re interested. The kitchens are through the back."',
+    discoverLocation('hotel-kitchens', 'You note the way to the kitchens.'),
+  ),
+  when(npcStat('madeLove', { npc: 'bar-patron' }),
+    option('Lord Ashworth', receptionAskAshworthScene),
+  ),
+  option('Back', run('receptionScene')),
+)
+
+const receptionScene: Instruction = seq(
+  cond(
+    hasCard('hotel-booking'),
+    text('The concierge looks up and smiles. "Welcome back. Your room is ready, of course — Room 101, just through there."'),
+    seq(
+      'You approach the polished brass counter. The concierge straightens his waistcoat and offers a practised smile.',
+      '"Good day. Welcome to the Imperial. How may I be of service?"',
+    ),
+  ),
+  option('Book a Room', run('receptionBookRoom')),
+  option('Ask for...', receptionAskFor),
+  option('Leave', run('endScene', { text: 'You step away from the reception desk.' })),
+)
+
+makeScripts({
+  receptionScene: script(receptionScene),
+})
 
 // Additional scripts for hotel activities
 makeScripts({
@@ -562,8 +612,59 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'A compact but well-appointed hotel room with a single bed, a writing desk, and a window overlooking the city rooftops. The bedsheets are crisp, the fixtures polished, and a small steam radiator keeps the chill at bay. A crystal decanter of whisky sits on the dresser.',
     image: '/images/dorm-suite.jpg',
     secret: true,
+    isBedroom: true,
+    afterUpdate: (g: Game) => { g.getNPC('bar-patron').stats.set('lastVisited', g.time) },
     links: [
-      { dest: 'hotel', time: 2, label: 'Leave to Lobby' },
+      { dest: 'room-533-bathroom', time: 1, label: 'Bathroom' },
+    ],
+    activities: [
+      {
+        name: 'Bed',
+        symbol: '🛏',
+        script: (g: Game) => {
+          g.run('interact', { npc: 'bar-patron', script: 'ashworthBed' })
+        },
+      },
+    ],
+  },
+  'room-533-bathroom': {
+    name: 'En-Suite Bathroom',
+    description: 'A small but spotless bathroom with white tiles and polished brass fixtures. A claw-footed tub sits beneath a frosted window, and monogrammed towels hang from a heated rail.',
+    image: '/images/nice-bathroom.jpg',
+    private: true,
+    afterUpdate: cond(
+      not(inScene()),
+      cond(
+        hourBetween(23, 6),
+        run('interact', { npc: 'bar-patron', script: 'bathroomIntrusion' }),
+        // Small chance Ashworth barges in for an intimate encounter
+        npcLocation('bar-patron', 'room-533'),
+        cond(
+          wantsIntimacy('bar-patron'),
+          cond(chance(0.15), run('interact', { npc: 'bar-patron', script: 'bathroomIntimacy' })),
+        ),
+      ),
+    ),
+    links: [
+      { dest: 'room-533', time: 1, label: 'Back to Room' },
+    ],
+    activities: [
+      {
+        name: 'Freshen Up',
+        script: (g: Game) => freshenUp(g),
+      },
+      {
+        name: 'Apply Makeup',
+        script: (g: Game) => applyMakeup(g),
+      },
+      {
+        name: 'Take Shower',
+        script: ['shower', { text: 'You undress and step into the tiled shower. The water is hot and the pressure surprisingly good for a hotel.' }],
+      },
+      {
+        name: 'Take a Bath',
+        script: ['bath', { text: 'You undress and run the brass taps until the claw-footed tub is full of steaming water. You sink in and let out a long breath.' }],
+      },
     ],
   },
   'hotel-suite': {
