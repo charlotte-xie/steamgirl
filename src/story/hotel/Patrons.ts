@@ -1054,10 +1054,10 @@ registerNPC('bar-patron', {
           'Breakfast is laid out on the writing desk — smoked salmon, soft eggs, toast with real butter. He pours you coffee from a silver pot.',
           'There are fresh pastries and a pot of fragrant tea. He butters a piece of toast and hands it to you with a quiet smile.',
         ),
-        wearOutfit('_before-ashworth', { delete: true }),
       ),
       // Money offer
       scene(
+        wearOutfit('_before-ashworth', { delete: true }),
         showNpcImage(),
         random(
           seq(
