@@ -20,9 +20,7 @@ export type Content =
   | InlineContent
   | { type: 'paragraph'; content: InlineContent[] }
   | { type: 'speech'; text: string; color?: string }
-  // Future content types can be added here:
-  // | { type: 'image'; src: string; alt?: string }
-  // | { type: 'portrait'; npc: string; expression?: string }
+  | { type: 'icon'; text: string; color?: string; size?: string }
 
 /** An option button in a scene. Action is a string expression (resolved via game.run) or an Instruction. */
 export type SceneOptionItem =

@@ -500,6 +500,12 @@ img {
   color: var(--speech-default);
 }
 
+.scene-icon {
+  text-align: center;
+  line-height: 1;
+  margin: 0.5em 0;
+}
+
 .scene-actions {
   display: flex;
   justify-content: center;

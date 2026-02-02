@@ -8,7 +8,7 @@ import {
 
   addStat, skillCheck, when, not, hasItem, addItem, inScene,
   saveOutfit, changeOutfit, wearOutfit, npcStat, cond, impression,
-  kiss, replaceScene,
+  kiss, replaceScene, wantsIntimacy, madeLove,
 } from '../../model/ScriptDSL'
 
 // ============================================================================
@@ -537,75 +537,92 @@ registerNPC('bar-patron', {
           ),
           say('Goodnight.'),
           addNpcStat('affection', -5),
-          ashworthDismiss(),
+          option('Leave', exit(ashworthDismiss())),
         ),
       ),
     ),
 
     // ----- MAKE LOVE: fade to black, stat tracking -----
-    makeLove: seq(
-      cond(
-        npcStat('madeLove'),
-        // Experienced — confident, possessive
-        random(
-          seq(
-            'He pulls you to him with quiet authority, one hand in your hair, the other at the small of your back.',
-            say('I\'ve been thinking about this since the last time.'),
+    makeLove: scenes(
+      scene(
+        cond(
+          npcStat('madeLove'),
+          // Experienced — confident, possessive
+          random(
+            seq(
+              'He pulls you to him with quiet authority, one hand in your hair, the other at the small of your back.',
+              say('I\'ve been thinking about this since the last time.'),
+            ),
+            seq(
+              'His hands are sure and unhurried. He knows what he wants.',
+              say('Come here.'),
+            ),
           ),
-          seq(
-            'His hands are sure and unhurried. He knows what he wants.',
-            say('Come here.'),
+          // First time — direct but not rough
+          random(
+            seq(
+              'He draws you towards the bed, one hand at your waist. His eyes hold yours — intent, certain, but waiting for you to close the distance.',
+              say('I want you. If you\'ll have me.'),
+            ),
+            seq(
+              'He cups your face in his hands. His thumb traces your lower lip.',
+              say('Stay with me tonight.'),
+            ),
           ),
         ),
-        // First time — direct but not rough
-        random(
-          seq(
-            'He draws you towards the bed, one hand at your waist. His eyes hold yours — intent, certain, but waiting for you to close the distance.',
-            say('I want you. If you\'ll have me.'),
-          ),
-          seq(
-            'He cups your face in his hands. His thumb traces your lower lip.',
-            say('Stay with me tonight.'),
+        paragraph(hl('• • •', '#6b7280')),
+        option('Accept', seq()),
+        option('Change your mind',
+          'You pull back. Something in your expression makes him stop instantly.',
+          say('I see.'),
+          'He releases you without protest. His composure returns in an instant — but the warmth has gone out of his eyes.',
+          say('Get dressed, please.'),
+          option('Get dressed',
+            'He turns away and pours himself a drink while you gather your clothes. The silence is precise and final.',
+            wearOutfit('_before-ashworth', { delete: true }),
+            say('It was a pleasant evening. Goodnight.'),
+            addNpcStat('affection', -3),
+            exit(ashworthDismiss()),
           ),
         ),
       ),
-      paragraph(hl('• • •', '#6b7280')),
-      cond(
-        npcStat('madeLove'),
-        random(
-          'He is unhurried and confident, attentive without tenderness. He takes his pleasure and gives it in equal measure — practised, generous, and entirely without sentiment.',
-          'There is no awkwardness, no hesitation. He knows what he likes and he knows how to please. Afterwards you are breathless and flushed, and he looks quietly satisfied.',
+      scene(
+        cond(
+          npcStat('madeLove'),
+          random(
+            'He is unhurried and confident, attentive without tenderness. He takes his pleasure and gives it in equal measure — practised, generous, and entirely without sentiment.',
+            'There is no awkwardness, no hesitation. He knows what he likes and he knows how to please. Afterwards you are breathless and flushed, and he looks quietly satisfied.',
+          ),
+          random(
+            'What follows is direct and surprisingly tender. He is attentive and generous, and asks what you like with the easy confidence of a man who is used to asking. When it is over, you lie in the warm glow of the city lights, your skin still tingling.',
+            'He is gentle where it matters and assertive everywhere else. He murmurs your name against your skin. It is over too quickly — and not quickly enough.',
+          ),
         ),
-        random(
-          'What follows is direct and surprisingly tender. He is attentive and generous, and asks what you like with the easy confidence of a man who is used to asking. When it is over, you lie in the warm glow of the city lights, your skin still tingling.',
-          'He is gentle where it matters and assertive everywhere else. He murmurs your name against your skin. It is over too quickly — and not quickly enough.',
-        ),
+        paragraph(hl('• • •', '#6b7280')),
+        run('madeLove'),
+        addNpcStat('affection', 5, { max: 30, hidden: true }),
+        time(30),
       ),
-      paragraph(hl('• • •', '#6b7280')),
-      run('madeLove'),
-      addNpcStat('affection', 5, { max: 30, hidden: true }),
-      time(30),
-      npcInteract('aftermath'),
-    ),
-
-    // ----- AFTERMATH: post-intimacy, he's content -----
-    aftermath: seq(
-      random(
-        seq(
-          'He lies back against the pillows, one arm behind his head. He looks content — the look of a man who got exactly what he wanted.',
-          say('You can stay if you like. I don\'t mind the company.'),
+      // Afterglow
+      scene(
+        showNpcImage(),
+        random(
+          seq(
+            'He lies back against the pillows, one arm behind his head. He looks content — the look of a man who got exactly what he wanted.',
+            say('You can stay if you like. I don\'t mind the company.'),
+          ),
+          seq(
+            'He pours two glasses from the bedside decanter and hands you one. He is relaxed, unhurried.',
+            say('That was rather wonderful. Drink?'),
+          ),
+          seq(
+            'He traces idle patterns on your shoulder. His breathing has slowed.',
+            say('You are full of surprises. I like that in a woman.'),
+          ),
         ),
-        seq(
-          'He pours two glasses from the bedside decanter and hands you one. He is relaxed, unhurried.',
-          say('That was rather wonderful. Drink?'),
-        ),
-        seq(
-          'He traces idle patterns on your shoulder. His breathing has slowed.',
-          say('You are full of surprises. I like that in a woman.'),
-        ),
+        option('Leave', npcInteract('leave')),
+        option('Sleep here', npcInteract('sleepOver')),
       ),
-      option('Leave', npcInteract('leave')),
-      option('Sleep here', npcInteract('sleepOver')),
     ),
 
     // ----- SLEEP OVER: nested sleep + morning scene -----
@@ -616,40 +633,152 @@ registerNPC('bar-patron', {
       run('sleepTogether', { quality: 1.2 }),
       // Morning scene — only runs if sleep completed without interruption
       when(not(inScene()),
+        npcInteract('morning'),
+      ),
+    ),
+
+    // ----- MORNING: wakeup, optional intimacy, breakfast, farewell -----
+    // Uses scenes() so intimacy choice is a separate page from breakfast.
+    morning: scenes(
+      scene(
         'Pale morning light filters through the heavy curtains. The room smells of sandalwood and last night\'s whisky.',
         cond(
           npcStat('madeLove', { min: 3 }),
           // Comfortable familiarity
           random(
             seq(
-              'He\'s already up, dressed in a silk robe, reading the morning paper by the window. He glances up with a warm smile.',
-              say('Good morning, darling. I ordered breakfast.'),
+              'He\'s propped against the pillows beside you, already awake. He watches you stir with quiet amusement.',
+              say('There she is.'),
             ),
             seq(
-              'He\'s at the dressing table, fastening his cufflinks. He catches your eye in the mirror.',
-              say('There she is. Sleep well?'),
+              'You feel his arm tighten around your waist. He\'s awake, his chin resting on your shoulder.',
+              say('Good morning, darling.'),
             ),
           ),
           // First time or early visits — slightly more formal
           random(
             seq(
-              'He\'s sitting at the edge of the bed, already half-dressed. He turns and smiles.',
-              say('Ah, you\'re awake. I took the liberty of ordering room service.'),
+              'He\'s lying on his side, watching you. He looks different in the morning light — softer, less composed.',
+              say('Good morning. I hope you slept well.'),
             ),
             seq(
-              'You stir to the sound of clinking china. He\'s pouring tea from a silver pot, dressed in a monogrammed robe.',
-              say('Good morning. I hope you slept well.'),
+              'You stir to find him propped on one elbow, studying you with a faint smile.',
+              say('Ah. You\'re awake.'),
             ),
           ),
         ),
-        // Sugar daddy flavour — breakfast and gift
+        // Morning intimacy — he initiates if cooldown has passed
+        when(wantsIntimacy(),
+          npcInteract('morningIntimacy'),
+        ),
+      ),
+      scene(npcInteract('morningBreakfast')),
+    ),
+
+    // ----- MORNING INTIMACY: he initiates, player responds -----
+    morningIntimacy: seq(
+      cond(
+        npcStat('madeLove', { min: 3 }),
+        // Familiar — lazy, proprietary
+        random(
+          seq(
+            'His hand traces slowly down your side beneath the sheets. There is nothing hurried about it.',
+            say('We have time. The world can wait.'),
+          ),
+          seq(
+            'He pulls you closer, his mouth warm against your neck. His hands move with easy familiarity.',
+            say('I\'m not done with you yet.'),
+          ),
+        ),
+        // Early visits — direct, testing the waters
+        random(
+          seq(
+            'His fingers brush your collarbone, then trail lower. His eyes hold yours — direct, unhurried, asking without asking.',
+            say('Stay a moment longer.'),
+          ),
+          seq(
+            'He leans over you, one hand braced on the pillow. The sheets slip. His expression is intent.',
+            say('I don\'t think either of us is in a rush.'),
+          ),
+        ),
+      ),
+      option('Let him',
+        npcInteract('morningIntimacyScene'),
+      ),
+      option('Not now',
+        random(
+          seq(
+            'You catch his hand and press a kiss to his knuckles. He reads it instantly and withdraws with a smile.',
+            say('As you wish.'),
+          ),
+          seq(
+            'You stretch and roll away, pulling the sheet with you. He chuckles.',
+            say('Cruel woman. Very well — breakfast it is.'),
+          ),
+        ),
+      ),
+    ),
+
+    // ----- MORNING INTIMACY SCENE: the act itself -----
+    morningIntimacyScene: scenes(
+      scene(
+        cond(
+          npcStat('madeLove', { min: 3 }),
+          random(
+            'The morning is lazy and warm. He takes his time — unhurried, attentive, sure of himself and sure of you. The city wakes outside but neither of you notices.',
+            'He is slow and deliberate, savouring every moment. There is none of the urgency of the night before — only quiet, confident pleasure.',
+          ),
+          random(
+            'He is gentler than last night — unhurried, attentive, watching your face. The morning light makes everything feel different. More real, somehow.',
+            'What follows is slow and warm and surprisingly intimate. In the pale morning light there is nowhere to hide, and neither of you tries to.',
+          ),
+        ),
+        paragraph(hl('• • •', '#6b7280')),
+        madeLove(),
+        addNpcStat('affection', 3, { max: 30, hidden: true }),
+        time(30),
+      ),
+      scene(
+        showNpcImage(),
+        random(
+          seq(
+            'He lies back against the pillows, one arm behind his head. He looks thoroughly satisfied.',
+            say('Now that is how one should start the morning.'),
+          ),
+          seq(
+            'He stretches lazily beside you, tracing idle circles on your shoulder.',
+            say('If I didn\'t have meetings, I\'d keep you here all day.'),
+          ),
+        ),
+      ),
+    ),
+
+    // ----- MORNING BREAKFAST: sugar daddy routine, gift, farewell -----
+    morningBreakfast: scenes(
+      // Breakfast
+      scene(
+        showNpcImage(),
+        cond(
+          npcStat('madeLove', { min: 3 }),
+          random(
+            'He rings the bell for room service, then pulls on a silk robe.',
+            'He\'s at the dressing table fastening his cufflinks when there\'s a knock at the door. Breakfast.',
+          ),
+          random(
+            'He sits at the edge of the bed, already half-dressed, and rings for room service.',
+            'He pulls on a monogrammed robe and busies himself with the tea things.',
+          ),
+        ),
         random(
           'A silver tray sits on the bedside table — fresh pastries, fruit, and coffee that smells of heaven. You eat together in comfortable quiet.',
           'Breakfast is laid out on the writing desk — smoked salmon, soft eggs, toast with real butter. He pours you coffee from a silver pot.',
           'There are fresh pastries and a pot of fragrant tea. He butters a piece of toast and hands it to you with a quiet smile.',
         ),
         wearOutfit('_before-ashworth', { delete: true }),
-        // He gives you money — casual generosity, sugar daddy framing
+      ),
+      // Money offer
+      scene(
+        showNpcImage(),
         random(
           seq(
             'As you dress, he slips something into your hand. A fold of crisp banknotes.',
@@ -660,12 +789,24 @@ registerNPC('bar-patron', {
             say('A little something. I know student life isn\'t easy.'),
           ),
           seq(
-            'He watches you dress, then reaches for his wallet on the nightstand. He counts out several notes without looking.',
+            'He reaches for his wallet on the nightstand and counts out several notes without looking.',
             say('Take this. I insist. Consider it a token of my appreciation.'),
           ),
         ),
-        run('gainItem', { item: 'crown', number: 100, text: '+100 Kr' }),
-        // Morning farewell
+        option('Accept',
+          'You take the money with a smile. He looks pleased.',
+          run('gainItem', { item: 'crown', number: 100, text: '+100 Kr' }),
+        ),
+        option('Decline',
+          'You push his hand away gently. His expression cools.',
+          say('I see. How... principled.'),
+          'He tucks the notes back into his wallet with a flick of his wrist. Something in his manner has stiffened.',
+          addNpcStat('affection', -3),
+        ),
+      ),
+      // Farewell
+      scene(
+        showNpcImage(),
         random(
           seq(
             'He kisses your cheek at the door. The gesture is proprietary but not unpleasant.',
@@ -680,8 +821,12 @@ registerNPC('bar-patron', {
             say('Same time tonight? I\'ll be at the bar.'),
           ),
         ),
-        moveNpc('bar-patron', null),
-        move('hotel'),
+        option('Leave',
+          moveNpc('bar-patron', null),
+          hideNpcImage(),
+          'You take the lift back down to the lobby.',
+          move('hotel'),
+        ),
       ),
     ),
 

@@ -390,6 +390,10 @@ export const sleepTogether = (quality?: number): Instruction =>
 export const madeLove = (npc?: string): Instruction =>
   run('madeLove', { npc })
 
+/** True if NPC's lastIntimacy was more than 6 hours ago (or never). Uses scene NPC by default. */
+export const wantsIntimacy = (npc?: string): Instruction =>
+  run('wantsIntimacy', { npc })
+
 /** Record the current game time to a named timer */
 export const recordTime = (timer: string): Instruction =>
   run('recordTime', { timer })

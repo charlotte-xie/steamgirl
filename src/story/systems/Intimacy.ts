@@ -30,8 +30,25 @@ export function madeLove(game: Game, npcId?: string): void {
   if (arousal > 30) {
     game.player.basestats.set('Arousal', 30)
   }
+
+  // Visual feedback
+  game.scene.content.push({ type: 'icon', text: '♥', color: '#e8457a', size: '4rem' })
 }
 
 makeScript('madeLove', (game: Game, params: { npc?: string }) => {
   madeLove(game, params.npc)
+})
+
+const INTIMACY_COOLDOWN = 6 * 60 * 60 // 6 hours in seconds
+
+/**
+ * Check if an NPC wants intimacy (lastIntimacy was more than 6 hours ago, or never).
+ * Returns true if the NPC is ready for intimacy again.
+ */
+makeScript('wantsIntimacy', (game: Game, params: { npc?: string }): boolean => {
+  const npc = params.npc ? game.getNPC(params.npc) : game.scene.npc ? game.npc : undefined
+  if (!npc) return false
+  const last = npc.stats.get('lastIntimacy')
+  if (last === undefined) return true
+  return (game.time - last) >= INTIMACY_COOLDOWN
 })

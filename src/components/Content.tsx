@@ -53,6 +53,17 @@ function ContentItem({ item, npcId }: { item: Content; npcId?: string }): ReactN
     )
   }
 
+  if (item.type === 'icon') {
+    return (
+      <p className="scene-icon" style={{
+        color: item.color,
+        fontSize: item.size ?? '3rem',
+      }}>
+        {item.text}
+      </p>
+    )
+  }
+
   return null
 }
 
