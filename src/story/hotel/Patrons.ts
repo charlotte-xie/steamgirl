@@ -218,25 +218,21 @@ registerNPC('bar-patron', {
   scripts: {
     // ----- CHAT: casual bar conversation, small affection gain -----
     chat: seq(
-      hideNpcImage(),
+      showNpcImage(),
       random(
         seq(
-          showNpcImage(),
           say('I\'ve been coming to the Imperial for fifteen years. Watched the whole city change from this very stool.'),
           'He swirls his whisky contemplatively.',
         ),
         seq(
-          showNpcImage(),
           say('Do you know, they import the gin from the continent by airship? Keeps the botanicals fresh. Worth every penny.'),
           'He signals the barman for another round.',
         ),
         seq(
-          showNpcImage(),
           say('The theatre season opens next week. I have a box, of course. One must keep up appearances.'),
           'He adjusts his cufflinks with practised ease.',
         ),
         seq(
-          showNpcImage(),
           say('I made my fortune in aether refinement, if you must know. Terribly dull business, but it pays for the whisky.'),
           'He smiles with the quiet satisfaction of a man who has never worried about money.',
         ),
@@ -252,14 +248,13 @@ registerNPC('bar-patron', {
     // High appearance + skill fail: awkward but he's still interested (feedback: "practise flirting").
     // High appearance + skill pass: charmed, offers outing.
     flirt: seq(
-      hideNpcImage(),
+      showNpcImage(),
       cond(
         // He's receptive — she looks good enough to catch his eye
         impression('appearance', { min: 50 }),
         skillCheck('Flirtation', 20,
           // Success — he's charmed
           seq(
-            showNpcImage(),
             run('consumeAlcohol', { amount: 25 }),
             random(
               seq(
@@ -280,12 +275,10 @@ registerNPC('bar-patron', {
             // Suggest an outing
             random(
               seq(
-                showNpcImage(),
                 say('You know, the rooftop garden is rather spectacular at this hour. Care to see it?'),
                 option('Go with him', npcInteract('garden')),
               ),
               seq(
-                showNpcImage(),
                 say('The hotel has a rather lovely pool, you know. Heated by the boilers. Fancy a swim?'),
                 option('Go with him', npcInteract('pool')),
               ),
@@ -297,7 +290,6 @@ registerNPC('bar-patron', {
           ),
           // Skill check failure — she tried but it fell flat
           seq(
-            showNpcImage(),
             random(
               'You try to catch his eye with a coy smile, but the delivery falls flat. He gives a polite laugh and changes the subject.',
               'You attempt a witty remark, but it lands awkwardly. He smiles graciously and steers the conversation elsewhere.',
@@ -309,7 +301,6 @@ registerNPC('bar-patron', {
         ),
         // Not interested — appearance too low; NPC disengages (not player's fault)
         seq(
-          showNpcImage(),
           random(
             seq(
               'You lean in with a smile, but his gaze drifts. He\'s polite, but his attention is elsewhere.',
@@ -330,63 +321,61 @@ registerNPC('bar-patron', {
     ),
 
     // ----- GARDEN: rooftop garden outing -----
-    garden: scenes(
-      scene(
-        hideNpcImage(),
-        'You follow him through the lobby and into the brass lift. He presses the top button with a confident smile.',
-        move('hotel-garden', 5),
-        showNpcImage(),
-        'The lift opens onto the rooftop garden. The city stretches below, gaslights tracing the streets like scattered jewels. The air is cool and fragrant with night-blooming flowers.',
-        say('Worth the trip, wouldn\'t you say?'),
-        'He stands close, one hand resting lightly on the railing beside yours.',
-        time(10),
-        run('consumeAlcohol', { amount: 15 }),
-        menu(
-          option('Talk',
-            random(
-              'The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.',
-              'You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.',
-              'He points out landmarks across the skyline — the university clock tower, the great chimney of the steamworks. You find yourself leaning into him as you look.',
-              'He asks about your studies and listens with genuine curiosity. The night air is cool, and you stand close for warmth.',
-            ),
-            time(10),
-            addStat('Charm', 1, { max: 40, chance: 0.3 }),
+    garden: seq(
+      hideNpcImage(),
+      'You follow him through the lobby and into the brass lift. He presses the top button with a confident smile.',
+      move('hotel-garden', 5),
+      showNpcImage(),
+      'The lift opens onto the rooftop garden. The city stretches below, gaslights tracing the streets like scattered jewels. The air is cool and fragrant with night-blooming flowers.',
+      say('Worth the trip, wouldn\'t you say?'),
+      'He stands close, one hand resting lightly on the railing beside yours.',
+      time(10),
+      run('consumeAlcohol', { amount: 15 }),
+      menu(
+        option('Talk',
+          random(
+            'The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.',
+            'You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.',
+            'He points out landmarks across the skyline — the university clock tower, the great chimney of the steamworks. You find yourself leaning into him as you look.',
+            'He asks about your studies and listens with genuine curiosity. The night air is cool, and you stand close for warmth.',
           ),
-          option('Have a drink',
-            random(
-              'He produces a silver hip flask and pours you something that smells of honey and smoke.',
-              'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
-            ),
-            run('consumeAlcohol', { amount: 15 }),
-            time(5),
+          time(10),
+          addStat('Charm', 1, { max: 40, chance: 0.3 }),
+        ),
+        option('Have a drink',
+          random(
+            'He produces a silver hip flask and pours you something that smells of honey and smoke.',
+            'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
           ),
-          option('Enjoy the view',
-            random(
-              'You lean against the railing together, watching the gaslights flicker across the rooftops. The city hums softly below.',
-              'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
-              'You watch an airship drift silently across the moon, its running lights winking red and green.',
-            ),
-            time(10),
-            addStat('Mood', 2, { max: 85 }),
+          run('consumeAlcohol', { amount: 15 }),
+          time(5),
+        ),
+        option('Enjoy the view',
+          random(
+            'You lean against the railing together, watching the gaslights flicker across the rooftops. The city hums softly below.',
+            'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
+            'You watch an airship drift silently across the moon, its running lights winking red and green.',
           ),
-          option('Call it a night',
-            random(
-              'You tell him you should be heading back. He nods, not pushy about it.',
-              'The evening air is getting chilly. You suggest heading inside.',
-            ),
-            say('Of course. It\'s been a wonderful evening.'),
-            addStat('Mood', 3, { max: 85 }),
-            addNpcStat('affection', 2, { max: 20 }),
-            exit(gardenFarewell()),
+          time(10),
+          addStat('Mood', 2, { max: 85 }),
+        ),
+        option('Call it a night',
+          random(
+            'You tell him you should be heading back. He nods, not pushy about it.',
+            'The evening air is getting chilly. You suggest heading inside.',
           ),
-          option('Stay a while longer...',
-            showNpcImage(),
-            random(
-              'A comfortable silence settles between you. The city glitters below, impossibly beautiful.',
-              'The conversation fades into something quieter. You stand close together, the cool air pressing you near.',
-            ),
-            exit(patronKissAttempt(gardenFarewell())),
+          say('Of course. It\'s been a wonderful evening.'),
+          addStat('Mood', 3, { max: 85 }),
+          addNpcStat('affection', 2, { max: 20 }),
+          exit(gardenFarewell()),
+        ),
+        option('Stay a while longer...',
+          showNpcImage(),
+          random(
+            'A comfortable silence settles between you. The city glitters below, impossibly beautiful.',
+            'The conversation fades into something quieter. You stand close together, the cool air pressing you near.',
           ),
+          exit(patronKissAttempt(gardenFarewell())),
         ),
       ),
     ),
@@ -394,65 +383,64 @@ registerNPC('bar-patron', {
     // ----- ROOM 533: drinks, chat, he escalates to bed -----
     // Ashworth drives the pace. If the player refuses at the critical moment,
     // he's done — polite but firm. Not interested in being strung along.
-    room533: scenes(
-      scene(
-        random(
-          'The room is warm and softly lit, the city glittering beyond the window. He pours two drinks from a crystal decanter and hands you one.',
-          'He closes the door behind you and crosses to the drinks cabinet. "Make yourself comfortable." The room smells of sandalwood and expensive leather.',
+    room533: seq(
+      showNpcImage(),
+      random(
+        'The room is warm and softly lit, the city glittering beyond the window. He pours two drinks from a crystal decanter and hands you one.',
+        'He closes the door behind you and crosses to the drinks cabinet. "Make yourself comfortable." The room smells of sandalwood and expensive leather.',
+      ),
+      cond(
+        npcStat('madeLove'),
+        seq(
+          'He settles beside you, close enough that your shoulders touch. His hand finds your knee.',
+          say('I\'m glad you came back.'),
         ),
-        cond(
-          npcStat('madeLove'),
-          seq(
-            'He settles beside you, close enough that your shoulders touch. His hand finds your knee.',
-            say('I\'m glad you came back.'),
+        seq('He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.'),
+      ),
+      menu(
+        option('Have a drink',
+          random(
+            'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
+            'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
+            'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
           ),
-          seq('He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.'),
+          run('consumeAlcohol', { amount: 20 }),
+          time(10),
+          random(
+            'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
+            'You clink glasses. The room feels cosier now, the city lights softening through the window.',
+          ),
         ),
-        menu(
-          option('Have a drink',
-            random(
-              'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
-              'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
-              'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
-            ),
-            run('consumeAlcohol', { amount: 20 }),
-            time(10),
-            random(
-              'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
-              'You clink glasses. The room feels cosier now, the city lights softening through the window.',
-            ),
+        option('Chat',
+          random(
+            'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
+            'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
+            'The conversation drifts to dreams and ambitions. He speaks carefully, choosing his words, and you realise he\'s more thoughtful than his polished exterior suggests.',
+            'He asks about your life before Aetheria. You find yourself sharing more than you expected, drawn out by his quiet attentiveness. In turn, he tells you about growing up in the country — a different world from this gilded hotel room.',
           ),
-          option('Chat',
-            random(
-              'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
-              'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
-              'The conversation drifts to dreams and ambitions. He speaks carefully, choosing his words, and you realise he\'s more thoughtful than his polished exterior suggests.',
-              'He asks about your life before Aetheria. You find yourself sharing more than you expected, drawn out by his quiet attentiveness. In turn, he tells you about growing up in the country — a different world from this gilded hotel room.',
-            ),
-            time(15),
-            addStat('Charm', 1, { max: 40, chance: 0.3 }),
-            addStat('Mood', 2, { max: 85 }),
+          time(15),
+          addStat('Charm', 1, { max: 40, chance: 0.3 }),
+          addStat('Mood', 2, { max: 85 }),
+        ),
+        option('Kiss him',
+          random(
+            'You lean into him. He catches you halfway, one hand at the back of your neck.',
+            'You close the distance between you. His response is immediate — his arm around your waist, pulling you in.',
           ),
-          option('Kiss him',
-            random(
-              'You lean into him. He catches you halfway, one hand at the back of your neck.',
-              'You close the distance between you. His response is immediate — his arm around your waist, pulling you in.',
-            ),
-            kiss(5),
-            addStat('Arousal', 5, { max: 100 }),
-            time(5),
-            exit(npcInteract('makeOut')),
+          kiss(5),
+          addStat('Arousal', 5, { max: 100 }),
+          time(5),
+          exit(npcInteract('makeOut')),
+        ),
+        option('Call it a night',
+          random(
+            'You set down your glass and tell him you should go.',
+            'You stand and smooth your clothes.',
           ),
-          option('Call it a night',
-            random(
-              'You set down your glass and tell him you should go.',
-              'You stand and smooth your clothes.',
-            ),
-            say('Thank you for a memorable evening.'),
-            'He presses a kiss to the back of your hand. He doesn\'t try to stop you.',
-            addStat('Mood', 5, { max: 85 }),
-            exit(ashworthDismiss()),
-          ),
+          say('Thank you for a memorable evening.'),
+          'He presses a kiss to the back of your hand. He doesn\'t try to stop you.',
+          addStat('Mood', 5, { max: 85 }),
+          exit(ashworthDismiss()),
         ),
       ),
     ),
