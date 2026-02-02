@@ -382,6 +382,14 @@ export const addTrait = (traitId: string, args?: object): Instruction =>
 export const socialise = (minutes: number): Instruction =>
   run('socialise', { minutes })
 
+/** Sleep together with an NPC. Wakes at 7am for a morning scene. */
+export const sleepTogether = (quality?: number): Instruction =>
+  run('sleepTogether', { quality })
+
+/** Standard intimacy effects: increments madeLove, records lastIntimacy, caps Arousal at 30. */
+export const madeLove = (npc?: string): Instruction =>
+  run('madeLove', { npc })
+
 /** Record the current game time to a named timer */
 export const recordTime = (timer: string): Instruction =>
   run('recordTime', { timer })

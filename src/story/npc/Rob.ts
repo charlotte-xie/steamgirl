@@ -76,6 +76,7 @@ import {
   standardGreeting, standardCancel, standardNoShow, standardComplete,
   tryStrip,
 } from '../Dating'
+import { madeLove } from '../systems/Intimacy'
 
 // ============================================================================
 // CITY TOUR — FIRST TIME
@@ -1186,8 +1187,7 @@ registerNPC('tour-guide', {
       game.add({ type: 'text', text: '\u2022 \u2022 \u2022', color: '#6b7280' })
 
       // Mechanical effects
-      game.player.addBaseStat('Arousal', -70)
-      npc.stats.set('madeLove', (npc.stats.get('madeLove') ?? 0) + 1)
+      madeLove(game)
       const affection = npc.stats.get('affection') ?? 0
       npc.stats.set('affection', Math.min(90, affection + 5))
 

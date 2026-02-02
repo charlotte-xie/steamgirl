@@ -14,6 +14,7 @@ export type TimerName =
   | 'lastExercise'
   | 'lastEat'
   | 'lastHairstyle'
+  | 'lastIntimacy'
 
 /** Named relationship labels for NPCs. Extensible via string literals. */
 export type Relationship =

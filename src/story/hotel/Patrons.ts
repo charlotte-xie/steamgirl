@@ -582,8 +582,7 @@ registerNPC('bar-patron', {
         ),
       ),
       paragraph(hl('• • •', '#6b7280')),
-      addStat('Arousal', -70),
-      addNpcStat('madeLove', 1),
+      run('madeLove'),
       addNpcStat('affection', 5, { max: 30, hidden: true }),
       time(30),
       npcInteract('aftermath'),
@@ -614,7 +613,7 @@ registerNPC('bar-patron', {
     // the morning scene continues naturally. If sleep was interrupted
     // by an event, the morning scene is skipped via when(not(inScene())).
     sleepOver: seq(
-      run('sleep', { quality: 1.2 }),
+      run('sleepTogether', { quality: 1.2 }),
       // Morning scene — only runs if sleep completed without interruption
       when(not(inScene()),
         'Pale morning light filters through the heavy curtains. The room smells of sandalwood and last night\'s whisky.',

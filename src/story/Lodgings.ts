@@ -8,7 +8,7 @@ import {
   hourBetween, isWeekday,
 } from '../model/ScriptDSL'
 import { freshenUp, applyMakeup } from './Effects'
-import { bedActivity } from './Sleep'
+import { bedActivity } from './systems/Sleep'
 
 // Location definitions for the player's lodgings
 const LODGINGS_DEFINITIONS: Record<LocationId, LocationDefinition> = {

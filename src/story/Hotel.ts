@@ -9,7 +9,7 @@ import type { Instruction } from '../model/ScriptDSL'
 import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait } from '../model/ScriptDSL'
 import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
 import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
-import { bedActivity } from './Sleep'
+import { bedActivity } from './systems/Sleep'
 import { staffDecencyGate } from './Public'
 
 // ============================================================================

@@ -17,7 +17,7 @@ import './systems/Traits'
 import './Public'
 
 // Register sleep system
-import './Sleep'
+import './systems/Sleep'
 
 // Register item definitions (used by other modules)
 import './items'
@@ -30,6 +30,9 @@ import './Utility'
 
 // Register start scripts (depends on Effects and Lodgings)
 import './Start'
+
+// Register intimacy system (shared NPC intimacy functions, before NPC imports)
+import './systems/Intimacy'
 
 // Register dating mechanic (before NPC imports that register date plans)
 import './Dating'

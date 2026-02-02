@@ -9,9 +9,9 @@
  * - Contextual wakeup messages
  */
 
-import { Game } from '../model/Game'
-import { makeScript } from '../model/Scripts'
-import { applyRelaxation } from './Effects'
+import { Game } from '../../model/Game'
+import { makeScript } from '../../model/Scripts'
+import { applyRelaxation } from '../Effects'
 
 // ============================================================================
 // CONSTANTS
@@ -136,14 +136,19 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   // Get current energy
   const startEnergy = game.player.basestats.get('Energy') ?? 0
 
-  // Check if player is too energetic for full sleep
-  if (isFullSleep && startEnergy >= TIRED_THRESHOLD) {
+  // When an alarm is set, sleep until the alarm regardless of energy.
+  // This handles sleepTogether (7am alarm) and "sleep until morning".
+  const hasAlarm = alarm !== undefined
+  const minutesToAlarm = hasAlarm ? minutesUntilHour(game, alarm) : 0
+
+  // Check if player is too energetic for full sleep (unless alarm forces it)
+  if (!hasAlarm && isFullSleep && startEnergy >= TIRED_THRESHOLD) {
     game.add('You\'re not tired enough to sleep properly. You lie down but find yourself staring at the ceiling, mind racing.')
     return
   }
 
-  // For naps when not tired, cap at 30 minutes
-  if (!isFullSleep && startEnergy >= TIRED_THRESHOLD) {
+  // For naps when not tired (no alarm), cap at 30 minutes
+  if (!hasAlarm && !isFullSleep && startEnergy >= TIRED_THRESHOLD) {
     max = Math.min(max ?? 30, 30)
   }
 
@@ -158,25 +163,22 @@ export function sleep(game: Game, params: SleepParams = {}): void {
   let targetMinutes = baseMinutesNeeded
   let wakeupReason: WakeupReason = 'rested'
 
+  // When alarm is set, use it as the target — sleep until the alarm
+  if (hasAlarm) {
+    targetMinutes = minutesToAlarm
+    wakeupReason = 'alarm'
+  }
+
   // Apply minimum constraint
   if (min !== undefined && targetMinutes < min) {
     targetMinutes = min
     wakeupReason = 'min'
   }
 
-  // Apply maximum constraint
+  // Apply maximum constraint (alarm still respects max if both are set)
   if (max !== undefined && targetMinutes > max) {
     targetMinutes = max
     wakeupReason = 'max'
-  }
-
-  // Apply alarm constraint
-  if (alarm !== undefined) {
-    const minutesToAlarm = minutesUntilHour(game, alarm)
-    if (minutesToAlarm < targetMinutes) {
-      targetMinutes = minutesToAlarm
-      wakeupReason = 'alarm'
-    }
   }
 
   // Ensure we sleep at least 1 minute
@@ -276,13 +278,35 @@ makeScript('sleep', (game: Game, params: SleepParams) => {
   sleep(game, params)
 })
 
+/**
+ * Sleep together with an NPC. Wakes at 7am so the morning scene
+ * plays naturally. NPC scripts should gate availability on time
+ * (e.g. post 10pm) and provide their own morning content after
+ * this instruction via `when(not(inScene()), ...)`.
+ *
+ * Usage in NPC scripts:
+ *   seq(
+ *     run('sleepTogether', { quality: 1.2 }),
+ *     when(not(inScene()), ...morningScene),
+ *   )
+ */
+makeScript('sleepTogether', (game: Game, params: { quality?: number }) => {
+  sleep(game, { alarm: 7, quality: params.quality ?? 1.0 })
+})
+
 makeScript('bedScene', (game: Game, params: BedParams) => {
   const quality = params.quality ?? 1.0
+  const energy = game.player.basestats.get('Energy') ?? 0
+  const isTired = energy < TIRED_THRESHOLD
 
   game.add('You approach the bed.')
   game.addOption(['relax', { quality }], 'Relax')
   game.addOption(['sleep', { max: 60, quality }], 'Take a Nap')
-  game.addOption(['sleep', { quality }], 'Go to Sleep')
+  if (isTired) {
+    game.addOption(['sleep', { quality }], 'Go to Sleep')
+  } else {
+    game.addOption(['sleep', { alarm: 7, quality }], 'Sleep Until Morning')
+  }
   game.addOption('endScene', 'Never mind')
 })
 
