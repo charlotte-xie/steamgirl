@@ -761,6 +761,29 @@ registerNPC('bar-patron', {
           'You clink glasses. The room feels cosier now, the city lights softening through the window.',
         ),
       ),
+      option('Have a snack',
+        'He rings for room service. A few minutes later, a tray arrives.',
+        random(
+          seq(
+            'Delicate finger sandwiches — cucumber and cream cheese, smoked salmon, egg and cress — arranged on a silver plate.',
+            say('Help yourself. The kitchen here is excellent.'),
+          ),
+          seq(
+            'A plate of fresh fruit — figs, grapes, and slices of peach — alongside a pot of honey.',
+            say('They source the fruit from the continent. Airship delivery.'),
+          ),
+          seq(
+            'A selection of cheeses with crackers and a small pot of chutney. He cuts you a slice of something soft and French.',
+            say('Try this one. It\'s obscenely expensive.'),
+          ),
+          seq(
+            'Warm bread rolls with butter and a bowl of rich soup.',
+            say('The kitchen sends this up when I ask for something light. It\'s never light.'),
+          ),
+        ),
+        run('eatFood', { quantity: 40 }),
+        time(10),
+      ),
       option('Chat',
         random(
           'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
@@ -1358,7 +1381,7 @@ registerNPC('bar-patron', {
             'He pours you coffee from a silver pot while you help yourself to eggs and toast with real butter.',
             'You eat hungrily. He watches with quiet amusement, buttering toast for you without being asked.',
           ),
-          run('eatFood', { amount: 100 }),
+          run('eatFood', { quantity: 100 }),
           addStat('Mood', 5, { max: 90 }),
           time(20),
         ),

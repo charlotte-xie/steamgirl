@@ -45,6 +45,8 @@ export interface CardDefinition {
   subsumedBy?: CardId[]
   /** When true, multiple instances of this card can coexist. Default is false (self-subsuming). */
   allowMultiple?: boolean
+  /** Called during time passage. Receives elapsed seconds since last tick. */
+  onTime?: (game: Game, card: Card, seconds: number) => void
   // Additional definition properties can be added here
   [key: string]: unknown
 }

@@ -557,6 +557,31 @@ export function timeEffects(game: Game, seconds: number): void {
   accumulateTiredness(game)
   decayArousal(game, seconds)
   accumulateFlushed(game)
+  // Daily effects — only run when a day boundary is crossed
+  if (game.calcTicks(seconds, 24 * 60 * 60) > 0) {
+    dailyEffects(game)
+  }
+}
+
+/** Effects checked once per day (when a day boundary is crossed). */
+function dailyEffects(game: Game): void {
+  checkOvulation(game)
+}
+
+/** Add 'Ovulating' effect on day 14 of each month if not already present and not pregnant. */
+function checkOvulation(game: Game): void {
+  if (game.player.hasCard('ovulating') || game.player.hasCard('pregnant')) return
+  const day = game.date.getDate()
+  if (day >= 14 && day <= 16) {
+    // 3-day window starting day 14 — expiresAt is end of day 16
+    const expires = new Date(game.date)
+    expires.setDate(14 + 3)
+    expires.setHours(0, 0, 0, 0)
+    const expiresAt = Math.floor(expires.getTime() / 1000)
+    if (game.time < expiresAt) {
+      game.addEffect('ovulating', { expiresAt }, true)
+    }
+  }
 }
 
 /** Decay arousal naturally over time — approximately 1 per minute. */
