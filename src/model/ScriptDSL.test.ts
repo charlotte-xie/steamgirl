@@ -125,24 +125,24 @@ describe('ScriptDSL', () => {
       })
 
       it('option() with multiple content elements', () => {
-        const result = option('Kiss him', text('You kiss.'), addStat('Charm', 5))
+        const result = option('Kiss him', seq(text('You kiss.'), addStat('Charm', 5)))
         expect(result).toEqual(['option', {
           label: 'Kiss him',
-          content: [text('You kiss.'), addStat('Charm', 5)],
+          content: [seq(text('You kiss.'), addStat('Charm', 5))],
         }])
       })
 
       it('branch() is an alias for option()', () => {
-        const result = branch('Kiss him', text('You kiss.'), addStat('Charm', 5))
-        expect(result).toEqual(option('Kiss him', text('You kiss.'), addStat('Charm', 5)))
+        const result = branch('Kiss him', seq(text('You kiss.'), addStat('Charm', 5)))
+        expect(result).toEqual(option('Kiss him', seq(text('You kiss.'), addStat('Charm', 5))))
       })
 
       it('npcLeaveOption() produces option with endConversation + exit', () => {
         expect(npcLeaveOption('Goodbye', 'See you!')).toEqual(
-          option('Leave', run('endConversation', { text: 'Goodbye', reply: 'See you!' }), exit())
+          option('Leave', seq(run('endConversation', { text: 'Goodbye', reply: 'See you!' }), exit()))
         )
         expect(npcLeaveOption()).toEqual(
-          option('Leave', run('endConversation', { text: undefined, reply: undefined }), exit())
+          option('Leave', seq(run('endConversation', { text: undefined, reply: undefined }), exit()))
         )
       })
     })
@@ -983,7 +983,7 @@ describe('ScriptDSL', () => {
           'Scene 1',
           scene(
             text('Choose'),
-            branch('Path A', text('Branch A content'), text('More A')),
+            branch('Path A', seq(text('Branch A content'), text('More A'))),
             branch('Path B', text('Branch B content')),
           ),
           'Scene 3 — after branch',
@@ -1143,7 +1143,7 @@ describe('ScriptDSL', () => {
         game.run(menu(
           branch('Option A', text('You chose A.')),
           branch('Option B', text('You chose B.')),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         expect(game.scene.options).toHaveLength(3)
@@ -1155,7 +1155,7 @@ describe('ScriptDSL', () => {
       it('non-exit branch loops back to the menu', () => {
         game.run(menu(
           branch('Drink', text('You drink.')),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         // Click "Drink"
@@ -1178,7 +1178,7 @@ describe('ScriptDSL', () => {
       it('exit branch does not loop back', () => {
         game.run(menu(
           branch('Drink', text('You drink.')),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         // Click "Leave"
@@ -1201,7 +1201,7 @@ describe('ScriptDSL', () => {
             branch('Kiss', text('You kiss.')),
           ),
           branch('Chat', text('You chat.')),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         // Kiss should not appear (Flirtation < 20)
@@ -1219,7 +1219,7 @@ describe('ScriptDSL', () => {
             branch('Kiss', text('You kiss.')),
           ),
           branch('Chat', text('You chat.')),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         // Kiss should appear (Flirtation >= 20)
@@ -1232,11 +1232,11 @@ describe('ScriptDSL', () => {
         game.player.calcStats()
 
         game.run(menu(
-          branch('Kiss', text('You kiss.'), addStat('Arousal', 5, { max: 100 })),
+          branch('Kiss', seq(text('You kiss.'), addStat('Arousal', 5, { max: 100 }))),
           when(stat('Arousal', 50),
-            branch('Things escalate...', text('...'), exit()),
+            branch('Things escalate...', seq(text('...'), exit())),
           ),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         // "Things escalate" should not appear (Arousal < 50)
@@ -1252,9 +1252,9 @@ describe('ScriptDSL', () => {
         game.run(menu(
           branch('Kiss', addStat('Arousal', 30, { max: 100, hidden: true })),
           when(stat('Arousal', 25),
-            branch('Things get heated...', text('...'), exit()),
+            branch('Things get heated...', seq(text('...'), exit())),
           ),
-          branch('Leave', text('Goodbye.'), exit()),
+          branch('Leave', seq(text('Goodbye.'), exit())),
         ))
 
         // Initially 2 options (Kiss + Leave)

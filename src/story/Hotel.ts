@@ -6,7 +6,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
-import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait, discoverLocation, hasCard, npcLocation, move, lt, sub, gameTime, not, inScene, hourBetween, chance, wantsIntimacy } from '../model/ScriptDSL'
+import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait, discoverLocation, hasCard, npcLocation, move, lt, sub, gameTime, exit } from '../model/ScriptDSL'
 import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
 import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
 import { bedActivity } from './systems/Sleep'
@@ -126,10 +126,10 @@ const receptionAskAshworthScene: Instruction = cond(
   seq(
     '"Lord Ashworth? I believe he\'s in the bar, madam."',
     'The concierge gestures towards the bar entrance.',
-    option('Go there',
+    option('Go there', seq(
       move('hotel-bar'),
       run('approach', { npc: 'bar-patron' }),
-    ),
+    )),
     option('Maybe later', run('receptionScene')),
   ),
   npcLocation('bar-patron', 'room-533'),
@@ -139,11 +139,11 @@ const receptionAskAshworthScene: Instruction = cond(
     seq(
       '"Lord Ashworth is in his room, madam. Room 533."',
       'The concierge lowers his voice. "Shall I send you up?"',
-      option('Go there',
+      option('Go there', seq(
         discoverLocation('room-533'),
         move('room-533', 2),
         run('interact', { npc: 'bar-patron', script: 'room533Welcome' }),
-      ),
+      )),
       option('Maybe later', run('receptionScene')),
     ),
   ),
@@ -155,10 +155,10 @@ const receptionAskAshworthScene: Instruction = cond(
 
 const receptionAskFor: Instruction = seq(
   '"Of course. What can I help you with?"',
-  option('Work',
+  option('Work', seq(
     'The concierge raises an eyebrow. "We do take on staff from time to time — chambermaids, kitchen hands, that sort of thing. Speak to the head cook if you\'re interested. The kitchens are through the back."',
     discoverLocation('hotel-kitchens', 'You note the way to the kitchens.'),
-  ),
+  )),
   when(npcStat('madeLove', { npc: 'bar-patron' }),
     option('Lord Ashworth', receptionAskAshworthScene),
   ),
@@ -181,6 +181,36 @@ const receptionScene: Instruction = seq(
 
 makeScripts({
   receptionScene: script(receptionScene),
+})
+
+// Bar order scripts
+const barOrderDrink: Instruction = seq(
+  removeItem('crown', 15),
+  run('consumeAlcohol', { amount: 30 }),
+  random(
+    'The barman mixes you a cocktail with practised flair — gin, bitters, and something that fizzes when he adds it. You take a sip. It\'s excellent.',
+    'He pours something amber from a cut-glass decanter and slides it across the bar. It burns pleasantly.',
+    'A coupe glass appears before you, filled with something pale and floral. The bubbles catch the lamplight.',
+  ),
+  run('showPayment', { amount: 15 }),
+  wait(15),
+)
+
+const barOrderSnack: Instruction = seq(
+  removeItem('crown', 10),
+  eatFood(40),
+  random(
+    'A small plate of toasted bread with potted meat and cornichons appears before you. Simple but satisfying.',
+    'The barman sets down a dish of salted almonds and olives alongside some crusty bread. Perfect bar fare.',
+    'A plate of devilled eggs and pickled onions arrives. Not fine dining, but it takes the edge off.',
+  ),
+  run('showPayment', { amount: 10 }),
+  wait(10),
+)
+
+makeScripts({
+  barOrderDrink: script(barOrderDrink),
+  barOrderSnack: script(barOrderSnack),
 })
 
 // Additional scripts for hotel activities
@@ -420,18 +450,21 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     },
     activities: [
       {
-        name: 'Order a Drink (15 Kr)',
+        name: 'Order',
         symbol: '🍸',
-        script: (g: Game) => {
+        script: seq(
+          'The barman sets down his cloth and turns to you.',
+          random(
+            say('What can I get you?'),
+            say('What\'ll it be?'),
+          ),
+          when(hasItem('crown', 15), option('Drink (15 Kr)', run('barOrderDrink'))),
+          when(hasItem('crown', 10), option('Bar snack (10 Kr)', run('barOrderSnack'))),
+          option('Never mind', exit()),
+        ),
+        checkAccess: (g: Game) => {
           const crowns = g.player.inventory.find(i => i.id === 'crown')?.number ?? 0
-          if (crowns < 15) {
-            g.add('The barman polishes a glass and glances at you. "Fifteen krona for a cocktail, madam." You don\'t have enough.')
-            return
-          }
-          g.player.removeItem('crown', 15)
-          consumeAlcohol(g, 30)
-          g.add('The barman mixes you a cocktail with practiced flair — gin, bitters, and something that fizzes when he adds it. You take a sip. It\'s excellent.')
-          g.add({ type: 'text', text: 'Paid 15 Krona.', color: '#d4af37' })
+          return crowns < 10 ? 'You can\'t afford anything.' : null
         },
       },
       {
@@ -439,19 +472,49 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
         symbol: '🪑',
         script: (g: Game) => {
           g.run('wait', { minutes: 30 })
-          if (!g.inScene) {
-            const texts = [
+          if (g.inScene) return
+          const hour = g.hourOfDay
+          const texts: string[] = []
+          if (hour >= 18 && hour < 22) {
+            // Evening — busy, lively
+            texts.push(
               'You sit at the bar, watching the well-dressed clientele come and go. A businessman argues quietly with his companion. A woman in furs laughs at something her escort says.',
+              'The bar is busy tonight. Conversation and laughter fill the room, punctuated by the clink of glasses and the hiss of the cocktail mixer.',
+              'You watch the evening crowd — merchants, academics, the occasional officer in dress uniform. The barman works the room with quiet efficiency.',
+            )
+          } else if (hour >= 22 || hour < 2) {
+            // Late night — thinning out, intimate
+            texts.push(
+              'The crowd has thinned. A few night owls nurse their drinks in the corners, speaking in low voices.',
+              'The bar is quiet now. The barman polishes glasses with unhurried precision. A couple murmurs in a booth near the window.',
+              'Most of the patrons have drifted away. The lamplight feels warmer in the emptier room, the leather armchairs more inviting.',
+            )
+          } else if (hour >= 2 && hour < 8) {
+            // Small hours — nearly empty
+            texts.push(
+              'The bar is all but deserted. The barman reads a newspaper behind the counter, looking up only when you shift on your stool.',
+              'You have the place almost entirely to yourself. The brass fixtures tick softly as they cool. Somewhere, a clock chimes.',
+              'The city is quiet beyond the windows. A single gas lamp flickers on the street below. The barman stifles a yawn.',
+            )
+          } else if (hour >= 8 && hour < 12) {
+            // Morning — quiet, a few breakfasters
+            texts.push(
+              'The bar is quiet in the morning light. A few guests take coffee at the counter, reading the morning papers.',
+              'Sunlight streams through the windows, catching dust motes above the polished mahogany. The barman sets out fresh glasses.',
+              'The morning crowd is sparse — a couple of businessmen discussing the day\'s appointments over strong coffee.',
+            )
+          } else {
+            // Afternoon — moderate, relaxed
+            texts.push(
+              'The afternoon bar is relaxed. A few guests take tea or early drinks, settled into the leather armchairs with books and newspapers.',
               'You observe the barman\'s mechanical precision as he mixes drinks. The brass fixtures gleam in the lamplight.',
-            ]
-            // Only compare to the Copper Pot if the player has actually been there
-            if (g.getLocation('copper-pot-tavern').numVisits > 0) {
-              texts.push('You listen to the low murmur of conversation and the clink of glasses. The bar has a hushed, genteel atmosphere quite unlike the Copper Pot.')
-            } else {
-              texts.push('You listen to the low murmur of conversation and the clink of glasses. The bar has a hushed, genteel atmosphere.')
-            }
-            g.add(texts[Math.floor(Math.random() * texts.length)])
+              'The bar has a drowsy, genteel atmosphere in the afternoon. Conversation is unhurried and the light is golden.',
+            )
           }
+          if (g.getLocation('copper-pot-tavern').numVisits > 0) {
+            texts.push('You listen to the low murmur of conversation and the clink of glasses. The bar has a hushed, genteel atmosphere quite unlike the Copper Pot.')
+          }
+          g.add(texts[Math.floor(Math.random() * texts.length)])
         },
       },
     ],
@@ -616,6 +679,12 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     afterUpdate: (g: Game) => { g.getNPC('bar-patron').stats.set('lastVisited', g.time) },
     links: [
       { dest: 'room-533-bathroom', time: 1, label: 'Bathroom' },
+      { dest: 'hotel', time: 2, label: 'Leave',
+        checkAccess: (g: Game) => {
+          const npc = g.npcs.get('bar-patron')
+          return npc?.location === 'room-533' ? 'Lord Ashworth is here.' : null
+        },
+      },
     ],
     activities: [
       {
@@ -632,18 +701,23 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     description: 'A small but spotless bathroom with white tiles and polished brass fixtures. A claw-footed tub sits beneath a frosted window, and monogrammed towels hang from a heated rail.',
     image: '/images/nice-bathroom.jpg',
     private: true,
-    afterUpdate: cond(
-      not(inScene()),
-      cond(
-        npcLocation('bar-patron', 'room-533'),
-        cond(
-          wantsIntimacy('bar-patron'),
-          cond(chance(0.15), run('interact', { npc: 'bar-patron', script: 'bathroomIntimacy' })),
-          hourBetween(23, 6),
-          run('interact', { npc: 'bar-patron', script: 'bathroomIntrusion' }),
-        ),
-      ),
-    ),
+    // Ashworth may interrupt if he's next door in room 533
+    afterUpdate: (g: Game) => {
+      if (g.inScene) return
+      const npc = g.npcs.get('bar-patron')
+      if (!npc || npc.location !== 'room-533') return
+      const cooldown = g.time - (npc.stats.get('lastInteraction') ?? 0)
+      if (cooldown < 1800) return
+      const hour = g.hourOfDay
+      const lateNight = hour >= 23 || hour < 6
+      if (lateNight) {
+        g.run('interact', { npc: 'bar-patron', script: 'ashworthCurfew' })
+      } else if (g.run(['wantsIntimacy', { npc: 'bar-patron' }])) {
+        if (Math.random() < 0.15) {
+          g.run('interact', { npc: 'bar-patron', script: 'bathroomIntimacy' })
+        }
+      }
+    },
     links: [
       { dest: 'room-533', time: 1, label: 'Back to Room' },
     ],

@@ -463,6 +463,24 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
+  /** Remove clothing for bed — keeps underwear (under layer) and items tagged as nightwear. */
+  undressForBed: (game: Game) => {
+    const p = game.player
+    let removed = false
+    for (const item of p.inventory) {
+      if (!item.worn) continue
+      if (item.locked) continue
+      if (item.template.layer === 'under') continue
+      if (item.template.nightwear) continue
+      item.worn = false
+      removed = true
+    }
+    if (removed) {
+      p.calcStats()
+      game.add('You undress for bed.')
+    }
+  },
+
   /** Save the current outfit under a name (for later restoration with wearOutfit). */
   saveOutfit: (game: Game, params: { name?: string } = {}) => {
     const name = params.name
@@ -1359,7 +1377,7 @@ const coreScripts: Record<string, ScriptFn> = {
     }
   },
 
-  /** End the current NPC conversation with optional text */
+  /** End the current NPC conversation with optional text. Sets lastInteraction to prevent immediate afterUpdate re-triggers. */
   endConversation: (game: Game, params: { text?: string; reply?: string } = {}) => {
     const text = params.text ?? 'You politely end the conversation.'
     game.add(text)
@@ -1370,6 +1388,10 @@ const coreScripts: Record<string, ScriptFn> = {
       } else {
         game.add(speech(params.reply, '#a8d4f0'))
       }
+    }
+    // Mark interaction so NPC afterUpdate respects cooldown
+    if (game.scene.npc) {
+      game.npc.stats.set('lastInteraction', game.time)
     }
   },
 

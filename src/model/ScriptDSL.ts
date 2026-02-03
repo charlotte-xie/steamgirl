@@ -104,13 +104,13 @@ export const npcName = (npc?: string): Instruction =>
  * @param label - Button label shown to player
  * @param content - SceneElements to execute when clicked
  */
-export function option(label: string, ...content: SceneElement[]): Instruction {
-  return run('option', { label, content: content.map(toInstruction) })
+export function option(label: string, body: SceneElement): Instruction {
+  return run('option', { label, content: [toInstruction(body)] })
 }
 
 /** Standard NPC conversation leave option — includes exit() to end the conversation. */
 export const npcLeaveOption = (text?: string, reply?: string, label = 'Leave'): Instruction =>
-  option(label, run('endConversation', { text, reply }), exit())
+  option(label, seq(run('endConversation', { text, reply }), exit()))
 
 /** Run a named script on the current scene NPC (calls the 'interact' script). */
 export const npcInteract = (script: string, params?: object): Instruction =>
@@ -217,6 +217,9 @@ export const scenes = (...pages: SceneElement[]): Instruction => {
  */
 export const scene = (...elements: SceneElement[]): Instruction =>
   seq(...elements)
+
+/** Alias for scene() — group elements into a single page. */
+export const page = scene
 
 /**
  * Push a sub-scene that **replaces** the current content and options.

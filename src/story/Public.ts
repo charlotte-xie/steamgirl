@@ -263,10 +263,10 @@ makeScripts({
   policemanWarning: (g: Game) => {
     g.run(warningApproach)
     g.run(seq(
-      option('Apologise and hurry away',
+      option('Apologise and hurry away', seq(
         warningApologise,
         addStat('Mood', -2),
-      ),
+      )),
       option('Try to talk your way out',
         skillCheck('Charm', 30,
           warningCharmSuccess,

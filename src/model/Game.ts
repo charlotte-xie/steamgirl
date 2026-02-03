@@ -197,6 +197,11 @@ export class Game {
     this.scene.stack.unshift({ pages })
   }
 
+  /** Queue instructions for the next page. step() will show Continue before running them. */
+  defer(...instructions: Instruction[]): void {
+    this.topFrame.pages.unshift(...instructions)
+  }
+
   /** Pop the top (innermost) frame entirely, discarding its pages. */
   popFrame(): StackFrame | undefined {
     return this.scene.stack.shift()

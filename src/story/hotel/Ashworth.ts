@@ -6,7 +6,7 @@ import type { Instruction } from '../../model/ScriptDSL'
 import {
   seq, say, option, npcInteract, npcLeaveOption, addNpcStat,
   random, hideNpcImage, showNpcImage, learnNpcName, paragraph, hl,
-  scenes, scene, exit, menu, move, moveNpc, time, run,
+  scenes, scene, page, exit, menu, move, moveNpc, time, run,
 
   addStat, skillCheck, when, not, hasItem, addItem, inScene,
   saveOutfit, changeOutfit, wearOutfit, npcStat, cond, impression,
@@ -74,14 +74,14 @@ function patronMenu(): Instruction {
             ),
           ),
         ),
-        option('Go with him',
+        option('Go with him', seq(
           hideNpcImage(),
           discoverLocation('room-533'),
           'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
           move('room-533', 2),
           exit(npcInteract('room533')),
-        ),
-        option('Decline',
+        )),
+        option('Decline', seq(
           random(
             'You shake your head with a smile. His expression barely changes, but the warmth dims.',
             'You tell him you should call it a night. He takes it with practised grace.',
@@ -90,21 +90,21 @@ function patronMenu(): Instruction {
           addNpcStat('affection', -2),
           addNpcStat('control', -2),
           exit(),
-        ),
+        )),
       ),
       // Normal options — sometimes offers room 533 directly if madeLove before
       seq(
         option('Chat', npcInteract('chat')),
         option('Flirt', npcInteract('flirt')),
         when(npcStat('madeLove'),
-          option('Go upstairs',
+          option('Go upstairs', seq(
             hideNpcImage(),
             discoverLocation('room-533'),
             say('I was hoping you\'d say that.'),
             'He settles his tab and offers you his arm. The lift carries you up in comfortable silence.',
             move('room-533', 2),
             exit(npcInteract('room533')),
-          ),
+          )),
         ),
         npcLeaveOption('You excuse yourself.', 'Of course. Good evening.'),
       ),
@@ -141,16 +141,18 @@ function patronKissAttempt(farewell: Instruction): Instruction {
               say('My room is just upstairs. 533. It seems a shame to end the evening here.'),
             ),
             'His smile is warm, inviting, entirely without menace.',
-            option('Go with him',
-              'You nod. His smile widens and he offers his arm.',
-              run('restorePoolOutfit'),
-              hideNpcImage(),
-              discoverLocation('room-533'),
-              'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
-              move('room-533', 2),
+            option('Go with him', scenes(
+              page(
+                'You nod. His smile widens and he offers his arm.',
+                run('restorePoolOutfit'),
+                hideNpcImage(),
+                discoverLocation('room-533'),
+                'The lift carries you upward in comfortable silence. He produces a brass key and unlocks the door with a quiet click.',
+                move('room-533', 2),
+              ),
               npcInteract('room533'),
-            ),
-            option('Decline',
+            )),
+            option('Decline', seq(
               random(
                 'You touch his arm and shake your head gently. His expression softens — disappointed, but understanding.',
                 'You smile but step back. "Not tonight." He takes it well.',
@@ -159,7 +161,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
               'He kisses your hand and bids you goodnight.',
               addStat('Mood', 5, { max: 85 }),
               farewell,
-            ),
+            )),
           ),
         ),
         // Failure — awkward
@@ -178,7 +180,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
         ),
       ),
     ),
-    option('Turn away',
+    option('Turn away', seq(
       random(
         'You turn your head slightly — just enough. He stops, reads the gesture, and straightens up. No offence taken.',
         'You put a gentle hand on his chest. He pauses, then nods with a warm smile. The tension dissolves.',
@@ -187,7 +189,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
       'He means it.',
       addStat('Mood', 5, { max: 85 }),
       farewell,
-    ),
+    )),
   )
 }
 
@@ -421,21 +423,17 @@ registerNPC('bar-patron', {
     ),
   ),
 
-  afterUpdate: cond(
-    not(inScene()),
-    cond(
-      inLocation('room-533'),
-      // Wait at least 30 mins since player last disengaged before interrupting
+  // NPC afterUpdate only fires when player is at Ashworth's location (room-533).
+  // Bathroom interruptions are handled by the room-533-bathroom location afterUpdate.
+  afterUpdate: when(not(inScene()),
+    when(not(lt(sub(gameTime(), npcStat('lastInteraction')), 1800)),
       cond(
-        not(lt(sub(gameTime(), npcStat('lastInteraction')), 1800)),
-        cond(
-          // He wants intimacy — demand scene
-          wantsIntimacy('bar-patron'),
-          npcInteract('ashworthDemand'),
-          // Past 11pm, no intimacy desire — curfew (sleep or leave)
-          hourBetween(23, 6),
-          npcInteract('ashworthCurfew'),
-        ),
+        // Past 11pm — curfew
+        hourBetween(23, 6),
+        npcInteract('ashworthCurfew'),
+        // He wants intimacy — demand
+        wantsIntimacy('bar-patron'),
+        npcInteract('ashworthDemand'),
       ),
     ),
   ),
@@ -507,9 +505,7 @@ registerNPC('bar-patron', {
                 option('Go with him', npcInteract('pool')),
               ),
             ),
-            option('Stay at the bar',
-              say('Well, there\'s no rush. Another round?'),
-            ),
+            option('Stay at the bar', say('Well, there\'s no rush. Another round?')),
           ),
           // Skill check failure — she tried but it fell flat
           seq(
@@ -554,7 +550,7 @@ registerNPC('bar-patron', {
       time(10),
       run('consumeAlcohol', { amount: 15 }),
       menu(
-        option('Talk',
+        option('Talk', seq(
           random(
             seq(
               'He tells you about his travels — the canals of Veneto, the clocktowers of Praag.',
@@ -585,8 +581,8 @@ registerNPC('bar-patron', {
           cond(npcStat('affection', { min: 8 }),
             cond(chance(0.2), exit(gardenKissInitiation())),
           ),
-        ),
-        option('Have a drink',
+        )),
+        option('Have a drink', seq(
           random(
             seq(
               'He produces a silver hip flask and pours you something that smells of honey and smoke.',
@@ -608,8 +604,8 @@ registerNPC('bar-patron', {
           cond(npcStat('affection', { min: 10 }),
             cond(chance(0.15), exit(gardenKissInitiation())),
           ),
-        ),
-        option('Enjoy the view',
+        )),
+        option('Enjoy the view', seq(
           random(
             seq(
               'You lean against the railing together, watching the gaslights flicker across the rooftops.',
@@ -632,8 +628,8 @@ registerNPC('bar-patron', {
           cond(npcStat('affection', { min: 10 }),
             cond(chance(0.15), exit(gardenKissInitiation())),
           ),
-        ),
-        option('Flirt',
+        )),
+        option('Flirt', seq(
           // No appearance gate — he already invited her here from the bar
           random(
             seq(
@@ -666,8 +662,8 @@ registerNPC('bar-patron', {
               'Something electric passes between you. He clears his throat and reaches for his drink.',
             ),
           ),
-        ),
-        option('Call it a night',
+        )),
+        option('Call it a night', seq(
           random(
             'You tell him you should be heading back. He nods, not pushy about it.',
             'The evening air is getting chilly. You suggest heading inside.',
@@ -676,26 +672,28 @@ registerNPC('bar-patron', {
           addStat('Mood', 3, { max: 85 }),
           addNpcStat('affection', 2, { max: 20 }),
           exit(gardenFarewell()),
-        ),
+        )),
       ),
     ),
 
     // ----- ROOM 533: arrival scene, then menu -----
-    room533: seq(
-      showNpcImage(),
-      discoverLocation('room-533'),
-      moveNpc('bar-patron', 'room-533'),
-      random(
-        'The room is warm and softly lit, the city glittering beyond the window. He pours two drinks from a crystal decanter and hands you one.',
-        'He closes the door behind you and crosses to the drinks cabinet. "Make yourself comfortable." The room smells of sandalwood and expensive leather.',
-      ),
-      cond(
-        npcStat('madeLove'),
-        seq(
-          'He settles beside you, close enough that your shoulders touch. His hand finds your knee.',
-          say('I\'m glad you came back.'),
+    room533: scenes(
+      scene(
+        showNpcImage(),
+        discoverLocation('room-533'),
+        moveNpc('bar-patron', 'room-533'),
+        random(
+          'The room is warm and softly lit, the city glittering beyond the window. He pours two drinks from a crystal decanter and hands you one.',
+          'He closes the door behind you and crosses to the drinks cabinet. "Make yourself comfortable." The room smells of sandalwood and expensive leather.',
         ),
-        seq('He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.'),
+        cond(
+          npcStat('madeLove'),
+          seq(
+            'He settles beside you, close enough that your shoulders touch. His hand finds your knee.',
+            say('I\'m glad you came back.'),
+          ),
+          seq('He settles beside you, close enough that your shoulders almost touch. The evening stretches ahead, unhurried and full of possibility.'),
+        ),
       ),
       npcInteract('room533Menu'),
     ),
@@ -718,19 +716,25 @@ registerNPC('bar-patron', {
     ),
 
     // Re-engage after leaving the menu (bathroom, etc.)
-    room533Approach: seq(
-      cond(
-        npcStat('madeLove'),
-        random(
-          say('Back already?'),
-          say('Come sit down.'),
+    room533Approach: cond(
+      // Late night — go to bed
+      hourBetween(23, 6),
+      npcInteract('ashworthCurfew'),
+      // Normal — greeting + menu
+      seq(
+        cond(
+          npcStat('madeLove'),
+          random(
+            say('Back already?'),
+            say('Come sit down.'),
+          ),
+          random(
+            say('Make yourself at home.'),
+            say('Ah, there you are.'),
+          ),
         ),
-        random(
-          say('Make yourself at home.'),
-          say('Ah, there you are.'),
-        ),
+        npcInteract('room533Menu'),
       ),
-      npcInteract('room533Menu'),
     ),
 
     // ----- ROOM 533 MENU -----
@@ -748,20 +752,22 @@ registerNPC('bar-patron', {
     ),
 
     room533MenuInner: menu(
-      option('Have a drink',
-        random(
-          'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
-          'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
-          'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
-        ),
-        run('consumeAlcohol', { amount: 20 }),
-        time(10),
-        random(
-          'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
-          'You clink glasses. The room feels cosier now, the city lights softening through the window.',
-        ),
+      when(hourBetween(18, 24),
+        option('Have a drink', seq(
+          random(
+            'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
+            'He produces a bottle of champagne from an ice bucket you hadn\'t noticed. The cork pops with a satisfying sound, and golden bubbles rise in your glass.',
+            'He mixes you something from the well-stocked drinks cabinet — gin, something floral, a twist of lemon. It\'s dangerously easy to drink.',
+          ),
+          run('consumeAlcohol', { amount: 20 }),
+          time(10),
+          random(
+            'The alcohol warms you pleasantly. The conversation comes easier, the laughter more freely.',
+            'You clink glasses. The room feels cosier now, the city lights softening through the window.',
+          ),
+        )),
       ),
-      option('Have a snack',
+      option('Have a snack', seq(
         'He rings for room service. A few minutes later, a tray arrives.',
         random(
           seq(
@@ -783,8 +789,8 @@ registerNPC('bar-patron', {
         ),
         run('eatFood', { quantity: 40 }),
         time(10),
-      ),
-      option('Chat',
+      )),
+      option('Chat', seq(
         random(
           'He tells you about the places he\'s been — the floating markets of Hai Phong, the underground libraries of Zurich. He\'s an engaging storyteller, and you find yourself leaning closer to listen.',
           'You talk about Aetheria — the university, the strange energy of the city. He listens with genuine interest, asking questions that show he\'s paying attention.',
@@ -794,8 +800,8 @@ registerNPC('bar-patron', {
         time(15),
         addStat('Charm', 1, { max: 40, chance: 0.3 }),
         addStat('Mood', 2, { max: 85 }),
-      ),
-      option('Kiss him',
+      )),
+      option('Kiss him', seq(
         random(
           'You lean into him. He catches you halfway, one hand at the back of your neck.',
           'You close the distance between you. His response is immediate — his arm around your waist, pulling you in.',
@@ -804,15 +810,25 @@ registerNPC('bar-patron', {
         addStat('Arousal', 5, { max: 100 }),
         time(5),
         exit(npcInteract('makeOut')),
-      ),
-      option('Excuse yourself',
+      )),
+      option('Excuse yourself', seq(
         say('Of course. The room is yours.'),
         run('markInteraction', { npc: 'bar-patron' }),
         exit(),
-      ),
-      option('Call it a night',
-        addStat('Mood', 5, { max: 85 }),
-        exit(ashworthLeave()),
+      )),
+      cond(
+        hourBetween(22, 6),
+        seq(
+          option('Go to bed', npcInteract('bedTime')),
+          option('Leave', seq(
+            addStat('Mood', 5, { max: 85 }),
+            exit(ashworthLeave()),
+          )),
+        ),
+        option('Leave', seq(
+          addStat('Mood', 5, { max: 85 }),
+          exit(ashworthLeave()),
+        )),
       ),
     ),
 
@@ -837,8 +853,8 @@ registerNPC('bar-patron', {
       game.getNPC('bar-patron').say('Perfect. Now everyone will know you\'re mine.')
       game.run('addNpcStat', { stat: 'control', change: 3, max: 50, hidden: true })
       game.run('addNpcStat', { stat: 'affection', change: 2, max: 30, hidden: true })
-      // Continue to the normal room menu
-      game.run('interact', { npc: 'bar-patron', script: 'room533Menu' })
+      // Defer menu to next page
+      game.defer(['interact', { npc: 'bar-patron', script: 'room533Menu' }])
     },
 
     ashworthDeclineCollar: (game: Game) => {
@@ -852,8 +868,8 @@ registerNPC('bar-patron', {
       game.player.inventory.push(collar)
       game.run('addNpcStat', { stat: 'affection', change: -2 })
       game.run('addNpcStat', { stat: 'control', change: -3 })
-      // Continue to the normal room menu
-      game.run('interact', { npc: 'bar-patron', script: 'room533Menu' })
+      // Defer menu to next page
+      game.defer(['interact', { npc: 'bar-patron', script: 'room533Menu' }])
     },
 
     // ----- ASHWORTH DEMAND: he wants intimacy (triggered by afterUpdate via wantsIntimacy) -----
@@ -884,62 +900,70 @@ registerNPC('bar-patron', {
         ),
       ),
       option('Stay', npcInteract('makeOut')),
-      option('Decline',
-        random(
-          'You smile but shake your head. Something shifts in his expression — not anger, but a door closing.',
-          'You touch his hand and tell him you should go. The warmth fades from his eyes like a gas lamp turning down.',
+      option('Decline', scenes(
+        page(
+          random(
+            'You smile but shake your head. Something shifts in his expression — not anger, but a door closing.',
+            'You touch his hand and tell him you should go. The warmth fades from his eyes like a gas lamp turning down.',
+          ),
+          say('I see. Well. It was a pleasant evening.'),
+          'He stands and straightens his waistcoat. The gesture is precise and final.',
+          addNpcStat('affection', -2),
+          addNpcStat('control', -3),
         ),
-        say('I see. Well. It was a pleasant evening.'),
-        'He stands and straightens his waistcoat. The gesture is precise and final.',
-        addNpcStat('affection', -2),
-        addNpcStat('control', -3),
-        exit(ashworthDismiss()),
-      ),
+        ashworthDismiss(),
+      )),
     ),
 
-    // ----- ASHWORTH CURFEW: past 11pm, no intimacy desire — sleep or leave -----
+    // ----- ASHWORTH CURFEW: past 11pm — sleep or leave (works in room or bathroom) -----
     ashworthCurfew: seq(
       showNpcImage(),
       setNpc('bar-patron'),
-      random(
+      cond(
+        inLocation('room-533-bathroom'),
         seq(
-          'He stifles a yawn and glances at the clock.',
-          say('It\'s getting late. Shall we turn in?'),
+          random(
+            'The bathroom door swings open without warning. He leans against the frame, tie loosened, glass in hand.',
+            'A sharp knock, then the door opens before you can answer. He fills the doorway, shirtsleeves rolled to the elbow.',
+            'The door handle turns and he appears in the doorway, braces hanging loose at his sides.',
+          ),
+          random(
+            say('You\'ve been in here long enough. Come to bed.'),
+            say('Come on. It\'s late.'),
+            say('Are you coming to bed or not?'),
+          ),
         ),
         seq(
-          'The clock on the mantelpiece chimes softly. He sets down his whisky.',
-          say('Well. It\'s late.'),
-        ),
-      ),
-      option('Sleep with him', npcInteract('bedTime')),
-      option('Leave', exit(ashworthLeave())),
-    ),
-
-    // ----- BATHROOM INTRUSION: Ashworth fetches player back to room (late night, no intimacy) -----
-    // Move happens only when the player agrees — background stays as bathroom until then.
-    // Room afterUpdate handles what happens next (ashworthDemand or ashworthCurfew).
-    bathroomIntrusion: seq(
-      showNpcImage(),
-      setNpc('bar-patron'),
-      random(
-        seq(
-          'The bathroom door swings open without warning. He leans against the frame, tie loosened, glass in hand.',
-          say('You\'ve been in here long enough. Come to bed.'),
-        ),
-        seq(
-          'A sharp knock, then the door opens before you can answer. He fills the doorway, shirtsleeves rolled to the elbow.',
-          say('Come on. It\'s late.'),
+          random(
+            'He stifles a yawn and glances at the clock.',
+            'The clock on the mantelpiece chimes softly. He sets down his whisky.',
+            'He closes his book and stretches.',
+            'He loosens his collar and leans back in his chair.',
+          ),
+          random(
+            say('It\'s getting late. Shall we turn in?'),
+            say('Well. It\'s late.'),
+            say('Time we called it a night, don\'t you think?'),
+          ),
         ),
       ),
-      option('Go with him',
-        move('room-533', 1),
-        npcInteract('bedTime'),
-      ),
-      option('Refuse',
-        say('Fine. Don\'t be long.'),
-        'He pulls the door shut. You hear his footsteps retreat.',
-        addNpcStat('affection', -1),
-        addNpcStat('control', -2),
+      cond(
+        // He wants intimacy — demand it, no option to simply leave
+        wantsIntimacy('bar-patron'),
+        seq(
+          option('Go with him', seq(
+            cond(inLocation('room-533-bathroom'), move('room-533', 1)),
+            npcInteract('ashworthDemand'),
+          )),
+        ),
+        // No intimacy desire — sleep or leave
+        seq(
+          option('Sleep with him', seq(
+            cond(inLocation('room-533-bathroom'), move('room-533', 1)),
+            npcInteract('bedTime'),
+          )),
+          option('Leave', exit(ashworthLeave())),
+        ),
       ),
     ),
 
@@ -960,17 +984,17 @@ registerNPC('bar-patron', {
             'His voice is low, unhurried. He doesn\'t ask permission.',
           ),
         ),
-        option('Give in',
+        option('Give in', seq(
           'His hands find your hips. Fingers hook fabric and pull downward with practised efficiency.',
           stripAll({ position: 'hips' }),
           'He presses you against the cool tiles. His hands are certain, proprietary.',
           'The mirror fogs. The water runs cold and neither of you notices.',
-        ),
-        option('Resist',
+        )),
+        option('Resist', seq(
           'You pull back, but he catches your wrist — not roughly, but firmly enough to make the point.',
           say('Don\'t be difficult.'),
           'His mouth finds your neck. Your protest dies somewhere in your throat.',
-        ),
+        )),
       ),
       scene(
         random(
@@ -1021,7 +1045,7 @@ registerNPC('bar-patron', {
             ),
           ),
           option('Go along with it', npcInteract('makeOut')),
-          option('Just sleep',
+          option('Just sleep', seq(
             random(
               seq(
                 say('Just sleep?'),
@@ -1035,22 +1059,22 @@ registerNPC('bar-patron', {
               ),
             ),
             option('Go along with it', npcInteract('makeOut')),
-            option('Excuse yourself',
+            option('Excuse yourself', seq(
               say('If that\'s how you feel.'),
               'He turns away, reaching for the whisky decanter.',
               addNpcStat('affection', -1),
               addNpcStat('control', -2),
               run('markInteraction', { npc: 'bar-patron' }),
-            ),
-            option('Refuse',
+            )),
+            option('Refuse', seq(
               say('I said — I don\'t think so.'),
               'His expression hardens. He straightens his cuffs with deliberate calm.',
               say('You should leave. Now.'),
               addNpcStat('affection', -3),
               addNpcStat('control', -5),
               exit(ashworthDismiss()),
-            ),
-          ),
+            )),
+          )),
         ),
         // Doesn't want intimacy — bedTime handles sleep or player-initiated intimacy
         npcInteract('bedTime'),
@@ -1117,7 +1141,7 @@ registerNPC('bar-patron', {
               say('Let me see all of you. Or do it yourself — I don\'t mind watching.'),
             ),
           ),
-          option('Undress for him',
+          option('Undress for him', seq(
             saveOutfit('_before-ashworth'),
             random(
               'You hold his gaze as you undress, piece by piece. His eyes never leave you. When you\'re done he lets out a slow breath.',
@@ -1127,22 +1151,22 @@ registerNPC('bar-patron', {
             cond(hasItem('ashworth-collar'), changeOutfit(['ashworth-collar']), changeOutfit([])),
             say('Beautiful. Come here.'),
             npcInteract('makeLove'),
-          ),
+          )),
           // Refuses to strip — he's done. Polite but final.
-          option('Refuse',
-          'You hesitate, suddenly self-conscious. He reads it instantly.',
-          say('I see.'),
-          'He straightens his waistcoat and pours himself a drink. The warmth in his eyes has cooled to something polite and distant.',
-          say('I think we\'ve had a lovely evening. But I won\'t pretend I\'m not disappointed.'),
-          random(
-            'He walks you to the door. His hand on the small of your back is courteous, nothing more.',
-            'He opens the door and holds it for you. The gesture is impeccable and utterly final.',
-          ),
-          say('Goodnight.'),
-          addNpcStat('affection', -3),
-          addNpcStat('control', -5),
-          option('Leave', exit(ashworthDismiss())),
-        ),
+          option('Refuse', seq(
+            'You hesitate, suddenly self-conscious. He reads it instantly.',
+            say('I see.'),
+            'He straightens his waistcoat and pours himself a drink. The warmth in his eyes has cooled to something polite and distant.',
+            say('I think we\'ve had a lovely evening. But I won\'t pretend I\'m not disappointed.'),
+            random(
+              'He walks you to the door. His hand on the small of your back is courteous, nothing more.',
+              'He opens the door and holds it for you. The gesture is impeccable and utterly final.',
+            ),
+            say('Goodnight.'),
+            addNpcStat('affection', -3),
+            addNpcStat('control', -5),
+            option('Leave', exit(ashworthDismiss())),
+          )),
       ),
       // Already undressed — skip straight to bed
       seq(
@@ -1181,21 +1205,21 @@ registerNPC('bar-patron', {
           ),
         ),
         paragraph(hl('• • •', '#6b7280')),
-        option('Accept'),
-        option('Change your mind',
+        option('Accept', seq()),
+        option('Change your mind', seq(
           'You pull back. Something in your expression makes him stop instantly.',
           say('I see.'),
           'He releases you without protest. His composure returns in an instant — but the warmth has gone out of his eyes.',
           say('Get dressed, please.'),
-          option('Get dressed',
+          option('Get dressed', seq(
             'He turns away and pours himself a drink while you gather your clothes. The silence is precise and final.',
             wearOutfit('_before-ashworth', { delete: true }),
             say('It was a pleasant evening. Goodnight.'),
             addNpcStat('affection', -2),
             addNpcStat('control', -3),
             exit(ashworthDismiss()),
-          ),
-        ),
+          )),
+        )),
       ),
       scene(
         cond(
@@ -1231,14 +1255,12 @@ registerNPC('bar-patron', {
             say('You are magnificent. You know that?'),
           ),
         ),
-        option('Excuse yourself',
+        option('Excuse yourself', seq(
           say('Of course. The room is yours.'),
           run('markInteraction', { npc: 'bar-patron' }),
           exit(),
-        ),
-        option('Leave',
-          exit(ashworthLeave()),
-        ),
+        )),
+        option('Leave', exit(ashworthLeave())),
         when(hourBetween(22, 6),
           option('Sleep with him', npcInteract('bedTime')),
         ),
@@ -1253,6 +1275,7 @@ registerNPC('bar-patron', {
     bedTime: seq(
       showNpcImage(),
       setNpc('bar-patron'),
+      run('undressForBed'),
       random(
         seq(
           'You climb into bed beside him. The sheets are cool and crisp, the pillows soft.',
@@ -1281,13 +1304,13 @@ registerNPC('bar-patron', {
             ),
           ),
           option('Give in', npcInteract('makeOut')),
-          option('Refuse',
+          option('Refuse', seq(
             say('I see.'),
             'He rolls away. The warmth between you evaporates.',
             addNpcStat('affection', -2),
             addNpcStat('control', -3),
             exit(ashworthDismiss()),
-          ),
+          )),
         ),
         // No intimacy desire — peaceful bedtime, but player can initiate
         seq(
@@ -1306,13 +1329,13 @@ registerNPC('bar-patron', {
             ),
           ),
           option('Sleep', npcInteract('sleepOver')),
-          option('Kiss him',
+          option('Kiss him', seq(
             'You turn to face him and press your lips to his. He responds immediately, pulling you closer.',
             say('Well. If you insist.'),
             kiss(5),
             addStat('Arousal', 5, { max: 100 }),
             npcInteract('makeOut'),
-          ),
+          )),
         ),
       ),
     ),
@@ -1328,7 +1351,9 @@ registerNPC('bar-patron', {
 
     // ----- MORNING: wakeup, optional intimacy, breakfast offer, then free time -----
     morning: scenes(
+      // Wakeup — player responds to waking up with him
       scene(
+        showNpcImage(),
         'Pale morning light filters through the heavy curtains. The room smells of sandalwood and last night\'s whisky.',
         cond(
           npcStat('madeLove', { min: 3 }),
@@ -1355,7 +1380,22 @@ registerNPC('bar-patron', {
             ),
           ),
         ),
-        // Morning intimacy — he initiates if cooldown has passed
+        option('Good morning', seq(
+          random(
+            'You smile and stretch lazily. He watches with quiet appreciation.',
+            'You return his smile, blinking in the morning light.',
+          ),
+          addNpcStat('affection', 1, { max: 30, hidden: true }),
+        )),
+        option('Slip away', seq(
+          'You slide out of bed while he\'s still half-asleep, gathering your things quietly.',
+          run('restoreAshworthClothing'),
+          run('markInteraction', { npc: 'bar-patron' }),
+          exit(),
+        )),
+      ),
+      // Morning intimacy — he initiates if cooldown has passed
+      scene(
         when(wantsIntimacy(),
           npcInteract('morningIntimacy'),
         ),
@@ -1375,7 +1415,7 @@ registerNPC('bar-patron', {
           ),
         ),
         'A silver tray arrives — fresh pastries, fruit, smoked salmon, soft eggs, and coffee that smells of heaven.',
-        option('Eat',
+        option('Eat', seq(
           random(
             'You eat together in comfortable quiet. The coffee is strong and the pastries are still warm from the oven.',
             'He pours you coffee from a silver pot while you help yourself to eggs and toast with real butter.',
@@ -1384,13 +1424,13 @@ registerNPC('bar-patron', {
           run('eatFood', { quantity: 100 }),
           addStat('Mood', 5, { max: 90 }),
           time(20),
-        ),
-        option('Decline',
+        )),
+        option('Decline', seq(
           'You wave away the food. He raises an eyebrow but doesn\'t press.',
           say('At least have some coffee.'),
           'You accept a cup. It\'s excellent.',
           time(5),
-        ),
+        )),
       ),
       // Money offer
       scene(
@@ -1409,16 +1449,16 @@ registerNPC('bar-patron', {
             say('Take this. I insist. Consider it a token of my appreciation.'),
           ),
         ),
-        option('Accept',
+        option('Accept', seq(
           'You take the money with a smile. He looks pleased.',
           run('gainItem', { item: 'crown', number: 100, text: '+100 Kr' }),
-        ),
-        option('Decline',
+        )),
+        option('Decline', seq(
           'You push his hand away gently. His expression cools.',
           say('I see. How... principled.'),
           'He tucks the notes back into his wallet with a flick of his wrist. Something in his manner has stiffened.',
           addNpcStat('affection', -3),
-        ),
+        )),
       ),
       // Player is free in the room — can use bathroom, approach Ashworth, or leave
       scene(
@@ -1538,7 +1578,7 @@ registerNPC('bar-patron', {
         time(10),
         run('consumeAlcohol', { amount: 15 }),
         menu(
-          option('Swim',
+          option('Swim', seq(
             random(
               seq(
                 'You swim lazy lengths together, the water warm and silky against your skin.',
@@ -1568,8 +1608,8 @@ registerNPC('bar-patron', {
               // Otherwise random chance based on affection
               npcStat('affection', { min: 8 }), cond(chance(0.2), exit(poolKissInitiation())),
             ),
-          ),
-          option('Talk',
+          )),
+          option('Talk', seq(
             random(
               seq(
                 'He tells you about the hot springs of Nordheim — volcanic pools carved into mountainsides, where nobles bathe in mineral water under the northern lights.',
@@ -1600,8 +1640,8 @@ registerNPC('bar-patron', {
               hourBetween(21.5, 6), cond(npcStat('control', { min: 10 }), exit(poolKissInitiation())),
               wantsIntimacy('bar-patron'), cond(chance(0.2), exit(poolKissInitiation())),
             ),
-          ),
-          option('Have a drink',
+          )),
+          option('Have a drink', seq(
             random(
               seq(
                 'He climbs out briefly and returns with two glasses from the poolside cabinet.',
@@ -1624,8 +1664,8 @@ registerNPC('bar-patron', {
               hourBetween(21.5, 6), cond(npcStat('control', { min: 10 }), exit(poolKissInitiation())),
               wantsIntimacy('bar-patron'), cond(chance(0.15), exit(poolKissInitiation())),
             ),
-          ),
-          option('Flirt',
+          )),
+          option('Flirt', seq(
             // No appearance gate — they're in a private pool in swimwear, he's already interested
             random(
               seq(
@@ -1660,8 +1700,8 @@ registerNPC('bar-patron', {
                 'The tension between you is palpable. He takes a breath and ducks under the water.',
               ),
             ),
-          ),
-          option('Get out',
+          )),
+          option('Get out', seq(
             'You\'ve had enough swimming. You pull yourself up onto the marble edge, water streaming from your skin.',
             random(
               'He follows suit, shaking water from his hair.',
@@ -1674,14 +1714,14 @@ registerNPC('bar-patron', {
               say('Come upstairs for a drink? My room is just up the lift.'),
               say('Shall we continue the evening upstairs? I have a rather good whisky.'),
             ),
-            option('Go with him',
+            option('Go with him', seq(
               hideNpcImage(),
               discoverLocation('room-533'),
               'You wrap the towel around your shoulders and follow him to the lift. He doesn\'t seem to mind that you\'re still in your bikini.',
               move('room-533', 2),
               exit(npcInteract('room533')),
-            ),
-            option('Stay here',
+            )),
+            option('Stay here', seq(
               random(
                 say('Of course. It was a lovely evening.'),
                 say('Another time, perhaps. Goodnight.'),
@@ -1689,8 +1729,8 @@ registerNPC('bar-patron', {
               hideNpcImage(),
               'He gives you a warm smile and disappears towards the lobby.',
               moveNpc('bar-patron', null),
-            ),
-          ),
+            )),
+          )),
         ),
       ),
     ),

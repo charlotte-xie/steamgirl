@@ -528,20 +528,20 @@ registerNPC('ivan-hess', {
       g.timeLapse(5)
 
       g.run(menu(
-        option('The boss in the corner',
+        option('The boss in the corner', seq(
           ...ivanOnElvis(g),
-        ),
-        option('The enforcer',
+        )),
+        option('The enforcer', seq(
           ...ivanOnJonny(g),
-        ),
-        option('The dealer',
+        )),
+        option('The dealer', seq(
           ...ivanOnTimmy(g),
-        ),
-        option('That\'s enough gossip',
+        )),
+        option('That\'s enough gossip', seq(
           say("I've said too much already. Forget you heard any of it."),
           'He picks up a glass and starts polishing — conversation over.',
           exit(),
-        ),
+        )),
       ))
     },
   },

@@ -596,15 +596,15 @@ function jonnyTourScene(): Instruction[] {
       say('See that mark on the wall? That\'s mine. Means this stretch is under our protection.'),
       'He traces a crude brass star scratched into the brickwork.',
       say('Anyone causes trouble here, they answer to me. Simple as that.'),
-      option('That must keep people safe.',
+      option('That must keep people safe.', seq(
         'He glances at you — surprised, then pleased.',
         say('That\'s... exactly right. Someone\'s got to do it.'),
         addNpcStat('affection', 2, { max: 12 }),
-      ),
-      option('Isn\'t that just intimidation?',
+      )),
+      option('Isn\'t that just intimidation?', seq(
         'His jaw tightens.',
         say('Call it what you like. People sleep sound because of me. That\'s what matters.'),
-      ),
+      )),
     ),
     // ── Scene 3: The docks — muscle on display ──
     scene(
@@ -614,15 +614,15 @@ function jonnyTourScene(): Instruction[] {
       'A pair of dock workers see Jonny and give nervous nods. He returns them with a barely perceptible inclination of his head.',
       showNpcImage(),
       say('This is where the money comes in. Every crate, every shipment — we get our cut. Elvis set it up. I make sure it stays set up.'),
-      option('You\'re good at what you do.',
+      option('You\'re good at what you do.', seq(
         say('Damn right I am.'),
         'He straightens his coat, visibly gratified.',
         addNpcStat('affection', 3, { max: 15 }),
-      ),
-      option('Doesn\'t anyone push back?',
+      )),
+      option('Doesn\'t anyone push back?', seq(
         say('They try. Once.'),
         'He touches the scars on his knuckles. The conversation moves on.',
-      ),
+      )),
     ),
     // ── Scene 4: The Copper Pot — drinks and a Charm check ──
     scene(
@@ -655,15 +655,15 @@ function jonnyTourScene(): Instruction[] {
       say('Walk away. Now.'),
       'The man opens his mouth, looks at Jonny\'s face, and closes it again. He retreats to the bar without another word.',
       say('Sorry about that. Some people don\'t know when to shut up.'),
-      option('You handled that well.',
+      option('You handled that well.', seq(
         'He looks at you — really looks at you — and for a moment the enforcer mask slips.',
         say('Most people look away when things get tense. You didn\'t.'),
         addNpcStat('affection', 2, { max: 20 }),
-      ),
-      option('That was a bit frightening.',
+      )),
+      option('That was a bit frightening.', seq(
         say('I know. But you stayed. That counts for something.'),
         'He studies you with something like curiosity.',
-      ),
+      )),
     ),
     // ── Scene 6: Walk home ──
     scene(
@@ -696,15 +696,15 @@ function jonnyRoundScene(): Instruction[] {
       showNpcImage(),
       'Jonny pauses at a doorway and exchanges a few low words with someone inside. Money changes hands — quickly, discreetly.',
       say('Business. Don\'t worry about it.'),
-      option('I wasn\'t going to ask.',
+      option('I wasn\'t going to ask.', seq(
         say('Good. Smart.'),
         addNpcStat('affection', 2, { max: 25, hidden: true }),
-      ),
-      option('Is everything all right?',
+      )),
+      option('Is everything all right?', seq(
         say('Always is when I\'m handling it.'),
         'He gives you a sideways look — not displeased.',
         addNpcStat('affection', 1, { max: 25, hidden: true }),
-      ),
+      )),
     ),
     // ── Scene 3: Quiet moment ──
     scene(
@@ -712,14 +712,14 @@ function jonnyRoundScene(): Instruction[] {
       say('People think this job is all violence. It\'s not. Mostly it\'s just... showing up. Being seen. That\'s enough.'),
       'He glances at you.',
       say('Having someone to walk with makes a difference. Not that I\'d admit that to anyone else.'),
-      option('Your secret\'s safe.',
+      option('Your secret\'s safe.', seq(
         'Something shifts behind his eyes — not softness, but a guard lowering, just slightly.',
         addNpcStat('affection', 2, { max: 25, hidden: true }),
-      ),
-      option('You should tell people more often.',
+      )),
+      option('You should tell people more often.', seq(
         say('And ruin my reputation? Not a chance.'),
         'But he almost smiles.',
-      ),
+      )),
     ),
     // ── Scene 4: Return ──
     scene(

@@ -344,21 +344,21 @@ const lessonScripts = {
       g.add({ type: 'text', text: `${next.name} begins at ${formatHour(next.slot.startHour)}.`, color: '#d0b691' })
       g.run(scenes(
         scene(
-          option('Wait quietly',
+          option('Wait quietly', seq(
             timeUntil(next.slot.startHour),
             'You sit quietly and wait, watching students file in as the start time approaches.',
             'The lecturer arrives and begins setting up.',
-          ),
-          option('Study your notes',
+          )),
+          option('Study your notes', seq(
             timeUntil(next.slot.startHour),
             'You review your notes from previous sessions, refreshing the key concepts in your mind.',
             'The lecturer arrives and begins setting up.',
-          ),
-          option('Chat with classmates',
+          )),
+          option('Chat with classmates', seq(
             timeUntil(next.slot.startHour),
             'You chat with nearby students, swapping impressions of the course and comparing notes.',
             'The lecturer arrives and begins setting up.',
-          ),
+          )),
         ),
         run('lessonBegin', beginParams),
         ...(body ? [body] : []),

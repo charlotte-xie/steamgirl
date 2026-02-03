@@ -757,30 +757,30 @@ function timmyDateScene(): Instruction[] {
           'He\'s not just visiting. He lives up here — or did.',
         ),
       ),
-      option('It\'s beautiful',
+      option('It\'s beautiful', seq(
         'You stand at the edge, taking it all in. Timmy watches you watch the city.',
         say('Yeah. It is. I come up here when things get... you know. Too much.'),
         addNpcStat('affection', 5, { max: 50 }),
-      ),
-      option('You come here alone?',
+      )),
+      option('You come here alone?', seq(
         say('Always. Well. Until now.'),
         'He looks away, embarrassed by his own honesty.',
         addNpcStat('affection', 3, { max: 50 }),
-      ),
+      )),
     ),
     scene(
       'You sit on the rooftop edge together, legs dangling over the alley below. The city hums and clanks beneath you.',
       say('I know what people think of me. Shady Timmy, the spice bloke. But I look after people. The ones nobody else gives a toss about.'),
-      option('I know you do',
+      option('I know you do', seq(
         say('You... you really think so?'),
         'His mechanical hand reaches toward yours, hesitates, then withdraws.',
         addNpcStat('affection', 5, { max: 55 }),
-      ),
-      option('That\'s what you tell yourself',
+      )),
+      option('That\'s what you tell yourself', seq(
         say('Maybe. But it\'s true. You don\'t see what I see down here.'),
         'His expression hardens, but only for a moment.',
         addNpcStat('affection', 2, { max: 55 }),
-      ),
+      )),
       // Charm: push a little deeper
       skillCheck('Charm', 12,
         seq(

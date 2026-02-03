@@ -73,6 +73,7 @@ export interface ItemDefinition {
   imageTint?: string              // CSS colour for multiply-blend tinting on the avatar (defaults to colour)
   positions?: ClothingPosition[]  // For wearable items - where on the body (can occupy multiple)
   layer?: ClothingLayer           // For wearable items - what layer (under, inner, outer, accessory)
+  nightwear?: boolean             // If true, kept on when undressing for bed
   onConsume?: Script
   onExamine?: Script
   onWorn?: (player: Player, item: Item) => void  // Called after item is worn
