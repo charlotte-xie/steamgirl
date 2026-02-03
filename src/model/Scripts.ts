@@ -855,6 +855,18 @@ const coreScripts: Record<string, ScriptFn> = {
     return layers.every(layer => !game.player.getWornAt(position as any, layer))
   },
 
+  /** True if the player is wearing anything on clothing layers (under/inner/outer).
+   *  Optional position filter narrows the check to a single body position. */
+  dressed: (game: Game, params: { position?: string }): boolean => {
+    const layers = ['under', 'inner', 'outer'] as const
+    if (params.position) {
+      return layers.some(layer => !!game.player.getWornAt(params.position as any, layer))
+    }
+    // No position — check all positions
+    const positions = ['head', 'face', 'neck', 'chest', 'belly', 'arms', 'wrists', 'hands', 'waist', 'hips', 'legs', 'feet'] as const
+    return positions.some(pos => layers.some(layer => !!game.player.getWornAt(pos, layer)))
+  },
+
   /** Check if currently in a scene (has options) */
   inScene: (game: Game): boolean => {
     return game.inScene
@@ -1450,6 +1462,7 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!script) {
       throw new Error(`NPC ${npcId} has no script "${scriptName}"`)
     }
+    npc.stats.set('lastInteraction', game.time)
     game.timeLapse(1)
     game.run(script, (params.params ?? {}) as Record<string, unknown>)
   },

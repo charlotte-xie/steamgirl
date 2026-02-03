@@ -57,6 +57,7 @@ export interface ItemData {
   number: number
   worn?: boolean   // True if this item is currently worn (slots derived from definition)
   locked?: boolean // True if this item cannot be removed (cursed, restraints, etc.)
+  gift?: string    // NPC ID of the gift giver (instance-level, not definition)
 }
 
 // Static / library information for an item
@@ -213,6 +214,7 @@ export class Item {
   number: number
   worn: boolean   // True if this item is currently being worn
   locked: boolean // True if this item cannot be removed (cursed, restraints, etc.)
+  gift?: string   // NPC ID of the gift giver
 
   constructor(id: ItemId, number: number = 1, worn: boolean = false, locked: boolean = false) {
     this.id = id
@@ -261,6 +263,9 @@ export class Item {
     if (this.locked) {
       data.locked = true
     }
+    if (this.gift) {
+      data.gift = this.gift
+    }
     return data
   }
 
@@ -282,6 +287,9 @@ export class Item {
     const worn = data.worn ?? false
     const locked = data.locked ?? false
     const item = new Item(itemId, number, worn, locked)
+    if (data.gift) {
+      item.gift = data.gift
+    }
 
     return item
   }

@@ -1,5 +1,7 @@
 import { Game } from '../../model/Game'
+import { Item } from '../../model/Item'
 import { NPC, registerNPC, PRONOUNS } from '../../model/NPC'
+import { makeScripts } from '../../model/Scripts'
 import type { Instruction } from '../../model/ScriptDSL'
 import {
   seq, say, option, npcInteract, npcLeaveOption, addNpcStat,
@@ -9,7 +11,8 @@ import {
   addStat, skillCheck, when, not, hasItem, addItem, inScene,
   saveOutfit, changeOutfit, wearOutfit, npcStat, cond, impression,
   kiss, replaceScene, wantsIntimacy, madeLove, hourBetween,
-  discoverLocation, npcPresent, setNpc, inLocation, stripAll, fixClothing,
+  discoverLocation, npcPresent, setNpc, inLocation, stripAll,
+  chance, dressed, lt, sub, gameTime,
 } from '../../model/ScriptDSL'
 
 // ============================================================================
@@ -24,6 +27,17 @@ import {
 //   Affection tracks repeat visits and warmth of greetings.
 //   Appearance gates whether he'll flirt back or offer outings.
 //   Flirtation skill gates execution quality (awkward vs. charming).
+//
+// Stats:
+//   affection — increases when the player takes active interest in him
+//              (chat, flirt, outings, player-initiated kisses)
+//   control   — increases when the player submits to his advances
+//              (accepting intimacy he initiated, going along with demands)
+//   Both decrease when the player refuses him.
+//
+// Storylines:
+//   True love path: Get affection high enough to melt his heart.
+//   Control path: Take advantage of his money, but face increasing demands.
 //
 // Story arc:
 //   chat (bar) → flirt (appearance-gated reaction) → outing (garden/pool)
@@ -74,6 +88,7 @@ function patronMenu(): Instruction {
           ),
           say('As you wish. Goodnight.'),
           addNpcStat('affection', -2),
+          addNpcStat('control', -2),
           exit(),
         ),
       ),
@@ -117,7 +132,7 @@ function patronKissAttempt(farewell: Instruction): Instruction {
             ),
             addStat('Flirtation', 1, { max: 40, chance: 0.5 }),
             addStat('Charm', 1, { max: 40, chance: 0.3 }),
-            addNpcStat('affection', 3, { max: 30 }),
+            addNpcStat('affection', 2, { max: 30 }),
           ),
           scene(
             'He holds your gaze, something shifting behind his eyes. When he speaks, his voice is low.',
@@ -191,10 +206,77 @@ function gardenFarewell(): Instruction {
   )
 }
 
-// Dismiss — he's done with the player for the evening
+// Ashworth utility scripts
+makeScripts({
+  // Record interaction time on current NPC (gates afterUpdate cooldown)
+  markInteraction: (game: Game, params: { npc?: string }) => {
+    const npcId = params.npc ?? game.scene.npc
+    if (npcId) game.getNPC(npcId).stats.set('lastInteraction', game.time)
+  },
+  // Restore outfit — unwinds saved outfits in order, falls back to fixClothing
+  restoreAshworthClothing: (game: Game) => {
+    // Restore strip outfit first (bikini or clothes), then pool outfit if it exists
+    if (game.player.outfits['_before-ashworth']) {
+      game.player.wearOutfit('_before-ashworth')
+      game.player.deleteOutfit('_before-ashworth')
+    }
+    if (game.player.outfits['_before-pool']) {
+      game.player.wearOutfit('_before-pool')
+      game.player.deleteOutfit('_before-pool')
+    }
+    game.run('fixClothing', {})
+    game.player.calcStats()
+  },
+})
+
+// Leave — friendly goodbye (player chose to leave, Ashworth is satisfied)
+function ashworthLeave(): Instruction {
+  return seq(
+    run('restoreAshworthClothing'),
+    cond(
+      npcStat('madeLove'),
+      random(
+        seq(
+          say('Same time tomorrow?'),
+          'He watches you go with a half-smile.',
+        ),
+        seq(
+          say('You know where to find me.'),
+          'He presses a kiss to the back of your hand.',
+        ),
+      ),
+      npcStat('affection', { min: 10 }),
+      random(
+        seq(
+          say('It was a wonderful evening. Thank you.'),
+          'He kisses your cheek at the door.',
+        ),
+        seq(
+          say('I enjoyed your company tonight. Truly.'),
+          'He opens the door for you with old-fashioned courtesy.',
+        ),
+      ),
+      random(
+        seq(
+          say('Thank you for a pleasant evening.'),
+          'He nods courteously.',
+        ),
+        seq(
+          say('Goodnight. I hope to see you again.'),
+          'He stands as you leave.',
+        ),
+      ),
+    ),
+    moveNpc('bar-patron', null),
+    'You take the lift back down to the lobby.',
+    move('hotel'),
+  )
+}
+
+// Dismiss — player rejected him, he's angry/cold
 function ashworthDismiss(): Instruction {
   return seq(
-    fixClothing(),
+    run('restoreAshworthClothing'),
     moveNpc('bar-patron', null),
     'You step out into the corridor. The door clicks shut behind you.',
     'You take the lift back down to the lobby.',
@@ -218,6 +300,53 @@ function poolFarewell(): Instruction {
   )
 }
 
+// Garden — Ashworth makes his move (triggered by flirting or random chance)
+function gardenKissInitiation(): Instruction {
+  return seq(
+    random(
+      seq(
+        'A cool breeze sweeps across the rooftop. You shiver, and he notices immediately.',
+        say('Cold?'),
+        'Before you can answer, his jacket is around your shoulders. His hands linger on your arms, and he doesn\'t step back.',
+      ),
+      seq(
+        'He falls quiet, watching you in the starlight. Something in his expression shifts — the polished charm giving way to something more honest.',
+        say('Do you know how beautiful you look right now?'),
+        'His voice is low, almost wondering. He reaches out and tucks a strand of hair behind your ear.',
+      ),
+      seq(
+        'The wind catches a loose petal and sends it spiralling between you. He catches it without looking away from you.',
+        say('Make a wish.'),
+        'He presses the petal into your palm and closes your fingers around it. He doesn\'t let go of your hand.',
+      ),
+    ),
+    patronKissAttempt(gardenFarewell()),
+  )
+}
+
+// Pool — Ashworth makes his move (triggered by flirting or random chance)
+function poolKissInitiation(): Instruction {
+  return seq(
+    random(
+      seq(
+        'He drifts closer in the warm water until you can feel the heat of him. His hand finds your waist beneath the surface.',
+        say('Come here.'),
+        'The water laps softly between you. The underwater lights cast shifting patterns on his face.',
+      ),
+      seq(
+        'He surfaces beside you, water streaming from his hair. He\'s closer than you expected — close enough that you can see the lamplight reflected in his eyes.',
+        say('I\'ve been thinking about doing this all evening.'),
+      ),
+      seq(
+        'He reaches out and wipes a droplet from your cheek. His thumb traces your jawline, tilting your face up.',
+        say('You are impossible to resist. You know that?'),
+        'His voice is barely above a murmur. The pool is very quiet.',
+      ),
+    ),
+    patronKissAttempt(poolFarewell()),
+  )
+}
+
 registerNPC('bar-patron', {
   name: 'Lord Ashworth',
   uname: 'well-dressed gentleman',
@@ -233,6 +362,7 @@ registerNPC('bar-patron', {
     // Starts offscreen — onMove schedule places him at the bar 8–10pm
     npc.location = null
     npc.stats.set('affection', 0)
+    npc.stats.set('control', 0)
   },
 
   onMove: (game: Game) => {
@@ -295,9 +425,17 @@ registerNPC('bar-patron', {
     not(inScene()),
     cond(
       inLocation('room-533'),
+      // Wait at least 30 mins since player last disengaged before interrupting
       cond(
-        hourBetween(23, 6),
-        npcInteract('lateNight'),
+        not(lt(sub(gameTime(), npcStat('lastInteraction')), 1800)),
+        cond(
+          // He wants intimacy — demand scene
+          wantsIntimacy('bar-patron'),
+          npcInteract('ashworthDemand'),
+          // Past 11pm, no intimacy desire — curfew (sleep or leave)
+          hourBetween(23, 6),
+          npcInteract('ashworthCurfew'),
+        ),
       ),
     ),
   ),
@@ -418,30 +556,116 @@ registerNPC('bar-patron', {
       menu(
         option('Talk',
           random(
-            'The conversation flows easily. He tells you about his travels — the canals of Veneto, the clocktowers of Praag. His hand brushes yours, not quite by accident.',
-            'You talk and laugh, the evening slipping away. He\'s charming without being pushy, attentive without being overbearing.',
-            'He points out landmarks across the skyline — the university clock tower, the great chimney of the steamworks. You find yourself leaning into him as you look.',
-            'He asks about your studies and listens with genuine curiosity. The night air is cool, and you stand close for warmth.',
+            seq(
+              'He tells you about his travels — the canals of Veneto, the clocktowers of Praag.',
+              'His hand brushes yours on the railing, not quite by accident.',
+              say('I spent a summer in Veneto once. The light there is extraordinary — like liquid gold.'),
+              'He catches your eye. "Rather like your eyes, actually."',
+            ),
+            seq(
+              'He points out constellations, standing close enough that you feel the warmth of him against the evening chill.',
+              say('My father taught me the stars. Useful for navigation, he said. Though I\'ve always preferred them for the romance.'),
+              'He catches your eye and smiles.',
+            ),
+            seq(
+              'He asks about your studies and listens with genuine curiosity.',
+              'The night air is cool, and you stand close for warmth.',
+              say('You\'re more interesting than half the people I know. And I know a great many people.'),
+            ),
+            seq(
+              'He talks about Aetheria as it was twenty years ago — wilder, dirtier, more dangerous.',
+              say('The city\'s changed. Grown respectable. I\'m not sure it\'s an improvement.'),
+              'He gazes out at the skyline with an expression you can\'t quite read.',
+            ),
           ),
           time(10),
           addStat('Charm', 1, { max: 40, chance: 0.3 }),
+          addNpcStat('affection', 1, { max: 25, hidden: true }),
+          // He might make his move
+          cond(npcStat('affection', { min: 8 }),
+            cond(chance(0.2), exit(gardenKissInitiation())),
+          ),
         ),
         option('Have a drink',
           random(
-            'He produces a silver hip flask and pours you something that smells of honey and smoke.',
-            'He flags down a passing attendant and orders two glasses of champagne. The bubbles catch the starlight.',
+            seq(
+              'He produces a silver hip flask and pours you something that smells of honey and smoke.',
+              say('Single malt. Thirty years old. I\'ve been saving it for the right company.'),
+            ),
+            seq(
+              'He flags down a passing attendant and orders two glasses of champagne.',
+              'The bubbles catch the starlight as you clink glasses.',
+              say('To beautiful evenings.'),
+            ),
+            seq(
+              'He opens a bottle he\'d had sent up in advance — something dark and French.',
+              say('A good wine and a good view. What more does a man need?'),
+              'His eyes linger on you as he says it.',
+            ),
           ),
           run('consumeAlcohol', { amount: 15 }),
           time(5),
+          cond(npcStat('affection', { min: 10 }),
+            cond(chance(0.15), exit(gardenKissInitiation())),
+          ),
         ),
         option('Enjoy the view',
           random(
-            'You lean against the railing together, watching the gaslights flicker across the rooftops. The city hums softly below.',
-            'A cool breeze carries the scent of night-blooming jasmine. The stars are unusually bright above the gas-lit haze.',
-            'You watch an airship drift silently across the moon, its running lights winking red and green.',
+            seq(
+              'You lean against the railing together, watching the gaslights flicker across the rooftops.',
+              'An airship drifts silently across the moon, its running lights winking red and green.',
+              'He stands close enough that your shoulders almost touch.',
+            ),
+            seq(
+              'A cool breeze carries the scent of night-blooming jasmine.',
+              'The stars are unusually bright above the gas-lit haze.',
+              say('On a clear night you can see the lighthouse at Thornmouth from here. Sixty miles.'),
+            ),
+            seq(
+              'The city hums below — distant steam whistles, the clatter of a late tram, the faint strains of music from somewhere.',
+              'He rests his arms on the railing, his sleeve brushing yours.',
+              say('I never tire of this view. Though the company makes a difference.'),
+            ),
           ),
           time(10),
           addStat('Mood', 2, { max: 85 }),
+          cond(npcStat('affection', { min: 10 }),
+            cond(chance(0.15), exit(gardenKissInitiation())),
+          ),
+        ),
+        option('Flirt',
+          // No appearance gate — he already invited her here from the bar
+          random(
+            seq(
+              'You lean against the railing and look up at him through your lashes. "It\'s cold up here."',
+              'He raises an eyebrow, then slips his jacket from his shoulders and drapes it around you. His hands linger.',
+              say('Better?'),
+              'You pull the jacket tighter and let your fingers brush his. "Much."',
+            ),
+            seq(
+              'You pluck a night-blooming flower from a nearby planter and tuck it behind your ear.',
+              '"How do I look?"',
+              'His gaze travels over you slowly.',
+              say('Dangerous. Absolutely dangerous.'),
+            ),
+            seq(
+              'You move closer and rest your head briefly against his shoulder, as if admiring the view.',
+              'He goes very still. When you glance up, he\'s watching you with an intensity that makes your pulse quicken.',
+              say('You are making it very difficult to be a gentleman.'),
+            ),
+          ),
+          addStat('Flirtation', 1, { max: 40, chance: 0.4 }),
+          addNpcStat('affection', 2, { max: 25, hidden: true }),
+          time(5),
+          // Very likely he makes his move
+          cond(chance(0.75),
+            exit(gardenKissInitiation()),
+            // Charged atmosphere but he holds back
+            random(
+              'He holds your gaze a beat too long, then looks away with a slow smile.',
+              'Something electric passes between you. He clears his throat and reaches for his drink.',
+            ),
+          ),
         ),
         option('Call it a night',
           random(
@@ -452,14 +676,6 @@ registerNPC('bar-patron', {
           addStat('Mood', 3, { max: 85 }),
           addNpcStat('affection', 2, { max: 20 }),
           exit(gardenFarewell()),
-        ),
-        option('Stay a while longer...',
-          showNpcImage(),
-          random(
-            'A comfortable silence settles between you. The city glitters below, impossibly beautiful.',
-            'The conversation fades into something quieter. You stand close together, the cool air pressing you near.',
-          ),
-          exit(patronKissAttempt(gardenFarewell())),
         ),
       ),
     ),
@@ -518,11 +734,20 @@ registerNPC('bar-patron', {
     ),
 
     // ----- ROOM 533 MENU -----
-    room533Menu: menu(
+    // Collar gift check runs first; if triggered, its accept/decline handlers
+    // call back into room533Menu (which skips the gift the second time because
+    // hasItem is now true). Late-night behaviour is driven by afterUpdate only.
+    room533Menu: cond(
+      npcStat('control', { min: 30 }),
       cond(
-        hourBetween(23, 6),
-        exit(npcInteract('lateNight')),
+        not(hasItem('ashworth-collar')),
+        npcInteract('maybeGiveCollar'),
+        npcInteract('room533MenuInner'),
       ),
+      npcInteract('room533MenuInner'),
+    ),
+
+    room533MenuInner: menu(
       option('Have a drink',
         random(
           'He refills your glass from the crystal decanter. The whisky is smooth and warm, settling into your chest like liquid amber.',
@@ -559,22 +784,57 @@ registerNPC('bar-patron', {
       ),
       option('Excuse yourself',
         say('Of course. The room is yours.'),
+        run('markInteraction', { npc: 'bar-patron' }),
         exit(),
       ),
       option('Call it a night',
-        random(
-          'You set down your glass and tell him you should go.',
-          'You stand and smooth your clothes.',
-        ),
-        say('Thank you for a memorable evening.'),
-        'He presses a kiss to the back of your hand. He doesn\'t try to stop you.',
         addStat('Mood', 5, { max: 85 }),
-        exit(ashworthDismiss()),
+        exit(ashworthLeave()),
       ),
     ),
 
-    // ----- LATE NIGHT: Ashworth makes his move (triggered by afterUpdate at 11pm+) -----
-    lateNight: seq(
+    // ----- COLLAR GIFT: Ashworth marks his territory (control ≥ 30, one-time) -----
+    maybeGiveCollar: (game: Game) => {
+      game.add('He reaches into the bedside drawer and produces a small velvet box. He opens it with deliberate care.')
+      game.getNPC('bar-patron').say('I had this made for you.')
+      game.add('Inside, nestled on dark silk, is a white leather collar with a small brass plate. You can make out the engraved initial — "A."')
+      game.addOption(['interact', { npc: 'bar-patron', script: 'ashworthAcceptCollar' }], 'Accept')
+      game.addOption(['interact', { npc: 'bar-patron', script: 'ashworthDeclineCollar' }], 'Decline')
+    },
+
+    ashworthAcceptCollar: (game: Game) => {
+      const collar = new Item('ashworth-collar')
+      collar.gift = 'bar-patron'
+      game.player.inventory.push(collar)
+      game.player.wearItem(collar)
+      game.player.calcStats()
+      game.getNPC('bar-patron').say('Turn around.')
+      game.add('He fastens the collar around your throat. His fingers are sure and unhurried. The leather is soft, the brass cool against your skin.')
+      game.add('He turns you to face him and studies the result with quiet satisfaction.')
+      game.getNPC('bar-patron').say('Perfect. Now everyone will know you\'re mine.')
+      game.run('addNpcStat', { stat: 'control', change: 3, max: 50, hidden: true })
+      game.run('addNpcStat', { stat: 'affection', change: 2, max: 30, hidden: true })
+      // Continue to the normal room menu
+      game.run('interact', { npc: 'bar-patron', script: 'room533Menu' })
+    },
+
+    ashworthDeclineCollar: (game: Game) => {
+      game.add('You close the box gently and push it back towards him.')
+      game.getNPC('bar-patron').say('No?')
+      game.add('His expression doesn\'t change, but something behind his eyes hardens.')
+      game.getNPC('bar-patron').say('Keep it. You may change your mind.')
+      // Give the item but don't wear it
+      const collar = new Item('ashworth-collar')
+      collar.gift = 'bar-patron'
+      game.player.inventory.push(collar)
+      game.run('addNpcStat', { stat: 'affection', change: -2 })
+      game.run('addNpcStat', { stat: 'control', change: -3 })
+      // Continue to the normal room menu
+      game.run('interact', { npc: 'bar-patron', script: 'room533Menu' })
+    },
+
+    // ----- ASHWORTH DEMAND: he wants intimacy (triggered by afterUpdate via wantsIntimacy) -----
+    ashworthDemand: seq(
       showNpcImage(),
       setNpc('bar-patron'),
       cond(
@@ -608,12 +868,33 @@ registerNPC('bar-patron', {
         ),
         say('I see. Well. It was a pleasant evening.'),
         'He stands and straightens his waistcoat. The gesture is precise and final.',
-        addNpcStat('affection', -3),
-        option('Leave', exit(ashworthDismiss())),
+        addNpcStat('affection', -2),
+        addNpcStat('control', -3),
+        exit(ashworthDismiss()),
       ),
     ),
 
-    // ----- BATHROOM INTRUSION: Ashworth comes to get you after 11pm -----
+    // ----- ASHWORTH CURFEW: past 11pm, no intimacy desire — sleep or leave -----
+    ashworthCurfew: seq(
+      showNpcImage(),
+      setNpc('bar-patron'),
+      random(
+        seq(
+          'He stifles a yawn and glances at the clock.',
+          say('It\'s getting late. Shall we turn in?'),
+        ),
+        seq(
+          'The clock on the mantelpiece chimes softly. He sets down his whisky.',
+          say('Well. It\'s late.'),
+        ),
+      ),
+      option('Sleep with him', npcInteract('bedTime')),
+      option('Leave', exit(ashworthLeave())),
+    ),
+
+    // ----- BATHROOM INTRUSION: Ashworth fetches player back to room (late night, no intimacy) -----
+    // Move happens only when the player agrees — background stays as bathroom until then.
+    // Room afterUpdate handles what happens next (ashworthDemand or ashworthCurfew).
     bathroomIntrusion: seq(
       showNpcImage(),
       setNpc('bar-patron'),
@@ -624,11 +905,19 @@ registerNPC('bar-patron', {
         ),
         seq(
           'A sharp knock, then the door opens before you can answer. He fills the doorway, shirtsleeves rolled to the elbow.',
-          say('I\'m not a patient man. Come.'),
+          say('Come on. It\'s late.'),
         ),
       ),
-      move('room-533', 1),
-      npcInteract('lateNight'),
+      option('Go with him',
+        move('room-533', 1),
+        npcInteract('bedTime'),
+      ),
+      option('Refuse',
+        say('Fine. Don\'t be long.'),
+        'He pulls the door shut. You hear his footsteps retreat.',
+        addNpcStat('affection', -1),
+        addNpcStat('control', -2),
+      ),
     ),
 
     // ----- BATHROOM INTIMACY: Ashworth barges in and demands an intimate encounter -----
@@ -667,7 +956,7 @@ registerNPC('bar-patron', {
         ),
         paragraph(hl('• • •', '#6b7280')),
         madeLove(),
-        addNpcStat('affection', 3, { max: 30, hidden: true }),
+        addNpcStat('control', 4, { max: 30, hidden: true }),
         time(15),
       ),
       scene(
@@ -687,52 +976,61 @@ registerNPC('bar-patron', {
       ),
     ),
 
-    // ----- BED INTERCEPT: Ashworth present → he initiates; absent → normal sleep -----
+    // ----- BED INTERCEPT: Ashworth present → behaviour depends on wantsIntimacy -----
     ashworthBed: cond(
       npcPresent('bar-patron'),
-      seq(
-        showNpcImage(),
-        setNpc('bar-patron'),
-        random(
-          seq(
-            say('The bed\'s a good idea.'),
-            'His eyes travel over you.',
-            say('But first...'),
-          ),
-          seq(
-            say('Thinking of turning in?'),
-            'He loosens his collar.',
-            say('I have a better idea.'),
-          ),
-        ),
-        option('Go along with it', npcInteract('makeOut')),
-        option('Just sleep',
+      cond(
+        wantsIntimacy('bar-patron'),
+        // He wants intimacy — intercepts bedtime
+        seq(
+          showNpcImage(),
+          setNpc('bar-patron'),
           random(
             seq(
-              say('Just sleep?'),
-              'He steps closer, his hand finding your waist.',
-              say('I don\'t think so. Not tonight.'),
+              say('The bed\'s a good idea.'),
+              'His eyes travel over you.',
+              say('But first...'),
             ),
             seq(
-              say('You came to my room to sleep?'),
-              'His voice is low, amused, but there\'s an edge to it.',
-              say('I had something else in mind.'),
+              say('Thinking of turning in?'),
+              'He loosens his collar.',
+              say('I have a better idea.'),
             ),
           ),
           option('Go along with it', npcInteract('makeOut')),
-          option('Excuse yourself',
-            say('If that\'s how you feel.'),
-            'He turns away, reaching for the whisky decanter.',
-            addNpcStat('affection', -2),
-          ),
-          option('Refuse',
-            say('I said — I don\'t think so.'),
-            'His expression hardens. He straightens his cuffs with deliberate calm.',
-            say('You should leave. Now.'),
-            addNpcStat('affection', -5),
-            exit(ashworthDismiss()),
+          option('Just sleep',
+            random(
+              seq(
+                say('Just sleep?'),
+                'He steps closer, his hand finding your waist.',
+                say('I don\'t think so. Not tonight.'),
+              ),
+              seq(
+                say('You came to my room to sleep?'),
+                'His voice is low, amused, but there\'s an edge to it.',
+                say('I had something else in mind.'),
+              ),
+            ),
+            option('Go along with it', npcInteract('makeOut')),
+            option('Excuse yourself',
+              say('If that\'s how you feel.'),
+              'He turns away, reaching for the whisky decanter.',
+              addNpcStat('affection', -1),
+              addNpcStat('control', -2),
+              run('markInteraction', { npc: 'bar-patron' }),
+            ),
+            option('Refuse',
+              say('I said — I don\'t think so.'),
+              'His expression hardens. He straightens his cuffs with deliberate calm.',
+              say('You should leave. Now.'),
+              addNpcStat('affection', -3),
+              addNpcStat('control', -5),
+              exit(ashworthDismiss()),
+            ),
           ),
         ),
+        // Doesn't want intimacy — bedTime handles sleep or player-initiated intimacy
+        npcInteract('bedTime'),
       ),
       run('bedScene', { quality: 1.2 }),
     ),
@@ -775,38 +1073,40 @@ registerNPC('bar-patron', {
       ),
       kiss(8),
       time(5),
-      addNpcStat('affection', 1, { max: 30, hidden: true }),
+      addNpcStat('control', 2, { max: 30, hidden: true }),
       addStat('Flirtation', 1, { max: 40, chance: 0.3 }),
-      // He commands her to strip — assertive sugar daddy moment
-      replaceScene(
-        random(
-          seq(
-            'He pulls back and looks at you, eyes travelling slowly down your body. His voice drops.',
-            say('Take your clothes off. I want to see you.'),
-          ),
-          seq(
-            'He sits on the edge of the bed, loosening his cufflinks with deliberate calm. His gaze is direct.',
-            say('Strip for me.'),
-            'It is not a request.',
-          ),
-          seq(
-            'His fingers find the fastening at the back of your dress. He pauses.',
-            say('Let me see all of you. Or do it yourself — I don\'t mind watching.'),
-          ),
-        ),
-        option('Undress for him',
-          saveOutfit('_before-ashworth'),
+      // He commands her to strip — only if she's actually wearing clothes
+      cond(
+        dressed(),
+        replaceScene(
           random(
-            'You hold his gaze as you undress, piece by piece. His eyes never leave you. When you\'re done he lets out a slow breath.',
-            'You slip out of your clothes under his approving stare. The lamplight is warm on your bare skin. He watches every movement with quiet intensity.',
-            'You undress slowly, letting each garment fall. He leans back against the pillows, watching with the satisfied expression of a man who is used to getting what he wants.',
+            seq(
+              'He pulls back and looks at you, eyes travelling slowly down your body. His voice drops.',
+              say('Take your clothes off. I want to see you.'),
+            ),
+            seq(
+              'He sits on the edge of the bed, loosening his cufflinks with deliberate calm. His gaze is direct.',
+              say('Strip for me.'),
+              'It is not a request.',
+            ),
+            seq(
+              'His fingers find the fastening at the back of your dress. He pauses.',
+              say('Let me see all of you. Or do it yourself — I don\'t mind watching.'),
+            ),
           ),
-          changeOutfit([]),
-          say('Beautiful. Come here.'),
-          npcInteract('makeLove'),
-        ),
-        // Refuses to strip — he's done. Polite but final.
-        option('Refuse',
+          option('Undress for him',
+            saveOutfit('_before-ashworth'),
+            random(
+              'You hold his gaze as you undress, piece by piece. His eyes never leave you. When you\'re done he lets out a slow breath.',
+              'You slip out of your clothes under his approving stare. The lamplight is warm on your bare skin. He watches every movement with quiet intensity.',
+              'You undress slowly, letting each garment fall. He leans back against the pillows, watching with the satisfied expression of a man who is used to getting what he wants.',
+            ),
+            cond(hasItem('ashworth-collar'), changeOutfit(['ashworth-collar']), changeOutfit([])),
+            say('Beautiful. Come here.'),
+            npcInteract('makeLove'),
+          ),
+          // Refuses to strip — he's done. Polite but final.
+          option('Refuse',
           'You hesitate, suddenly self-conscious. He reads it instantly.',
           say('I see.'),
           'He straightens his waistcoat and pours himself a drink. The warmth in his eyes has cooled to something polite and distant.',
@@ -816,10 +1116,17 @@ registerNPC('bar-patron', {
             'He opens the door and holds it for you. The gesture is impeccable and utterly final.',
           ),
           say('Goodnight.'),
-          addNpcStat('affection', -5),
+          addNpcStat('affection', -3),
+          addNpcStat('control', -5),
           option('Leave', exit(ashworthDismiss())),
         ),
       ),
+      // Already undressed — skip straight to bed
+      seq(
+        saveOutfit('_before-ashworth'),
+        npcInteract('makeLove'),
+      ),
+    ),
     ),
 
     // ----- MAKE LOVE: fade to black, stat tracking -----
@@ -861,7 +1168,8 @@ registerNPC('bar-patron', {
             'He turns away and pours himself a drink while you gather your clothes. The silence is precise and final.',
             wearOutfit('_before-ashworth', { delete: true }),
             say('It was a pleasant evening. Goodnight.'),
-            addNpcStat('affection', -3),
+            addNpcStat('affection', -2),
+            addNpcStat('control', -3),
             exit(ashworthDismiss()),
           ),
         ),
@@ -880,28 +1188,37 @@ registerNPC('bar-patron', {
         ),
         paragraph(hl('• • •', '#6b7280')),
         run('madeLove'),
-        addNpcStat('affection', 5, { max: 30, hidden: true }),
+        addNpcStat('control', 5, { max: 30, hidden: true }),
         time(30),
       ),
-      // Afterglow
+      // Afterglow — clean three options
       scene(
         showNpcImage(),
         random(
           seq(
             'He lies back against the pillows, one arm behind his head. He looks content — the look of a man who got exactly what he wanted.',
-            say('You can stay if you like. I don\'t mind the company.'),
-          ),
-          seq(
-            'He pours two glasses from the bedside decanter and hands you one. He is relaxed, unhurried.',
-            say('That was rather wonderful. Drink?'),
+            say('You are full of surprises. I like that in a woman.'),
           ),
           seq(
             'He traces idle patterns on your shoulder. His breathing has slowed.',
-            say('You are full of surprises. I like that in a woman.'),
+            say('That was rather wonderful.'),
+          ),
+          seq(
+            'He stretches lazily beside you, looking thoroughly satisfied.',
+            say('You are magnificent. You know that?'),
           ),
         ),
-        option('Leave', npcInteract('leave')),
-        option('Sleep here', npcInteract('sleepOver')),
+        option('Excuse yourself',
+          say('Of course. The room is yours.'),
+          run('markInteraction', { npc: 'bar-patron' }),
+          exit(),
+        ),
+        option('Leave',
+          exit(ashworthLeave()),
+        ),
+        when(hourBetween(22, 6),
+          option('Sleep with him', npcInteract('bedTime')),
+        ),
       ),
     ),
 
@@ -909,6 +1226,75 @@ registerNPC('bar-patron', {
     // Sleep runs as part of a DSL sequence. After sleep completes,
     // the morning scene continues naturally. If sleep was interrupted
     // by an event, the morning scene is skipped via when(not(inScene())).
+    // ----- BED TIME: getting into bed together — gates on wantsIntimacy -----
+    bedTime: seq(
+      showNpcImage(),
+      setNpc('bar-patron'),
+      random(
+        seq(
+          'You climb into bed beside him. The sheets are cool and crisp, the pillows soft.',
+          'He dims the lamp and settles in beside you.',
+        ),
+        seq(
+          'He pulls back the covers for you. You slip in beside him.',
+          'The bed is warm and comfortable, the city quiet beyond the window.',
+        ),
+        seq(
+          'You slide between the sheets. He turns down the gaslight until the room is lit only by the glow of the city beyond the curtains.',
+        ),
+      ),
+      cond(
+        // He wants intimacy — demands it
+        wantsIntimacy('bar-patron'),
+        seq(
+          random(
+            seq(
+              'His hand finds your waist under the sheets. He pulls you closer.',
+              say('I wasn\'t planning on sleeping just yet.'),
+            ),
+            seq(
+              'He rolls to face you, eyes dark in the lamplight.',
+              say('You didn\'t think I was going to let you just sleep, did you?'),
+            ),
+          ),
+          option('Give in', npcInteract('makeOut')),
+          option('Refuse',
+            say('I see.'),
+            'He rolls away. The warmth between you evaporates.',
+            addNpcStat('affection', -2),
+            addNpcStat('control', -3),
+            exit(ashworthDismiss()),
+          ),
+        ),
+        // No intimacy desire — peaceful bedtime, but player can initiate
+        seq(
+          random(
+            seq(
+              'He puts his arm around you and pulls you close. His breathing is slow and steady.',
+              say('Goodnight.'),
+            ),
+            seq(
+              'He settles beside you, one arm draped loosely over your waist.',
+              say('Sleep well.'),
+            ),
+            seq(
+              'He lies on his back, one hand finding yours under the covers.',
+              'The room is warm and still.',
+            ),
+          ),
+          option('Sleep', npcInteract('sleepOver')),
+          option('Kiss him',
+            'You turn to face him and press your lips to his. He responds immediately, pulling you closer.',
+            say('Well. If you insist.'),
+            kiss(5),
+            addStat('Arousal', 5, { max: 100 }),
+            npcInteract('makeOut'),
+          ),
+        ),
+      ),
+    ),
+
+    // ----- SLEEP OVER: nested sleep + morning scene -----
     sleepOver: seq(
       run('sleepTogether', { quality: 1.2 }),
       // Morning scene — only runs if sleep completed without interruption
@@ -917,8 +1303,7 @@ registerNPC('bar-patron', {
       ),
     ),
 
-    // ----- MORNING: wakeup, optional intimacy, breakfast, farewell -----
-    // Uses scenes() so intimacy choice is a separate page from breakfast.
+    // ----- MORNING: wakeup, optional intimacy, breakfast offer, then free time -----
     morning: scenes(
       scene(
         'Pale morning light filters through the heavy curtains. The room smells of sandalwood and last night\'s whisky.',
@@ -952,7 +1337,71 @@ registerNPC('bar-patron', {
           npcInteract('morningIntimacy'),
         ),
       ),
-      scene(npcInteract('morningBreakfast')),
+      // Breakfast offer
+      scene(
+        showNpcImage(),
+        cond(
+          npcStat('madeLove', { min: 3 }),
+          random(
+            'He rings the bell for room service, then pulls on a silk robe.',
+            'He\'s at the dressing table fastening his cufflinks when there\'s a knock at the door. Breakfast.',
+          ),
+          random(
+            'He sits at the edge of the bed, already half-dressed, and rings for room service.',
+            'He pulls on a monogrammed robe and busies himself with the tea things.',
+          ),
+        ),
+        'A silver tray arrives — fresh pastries, fruit, smoked salmon, soft eggs, and coffee that smells of heaven.',
+        option('Eat',
+          random(
+            'You eat together in comfortable quiet. The coffee is strong and the pastries are still warm from the oven.',
+            'He pours you coffee from a silver pot while you help yourself to eggs and toast with real butter.',
+            'You eat hungrily. He watches with quiet amusement, buttering toast for you without being asked.',
+          ),
+          run('eatFood', { amount: 100 }),
+          addStat('Mood', 5, { max: 90 }),
+          time(20),
+        ),
+        option('Decline',
+          'You wave away the food. He raises an eyebrow but doesn\'t press.',
+          say('At least have some coffee.'),
+          'You accept a cup. It\'s excellent.',
+          time(5),
+        ),
+      ),
+      // Money offer
+      scene(
+        showNpcImage(),
+        random(
+          seq(
+            'He slips something into your hand. A fold of crisp banknotes.',
+            say('For you. Buy yourself something nice — you deserve it.'),
+          ),
+          seq(
+            'He presses an envelope into your palm.',
+            say('A little something. I know student life isn\'t easy.'),
+          ),
+          seq(
+            'He reaches for his wallet on the nightstand and counts out several notes without looking.',
+            say('Take this. I insist. Consider it a token of my appreciation.'),
+          ),
+        ),
+        option('Accept',
+          'You take the money with a smile. He looks pleased.',
+          run('gainItem', { item: 'crown', number: 100, text: '+100 Kr' }),
+        ),
+        option('Decline',
+          'You push his hand away gently. His expression cools.',
+          say('I see. How... principled.'),
+          'He tucks the notes back into his wallet with a flick of his wrist. Something in his manner has stiffened.',
+          addNpcStat('affection', -3),
+        ),
+      ),
+      // Player is free in the room — can use bathroom, approach Ashworth, or leave
+      scene(
+        run('restoreAshworthClothing'),
+        run('markInteraction', { npc: 'bar-patron' }),
+      ),
     ),
 
     // ----- MORNING INTIMACY: he initiates, player responds -----
@@ -1015,7 +1464,7 @@ registerNPC('bar-patron', {
         ),
         paragraph(hl('• • •', '#6b7280')),
         madeLove(),
-        addNpcStat('affection', 3, { max: 30, hidden: true }),
+        addNpcStat('control', 3, { max: 30, hidden: true }),
         time(30),
       ),
       scene(
@@ -1033,92 +1482,7 @@ registerNPC('bar-patron', {
       ),
     ),
 
-    // ----- MORNING BREAKFAST: sugar daddy routine, gift, farewell -----
-    morningBreakfast: scenes(
-      // Breakfast
-      scene(
-        showNpcImage(),
-        cond(
-          npcStat('madeLove', { min: 3 }),
-          random(
-            'He rings the bell for room service, then pulls on a silk robe.',
-            'He\'s at the dressing table fastening his cufflinks when there\'s a knock at the door. Breakfast.',
-          ),
-          random(
-            'He sits at the edge of the bed, already half-dressed, and rings for room service.',
-            'He pulls on a monogrammed robe and busies himself with the tea things.',
-          ),
-        ),
-        random(
-          'A silver tray sits on the bedside table — fresh pastries, fruit, and coffee that smells of heaven. You eat together in comfortable quiet.',
-          'Breakfast is laid out on the writing desk — smoked salmon, soft eggs, toast with real butter. He pours you coffee from a silver pot.',
-          'There are fresh pastries and a pot of fragrant tea. He butters a piece of toast and hands it to you with a quiet smile.',
-        ),
-      ),
-      // Money offer
-      scene(
-        wearOutfit('_before-ashworth', { delete: true }),
-        showNpcImage(),
-        random(
-          seq(
-            'As you dress, he slips something into your hand. A fold of crisp banknotes.',
-            say('For you. Buy yourself something nice — you deserve it.'),
-          ),
-          seq(
-            'He presses an envelope into your palm as you gather your things.',
-            say('A little something. I know student life isn\'t easy.'),
-          ),
-          seq(
-            'He reaches for his wallet on the nightstand and counts out several notes without looking.',
-            say('Take this. I insist. Consider it a token of my appreciation.'),
-          ),
-        ),
-        option('Accept',
-          'You take the money with a smile. He looks pleased.',
-          run('gainItem', { item: 'crown', number: 100, text: '+100 Kr' }),
-        ),
-        option('Decline',
-          'You push his hand away gently. His expression cools.',
-          say('I see. How... principled.'),
-          'He tucks the notes back into his wallet with a flick of his wrist. Something in his manner has stiffened.',
-          addNpcStat('affection', -3),
-        ),
-      ),
-      // Farewell
-      scene(
-        showNpcImage(),
-        random(
-          seq(
-            'He kisses your cheek at the door. The gesture is proprietary but not unpleasant.',
-            say('Until next time.'),
-          ),
-          seq(
-            'He straightens your collar with a half-smile.',
-            say('You know where to find me.'),
-          ),
-          seq(
-            'He opens the door for you with old-fashioned courtesy.',
-            say('Same time tonight? I\'ll be at the bar.'),
-          ),
-        ),
-        option('Leave',
-          moveNpc('bar-patron', null),
-          hideNpcImage(),
-          'You take the lift back down to the lobby.',
-          move('hotel'),
-        ),
-      ),
-    ),
-
-    // ----- LEAVE: after intimacy -----
-    leave: seq(
-      'You dress quietly and let yourself out. He watches you go with a half-smile.',
-      wearOutfit('_before-ashworth', { delete: true }),
-      say('Same time tomorrow?'),
-      moveNpc('bar-patron', null),
-      'You take the lift back down to the lobby.',
-      move('hotel'),
-    ),
+    // (morningMenu/morningFarewell removed — player is free in room after morning scene)
 
     // ----- POOL: swimming pool outing -----
     pool: scenes(
@@ -1153,30 +1517,126 @@ registerNPC('bar-patron', {
         menu(
           option('Swim',
             random(
-              'You swim lazy lengths together, the water warm and silky against your skin. The echo of splashing fills the vaulted space.',
-              'You race him to the far end. He lets you win — or perhaps you\'re simply faster. Either way, you\'re both laughing.',
-              'You float on your back, gazing up through the glass ceiling at the stars. He drifts beside you, close enough to touch.',
+              seq(
+                'You swim lazy lengths together, the water warm and silky against your skin.',
+                'The echo of splashing fills the vaulted space.',
+                'He matches your pace easily, powerful strokes cutting the water.',
+              ),
+              seq(
+                'You race him to the far end. He lets you win — or perhaps you\'re simply faster.',
+                'Either way, you\'re both laughing and breathless at the wall.',
+                say('Best of three?'),
+              ),
+              seq(
+                'You float on your back, gazing up through the glass ceiling at the stars.',
+                'He drifts beside you, close enough that your fingers occasionally touch beneath the surface.',
+              ),
+              seq(
+                'You swim a few lengths, feeling the warm water loosen muscles you didn\'t know were tense.',
+                'He watches from the edge, drink in hand, openly admiring.',
+                say('You swim beautifully. Like a selkie.'),
+              ),
             ),
             time(10),
             addStat('Fitness', 1, { max: 50, chance: 0.2 }),
+            cond(
+              // Certain after 9:30pm if he has some control
+              hourBetween(21.5, 6), cond(npcStat('control', { min: 10 }), exit(poolKissInitiation())),
+              // Otherwise random chance based on affection
+              npcStat('affection', { min: 8 }), cond(chance(0.2), exit(poolKissInitiation())),
+            ),
           ),
           option('Talk',
             random(
-              'He tells you about his travels — the canals of Veneto, the hot springs of Nordheim. His hand brushes yours beneath the water, not quite by accident.',
-              'He asks about your studies, and seems genuinely interested. You talk until your fingers wrinkle, drifting closer with each exchange.',
-              'You rest your arms on the pool\'s edge and talk. The warm water makes everything feel languid and easy.',
-              'He describes the mechanical baths of Praag — heated by volcanic springs, with brass jets that massage your shoulders. "Nothing like this, though," he adds, looking at you.',
+              seq(
+                'He tells you about the hot springs of Nordheim — volcanic pools carved into mountainsides, where nobles bathe in mineral water under the northern lights.',
+                say('Beautiful, but lonely. I prefer present company.'),
+                'His hand brushes yours beneath the water.',
+              ),
+              seq(
+                'You rest your arms on the pool\'s edge and talk.',
+                'The warm water makes everything feel languid and easy.',
+                'He asks about your life before Aetheria, and seems genuinely interested in the answers.',
+              ),
+              seq(
+                'He describes a villa he once rented on the Adriatic coast — white stone, blue shutters, a pool overlooking the sea.',
+                say('I should take you there sometime. You\'d love it.'),
+                'He says it casually, but there\'s something underneath.',
+              ),
+              seq(
+                'The conversation turns to music, of all things. He has surprisingly strong opinions about opera.',
+                say('You can tell everything about a person by their favourite aria.'),
+                '"And what does yours say about you?"',
+                'He smiles. "That I\'m a hopeless romantic masquerading as a cynic."',
+              ),
             ),
             time(10),
             addStat('Charm', 1, { max: 40, chance: 0.3 }),
+            addNpcStat('affection', 1, { max: 25, hidden: true }),
+            cond(
+              hourBetween(21.5, 6), cond(npcStat('control', { min: 10 }), exit(poolKissInitiation())),
+              wantsIntimacy('bar-patron'), cond(chance(0.2), exit(poolKissInitiation())),
+            ),
           ),
           option('Have a drink',
             random(
-              'He climbs out briefly and returns with two glasses from the poolside cabinet. You drink treading water, which makes you both laugh.',
-              'An attendant materialises with a tray of cocktails. You sip yours with your elbows propped on the marble edge.',
+              seq(
+                'He climbs out briefly and returns with two glasses from the poolside cabinet.',
+                'You drink treading water, which makes you both laugh.',
+              ),
+              seq(
+                'An attendant materialises with a tray of cocktails.',
+                'You sip yours with your elbows propped on the marble edge.',
+                say('The barman makes these with orange blossom water. Quite something, aren\'t they?'),
+              ),
+              seq(
+                'He produces a bottle of champagne that\'s been chilling in an ice bucket by the loungers.',
+                'The cork echoes off the vaulted ceiling.',
+                say('To midnight swimming.'),
+              ),
             ),
             run('consumeAlcohol', { amount: 15 }),
             time(5),
+            cond(
+              hourBetween(21.5, 6), cond(npcStat('control', { min: 10 }), exit(poolKissInitiation())),
+              wantsIntimacy('bar-patron'), cond(chance(0.15), exit(poolKissInitiation())),
+            ),
+          ),
+          option('Flirt',
+            // No appearance gate — they're in a private pool in swimwear, he's already interested
+            random(
+              seq(
+                'You swim close and surface right beside him, water streaming from your hair. You hold his gaze.',
+                '"The water\'s lovely. Though I think the view from over here is better."',
+                'His eyes travel slowly over you. The underwater lighting does flattering things to bare skin.',
+                say('You are going to be the death of me.'),
+              ),
+              seq(
+                'You pull yourself up onto the marble edge, letting the water cascade off your body.',
+                'You catch him watching and don\'t look away.',
+                say('You do that on purpose, don\'t you?'),
+                'You smile innocently and slip back into the water.',
+              ),
+              seq(
+                'You drift closer in the warm water until you\'re almost touching.',
+                '"I thought you said this pool was heated by the boilers?"',
+                say('It is.'),
+                '"Then why is the water so much warmer over here?"',
+                'He laughs — a real laugh, not his usual polished chuckle.',
+              ),
+            ),
+            addStat('Flirtation', 1, { max: 40, chance: 0.4 }),
+            addNpcStat('affection', 2, { max: 25, hidden: true }),
+            time(5),
+            // Very likely he makes his move
+            cond(chance(0.75),
+              exit(poolKissInitiation()),
+              // Charged atmosphere but he holds back
+              random(
+                'He holds your gaze, something smouldering behind his eyes. But he doesn\'t close the distance. Not yet.',
+                'The tension between you is palpable. He takes a breath and ducks under the water.',
+              ),
+            ),
           ),
           option('Get out',
             'You\'ve had enough swimming. You pull yourself up onto the marble edge, water streaming from your skin.',
@@ -1184,20 +1644,29 @@ registerNPC('bar-patron', {
               'He follows suit, shaking water from his hair.',
               'He watches you from the water, then hauls himself out beside you.',
             ),
-            say('Had enough?'),
-            'You towel off and change back into your clothes.',
-            wearOutfit('_before-pool', { delete: true }),
+            'He wraps himself in a monogrammed robe and hands you a towel.',
             addStat('Mood', 3, { max: 85 }),
             addNpcStat('affection', 2, { max: 20 }),
-            exit(poolFarewell()),
-          ),
-          option('Float together',
-            showNpcImage(),
             random(
-              'You drift closer until you\'re floating side by side. His arm slips around your waist beneath the water.',
-              'The swimming slows. You find yourselves treading water close together, the warm glow from below casting soft light on his face.',
+              say('Come upstairs for a drink? My room is just up the lift.'),
+              say('Shall we continue the evening upstairs? I have a rather good whisky.'),
             ),
-            exit(patronKissAttempt(poolFarewell())),
+            option('Go with him',
+              hideNpcImage(),
+              discoverLocation('room-533'),
+              'You wrap the towel around your shoulders and follow him to the lift. He doesn\'t seem to mind that you\'re still in your bikini.',
+              move('room-533', 2),
+              exit(npcInteract('room533')),
+            ),
+            option('Stay here',
+              random(
+                say('Of course. It was a lovely evening.'),
+                say('Another time, perhaps. Goodnight.'),
+              ),
+              hideNpcImage(),
+              'He gives you a warm smile and disappears towards the lobby.',
+              moveNpc('bar-patron', null),
+            ),
           ),
         ),
       ),

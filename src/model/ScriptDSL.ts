@@ -484,6 +484,11 @@ export const inPrivate = (): Instruction =>
 export const exposed = (position: string): Instruction =>
   run('exposed', { position })
 
+/** True if the player is wearing anything on clothing layers (under/inner/outer).
+ *  Optional position filter narrows the check to a single body position. */
+export const dressed = (position?: string): Instruction =>
+  run('dressed', { position })
+
 /** Check if currently in a scene (has options) */
 export const inScene = (): Instruction =>
   run('inScene', {})

@@ -3,6 +3,7 @@
  */
 
 import { registerItemDefinition, extendItem } from '../../model/Item'
+import { registerColourVariants } from './colours'
 
 // ============================================================================
 // HANDS (gloves)
@@ -140,6 +141,31 @@ registerItemDefinition(
     calcStats: (player) => {
       player.modifyStat('appearance', 4)
     },
+  })
+)
+
+registerItemDefinition(
+  'collar',
+  extendItem('base-collar', {
+    name: 'white collar',
+    description: 'A simple white collar worn close to the throat. Demure and understated.',
+    image: '/images/steamgirl/Collar.PNG',
+    value: 5,
+  })
+)
+
+registerColourVariants(
+  'collar', 'collar', 'collar',
+  c => `A simple ${c} collar worn close to the throat. Demure and understated.`,
+  'collar',
+)
+
+registerItemDefinition(
+  'ashworth-collar',
+  extendItem('collar', {
+    name: "Ashworth's collar",
+    description: 'A white leather collar with a small brass plate engraved with the initials "A." — a mark of possession as much as a gift.',
+    value: 0,
   })
 )
 

@@ -54,7 +54,7 @@ import './City' // Register city locations
 import './Market' // Register market shops and NPCs
 import './Lodgings' // Register lodgings locations and scripts
 import './Hotel' // Register hotel locations
-import './hotel/Patrons' // Register hotel patron NPCs
+import './hotel/Ashworth' // Lord Ashworth — hotel bar patron
 import './Uptown' // Register uptown locations (café, arcade)
 import './Lowtown' // Register lowtown location and NPCs
 import './Tavern' // Register tavern locations and NPCs

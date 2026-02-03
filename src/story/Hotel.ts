@@ -278,7 +278,7 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     image: '/images/hotel.jpg',
     secret: true,
     links: [
-      { dest: 'default', time: 5, label: 'Exit to City Centre' },
+      { dest: 'default', time: 5, travel: true, label: 'Exit to City Centre' },
       {
         dest: 'dorm-suite',
         time: 1,
@@ -635,13 +635,12 @@ const HOTEL_DEFINITIONS: Record<LocationId, LocationDefinition> = {
     afterUpdate: cond(
       not(inScene()),
       cond(
-        hourBetween(23, 6),
-        run('interact', { npc: 'bar-patron', script: 'bathroomIntrusion' }),
-        // Small chance Ashworth barges in for an intimate encounter
         npcLocation('bar-patron', 'room-533'),
         cond(
           wantsIntimacy('bar-patron'),
           cond(chance(0.15), run('interact', { npc: 'bar-patron', script: 'bathroomIntimacy' })),
+          hourBetween(23, 6),
+          run('interact', { npc: 'bar-patron', script: 'bathroomIntrusion' }),
         ),
       ),
     ),
