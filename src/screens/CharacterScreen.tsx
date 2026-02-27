@@ -178,13 +178,13 @@ export function CharacterScreen() {
                     <button
                       key={id}
                       className={`debug-effect-btn ${activeIds.has(id) ? 'active' : ''}`}
-                      style={{ borderColor: (def.color as string) ?? 'var(--border)' }}
+                      style={{ borderColor: def.colour ?? 'var(--border)' }}
                       onClick={() => toggleCard(id, (id) => game.addEffect(id))}
-                      title={def.description as string ?? id}
+                      title={def.description ?? id}
                     >
                       <span
                         className="debug-effect-dot"
-                        style={{ background: activeIds.has(id) ? ((def.color as string) ?? 'var(--text)') : 'transparent' }}
+                        style={{ background: activeIds.has(id) ? (def.colour ?? 'var(--text)') : 'transparent' }}
                       />
                       {def.name}
                     </button>
@@ -214,13 +214,13 @@ export function CharacterScreen() {
                     <button
                       key={id}
                       className={`debug-effect-btn ${activeIds.has(id) ? 'active' : ''}`}
-                      style={{ borderColor: (def.color as string) ?? 'var(--border)' }}
+                      style={{ borderColor: def.colour ?? 'var(--border)' }}
                       onClick={() => toggleCard(id, (id) => game.addTrait(id))}
-                      title={def.description as string ?? id}
+                      title={def.description ?? id}
                     >
                       <span
                         className="debug-effect-dot"
-                        style={{ background: activeIds.has(id) ? ((def.color as string) ?? 'var(--text)') : 'transparent' }}
+                        style={{ background: activeIds.has(id) ? (def.colour ?? 'var(--text)') : 'transparent' }}
                       />
                       {def.name}
                     </button>

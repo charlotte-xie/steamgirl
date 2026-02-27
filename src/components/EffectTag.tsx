@@ -10,7 +10,7 @@ export function EffectTag({ card }: EffectTagProps) {
   }
 
   const cardDef = card.template
-  const color = (cardDef as any).color || '#ffffff'
+  const color = cardDef.colour ?? '#ffffff'
 
   return (
     <div 

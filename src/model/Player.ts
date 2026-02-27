@@ -1,8 +1,9 @@
-import { Item, type ItemData, ensureItem, type ClothingSlotKey, type ClothingPosition, type ClothingLayer } from './Item'
+import { Item, type ItemData, ensureItem, parseSlotKey, type ClothingSlotKey, type ClothingPosition, type ClothingLayer } from './Item'
 import { Card, type CardData } from './Card'
-import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO } from './Stats'
+import { type StatName, type SkillName, type MeterName, STAT_NAMES, SKILL_INFO, isStatName } from './Stats'
 import { getImpressionCalculators } from './Impression'
 import { type OutfitData, saveOutfit, deleteOutfit, getOutfitItems } from './Outfits'
+import { mapToRecord } from '../utils/mapRecord'
 
 export type ItemSpec = string | Item
 
@@ -15,6 +16,16 @@ export type TimerName =
   | 'lastEat'
   | 'lastHairstyle'
   | 'lastIntimacy'
+
+const TIMER_NAMES: ReadonlySet<string> = new Set([
+  'lastAction', 'lastSleep', 'lastNap', 'lastWash',
+  'lastExercise', 'lastEat', 'lastHairstyle', 'lastIntimacy',
+])
+
+/** Type guard — returns true if the string is a known TimerName. */
+export function isTimerName(value: string): value is TimerName {
+  return TIMER_NAMES.has(value)
+}
 
 /** Named relationship labels for NPCs. Extensible via string literals. */
 export type Relationship =
@@ -81,39 +92,20 @@ export class Player {
   }
 
   toJSON(): PlayerData {
-    // Convert basestats Map to Record for JSON serialization
-    const basestatsRecord: Record<string, number> = {}
-    this.basestats.forEach((value, statName) => {
-      basestatsRecord[statName] = value
-    })
-
-    // Convert timers Map to Record for JSON serialization
-    const timersRecord: Record<string, number> = {}
-    this.timers.forEach((value, timerName) => {
-      timersRecord[timerName] = value
-    })
-
-    // Convert reputation Map to Record (only non-zero entries)
-    const reputationRecord: Record<string, number> = {}
-    this.reputation.forEach((value, repName) => {
-      if (value !== 0) {
-        reputationRecord[repName] = value
-      }
-    })
-
-    // Convert relationships Map to Record
-    const relationshipsRecord: Record<string, string> = {}
-    this.relationships.forEach((value, npcId) => {
-      relationshipsRecord[npcId] = value
-    })
+    // Filter out zero-value reputations to keep saves lean
+    const reputation = mapToRecord(this.reputation)
+    for (const key of Object.keys(reputation)) {
+      if (reputation[key] === 0) delete reputation[key]
+    }
+    const relationships = mapToRecord(this.relationships)
 
     return {
       name: this.name,
       hairstyle: this.hairstyle,
-      basestats: basestatsRecord,
-      timers: timersRecord,
-      reputation: Object.keys(reputationRecord).length > 0 ? reputationRecord : undefined,
-      relationships: Object.keys(relationshipsRecord).length > 0 ? relationshipsRecord : undefined,
+      basestats: mapToRecord(this.basestats),
+      timers: mapToRecord(this.timers),
+      reputation: Object.keys(reputation).length > 0 ? reputation : undefined,
+      relationships: Object.keys(relationships).length > 0 ? relationships : undefined,
       inventory: this.inventory.map(item => item.toJSON()),
       cards: this.cards.map(card => card.toJSON()),
       outfits: this.outfits,
@@ -126,24 +118,24 @@ export class Player {
     player.name = data.name
     player.hairstyle = data.hairstyle ?? 'buns'
 
-    // Deserialize basestats
+    // Deserialise basestats (skip unknown stat names from old saves)
     if (data.basestats) {
       player.basestats.clear()
-      Object.entries(data.basestats).forEach(([statName, value]) => {
-        if (typeof value === 'number') {
-          player.basestats.set(statName as StatName, value as number)
+      for (const [key, value] of Object.entries(data.basestats)) {
+        if (typeof value === 'number' && isStatName(key)) {
+          player.basestats.set(key, value)
         }
-      })
+      }
     }
-    
-    // Deserialize timers
+
+    // Deserialise timers (skip unknown timer names from old saves)
     if (data.timers) {
       player.timers.clear()
-      Object.entries(data.timers).forEach(([timerName, value]) => {
-        if (typeof value === 'number') {
-          player.timers.set(timerName as TimerName, value as number)
+      for (const [key, value] of Object.entries(data.timers)) {
+        if (typeof value === 'number' && isTimerName(key)) {
+          player.timers.set(key, value)
         }
-      })
+      }
     }
     // Deserialize reputation
     if (data.reputation) {
@@ -341,7 +333,7 @@ export class Player {
   unwearItem(slotKeyOrItemId: ClothingSlotKey | string, force: boolean = false): Item | null {
     // First try as a slot key (e.g., "chest:inner")
     if (slotKeyOrItemId.includes(':')) {
-      const [position, layer] = slotKeyOrItemId.split(':') as [ClothingPosition, ClothingLayer]
+      const { position, layer } = parseSlotKey(slotKeyOrItemId as ClothingSlotKey)
       const wornItem = this.getWornAt(position, layer)
       if (wornItem) {
         if (wornItem.locked && !force) {
@@ -380,8 +372,8 @@ export class Player {
    * @param slotKey - The clothing slot key (e.g., "chest:inner") to check
    * @returns the worn item, or undefined if nothing is worn
    */
-  getWorn(slotKey: ClothingSlotKey): Item | undefined {
-    const [position, layer] = slotKey.split(':') as [ClothingPosition, ClothingLayer]
+  getWorn(key: ClothingSlotKey): Item | undefined {
+    const { position, layer } = parseSlotKey(key)
     return this.getWornAt(position, layer)
   }
 
@@ -413,11 +405,11 @@ export class Player {
    * Skips locked items unless force is true.
    * @param force - If true, removes even locked items
    */
-  stripAll(force: boolean = false, position?: string, layer?: string): void {
+  stripAll(force: boolean = false, position?: ClothingPosition, layer?: ClothingLayer): void {
     this.inventory.forEach(item => {
       if (!item.worn) return
       if (!force && item.locked) return
-      if (position && !item.template.positions?.includes(position as ClothingPosition)) return
+      if (position && !item.template.positions?.includes(position)) return
       if (layer && item.template.layer !== layer) return
       item.worn = false
     })

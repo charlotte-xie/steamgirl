@@ -1,5 +1,6 @@
 import type { Script } from "./Scripts"
 import type { Game } from "./Game"
+import { getDefinition } from "../utils/registry"
 
 // Location definitions registry
 // Locations can be added from various story modules
@@ -97,11 +98,7 @@ export class Location {
 
   /** Gets the location definition template. */
   get template(): LocationDefinition {
-    const definition = LOCATION_DEFINITIONS[this.id]
-    if (!definition) {
-      throw new Error(`Location definition not found: ${this.id}`)
-    }
-    return definition
+    return getDefinition(LOCATION_DEFINITIONS, this.id, 'Location')
   }
 
   toJSON(): LocationData {
@@ -122,10 +119,8 @@ export class Location {
     }
     
     // Verify definition exists
-    if (!LOCATION_DEFINITIONS[locationId]) {
-      throw new Error(`Location definition not found: ${locationId}`)
-    }
-    
+    getDefinition(LOCATION_DEFINITIONS, locationId, 'Location')
+
     // Create location instance with id (this will set discovered based on secret field if not overridden)
     const location = new Location(locationId)
     

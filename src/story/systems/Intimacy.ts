@@ -18,9 +18,9 @@ const inseminatedEffect: CardDefinition = {
   name: 'Inseminated',
   description: 'You can still feel him inside you.',
   type: 'Effect',
-  color: '#f472b6', // Pink
+  colour: '#f472b6', // Pink
   onTime: (game: Game, card: Card) => {
-    const expiresAt = card.expiresAt as number
+    const expiresAt = card.num('expiresAt')
     if (expiresAt && game.time >= expiresAt) {
       game.removeCard(card.id)
     }
@@ -37,9 +37,9 @@ const ovulatingEffect: CardDefinition = {
   name: 'Ovulating',
   description: 'Your body is at its most fertile.',
   type: 'Effect',
-  color: '#f9a8d4', // Light pink
+  colour: '#f9a8d4', // Light pink
   onTime: (game: Game, card: Card, seconds: number) => {
-    const expiresAt = card.expiresAt as number
+    const expiresAt = card.num('expiresAt')
     if (expiresAt && game.time >= expiresAt) {
       game.removeCard(card.id)
       return
@@ -69,7 +69,7 @@ const pregnantEffect: CardDefinition = {
   name: 'Pregnant',
   description: 'You are carrying a child.',
   type: 'Effect',
-  color: '#f472b6', // Pink
+  colour: '#f472b6', // Pink
   replaces: ['ovulating'],
   // Instance carries `father` — the NPC id from the Inseminated effect
 }

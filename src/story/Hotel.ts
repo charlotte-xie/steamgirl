@@ -23,9 +23,9 @@ const hotelBookingCard: CardDefinition = {
   name: 'Hotel Booking',
   description: 'You have a room booked at the Imperial Hotel until 11am tomorrow.',
   type: 'Access',
-  color: '#d4af37', // Gold
+  colour: '#d4af37', // Gold
   onTime: (game: Game, card: Card) => {
-    const expiresAt = card.expiresAt as number
+    const expiresAt = card.num('expiresAt')
     if (expiresAt && game.time >= expiresAt) {
       game.removeCard(card.id)
     }
@@ -46,9 +46,9 @@ const suiteBookingCard: CardDefinition = {
   name: 'Suite Booking',
   description: 'You have the Imperial Suite booked until 11am tomorrow.',
   type: 'Access',
-  color: '#c9a227', // Rich gold
+  colour: '#c9a227', // Rich gold
   onTime: (game: Game, card: Card) => {
-    const expiresAt = card.expiresAt as number
+    const expiresAt = card.num('expiresAt')
     if (expiresAt && game.time >= expiresAt) {
       game.removeCard(card.id)
     }

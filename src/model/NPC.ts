@@ -3,6 +3,8 @@ import { makeScript, parseArgs, interpolateString, type Accessor, type Instructi
 import { type InlineContent, speech } from "./Format"
 import { capitalise } from "./Text"
 import { getFaction } from "./Faction"
+import { mapToRecord } from "../utils/mapRecord"
+import { getDefinition } from "../utils/registry"
 
 export type NPCId = string
 
@@ -220,11 +222,7 @@ export class NPC {
 
   /** Gets the NPC definition template. */
   get template(): NPCDefinition {
-    const definition = NPC_DEFINITIONS[this.id]
-    if (!definition) {
-      throw new Error(`NPC definition not found: ${this.id}`)
-    }
-    return definition
+    return getDefinition(NPC_DEFINITIONS, this.id, 'NPC')
   }
 
   /** Gets this NPC's pronouns (defaults to they/them/their). */
@@ -273,16 +271,9 @@ export class NPC {
   }
 
   toJSON(): NPCData {
-    // Convert stats Map to Record for JSON serialization
-    const statsRecord: Record<string, number> = {}
-    this.stats.forEach((value, key) => {
-      statsRecord[key] = value
-    })
-    
-    // Only serialize mutable state and id
     return {
       id: this.id,
-      stats: statsRecord,
+      stats: mapToRecord(this.stats),
       location: this.location,
     }
   }
@@ -296,11 +287,8 @@ export class NPC {
     }
     
     // Verify definition exists
-    const definition = NPC_DEFINITIONS[npcId]
-    if (!definition) {
-      throw new Error(`NPC definition not found: ${npcId}`)
-    }
-    
+    getDefinition(NPC_DEFINITIONS, npcId, 'NPC')
+
     // Create the NPC instance
     const npc = new NPC(npcId, game)
     

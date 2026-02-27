@@ -10,14 +10,14 @@ export const intoxicatedEffect: CardDefinition = {
   name: 'Intoxicated',
   description: 'You feel lightheaded and giddy from the wine.',
   type: 'Effect',
-  color: '#9333ea', // Purple
+  colour: '#9333ea', // Purple
   onTime: (game: Game, card: Card, seconds: number) => {
     // Calculate the number of 15-minute (900 second) boundaries crossed
     const ticks = game.calcTicks(seconds, 900)
     // Reduce alcohol by 10 for each boundary crossed
     const reduction = ticks * 10
     if (reduction > 0) {
-      const currentAlcohol = (card.alcohol as number) || 0
+      const currentAlcohol = card.num('alcohol')
       const newAlcohol = Math.max(0, currentAlcohol - reduction)
       card.alcohol = newAlcohol
       
@@ -30,7 +30,7 @@ export const intoxicatedEffect: CardDefinition = {
     }
   },
   calcStats: (player: Player, card: Card, _stats: Map<StatName, number>) => {
-    const alcohol = (card.alcohol as number) || 0
+    const alcohol = card.num('alcohol')
     
     // Give +5 Charm bonus if alcohol is low (< 100)
     if (alcohol < 100) {
@@ -68,7 +68,7 @@ export const sleepyEffect: CardDefinition = {
   name: 'Sleepy',
   description: 'You feel tired and drowsy.',
   type: 'Effect',
-  color: '#3b82f6', // Blue
+  colour: '#3b82f6', // Blue
 }
 
 // --- Hunger effects (escalating severity) ---
@@ -77,7 +77,7 @@ export const peckishEffect: CardDefinition = {
   name: 'Peckish',
   description: 'Your stomach grumbles. You could do with something to eat.',
   type: 'Effect',
-  color: '#f59e0b', // Amber
+  colour: '#f59e0b', // Amber
   hungerLevel: 50,
   subsumedBy: ['hungry', 'starving'],
   onAdded: (_game: Game) => {
@@ -102,7 +102,7 @@ export const hungryEffect: CardDefinition = {
   name: 'Hungry',
   description: 'You are properly hungry now. It is hard to concentrate.',
   type: 'Effect',
-  color: '#f97316', // Orange
+  colour: '#f97316', // Orange
   hungerLevel: 100,
   replaces: ['peckish'],
   subsumedBy: ['starving'],
@@ -133,7 +133,7 @@ export const starvingEffect: CardDefinition = {
   name: 'Starving',
   description: 'You are weak with hunger. Everything is a struggle.',
   type: 'Effect',
-  color: '#ef4444', // Red
+  colour: '#ef4444', // Red
   hungerLevel: 150,
   replaces: ['peckish', 'hungry'],
   onAdded: (game: Game) => {
@@ -165,7 +165,7 @@ export const freshEffect: CardDefinition = {
   name: 'Fresh',
   description: 'You feel clean and refreshed after a good wash. Your confidence is lifted.',
   type: 'Effect',
-  color: '#38bdf8', // Sky blue
+  colour: '#38bdf8', // Sky blue
   onAdded: (game: Game, card: Card) => {
     card.addedAt = game.time
     game.add({ type: 'text', text: 'You feel wonderfully fresh and clean.', color: '#38bdf8' })
@@ -177,7 +177,7 @@ export const freshEffect: CardDefinition = {
   onTime: (game: Game, card: Card, seconds: number) => {
     // Grace period of 30 minutes after last wash, then 1% chance per minute of wearing off
     const lastWash = game.player.getTimer('lastWash')
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - Math.max(lastWash, addedAt)
     const gracePeriod = 30 * 60 // 30 minutes in seconds
     if (elapsed <= gracePeriod) return
@@ -196,7 +196,7 @@ export const flushedEffect: CardDefinition = {
   name: 'Flushed',
   description: 'Your pulse is racing and your cheeks are warm.',
   type: 'Effect',
-  color: '#ec4899', // Pink — matches Arousal meter
+  colour: '#ec4899', // Pink — matches Arousal meter
   // Removed by accumulateFlushed when arousal drops below threshold
 }
 
@@ -214,19 +214,19 @@ export const makeupEffect: CardDefinition = {
   name: 'Made Up',
   description: 'Your makeup enhances your appearance.',
   type: 'Effect',
-  color: '#f472b6', // Pink
+  colour: '#f472b6', // Pink
   // quality: 0 = poor, 1 = passable, 2 = good, 3 = flawless
   onAdded: (game: Game, card: Card) => {
     card.addedAt = game.time
   },
   calcStats: (player: Player, card: Card) => {
-    const quality = (card.quality as number) ?? 1
+    const quality = (card.num('quality') || 1)
     const bonus = [2, 5, 10, 15][quality] ?? 5
     player.modifyStat('appearance', bonus)
     if (quality >= 3) player.modifyStat('Charm', 3)
   },
   onTime: (game: Game, card: Card) => {
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - addedAt
     if (elapsed >= 3 * 60 * 60) { // 3 hours
       game.removeCard(card.id)
@@ -241,7 +241,7 @@ export const sweatyEffect: CardDefinition = {
   name: 'Sweaty',
   description: 'You are flushed and damp with perspiration. Not a good look.',
   type: 'Effect',
-  color: '#ea580c', // Orange-red
+  colour: '#ea580c', // Orange-red
   calcStats: (player: Player) => {
     player.modifyStat('Charm', -5)
     player.modifyStat('appearance', -10)
@@ -249,7 +249,7 @@ export const sweatyEffect: CardDefinition = {
   },
   onTime: (game: Game, card: Card, seconds: number) => {
     // Sweaty wears off after ~45 minutes (grace 20 min, then 2% per minute)
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - addedAt
     if (elapsed < 20 * 60) return
     const minutes = Math.floor(seconds / 60)
@@ -274,7 +274,7 @@ export const tiredEffect: CardDefinition = {
   name: 'Tired',
   description: 'Weariness is catching up with you. Everything takes a little more effort.',
   type: 'Effect',
-  color: '#6366f1', // Indigo
+  colour: '#6366f1', // Indigo
   subsumedBy: ['exhausted'],
   calcStats: (player: Player) => {
     player.modifyStat('Wits', -5)
@@ -301,7 +301,7 @@ export const exhaustedEffect: CardDefinition = {
   name: 'Exhausted',
   description: 'You can barely keep your eyes open. Your body is screaming for rest.',
   type: 'Effect',
-  color: '#4338ca', // Darker indigo
+  colour: '#4338ca', // Darker indigo
   replaces: ['tired'],
   calcStats: (player: Player) => {
     player.modifyStat('Wits', -15)
@@ -328,7 +328,7 @@ export const dizzyEffect: CardDefinition = {
   name: 'Dizzy',
   description: 'The world tilts and sways around you. Concentration is difficult.',
   type: 'Effect',
-  color: '#a855f7', // Purple
+  colour: '#a855f7', // Purple
   calcStats: (player: Player) => {
     player.modifyStat('Dexterity', -10)
     player.modifyStat('Perception', -10)
@@ -341,7 +341,7 @@ export const dizzyEffect: CardDefinition = {
   },
   onTime: (game: Game, card: Card, seconds: number) => {
     // Dizzy clears after ~20 minutes (grace 10 min, then 5% per minute)
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - addedAt
     if (elapsed < 10 * 60) return
     const minutes = Math.floor(seconds / 60)
@@ -360,7 +360,7 @@ export const euphoricEffect: CardDefinition = {
   name: 'Euphoric',
   description: 'A warm golden haze suffuses everything. The world is beautiful and nothing hurts.',
   type: 'Effect',
-  color: '#f59e0b', // Amber/gold
+  colour: '#f59e0b', // Amber/gold
   subsumedBy: ['spaced-out'],
   calcStats: (player: Player) => {
     player.modifyStat('Charm', 5)
@@ -376,7 +376,7 @@ export const euphoricEffect: CardDefinition = {
     game.add({ type: 'text', text: 'A blissful warmth spreads through you. Everything feels wonderful.', color: '#f59e0b' })
   },
   onTime: (game: Game, card: Card, seconds: number) => {
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - addedAt
     // After 30 minutes, chance to escalate to Spaced Out (0.5% per minute)
     if (elapsed >= 30 * 60) {
@@ -401,7 +401,7 @@ export const spacedOutEffect: CardDefinition = {
   name: 'Spaced Out',
   description: 'You have taken too much. Reality is distant and unreliable.',
   type: 'Effect',
-  color: '#d97706', // Darker amber
+  colour: '#d97706', // Darker amber
   replaces: ['euphoric'],
   calcStats: (player: Player) => {
     player.modifyStat('Wits', -20)
@@ -421,7 +421,7 @@ export const spacedOutEffect: CardDefinition = {
   },
   onTime: (game: Game, card: Card) => {
     // Transitions to Comedown after 45 minutes
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - addedAt
     if (elapsed >= 45 * 60) {
       game.removeCard(card.id, true)
@@ -434,7 +434,7 @@ export const comedownEffect: CardDefinition = {
   name: 'Comedown',
   description: 'The high has faded, leaving a hollow ache. Everything feels flat and grey.',
   type: 'Effect',
-  color: '#78716c', // Stone grey
+  colour: '#78716c', // Stone grey
   replaces: ['euphoric', 'spaced-out'],
   calcStats: (player: Player) => {
     player.modifyStat('Mood', -20)
@@ -451,7 +451,7 @@ export const comedownEffect: CardDefinition = {
   },
   onTime: (game: Game, card: Card, seconds: number) => {
     // Comedown clears after ~90 minutes (grace 30 min, then 1% per minute)
-    const addedAt = (card.addedAt as number) ?? 0
+    const addedAt = card.num('addedAt')
     const elapsed = game.time - addedAt
     if (elapsed < 30 * 60) return
     const minutes = Math.floor(seconds / 60)
@@ -470,7 +470,7 @@ export const grubbyEffect: CardDefinition = {
   name: 'Grubby',
   description: 'You are looking a bit unkempt and could do with a wash.',
   type: 'Effect',
-  color: '#a8a29e', // Warm grey
+  colour: '#a8a29e', // Warm grey
   subsumedBy: ['filthy'],
   replaces: ['fresh'],
   calcStats: (player: Player) => {
@@ -493,7 +493,7 @@ export const filthyEffect: CardDefinition = {
   name: 'Filthy',
   description: 'You are visibly dirty. People wrinkle their noses as you pass.',
   type: 'Effect',
-  color: '#78716c', // Stone
+  colour: '#78716c', // Stone
   replaces: ['grubby', 'fresh'],
   calcStats: (player: Player) => {
     player.modifyStat('appearance', -15)

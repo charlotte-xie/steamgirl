@@ -5,6 +5,7 @@ import { getScript, isInstruction, isScriptFn, isAccessor, interpolateString, ty
 import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
 import { intervalsCrossed } from '../utils/intervalsCrossed'
+import { mapToRecord } from '../utils/mapRecord'
 
 /** Find the index of the first expression character (: or () in a script name, or -1 if plain. */
 function findExpressionStart(script: string): number {
@@ -544,7 +545,7 @@ export class Game {
         (cardDef.onAdded as (game: Game, card: Card) => void)(this, card)
       } else {
         const defaultColors: Record<string, string> = { Quest: '#f0c060', Effect: '#a78bfa' }
-        const color = typeof cardDef.color === 'string' ? cardDef.color : defaultColors[type]
+        const color = cardDef.colour ?? defaultColors[type]
         this.add({ type: 'text', text: `${type}: ${cardDef.name}`, color })
       }
     }
@@ -641,30 +642,20 @@ export class Game {
     this.locations.forEach((location, id) => {
       locationsRecord[id] = location.toJSON()
     })
-    
-    // Ensure currentLocation is included in serialization if it exists but isn't in the map yet
-    // This can happen if the location hasn't been accessed yet (lazy initialization)
+
+    // Ensure currentLocation is included in serialisation if it exists but isn't in the map yet
+    // This can happen if the location hasn't been accessed yet (lazy initialisation)
     if (this.currentLocation && !locationsRecord[this.currentLocation]) {
-      // Try to get the location (will create it if definition exists, throws if it doesn't)
-      // We catch the error to handle cases where story content isn't loaded yet
       try {
         const location = this.getLocation(this.currentLocation)
         locationsRecord[this.currentLocation] = location.toJSON()
-      } catch (error) {
-        // Location definition doesn't exist - skip including it in serialization
-        // This can happen if story content isn't loaded yet
+      } catch {
+        // Location definition doesn't exist — skip (story content might not be loaded yet)
       }
     }
-    
-    // Convert NPCs map to Record for JSON serialization
+
     const npcsRecord: Record<string, NPCData> = {}
-    this.npcs.forEach((npc, id) => {
-      npcsRecord[id] = npc.toJSON()
-    })
-    
-    // Convert settings map to Record for JSON serialization
-    const settingsRecord: Record<string, boolean> = {}
-    this.settings.forEach((value, key) => { settingsRecord[key] = value })
+    this.npcs.forEach((npc, id) => { npcsRecord[id] = npc.toJSON() })
 
     return {
       version: this.version,
@@ -675,7 +666,7 @@ export class Game {
       currentLocation: this.currentLocation,
       scene: this.scene,
       time: this.time,
-      settings: settingsRecord,
+      settings: mapToRecord(this.settings),
     }
   }
 

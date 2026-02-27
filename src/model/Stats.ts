@@ -187,6 +187,18 @@ export const IMPRESSION_INFO: Record<ImpressionName, ImpressionInfo> = {
 
 export const IMPRESSION_NAMES: ImpressionName[] = Object.keys(IMPRESSION_INFO) as ImpressionName[]
 
+/** Set of all known stat names (main stats + skills + meters + impressions). */
+const ALL_STAT_NAMES: ReadonlySet<string> = new Set<string>([
+  ...STAT_NAMES, ...SKILL_NAMES,
+  ...Object.keys(METER_INFO),
+  ...IMPRESSION_NAMES,
+])
+
+/** Type guard — returns true if the string is a known StatName. */
+export function isStatName(value: string): value is StatName {
+  return ALL_STAT_NAMES.has(value)
+}
+
 /**
  * Type for stat modifiers - a function that modifies stats.
  * Receives the current stats map and can modify values.

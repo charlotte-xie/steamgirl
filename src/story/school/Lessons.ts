@@ -93,7 +93,7 @@ function lessonReminders(game: Game, card: Card): Reminder[] {
 
   const dayOfWeek = game.date.getDay()
   const hour = game.hourOfDay
-  const lastAttended = card.lastAttended as number | undefined
+  const lastAttended = card.num('lastAttended') || undefined
   const reminders: Reminder[] = []
   for (const slot of timing.slots) {
     if (slot.day !== dayOfWeek) continue

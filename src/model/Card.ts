@@ -2,6 +2,7 @@ import type { Script } from "./Scripts"
 import type { StatName } from "./Stats"
 import type { Player } from "./Player"
 import type { Game } from "./Game"
+import { getDefinition } from "../utils/registry"
 
 export type CardId = string
 export type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task' | 'Access' | 'Date'
@@ -39,6 +40,8 @@ export interface CardDefinition {
   calcStats?: (player: Player, card: Card, stats: Map<StatName, number>) => void
   /** Generate transient reminders for this card (timetable entries, deadlines, etc.). */
   reminders?: (game: Game, card: Card) => Reminder[]
+  /** Display colour for this card (used in UI for effect tags, debug buttons, etc.). */
+  colour?: string
   /** Card IDs that this card replaces (removed when this card is added). */
   replaces?: CardId[]
   /** Card IDs that subsume this card (this card is not added if any are present). */
@@ -68,13 +71,15 @@ export class Card {
     this.type = type
   }
 
+  /** Read a numeric custom property (returns 0 if absent/non-numeric). */
+  num(key: string): number {
+    const v = this[key]
+    return typeof v === 'number' ? v : 0
+  }
+
   /** Gets the card definition template. */
   get template(): CardDefinition {
-    const definition = CARD_DEFINITIONS[this.id]
-    if (!definition) {
-      throw new Error(`Card definition not found: ${this.id}`)
-    }
-    return definition
+    return getDefinition(CARD_DEFINITIONS, this.id, 'Card')
   }
 
   toJSON(): CardData {
@@ -108,10 +113,8 @@ export class Card {
     }
     
     // Verify definition exists
-    if (!CARD_DEFINITIONS[cardId]) {
-      throw new Error(`Card definition not found: ${cardId}`)
-    }
-    
+    getDefinition(CARD_DEFINITIONS, cardId, 'Card')
+
     // Create card instance
     const card = new Card(cardId, cardType)
     

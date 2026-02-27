@@ -5,7 +5,7 @@ export const introvertTrait: CardDefinition = {
   name: 'Introvert',
   description: 'Socialising drains your energy, but solitary activities feel more natural.',
   type: 'Trait',
-  color: '#6366f1', // Indigo
+  colour: '#6366f1', // Indigo
   replaces: ['extrovert'],
 }
 
@@ -13,7 +13,7 @@ export const extrovertTrait: CardDefinition = {
   name: 'Extrovert',
   description: 'You thrive on social interaction, gaining energy and mood from company.',
   type: 'Trait',
-  color: '#f59e0b', // Amber
+  colour: '#f59e0b', // Amber
   replaces: ['introvert'],
 }
 

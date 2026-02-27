@@ -49,7 +49,12 @@ export interface DateCardData {
 
 /** Type-safe accessor for date card properties. */
 export function dateCardData(card: Card): DateCardData {
-  return card as unknown as DateCardData
+  return {
+    npc: card.npc as string,
+    meetTime: card.num('meetTime'),
+    meetLocation: card.meetLocation as string,
+    dateStarted: !!card.dateStarted,
+  }
 }
 
 // ============================================================================
@@ -233,7 +238,7 @@ const dateCardDefinition: CardDefinition = {
   name: 'Date',
   description: 'You have a date arranged.',
   type: 'Date',
-  color: '#f472b6',
+  colour: '#f472b6',
 
   displayName: (card: Card) => {
     const plan = DATE_PLANS[dateCardData(card).npc]

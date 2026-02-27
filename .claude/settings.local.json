@@ -21,7 +21,8 @@
       "Bash(pnpm add:*)",
       "Bash(git mv:*)",
       "Bash(powershell -Command:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(wc:*)"
     ]
   }
 }

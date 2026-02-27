@@ -23,7 +23,7 @@ import { type StatName, type MeterName, MAIN_STAT_INFO, SKILL_INFO, METER_INFO }
 import { type TimerName } from './Player'
 import { capitalise } from './Text'
 import { getLocation } from './Location'
-import { getItem } from './Item'
+import { getItem, isClothingPosition, type ClothingPosition, type ClothingLayer } from './Item'
 import { getReputation, type ReputationId } from './Faction'
 import { impression, getImpressionStat } from './Impression'
 import type { ImpressionName } from './Stats'
@@ -433,7 +433,7 @@ const coreScripts: Record<string, ScriptFn> = {
   },
 
   /** Unwear clothing. Optionally filter by position and/or layer. Respects locks unless force is true. */
-  stripAll: (game: Game, params: { force?: boolean; position?: string; layer?: string } = {}) => {
+  stripAll: (game: Game, params: { force?: boolean; position?: ClothingPosition; layer?: ClothingLayer } = {}) => {
     game.player.stripAll(params.force ?? false, params.position, params.layer)
     game.player.calcStats()
   },
@@ -441,16 +441,16 @@ const coreScripts: Record<string, ScriptFn> = {
   /** Ensure essential clothing slots are covered (chest & hips, under & inner layers). No-op if already dressed. */
   fixClothing: (game: Game) => {
     const p = game.player
-    const slots: [string, string][] = [
+    const slots: [ClothingPosition, ClothingLayer][] = [
       ['chest', 'under'], ['chest', 'inner'],
       ['hips', 'under'], ['hips', 'inner'],
     ]
     let dressed = false
     for (const [position, layer] of slots) {
-      if (p.getWornAt(position as any, layer as any)) continue
+      if (p.getWornAt(position, layer)) continue
       // Find an unworn item that covers this slot
       const item = p.inventory.find(i =>
-        !i.worn && i.template.layer === layer && i.template.positions?.includes(position as any)
+        !i.worn && i.template.layer === layer && i.template.positions?.includes(position)
       )
       if (item) {
         p.wearItem(item)
@@ -868,20 +868,20 @@ const coreScripts: Record<string, ScriptFn> = {
   /** True if a body position is exposed (nothing worn at under, inner, or outer layers). */
   exposed: (game: Game, params: { position?: string }): boolean => {
     const position = params.position
-    if (!position) return false
-    const layers = ['under', 'inner', 'outer'] as const
-    return layers.every(layer => !game.player.getWornAt(position as any, layer))
+    if (!position || !isClothingPosition(position)) return false
+    const layers: ClothingLayer[] = ['under', 'inner', 'outer']
+    return layers.every(layer => !game.player.getWornAt(position, layer))
   },
 
   /** True if the player is wearing anything on clothing layers (under/inner/outer).
    *  Optional position filter narrows the check to a single body position. */
   dressed: (game: Game, params: { position?: string }): boolean => {
-    const layers = ['under', 'inner', 'outer'] as const
-    if (params.position) {
-      return layers.some(layer => !!game.player.getWornAt(params.position as any, layer))
+    const layers: ClothingLayer[] = ['under', 'inner', 'outer']
+    if (params.position && isClothingPosition(params.position)) {
+      return layers.some(layer => !!game.player.getWornAt(params.position as ClothingPosition, layer))
     }
     // No position — check all positions
-    const positions = ['head', 'face', 'neck', 'chest', 'belly', 'arms', 'wrists', 'hands', 'waist', 'hips', 'legs', 'feet'] as const
+    const positions: ClothingPosition[] = ['head', 'face', 'neck', 'chest', 'belly', 'arms', 'wrists', 'hands', 'waist', 'hips', 'legs', 'feet']
     return positions.some(pos => layers.some(layer => !!game.player.getWornAt(pos, layer)))
   },
 

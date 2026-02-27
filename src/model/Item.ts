@@ -4,6 +4,7 @@ import { consumeAlcohol, eatFood } from '../story/Effects'
 import { capitalise } from './Text'
 import type { StatName } from './Stats'
 import type { Player } from './Player'
+import { getDefinition } from '../utils/registry'
 
 export type ItemId = string
 
@@ -39,6 +40,24 @@ export interface ClothingSlot {
   layer: ClothingLayer
 }
 
+const CLOTHING_POSITIONS: ReadonlySet<string> = new Set<string>([
+  'head', 'face', 'neck', 'chest', 'belly', 'arms', 'wrists', 'hands', 'waist', 'hips', 'legs', 'feet',
+])
+
+const CLOTHING_LAYERS: ReadonlySet<string> = new Set<string>([
+  'body', 'under', 'inner', 'outer', 'accessory',
+])
+
+/** Type guard — returns true if the string is a valid ClothingPosition. */
+export function isClothingPosition(value: string): value is ClothingPosition {
+  return CLOTHING_POSITIONS.has(value)
+}
+
+/** Type guard — returns true if the string is a valid ClothingLayer. */
+export function isClothingLayer(value: string): value is ClothingLayer {
+  return CLOTHING_LAYERS.has(value)
+}
+
 // String key for the worn map (e.g., "chest:inner", "legs:under")
 export type ClothingSlotKey = `${ClothingPosition}:${ClothingLayer}`
 
@@ -47,7 +66,10 @@ export function slotKey(position: ClothingPosition, layer: ClothingLayer): Cloth
 }
 
 export function parseSlotKey(key: ClothingSlotKey): ClothingSlot {
-  const [position, layer] = key.split(':') as [ClothingPosition, ClothingLayer]
+  const [position, layer] = key.split(':')
+  if (!isClothingPosition(position) || !isClothingLayer(layer)) {
+    throw new Error(`Invalid slot key: ${key}`)
+  }
   return { position, layer }
 }
 
@@ -226,11 +248,7 @@ export class Item {
 
   /** Gets the item definition template. */
   get template(): ItemDefinition {
-    const definition = ITEM_DEFINITIONS[this.id]
-    if (!definition) {
-      throw new Error(`Item definition not found: ${this.id}`)
-    }
-    return definition
+    return getDefinition(ITEM_DEFINITIONS, this.id, 'Item')
   }
 
   /**
@@ -279,10 +297,8 @@ export class Item {
     }
     
     // Verify definition exists
-    if (!ITEM_DEFINITIONS[itemId]) {
-      throw new Error(`Item definition not found: ${itemId}`)
-    }
-    
+    getDefinition(ITEM_DEFINITIONS, itemId, 'Item')
+
     // Create item instance with id, number, worn state, and locked state
     const number = data.number ?? 1
     const worn = data.worn ?? false
