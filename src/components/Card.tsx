@@ -1,5 +1,6 @@
 import { Card as CardModel } from '../model/Card'
 import { assetUrl } from '../utils/assetUrl'
+import { COLOURS } from '../model/Format'
 
 type CardProps = {
   card: CardModel
@@ -17,13 +18,13 @@ export function Card({ card }: CardProps) {
   if (cardDef.type === 'Quest' || cardDef.type === 'Date') {
     if (card.completed === true) {
       status = 'Completed'
-      statusColor = '#10b981' // green
+      statusColor = COLOURS.positive
     } else if (card.failed === true) {
       status = 'Failed'
-      statusColor = '#ef4444' // red
+      statusColor = COLOURS.negative
     } else {
       status = cardDef.type === 'Date' ? 'Pending' : 'Ongoing'
-      statusColor = cardDef.type === 'Date' ? '#f472b6' : '#3b82f6'
+      statusColor = cardDef.type === 'Date' ? COLOURS.romantic : COLOURS.discovery
     }
   }
 

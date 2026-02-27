@@ -4,6 +4,7 @@ import type { Card } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { makeScript } from '../model/Scripts'
 import type { StatName } from '../model/Stats'
+import { COLOURS } from '../model/Format'
 import type { Player } from '../model/Player'
 
 export const intoxicatedEffect: CardDefinition = {
@@ -139,10 +140,10 @@ export const starvingEffect: CardDefinition = {
   onAdded: (game: Game) => {
     if (game.player.sleeping) {
       // Starving wakes the player - it's a danger condition
-      game.add({ type: 'text', text: 'You have a gnawing ache in your stomach. Your body is demanding food.', color: '#ef4444' })
+      game.add({ type: 'text', text: 'You have a gnawing ache in your stomach. Your body is demanding food.', color: COLOURS.negative })
       game.addOption('endScene', 'Get up')
     } else {
-      game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: '#ef4444' })
+      game.add({ type: 'text', text: 'You feel faint with hunger. Your hands are trembling and your vision swims.', color: COLOURS.negative })
     }
   },
   calcStats: (player: Player, _card: Card, _stats: Map<StatName, number>) => {
@@ -810,7 +811,7 @@ export function applyRelaxation(game: Game, minutes: number, quality: number): v
   const actualGain = game.player.addBaseStat('Energy', energyGain)
 
   if (actualGain > 0) {
-    game.add({ type: 'text', text: `+${Math.round(actualGain)} Energy`, color: '#10b981' })
+    game.add({ type: 'text', text: `+${Math.round(actualGain)} Energy`, color: COLOURS.positive })
   }
 }
 

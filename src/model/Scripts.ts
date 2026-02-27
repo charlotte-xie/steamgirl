@@ -18,7 +18,7 @@
 
 import { Game} from './Game'
 import { type InlineContent } from './Format'
-import { speech, p, highlight, colour } from './Format'
+import { speech, p, highlight, colour, COLOURS } from './Format'
 import { type StatName, type MeterName, MAIN_STAT_INFO, SKILL_INFO, METER_INFO } from './Stats'
 import { type TimerName } from './Player'
 import { capitalise } from './Text'
@@ -573,7 +573,7 @@ const coreScripts: Record<string, ScriptFn> = {
         if (meterInfo) {
           displayColor = change > 0 ? meterInfo.gainColor : meterInfo.lossColor
         } else {
-          displayColor = change > 0 ? '#10b981' : '#ef4444'
+          displayColor = change > 0 ? COLOURS.positive : COLOURS.negative
         }
       }
 
@@ -634,7 +634,7 @@ const coreScripts: Record<string, ScriptFn> = {
 
     if (!params.hidden) {
       const sign = actualChange > 0 ? '+' : ''
-      const color = actualChange > 0 ? '#10b981' : '#ef4444'
+      const color = actualChange > 0 ? COLOURS.positive : COLOURS.negative
       game.add(colour(`${capitalise(stat)} ${sign}${actualChange}`, color))
     }
   },
@@ -1372,7 +1372,7 @@ const coreScripts: Record<string, ScriptFn> = {
     gameLocation.discovered = true
 
     if (params.text) {
-      const displayColor = params.colour || '#3b82f6'
+      const displayColor = params.colour || COLOURS.discovery
       game.add(colour(params.text, displayColor))
     }
   },

@@ -1,6 +1,6 @@
 import { Game } from '../model/Game'
 import { makeScripts } from '../model/Scripts'
-import { p, highlight} from '../model/Format'
+import { p, highlight, COLOURS } from '../model/Format'
 import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
@@ -327,7 +327,7 @@ export const attendUniversityQuest: CardDefinition = {
       if (!hallwayLocation.discovered) {
         // Player didn't attend - mark as failed
         quest.failed = true
-        game.add({ type: 'text', text: 'You failed to attend University induction.... this could be bad....', color: '#ef4444' })
+        game.add({ type: 'text', text: 'You failed to attend University induction.... this could be bad....', color: COLOURS.negative })
       }
     }
   },

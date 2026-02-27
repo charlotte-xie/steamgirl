@@ -1,5 +1,6 @@
 import { useGame } from '../context/GameContext'
 import { STAT_NAMES, MAIN_STAT_INFO, type MainStatName } from '../model/Stats'
+import { COLOURS } from '../model/Format'
 import { MeterPanel } from './MeterPanel'
 import { Frame } from './Frame'
 
@@ -51,7 +52,7 @@ export function StatsPanel() {
                 {STAT_ABBREV[statName]}
               </span>
               <span style={{
-                color: modifier > 0 ? '#10b981' : modifier < 0 ? '#ef4444' : 'var(--text-main)',
+                color: modifier > 0 ? COLOURS.positive : modifier < 0 ? COLOURS.negative : 'var(--text-main)',
                 fontWeight: 600,
                 fontSize: 'var(--font-md)',
               }}>

@@ -151,13 +151,13 @@ const UPTOWN_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           time(8),
           cond(
             and(not(locationDiscovered('uptown-cafe')), skillCheck('Perception', 0)),
-            discoverLocation('uptown-cafe', 'You notice a charming café tucked behind a row of ornamental steam-trees, its windows fogged with warmth. A brass sign reads: The Gilt Lily.', '#3b82f6'),
+            discoverLocation('uptown-cafe', 'You notice a charming café tucked behind a row of ornamental steam-trees, its windows fogged with warmth. A brass sign reads: The Gilt Lily.'),
             and(not(locationDiscovered('uptown-arcade')), skillCheck('Perception', 0)),
-            discoverLocation('uptown-arcade', 'A grand glass-roofed arcade stretches between two boulevards, its ironwork arches glinting in the light. Inside, boutiques and curiosity shops beckon.', '#3b82f6'),
+            discoverLocation('uptown-arcade', 'A grand glass-roofed arcade stretches between two boulevards, its ironwork arches glinting in the light. Inside, boutiques and curiosity shops beckon.'),
             and(not(locationDiscovered('uptown-salon')), skillCheck('Perception', 0)),
-            discoverLocation('uptown-salon', 'A discreet brass plaque beside an elegant doorway reads: Madame Voss — Coiffure & Beautification. Through the frosted glass, you glimpse velvet chairs and gleaming mirrors.', '#3b82f6'),
+            discoverLocation('uptown-salon', 'A discreet brass plaque beside an elegant doorway reads: Madame Voss — Coiffure & Beautification. Through the frosted glass, you glimpse velvet chairs and gleaming mirrors.'),
             and(not(locationDiscovered('uptown-clinic')), skillCheck('Perception', 0)),
-            discoverLocation('uptown-clinic', 'A polished door of dark wood bears a small engraved sign: Dr. Harland — Physician & Surgeon. The windows are spotless, the curtains drawn.', '#3b82f6'),
+            discoverLocation('uptown-clinic', 'A polished door of dark wood bears a small engraved sign: Dr. Harland — Physician & Surgeon. The windows are spotless, the curtains drawn.'),
             // Morning
             hourBetween(6, 12),
             random(

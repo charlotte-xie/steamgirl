@@ -1,6 +1,17 @@
 import type { Instruction } from './Scripts'
 
 // ============================================================================
+// SEMANTIC COLOURS — shared across components, scripts, and story content
+// ============================================================================
+
+export const COLOURS = {
+  positive: '#10b981',   // Green — stat gains, quest completion, energy restored
+  negative: '#ef4444',   // Red — stat losses, failures, warnings
+  discovery: '#3b82f6',  // Blue — location discoveries, info status
+  romantic: '#f472b6',   // Pink — dating, makeup, intimacy
+} as const
+
+// ============================================================================
 // CONTENT TYPES
 // ============================================================================
 

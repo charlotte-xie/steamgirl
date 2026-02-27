@@ -66,7 +66,6 @@ export function maybeDiscoverLocation(
     game.run('discoverLocation', {
       location: locationId,
       text: message,
-      colour: '#3b82f6',
     })
     return true
   }

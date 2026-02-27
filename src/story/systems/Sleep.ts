@@ -11,6 +11,7 @@
 
 import { Game } from '../../model/Game'
 import { makeScript } from '../../model/Scripts'
+import { COLOURS } from '../../model/Format'
 import { applyRelaxation } from '../Effects'
 
 // ============================================================================
@@ -235,13 +236,13 @@ export function sleep(game: Game, params: SleepParams = {}): void {
     // Prepend wakeup message to existing scene content
     game.scene.content.unshift({ type: 'paragraph', content: [{ type: 'text', text: wakeupMessage }] })
     if (energyRestored > 0) {
-      game.scene.content.splice(1, 0, { type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: '#10b981' })
+      game.scene.content.splice(1, 0, { type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: COLOURS.positive })
     }
   } else {
     // Normal wakeup - add messages normally
     game.add(wakeupMessage)
     if (energyRestored > 0) {
-      game.add({ type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: '#10b981' })
+      game.add({ type: 'text', text: `+${Math.round(energyRestored)} Energy`, color: COLOURS.positive })
     }
   }
 }

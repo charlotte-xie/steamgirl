@@ -30,7 +30,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           cond(
             // Discover the Subway
             and(not(locationDiscovered('subway-terminus')), skillCheck('Perception', 0)),
-            discoverLocation('subway-terminus', 'While exploring the station, you notice a stairwell leading downward, marked with a faded brass sign: Underground Railway. You could take the subway from here.', '#3b82f6'),
+            discoverLocation('subway-terminus', 'While exploring the station, you notice a stairwell leading downward, marked with a faded brass sign: Underground Railway. You could take the subway from here.'),
             // Morning rush (6am–10am)
             hourBetween(6, 10),
             random(
@@ -95,19 +95,19 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           cond(
             // Discover the Market
             and(not(locationDiscovered('market')), skillCheck('Perception', 0)),
-            discoverLocation('market', 'Following the sound of haggling and the clink of brass, you discover a bustling marketplace tucked behind the main thoroughfare. Vendors display exotic mechanical trinkets and clockwork wonders.', '#3b82f6'),
+            discoverLocation('market', 'Following the sound of haggling and the clink of brass, you discover a bustling marketplace tucked behind the main thoroughfare. Vendors display exotic mechanical trinkets and clockwork wonders.'),
             // Discover the University
             and(not(locationDiscovered('school')), skillCheck('Perception', 0)),
-            discoverLocation('school', 'Through a grand archway, you catch sight of imposing brass buildings and manicured grounds. A sign reads: University of Aetheria. You note the way for future reference.', '#3b82f6'),
+            discoverLocation('school', 'Through a grand archway, you catch sight of imposing brass buildings and manicured grounds. A sign reads: University of Aetheria. You note the way for future reference.'),
             // Discover the Backstreets
             and(not(locationDiscovered('backstreets')), skillCheck('Perception', 0)),
-            discoverLocation('backstreets', 'You notice a narrow alley branching off from the main street. The air grows thick with coal smoke and the smell of oil. This must be the way to the backstreets.', '#3b82f6'),
+            discoverLocation('backstreets', 'You notice a narrow alley branching off from the main street. The air grows thick with coal smoke and the smell of oil. This must be the way to the backstreets.'),
             // Discover the Hotel
             and(not(locationDiscovered('hotel')), skillCheck('Perception', 0)),
-            discoverLocation('hotel', 'Turning a corner on the main boulevard, you spot a grand brass-and-marble facade: the Imperial Hotel. Its revolving doors gleam invitingly.', '#3b82f6'),
+            discoverLocation('hotel', 'Turning a corner on the main boulevard, you spot a grand brass-and-marble facade: the Imperial Hotel. Its revolving doors gleam invitingly.'),
             // Discover Uptown
             and(not(locationDiscovered('uptown')), skillCheck('Perception', 0)),
-            discoverLocation('uptown', 'Following a tree-lined boulevard northward, the buildings grow taller and the streets wider. Brass lanterns and manicured hedges mark the boundary of a more fashionable quarter — Uptown.', '#3b82f6'),
+            discoverLocation('uptown', 'Following a tree-lined boulevard northward, the buildings grow taller and the streets wider. Brass lanterns and manicured hedges mark the boundary of a more fashionable quarter — Uptown.'),
             // Morning (6am–12pm)
             hourBetween(6, 12),
             random(
@@ -175,7 +175,7 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           cond(
             // Discover Lowtown
             and(not(locationDiscovered('lowtown')), skillCheck('Perception', 0)),
-            discoverLocation('lowtown', 'While exploring the backstreets, you discover a hidden path leading downward. The air grows heavier with the smell of industry and steam. You\'ve found your way to Lowtown.', '#3b82f6'),
+            discoverLocation('lowtown', 'While exploring the backstreets, you discover a hidden path leading downward. The air grows heavier with the smell of industry and steam. You\'ve found your way to Lowtown.'),
             // Daytime (6am–2pm)
             hourBetween(6, 14),
             random(
@@ -278,10 +278,10 @@ const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {
           cond(
             // Discover the Lake
             and(not(locationDiscovered('lake')), skillCheck('Perception', 0)),
-            discoverLocation('lake', 'Through the university windows, you catch a glimpse of something serene in the distance—a lake with steam gently rising from its surface. You make a mental note of how to reach it.', '#3b82f6'),
+            discoverLocation('lake', 'Through the university windows, you catch a glimpse of something serene in the distance—a lake with steam gently rising from its surface. You make a mental note of how to reach it.'),
             // Discover the Subway
             and(not(locationDiscovered('subway-university')), skillCheck('Perception', 0)),
-            discoverLocation('subway-university', 'You notice a brass-railed staircase descending beneath the university grounds, marked with a sign: Underground Railway. A convenient way to travel the city.', '#3b82f6'),
+            discoverLocation('subway-university', 'You notice a brass-railed staircase descending beneath the university grounds, marked with a sign: Underground Railway. A convenient way to travel the city.'),
             // Morning (6am–12pm)
             hourBetween(6, 12),
             random(

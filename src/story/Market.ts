@@ -287,7 +287,7 @@ const marketLocation: LocationDefinition = {
         cond(
           // Discover the Lake
           and(not(locationDiscovered('lake')), skillCheck('Perception', 0)),
-          discoverLocation('lake', 'While exploring the market, you overhear a conversation about a peaceful lake nearby. Someone mentions the path that leads to it, and you commit the directions to memory.', '#3b82f6'),
+          discoverLocation('lake', 'While exploring the market, you overhear a conversation about a peaceful lake nearby. Someone mentions the path that leads to it, and you commit the directions to memory.'),
           // Morning (6am–12pm)
           hourBetween(6, 12),
           random(

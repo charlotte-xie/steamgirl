@@ -2,6 +2,7 @@ import { useGame } from '../context/GameContext'
 import { Frame } from '../components/Frame'
 import { Card } from '../components/Card'
 import { SKILL_NAMES, SKILL_INFO, IMPRESSION_NAMES } from '../model/Stats'
+import { COLOURS } from '../model/Format'
 import { capitalise } from '../model/Text'
 import { getImpressionCalculators } from '../model/Impression'
 import { getCardDefinitions } from '../model/Card'
@@ -142,7 +143,7 @@ export function CharacterScreen() {
                         <span className="skill-value">
                           {base}
                           {diff !== 0 && (
-                            <span style={{ color: diff > 0 ? '#10b981' : '#ef4444' }}>
+                            <span style={{ color: diff > 0 ? COLOURS.positive : COLOURS.negative }}>
                               {' '}{diff > 0 ? '+' : ''}{diff}
                             </span>
                           )}

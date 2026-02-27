@@ -3,7 +3,7 @@ import { Location, type LocationData, getLocation as getLocationDefinition } fro
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
 import { getScript, isInstruction, isScriptFn, isAccessor, interpolateString, type Instruction, type Script } from './Scripts'
 import { Card, type CardType, type Reminder } from './Card'
-import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem } from './Format'
+import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem, COLOURS } from './Format'
 import { intervalsCrossed } from '../utils/intervalsCrossed'
 import { mapToRecord } from '../utils/mapRecord'
 
@@ -492,7 +492,7 @@ export class Game {
     if (quest && !quest.completed) {
       quest.completed = true
       const cardDef = quest.template
-      this.add({ type: 'text', text: `Quest completed: ${cardDef.name}`, color: '#10b981' })
+      this.add({ type: 'text', text: `Quest completed: ${cardDef.name}`, color: COLOURS.positive })
     }
     
     return this
