@@ -14,6 +14,7 @@ NPCDefinition   (static, registered via registerNPC())
 
 NPC              (mutable instance, serialised)
   id, location, stats (Map<string, number>)
+  plan (Instruction | null)
 ```
 
 ### Registration
@@ -64,17 +65,15 @@ Custom stats can be added freely as string keys: `npc.stats.set('trust', 5)`.
 
 When `nameKnown` is 0, the UI shows the NPC's `uname` (e.g. "barkeeper"). Once `nameKnown > 0`, the real `name` is displayed. Scripts typically set `npc.nameKnown = 1` during a first-meeting scene.
 
-## Movement and Schedules
+## AI and Behaviour
+
+NPC-initiated behaviour (movement, approaching the player, ambient reactions, visits) is driven by a plan-based AI system. Each NPC has a `plan` field — a serialisable instruction that runs each tick — and a `planner` on its definition that provides new plans when the current one completes. See [NPC_AI.md](./NPC_AI.md) for the full design.
+
+### Legacy: Movement and Schedules
 
 NPCs have a nullable `location` property. When set, the NPC appears at that location and is listed in `game.npcsPresent` (recalculated each action).
 
-### onMove Hook
-
-The `onMove` hook fires each time the game hour changes (during `timeLapse`). It is the standard place to implement NPC schedules.
-
-### followSchedule
-
-The `followSchedule` helper sets the NPC's location based on the current hour:
+The `onMove` hook fires each time the game hour changes (during `timeLapse`). It is the standard place to implement NPC schedules. The `followSchedule` helper sets the NPC's location based on the current hour:
 
 ```typescript
 npc.followSchedule(game, [
@@ -84,6 +83,8 @@ npc.followSchedule(game, [
 ```
 
 Format: `[startHour, endHour, locationId]`. Hours are 0--23 integers (floor of `hourOfDay`). Supports midnight wrap-around (e.g. `[22, 2, 'tavern']`). If no entry matches, location is set to `null` (NPC is offscreen).
+
+> **Note:** `onMove`, `onWait`, `onWaitAway`, and `maybeApproach` are legacy hooks superseded by the planner system. They still function for NPCs that haven't been migrated. See [NPC_AI.md](./NPC_AI.md) for the replacement patterns.
 
 ## Interaction
 
@@ -209,7 +210,7 @@ NPC `onWait` hooks fire before the location's own `onWait` hook.
 Only mutable state is serialised:
 
 ```typescript
-{ id: string, stats: Record<string, number>, location: string | null }
+{ id: string, stats: Record<string, number>, location: string | null, plan?: Instruction | null }
 ```
 
 Definitions are never serialised -- they are rebuilt from `registerNPC()` calls on load. This allows NPC content (dialogue, scripts, images) to change between versions without breaking saves.
