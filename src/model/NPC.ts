@@ -12,6 +12,9 @@ export type NPCId = string
  *  array of day-of-week numbers (0 and 7 both mean Sunday, 1=Mon ... 6=Sat). */
 export type ScheduleEntry = [number, number, string, number[]?]
 
+/** A planner function: examines game state, returns a plan Instruction or null. */
+export type Planner = (game: Game, npc: NPC) => Instruction | null
+
 /**
  * Known NPC stat names. These are the standard stats tracked for NPCs.
  * Additional custom stats can be added as string literals.
@@ -27,6 +30,7 @@ export interface NPCData {
   id?: NPCId
   stats?: Record<NPCStatName, number> // NPC stats (e.g. approachCount, nameKnown)
   location?: string | null
+  plan?: Instruction | null
   /** @deprecated Use stats.nameKnown instead. Kept for backwards compatibility. */
   nameKnown?: boolean
 }
@@ -105,6 +109,8 @@ export interface NPCDefinition {
   modifyImpression?: (npc: NPC, impression: string, score: number) => number
   /** Called after every player action while this NPC is at the player's location. */
   afterUpdate?: Script
+  /** Plan-based AI planner. Returns an Instruction (plan) or null. Never serialised. */
+  planner?: Planner
   /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */
   scripts?: Record<string, Script>
 }
@@ -116,6 +122,7 @@ export class NPC {
   id: NPCId
   stats: Map<NPCStatName, number> // NPC stats (e.g. approachCount, nameKnown)
   location: string | null
+  plan: Instruction | null
 
   constructor(id: NPCId, game: Game) {
     this.game = game
@@ -125,6 +132,7 @@ export class NPC {
     this.stats.set('nameKnown', 0) // Names are unknown by default (0 = unknown, >0 = known)
     this.stats.set('affection', 0) // Affection starts at 0
     this.location = null
+    this.plan = null
   }
 
   /** Gets the approachCount stat (for convenience). */
@@ -275,6 +283,7 @@ export class NPC {
       id: this.id,
       stats: mapToRecord(this.stats),
       location: this.location,
+      plan: this.plan,
     }
   }
 
@@ -307,6 +316,7 @@ export class NPC {
     
     // Apply serialized mutable state directly
     npc.location = data.location ?? null
+    npc.plan = data.plan ?? null
 
     return npc
   }

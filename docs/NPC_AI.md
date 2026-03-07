@@ -89,7 +89,7 @@ makeScript('basePlanner', (game) => {
 })
 ```
 
-The `plan` script is the AI loop. It runs the inner `current` plan, and when it completes (returns null), runs the `planner` script to get a new one. The `plan` script is fully generic — it knows nothing about NPC definitions.
+The `plan` script is the AI loop. It runs the inner `current` plan, and when it completes (returns null or anything else that is not a valid script), runs the `planner` script to get a new one. The `plan` script is fully generic — it knows nothing about NPC definitions.
 
 ```typescript
 makeScript('plan', (game, params) => {

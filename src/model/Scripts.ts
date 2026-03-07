@@ -333,12 +333,15 @@ const coreScripts: Record<string, ScriptFn> = {
       // This runs after onTime so newly added cards don't get onTime in the same tick
       game.run('timeEffects', { seconds: totalSeconds })
 
-      // If hour boundary crossed, call onMove for all NPCs (skip during scenes)
+      // If hour boundary crossed, call onMove for legacy NPCs (skip during scenes)
+      // Planner-enabled NPCs are handled by tickNPCs() instead.
       if (!game.inScene) {
         const hoursCrossed = game.calcTicks(totalSeconds, 60 * 60) // 1 hour in seconds
         if (hoursCrossed > 0) {
           game.npcs.forEach((npc) => {
-            game.run(npc.template.onMove)
+            if (!npc.template.planner) {
+              game.run(npc.template.onMove)
+            }
           })
           game.updateNPCsPresent()
         }
@@ -1250,9 +1253,14 @@ const coreScripts: Record<string, ScriptFn> = {
       game.timeLapse(chunk) /* Should never trigger scenes */
       remaining -= chunk
 
-      // NPC hooks — present NPCs may intercept, react, or trigger encounters
+      // Tick NPC AI plans (planner-enabled NPCs)
+      game.tickNPCs()
+      if (game.inScene) return
+
+      // Legacy NPC hooks — only for NPCs without a planner
       for (const npcId of game.npcsPresent) {
         const npc = game.getNPC(npcId)
+        if (npc.template.planner) continue // handled by tickNPCs above
         // maybeApproach — NPC-initiated intercepts (dates, auto-greets)
         if (npc.template.maybeApproach) {
           game.run(npc.template.maybeApproach)
@@ -1265,8 +1273,9 @@ const coreScripts: Record<string, ScriptFn> = {
         if (game.inScene) return // NPC created a scene — stop waiting
       }
 
-      // Away NPC hooks — NPCs not present may visit (e.g. boyfriend dropping by)
+      // Away NPC hooks — only for NPCs without a planner
       for (const [, npc] of game.npcs) {
+        if (npc.template.planner) continue // handled by tickNPCs above
         if (game.npcsPresent.includes(npc.id)) continue // already handled above
         if (npc.template.onWaitAway) {
           game.run(npc.template.onWaitAway)
@@ -1499,8 +1508,19 @@ const coreScripts: Record<string, ScriptFn> = {
     const npc = game.getNPC(npcId)
     const npcDef = npc.template
 
-    // maybeApproach — NPC-initiated intercepts (date approach, etc.)
-    if (npcDef.maybeApproach) {
+    // Plan-based AI: tick the NPC's plan before greeting (date intercept, leaving, etc.)
+    // Skip if scene.npc is already set — means AI triggered this approach (e.g. approachPlayer)
+    if (npc.plan && game.scene.npc !== npcId) {
+      game.scene.npc = npcId
+      npc.plan = game.run(npc.plan) as Instruction
+      if (game.inScene) return // NPC plan created a scene — skip normal approach
+      if (npc.location !== game.currentLocation) {
+        game.add(`{npc} leaves before you can reach {npc:him}.`)
+        game.scene.npc = undefined
+        return
+      }
+    } else if (npcDef.maybeApproach) {
+      // Legacy: maybeApproach — NPC-initiated intercepts (date approach, etc.)
       game.run(npcDef.maybeApproach)
       if (game.inScene) return // NPC took over — skip normal approach
     }
@@ -1540,6 +1560,77 @@ const coreScripts: Record<string, ScriptFn> = {
     game.topFrame.pages.unshift(...params.pages)
     game.clearScene()
     game.step()
+  },
+
+  // -------------------------------------------------------------------------
+  // NPC AI — Plan-based behaviour system
+  // -------------------------------------------------------------------------
+
+  /** AI loop: run the current plan, call the planner when it completes. */
+  plan: (game: Game, params: { current?: Instruction | null; planner?: Instruction | null }) => {
+    let current = (params.current ?? null) as Instruction | null
+
+    // 1. Run the current inner plan
+    if (current) {
+      current = game.run(current) as Instruction | null
+    }
+
+    // 2. If plan completed, ask the planner for a new one
+    if (!current && params.planner) {
+      current = game.run(params.planner) as Instruction | null
+      if (current) {
+        // Run the new plan immediately (it may complete in one tick)
+        current = game.run(current) as Instruction | null
+      }
+    }
+
+    // 3. Return the updated plan instruction
+    return ['plan', { current, planner: params.planner }]
+  },
+
+  /** Bridge from serialisable instruction to NPC definition's planner closure. */
+  basePlanner: (game: Game) => {
+    const planner = game.npc.template.planner
+    if (!planner) return null
+    return planner(game, game.npc)
+  },
+
+  /** One-shot plan: set NPC location, show arrival/departure text. */
+  beAt: (game: Game, params: { location?: string | null }) => {
+    const npc = game.npc
+    const oldLocation = npc.location
+    const newLocation = (params.location as string | null) ?? null
+
+    if (oldLocation !== newLocation) {
+      // Departure text if leaving the player's location
+      if (oldLocation === game.currentLocation && !game.player.sleeping) {
+        if (npc.template.onLeavePlayer && !game.inScene) {
+          game.run(npc.template.onLeavePlayer)
+        } else {
+          game.add(`{npc} leaves.`)
+        }
+      }
+      npc.location = newLocation
+      // Arrival text if entering the player's location
+      if (newLocation === game.currentLocation && !game.player.sleeping) {
+        game.add(`{npc} arrives.`)
+      }
+    }
+
+    return null // one-shot
+  },
+
+  /** Extended plan: do nothing until a time, then complete. */
+  idle: (game: Game, params: { until?: number }) => {
+    if (params.until !== undefined && game.time >= params.until) return null
+    return ['idle', params] // keep waiting
+  },
+
+  /** One-shot plan: NPC approaches the player. */
+  approachPlayer: (game: Game) => {
+    if (game.npc.location !== game.currentLocation) return null
+    game.run('approach', { npc: game.npc.id })
+    return null
   },
 }
 

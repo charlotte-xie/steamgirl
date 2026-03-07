@@ -262,14 +262,20 @@ export class Game {
       definition.generate(this, npc)
     }
     
-    // Add NPC to map BEFORE calling onMove to prevent infinite recursion
-    // (onMove might call getNPC, but now it will find the NPC in the map)
+    // Add NPC to map BEFORE calling onMove/planner to prevent infinite recursion
     this.npcs.set(npcId, npc)
-    
-    // Call onMove immediately after generation so NPC can position itself
-    // This is safe now because the NPC is already in the map
-    this.run(definition.onMove)
-    
+
+    if (definition.planner) {
+      // Plan-based AI: initialise and run first tick
+      npc.plan = ['plan', { current: null, planner: ['basePlanner', {}] }]
+      this.scene.npc = npcId
+      npc.plan = this.run(npc.plan) as Instruction
+      this.scene.npc = undefined
+    } else {
+      // Legacy: call onMove to position the NPC
+      this.run(definition.onMove)
+    }
+
     return npc
   }
 
@@ -395,8 +401,22 @@ export class Game {
     // Recalculate stats to ensure UI reflects any basestat changes from the action
     this.player.calcStats()
 
-    // Note: NPC movement is handled by timeLapse script when hour changes
-    // If we need to check NPC positions after actions, it would go here
+    // Tick NPC AI plans (movement, approaches, ambient reactions)
+    this.tickNPCs()
+  }
+
+  /** Tick all NPC plans. Called after time advancement and during waits. */
+  tickNPCs(): void {
+    if (this.inScene) return // don't move NPCs during scenes
+
+    for (const [, npc] of this.npcs) {
+      if (!npc.plan) continue
+      this.scene.npc = npc.id
+      npc.plan = this.run(npc.plan) as Instruction
+      this.scene.npc = undefined
+      if (this.inScene) return // NPC created a scene — stop ticking
+    }
+    this.updateNPCsPresent()
   }
 
   /**
