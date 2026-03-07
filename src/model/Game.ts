@@ -402,17 +402,28 @@ export class Game {
     this.tickNPCs()
   }
 
-  /** Tick all NPC plans. Called after time advancement and during waits. */
+  /**
+   * Tick all NPC plans. Called after actions (via afterAction) and during waits.
+   *
+   * May be called while scene.npc is already set but inScene is false — this
+   * happens when a script calls wait() mid-execution (e.g. sleepTogether sets
+   * scene.npc to the NPC, then wait() calls tickNPCs before any options exist).
+   * We save/restore scene.npc so we don't clobber the caller's NPC context.
+   *
+   * If a plan creates a scene (adds options), we stop ticking and return
+   * without restoring — the plan's scene takes over (e.g. sleep interruption).
+   */
   tickNPCs(): void {
-    if (this.inScene) return // don't move NPCs during scenes
+    if (this.inScene) return
 
+    const prevNpc = this.scene.npc
     for (const [, npc] of this.npcs) {
       if (!npc.plan) continue
       this.scene.npc = npc.id
       npc.plan = this.run(npc.plan) as Instruction
-      this.scene.npc = undefined
       if (this.inScene) return // NPC created a scene — stop ticking
     }
+    this.scene.npc = prevNpc
     this.updateNPCsPresent()
   }
 
