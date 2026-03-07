@@ -6,27 +6,60 @@ NPCs are driven by a generic plan/planner architecture that replaces all ad-hoc 
 
 ### Plans
 
-A **Plan** is a script that represents what an NPC is currently doing. It executes with side effects (moving the NPC, creating scenes, adding text) and returns the next state of the plan:
+A **Plan** is a script that represents what an NPC is currently doing. It executes with side effects and returns:
 
-- **Return an Instruction** — the updated plan. The NPC continues this on the next tick.
-- **Return `null`** — the plan has completed or failed. The planner is invoked to choose a new plan.
+- **`null`** — the plan is complete. The planner is invoked to choose a new plan. This is the common case — most plans are one-shot.
+- **An Instruction** — the updated plan. The NPC continues this on the next tick. Used by extended plans that track state across ticks (e.g. `idle`).
 
-Plans are JSON-serialisable `[scriptName, params]` instructions, so they survive save/load. The current NPC is always set as the active NPC before a plan runs, so plans access it via `game.npc` — no need to thread an NPC ID through params.
+Plans are JSON-serialisable `[scriptName, params]` instructions, so they survive save/load. The current NPC is always set as the active NPC before a plan runs, so plans access it via `game.npc`.
 
 ```typescript
-// A plan that keeps the NPC at a location. Returns itself each tick.
+// One-shot plan: set location, show arrival/departure text, done.
 makeScript('beAt', (game, params) => {
-  game.npc.location = params.location
-  return ['beAt', params]  // persist
+  const npc = game.npc
+  const oldLocation = npc.location
+  const newLocation = params.location as string
+
+  if (oldLocation !== newLocation) {
+    // Departure text if leaving the player's location
+    if (oldLocation === game.currentLocation && !game.player.sleeping) {
+      if (npc.template.onLeavePlayer && !game.inScene) {
+        game.run(npc.template.onLeavePlayer)
+      } else {
+        game.add(`{npc} leaves.`)
+      }
+    }
+    npc.location = newLocation
+    // Arrival text if entering the player's location
+    if (newLocation === game.currentLocation && !game.player.sleeping) {
+      game.add(`{npc} arrives.`)
+    }
+  }
+
+  return null  // one-shot — planner re-evaluates next tick
 })
 
-// A plan to approach the player. One-shot — completes immediately.
+// Extended plan: do nothing until a time, then complete.
+makeScript('idle', (game, params) => {
+  if (game.time >= (params.until as number)) return null
+  return ['idle', params]  // keep waiting
+})
+
+// One-shot plan: NPC approaches the player.
 makeScript('approachPlayer', (game) => {
-  if (game.npc.location !== game.currentLocation) return null  // can't reach
+  if (game.npc.location !== game.currentLocation) return null
   game.run('approach', { npc: game.npc.id })
-  return null  // done
+  return null
 })
 ```
+
+### Plan Lifecycle
+
+Most plans are **one-shot**: they execute their effect and return null, letting the planner decide what to do next. This means the planner re-evaluates every tick, which is how priority works — a high-priority goal (date, approach player) can outrank a low-priority one (schedule) on any tick.
+
+**Extended plans** return themselves with updated params to track multi-tick state. They "lock" the NPC into an activity until it completes. Examples: `idle` (wait until a time), `dateWait` (wait at meeting point), `patrol` (cycle through locations).
+
+Rule of thumb: if a plan doesn't need to track state across ticks, make it one-shot.
 
 ### Planners
 
@@ -40,7 +73,7 @@ type Planner = (game: Game, npc: NPC) => Instruction | null
 
 ### The `plan` Script
 
-The entire AI is a single plan: `['plan', { current, planner }]`. The `planner` field is always an explicit Script reference — never a closure, always serialisable. At initialisation the NPC gets:
+The entire AI is a single plan: `['plan', { current, planner }]`. The `planner` field is always a serialisable Script reference — never a closure. At initialisation the NPC gets:
 
 ```typescript
 ['plan', { current: null, planner: ['basePlanner', {}] }]
@@ -81,19 +114,51 @@ makeScript('plan', (game, params) => {
 })
 ```
 
-There is no special `runNpcAI` function. Ticking an NPC is just:
+Ticking an NPC is:
 
 ```typescript
-game.scene.npc = npc.id        // set active NPC context
-npc.plan = game.run(npc.plan)  // run the plan
-game.scene.npc = undefined     // clear context
+game.scene.npc = npc.id
+npc.plan = game.run(npc.plan)
+game.scene.npc = undefined
 ```
 
-The `planner` param is a serialisable Script (a registered script name or Instruction). The `current` sub-plan is also serialisable. On load, if the saved sub-plan fails, the planner immediately provides a new one — graceful recovery.
+### DSL Composability
+
+Plans are Instructions, and DSL builders produce Instructions. They compose naturally:
+
+```typescript
+// seq() as a one-shot plan — runs all steps, returns null
+const arriveAndGreet = seq(
+  text('{npc} arrives and waves.'),
+  run('beAt', { location: 'station' }),
+)
+
+// when() as a conditional plan — runs the plan if condition is true, otherwise null
+when(npcStat('affection', { min: 20 }),
+  run('approachPlayer'),
+)
+
+// cond() for branching plans
+cond(
+  hasRelationship('boyfriend'),
+  run('visitPlayer'),
+  run('beAt', { location: 'station' }),
+)
+```
+
+Planner conditions also use DSL predicates. The predicate is a Script, executed via `game.run()`:
+
+```typescript
+approachPlayerPlanner(
+  and(npcStat('affection', { min: 15 }), not(hasCard('date')), chance(0.3))
+)
+```
+
+Since `seq`, `when`, `cond`, `run` all return null (or the result of their inner scripts), they behave as one-shot plans when used directly.
 
 ### Recursive Composition
 
-Because a plan IS a script and the `plan` script is itself a plan, they compose naturally. A multi-step plan can contain an inner `['plan', ...]` with its own planner script — separate from the NPC's base planner. Turtles all the way down.
+Because a plan IS a script and the `plan` script is itself a plan, they compose naturally. A multi-step plan can contain an inner `['plan', ...]` with its own planner script. Turtles all the way down.
 
 ```typescript
 // Register a patrol planner as a named script
@@ -107,30 +172,54 @@ makeScript('jonnyPatrolPlanner', (game) => {
 ['plan', { current: null, planner: ['jonnyPatrolPlanner', {}] }]
 ```
 
+## Built-in Plans
+
+### `beAt` — Be At a Location
+
+One-shot. Sets the NPC's location. Shows arrival/departure text if the player is present. Fires `onLeavePlayer` hook if the NPC is leaving the player's location.
+
+### `idle` — Wait Until a Time
+
+Extended. Returns itself until `game.time >= params.until`, then returns null. Used for scheduled stays, cooldowns, or any "do nothing for a while" pattern.
+
+```typescript
+// Planner can use idle to keep the NPC in place until the schedule changes:
+return seq(run('beAt', { location: 'station' }), run('idle', { until: nextHourBoundary }))
+```
+
+### `approachPlayer` — Initiate Contact
+
+One-shot. Calls the `approach` script if the NPC is at the player's location. Returns null.
+
+### `visitPlayer` — Visit the Player's Location
+
+One-shot. Moves the NPC to the player's location and initiates an interaction. Used for boyfriend visits, NPC drop-ins, etc.
+
 ## Built-in Planners
+
+Planners are closure factories on the NPC definition. They're never serialised — only their output (plans) is.
 
 ### `schedulePlanner(schedule)` — Follow a Timetable
 
-The lowest-priority planner. Examines the current hour and returns a `beAt` plan for the matching schedule entry. Returns `null` if no entry matches (NPC goes offscreen).
+The lowest-priority planner. Examines the current hour and returns a `beAt` plan for the matching schedule entry. Returns `null` if no entry matches (NPC goes offscreen via `beAt` with null location).
 
 ```typescript
 function schedulePlanner(schedule: ScheduleEntry[]): Planner {
   return (game, npc) => {
     const location = matchSchedule(game, schedule)
     if (!location) {
-      npc.location = null
-      return null
+      if (npc.location) return ['beAt', { location: null }]  // leave
+      return null  // already offscreen
     }
+    if (npc.location === location) return null  // already there
     return ['beAt', { location }]
   }
 }
 ```
 
-This replaces the current `onMove` + `followSchedule` pattern. The schedule is just data fed to a planner.
-
 ### `approachPlayerPlanner(condition)` — Initiate Contact
 
-Returns an `approachPlayer` plan when the NPC wants to talk to the player and they're in the same location. The condition is a predicate script that gates when the NPC wants to initiate.
+Returns an `approachPlayer` plan when the NPC wants to talk to the player and they're in the same location. The condition is a predicate (Script).
 
 ```typescript
 function approachPlayerPlanner(condition: Script): Planner {
@@ -142,11 +231,9 @@ function approachPlayerPlanner(condition: Script): Planner {
 }
 ```
 
-This replaces `maybeApproach` — it's just a planner that fires when conditions are right.
-
 ### `datePlanner()` — Handle Date Meetings
 
-Returns a plan to go to the date meeting location and greet the player when they arrive. Replaces the current `handleDateApproach` + date card `afterUpdate` positioning logic.
+Returns a plan to go to the date meeting location and greet the player when they arrive. Replaces `handleDateApproach` + date card `afterUpdate` positioning.
 
 ```typescript
 function datePlanner(): Planner {
@@ -168,7 +255,7 @@ function datePlanner(): Planner {
 
 ### `visitPlanner(opts)` — Random Visits
 
-Returns a plan to visit the player's bedroom under certain conditions (relationship, time of day, probability).
+Returns a plan to visit the player's bedroom under certain conditions.
 
 ```typescript
 function visitPlanner(opts: {
@@ -189,7 +276,7 @@ function visitPlanner(opts: {
 
 ### `bedroomStayPlanner()` — Stay With Player
 
-If the NPC is in a bedroom with the player, stay there instead of following the schedule. Used for overnight stays after visits or dates.
+If the NPC is in a bedroom with the player, stay instead of following the schedule.
 
 ```typescript
 function bedroomStayPlanner(): Planner {
@@ -197,14 +284,16 @@ function bedroomStayPlanner(): Planner {
     const loc = npc.location ? game.getLocation(npc.location) : undefined
     if (!loc?.template.isBedroom) return null
     if (npc.location !== game.currentLocation) return null
-    return ['beAt', { location: npc.location }]
+    return null  // no plan needed — NPC is already where they should be
   }
 }
 ```
 
+Note: returns `null` (not a `beAt` plan) because the NPC is already in position. The effect is that this planner "absorbs" the tick — lower-priority planners (like schedulePlanner) don't get to run, so the NPC stays put.
+
 ### `idlePlanner(reactions)` — Ambient Presence
 
-Returns a one-shot plan that produces ambient text. Doesn't create scenes or options — purely atmospheric. Used for "Gerald turns a page" type ambient presence.
+Returns a one-shot text plan from a weighted list of ambient reactions. Only fires when the NPC is at the player's location.
 
 ```typescript
 function idlePlanner(reactions: IdleReaction[]): Planner {
@@ -213,7 +302,9 @@ function idlePlanner(reactions: IdleReaction[]): Planner {
     for (const r of reactions) {
       if (r.chance && Math.random() >= r.chance) continue
       if (r.condition && !game.run(r.condition)) continue
-      return ['idleReact', { script: r.script }]
+      // Run the reaction directly (one-shot, no intermediate plan)
+      game.run(r.script)
+      return null
     }
     return null
   }
@@ -226,13 +317,13 @@ interface IdleReaction {
 }
 ```
 
-## Composite Planners
+Note: `idlePlanner` runs the reaction script directly rather than returning a plan containing a closure. This avoids serialisation issues with Script closures in plan params.
 
-Planners compose via simple combinators:
+## Composite Planners
 
 ### `priority(...planners)` — First Match Wins
 
-Tries planners in order. Returns the first non-null plan. This is the standard way to build an NPC's full AI — higher-priority goals shadow lower ones.
+Tries planners in order. Returns the first non-null plan.
 
 ```typescript
 function priority(...planners: Planner[]): Planner {
@@ -248,7 +339,7 @@ function priority(...planners: Planner[]): Planner {
 
 ### `randomPick(...planners)` — Shuffled Selection
 
-Shuffles the planners, then tries them in random order. Returns the first non-null plan. Good for varied ambient behaviour where you don't want the same NPC doing the same thing every tick.
+Shuffles the planners, then tries them in random order. Returns the first non-null plan.
 
 ```typescript
 function randomPick(...planners: Planner[]): Planner {
@@ -269,14 +360,16 @@ function randomPick(...planners: Planner[]): Planner {
 
 ### `weighted(entries)` — Weighted Random Selection
 
-Like `randomPick` but with explicit weights. Useful when some behaviours should be more common than others.
+Like `randomPick` but with explicit weights.
 
 ```typescript
 function weighted(...entries: [number, Planner][]): Planner
 // e.g. weighted([3, spicePushPlanner], [1, flirtPlanner])
 ```
 
-## Example: Rebuilding Rob
+## Examples
+
+### Rob
 
 ```typescript
 registerNPC('tour-guide', {
@@ -291,7 +384,7 @@ registerNPC('tour-guide', {
     schedulePlanner([[9, 18, 'station']]),
   ),
 
-  // Player-initiated hooks — unchanged
+  // Player-initiated — unchanged
   onFirstApproach: seq(/* ... */),
   onApproach: seq(/* ... */),
   onLeavePlayer: when(inPrivate(), npcInteract('morningDepart')),
@@ -299,13 +392,10 @@ registerNPC('tour-guide', {
 })
 ```
 
-## Example: Rebuilding Jonny
+### Jonny
 
 ```typescript
 registerNPC('jonny-elric', {
-  name: 'Jonny Elric',
-  // ...
-
   planner: priority(
     datePlanner(),
     approachPlayerPlanner(
@@ -333,13 +423,10 @@ registerNPC('jonny-elric', {
 })
 ```
 
-## Example: Rebuilding Gerald
+### Gerald
 
 ```typescript
 registerNPC('landlord', {
-  name: 'Gerald Moss',
-  // ...
-
   planner: priority(
     idlePlanner([
       { chance: 0.2, condition: isLustful(), script: random(
@@ -360,13 +447,10 @@ registerNPC('landlord', {
 })
 ```
 
-## Example: Rebuilding Timmy
+### Timmy
 
 ```typescript
 registerNPC('spice-dealer', {
-  name: 'Timmy Bug',
-  // ...
-
   planner: priority(
     datePlanner(),
     approachPlayerPlanner(
@@ -408,52 +492,64 @@ The AI replaces several current hooks:
 
 | Current Hook | Replaced By | When |
 |---|---|---|
-| `onMove` | `schedulePlanner` | Hourly (hour boundary in `timeLapse`) |
-| `maybeApproach` | `approachPlayerPlanner` / `datePlanner` | Per wait chunk + before player approach |
-| `onWait` (ambient) | `idlePlanner` | Per wait chunk |
-| `onWait` (events) | `approachPlayerPlanner` with conditions | Per wait chunk |
-| `onWaitAway` | `visitPlanner` | Per wait chunk |
+| `onMove` | `schedulePlanner` | Per NPC tick |
+| `maybeApproach` | `approachPlayerPlanner` / `datePlanner` | Per NPC tick |
+| `onWait` (ambient) | `idlePlanner` | Per NPC tick |
+| `onWait` (events) | `approachPlayerPlanner` with conditions | Per NPC tick |
+| `onWaitAway` | `visitPlanner` | Per NPC tick |
 
-### NPC Context
+### NPC Tick — Separated from timeLapse
 
-Before running a plan, the system sets the NPC as the active NPC so all scripts in the plan can access it via `game.npc`:
+The NPC AI tick is a **game-level concern**, not part of time advancement. `timeLapse` only handles low-level time effects (energy, card `onTime`, hunger). NPC plan execution is called explicitly by higher-level code.
 
 ```typescript
-game.scene.npc = npc.id
-npc.plan = game.run(npc.plan)
-game.scene.npc = undefined
+/** Tick all NPC plans. Called by game loop after time advancement. */
+function tickNPCs(game: Game): void {
+  if (game.inScene) return  // don't move NPCs during scenes
+
+  for (const [, npc] of game.npcs) {
+    if (!npc.plan) continue
+    game.scene.npc = npc.id
+    npc.plan = game.run(npc.plan) as Instruction
+    game.scene.npc = undefined
+    if (game.inScene) return  // NPC created a scene — stop ticking
+  }
+  game.updateNPCsPresent()
+}
 ```
 
-### Integration with `timeLapse`
+### Call Sites
+
+**After time advancement** — whenever time passes (travel, activities, waiting), tick NPCs to update positions:
 
 ```typescript
-// In timeLapse, when hour boundary crossed:
-for (const [, npc] of game.npcs) {
-  game.scene.npc = npc.id
-  npc.plan = game.run(npc.plan)
-  game.scene.npc = undefined
-}
-game.updateNPCsPresent()
+// In afterAction(), after recalculating stats:
+tickNPCs(game)
 ```
 
-### Integration with `wait`
+**During waits** — each 10-minute chunk:
 
 ```typescript
-// In wait loop, each 10-min chunk:
-for (const npcId of game.npcsPresent) {
-  const npc = game.getNPC(npcId)
-  game.scene.npc = npc.id
-  npc.plan = game.run(npc.plan)
-  game.scene.npc = undefined
-  if (game.inScene) return  // NPC created a scene — stop waiting
-}
-// Also run for away NPCs (visit planners)
-for (const [, npc] of game.npcs) {
-  if (game.npcsPresent.includes(npc.id)) continue
-  game.scene.npc = npc.id
-  npc.plan = game.run(npc.plan)
-  game.scene.npc = undefined
+// In wait loop:
+game.timeLapse(chunk)
+tickNPCs(game)
+if (game.inScene) return  // NPC created a scene — stop waiting
+```
+
+**Before player approach** — give the NPC's AI a chance to intercept (date greeting, leaving):
+
+```typescript
+// In the approach script, before normal greeting:
+if (npc.plan) {
+  game.scene.npc = npcId
+  npc.plan = game.run(npc.plan) as Instruction
+  // NPC might have left or started a scene
   if (game.inScene) return
+  if (npc.location !== game.currentLocation) {
+    game.add(`{npc} leaves before you can reach {npc:him}.`)
+    game.scene.npc = undefined
+    return
+  }
 }
 ```
 
@@ -463,14 +559,14 @@ The AI handles **NPC-initiated** behaviour: where NPCs go, when they approach th
 
 - **`onApproach` / `onFirstApproach`** — player-initiated conversations. The player clicks "Approach"; the NPC's dialogue script runs.
 - **`scripts`** — named interaction scripts (`onGeneralChat`, `flirt`, `buySpice`). Player-driven menu choices within a conversation.
-- **`onLeavePlayer`** — farewell hook when NPC leaves the player's location. Still fires from `beAt` plan when the schedule changes.
+- **`onLeavePlayer`** — farewell hook when NPC leaves the player's location. Fired by `beAt` when detecting a location change away from the player.
 - **`afterUpdate`** — post-action hooks on cards and locations.
 - **`modifyImpression`** — NPC-specific impression adjustments.
 - **Date scenes** — the date scene script itself is unchanged. Only the positioning/meeting logic moves into `datePlanner`.
 
 ## Serialisation
 
-The NPC's `plan` field serialises as a plain Instruction (it's already a `[scriptName, params]` tuple). The inner `current` sub-plan is part of the params. The top-level planner is on the definition and is never serialised.
+The NPC's `plan` field serialises as a plain Instruction. The inner `current` sub-plan and `planner` reference are part of the params — all serialisable.
 
 ```typescript
 // NPCData gains one field:
@@ -479,7 +575,7 @@ interface NPCData {
 }
 ```
 
-On load, the saved `current` plan runs. If it fails (e.g. content changed between versions), it returns null and the planner provides a fresh plan — graceful recovery with no migration needed.
+On load, the saved `current` plan runs. If it fails (e.g. content changed between versions), it returns null and the planner provides a fresh plan — graceful recovery.
 
 ## Initialisation
 
@@ -489,7 +585,6 @@ When an NPC with a `planner` is first instantiated via `getNPC()`, its plan is s
 // In getNPC(), after generate():
 if (definition.planner) {
   npc.plan = ['plan', { current: null, planner: ['basePlanner', {}] }]
-  // Run immediately so the planner sets the initial plan
   game.scene.npc = npcId
   npc.plan = game.run(npc.plan) as Instruction
   game.scene.npc = undefined
@@ -499,10 +594,12 @@ if (definition.planner) {
 ## Migration Path
 
 1. Add `plan` field to NPC instance and serialisation.
-2. Implement the `plan` script and the built-in planners.
-3. Add `planner` field to `NPCDefinition`.
-4. Migrate one NPC at a time: add `planner`, remove `onMove` / `maybeApproach` / `onWait` / `onWaitAway`.
-5. Once all NPCs are migrated, remove the old hook dispatch code from `timeLapse` and `wait`.
+2. Implement the `plan` / `basePlanner` scripts and the built-in plan scripts (`beAt`, `idle`, `approachPlayer`).
+3. Implement the built-in planner factories (`schedulePlanner`, `approachPlayerPlanner`, etc.) and compositors (`priority`, `randomPick`).
+4. Add `planner` field to `NPCDefinition`.
+5. Extract NPC movement from `timeLapse` into `tickNPCs`.
+6. Migrate one NPC at a time: add `planner`, remove `onMove` / `maybeApproach` / `onWait` / `onWaitAway`.
+7. Once all NPCs are migrated, remove the old hook dispatch code.
 
 NPCs with a `planner` use the new system; NPCs without one use the legacy hooks. Both coexist during migration.
 
