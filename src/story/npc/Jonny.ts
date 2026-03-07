@@ -72,7 +72,7 @@
 
 import { Game } from '../../model/Game'
 import { PRONOUNS, registerNPC } from '../../model/NPC'
-import type { ScheduleEntry } from '../../model/NPC'
+import { schedulePlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, seq,
@@ -101,27 +101,22 @@ registerNPC('jonny-elric', {
   pronouns: PRONOUNS.he,
 
   generate: (_game: Game, npc) => {
-    npc.location = 'lowtown'
     npc.stats.set('affection', 0)
     npc.stats.set('lust', 0)
   },
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('jonny-elric')
-    const schedule: ScheduleEntry[] = [
-      [6, 10, 'docks', [1]],            // Monday: early morning dockside intimidation
-      [10, 14, 'market', [2]],          // Tuesday: collecting protection money at the market
-      [14, 19, 'back-alley', [4]],      // Thursday: back-alley business
-      [6, 10, 'docks'],                 // default: morning at the docks
-      [10, 11, 'backstreets'],           // cutting through backstreets
-      [11, 13, 'market'],               // browsing the market (and keeping an eye on things)
-      [13, 14, 'backstreets'],           // returning through the backstreets
-      [14, 16, 'lowtown'],              // afternoon patrol in Lowtown
-      [16, 19, 'subway-lowtown'],        // watching the subway crowd
-      [20, 24, 'copper-pot-tavern'],     // evening drinks at the Copper Pot
-    ]
-    npc.followSchedule(game, schedule)
-  },
+  planner: schedulePlanner([
+    [6, 10, 'docks', [1]],            // Monday: early morning dockside intimidation
+    [10, 14, 'market', [2]],          // Tuesday: collecting protection money at the market
+    [14, 19, 'back-alley', [4]],      // Thursday: back-alley business
+    [6, 10, 'docks'],                 // default: morning at the docks
+    [10, 11, 'backstreets'],           // cutting through backstreets
+    [11, 13, 'market'],               // browsing the market (and keeping an eye on things)
+    [13, 14, 'backstreets'],           // returning through the backstreets
+    [14, 16, 'lowtown'],              // afternoon patrol in Lowtown
+    [16, 19, 'subway-lowtown'],        // watching the subway crowd
+    [20, 24, 'copper-pot-tavern'],     // evening drinks at the Copper Pot
+  ]),
 
   maybeApproach: (game: Game) => {
     handleDateApproach(game, 'jonny-elric')

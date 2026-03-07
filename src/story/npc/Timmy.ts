@@ -74,7 +74,7 @@
 
 import { Game } from '../../model/Game'
 import { PRONOUNS, registerNPC } from '../../model/NPC'
-import type { ScheduleEntry } from '../../model/NPC'
+import { schedulePlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, seq, scene, scenes,
@@ -110,22 +110,17 @@ registerNPC('spice-dealer', {
   pronouns: PRONOUNS.he,
 
   generate: (_game: Game, npc) => {
-    npc.location = 'lowtown'
     npc.stats.set('affection', 0)
     npc.stats.set('respect', 0)
   },
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('spice-dealer')
-    const schedule: ScheduleEntry[] = [
-      [10, 13, 'market', [3]],        // Wednesday: sourcing supplies at the market
-      [14, 18, 'docks', [5]],         // Friday: collecting a shipment at the docks
-      [15, 2, 'lowtown'],             // default: dealing in Lowtown evenings
-      [2, 3, 'backstreets'],          // late night: slipping through the backstreets
-      [4, 7, 'docks'],               // early morning: checking the docks
-    ]
-    npc.followSchedule(game, schedule)
-  },
+  planner: schedulePlanner([
+    [10, 13, 'market', [3]],        // Wednesday: sourcing supplies at the market
+    [14, 18, 'docks', [5]],         // Friday: collecting a shipment at the docks
+    [15, 2, 'lowtown'],             // default: dealing in Lowtown evenings
+    [2, 3, 'backstreets'],          // late night: slipping through the backstreets
+    [4, 7, 'docks'],               // early morning: checking the docks
+  ]),
 
   maybeApproach: (game: Game) => {
     handleDateApproach(game, 'spice-dealer')

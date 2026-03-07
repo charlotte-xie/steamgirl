@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import { registerNPC, type Planner } from './NPC'
 import { registerLocation } from './Location'
-import { priority, schedulePlanner, approachPlayerPlanner, idlePlanner, randomPick } from './Planner'
+import { priority, schedulePlanner, idlePlanner, randomPick } from './Planner'
 import '../story/World'
 
 // Test location for NPC AI tests
@@ -39,7 +39,9 @@ describe('NPC AI — plan system', () => {
   it('should set NPC location via schedulePlanner on first tick', () => {
     const game = makeTestGame('ai-test-npc')
     const npc = game.getNPC('ai-test-npc')
-    // schedulePlanner [[0,24,'ai-test-loc']] should place NPC at ai-test-loc
+    // NPC has no location until tickNPCs runs
+    expect(npc.location).toBeNull()
+    game.tickNPCs()
     expect(npc.location).toBe('ai-test-loc')
   })
 
@@ -80,6 +82,7 @@ describe('NPC AI — beAt script', () => {
     game.time = Math.floor(morning.getTime() / 1000)
     game.moveToLocation('ai-test-loc')
     const npc = game.getNPC('ai-move-npc')
+    game.tickNPCs()
     expect(npc.location).toBe('ai-test-loc')
   })
 
@@ -89,6 +92,7 @@ describe('NPC AI — beAt script', () => {
     game.time = Math.floor(morning.getTime() / 1000)
     game.moveToLocation('ai-test-loc2') // player is at loc2
     const npc = game.getNPC('ai-move-npc')
+    game.tickNPCs()
     // NPC should be at ai-test-loc (morning), not where player is
     expect(npc.location).toBe('ai-test-loc')
 
@@ -206,6 +210,7 @@ describe('NPC AI — approach intercept', () => {
     const game = new Game()
     game.moveToLocation('ai-test-loc')
     game.getNPC('ai-approach-npc')
+    game.tickNPCs()
 
     game.clearScene()
     game.run('approach', { npc: 'ai-approach-npc' })
@@ -232,9 +237,10 @@ describe('NPC AI — idlePlanner', () => {
     const game = new Game()
     game.moveToLocation('ai-test-loc')
     game.getNPC('ai-idle-npc')
+    game.tickNPCs() // first tick sets location via schedulePlanner
     game.clearScene()
 
-    // Tick — idlePlanner should fire since NPC is at player location
+    // Second tick — idlePlanner should fire since NPC is now co-located
     game.tickNPCs()
 
     const text = game.scene.content.map(c =>

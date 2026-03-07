@@ -1,6 +1,9 @@
 import { Game } from '../../model/Game'
 import { registerNPC } from '../../model/NPC'
 import type { ScheduleEntry } from '../../model/NPC'
+import type { Planner } from '../../model/NPC'
+import { schedulePlanner } from '../../model/Planner'
+import type { SchedulePlanEntry } from '../../model/Planner'
 import { TIMETABLE } from './Lessons'
 
 // ============================================================================
@@ -11,18 +14,16 @@ import { TIMETABLE } from './Lessons'
 const WEEKDAYS = [1, 2, 3, 4, 5]
 
 /**
- * Build the full schedule for a professor. Merges timetable classroom slots
+ * Build a planner for a professor. Merges timetable classroom slots
  * (with per-day filters) ahead of the base schedule entries (tagged as
- * weekday-only). Classroom entries are prepended so they take priority in
- * followSchedule (which returns on the first match).
- *
- * The resulting schedule is static and can be built once at registration time.
+ * weekday-only). Classroom entries are prepended so they take priority.
+ * On weekends, no entries match so the NPC goes offscreen.
  */
-function buildProfessorSchedule(
+function professorPlanner(
   npcId: string,
   baseSchedule: ScheduleEntry[],
-): ScheduleEntry[] {
-  const classroomSlots: ScheduleEntry[] = []
+): Planner {
+  const classroomSlots: SchedulePlanEntry[] = []
 
   for (const timing of Object.values(TIMETABLE)) {
     if (timing.npc !== npcId) continue
@@ -32,27 +33,12 @@ function buildProfessorSchedule(
   }
 
   // Tag base entries as weekday-only (if not already tagged)
-  const weekdayBase: ScheduleEntry[] = baseSchedule.map(
+  const weekdayBase: SchedulePlanEntry[] = baseSchedule.map(
     ([start, end, loc, days]) => [start, end, loc, days ?? WEEKDAYS],
   )
 
   // Classroom slots first so they override the base schedule
-  return [...classroomSlots, ...weekdayBase]
-}
-
-/**
- * Build an onMove hook for a professor. The full schedule (including
- * timetable classroom slots) is built once at registration time.
- * On weekends, no entries match so followSchedule sets location to null.
- */
-function professorOnMove(
-  npcId: string,
-  baseSchedule: ScheduleEntry[],
-): (game: Game) => void {
-  const schedule = buildProfessorSchedule(npcId, baseSchedule)
-  return (game: Game) => {
-    game.getNPC(npcId).followSchedule(game, schedule)
-  }
+  return schedulePlanner([...classroomSlots, ...weekdayBase])
 }
 
 // ============================================================================
@@ -68,7 +54,7 @@ registerNPC('prof-lucienne-vael', {
   generate: (_game: Game, npc) => {
     npc.nameKnown = 1 // professors are known by default
   },
-  onMove: professorOnMove('prof-lucienne-vael', [
+  planner: professorPlanner('prof-lucienne-vael', [
     [14, 17, 'lake', [2]],      // Tuesday afternoon: walks by the lake
     [8, 17, 'courtyard'],
   ]),
@@ -93,7 +79,7 @@ registerNPC('prof-harland-greaves', {
   generate: (_game: Game, npc) => {
     npc.nameKnown = 1 // professors are known by default
   },
-  onMove: professorOnMove('prof-harland-greaves', [
+  planner: professorPlanner('prof-harland-greaves', [
     [9, 13, 'market', [3]],     // Wednesday morning: browsing tools at the market
     [8, 17, 'courtyard'],
   ]),
@@ -118,7 +104,7 @@ registerNPC('prof-nicholas-denver', {
   generate: (_game: Game, npc) => {
     npc.nameKnown = 1
   },
-  onMove: professorOnMove('prof-nicholas-denver', [
+  planner: professorPlanner('prof-nicholas-denver', [
     [17, 20, 'copper-pot-tavern', [4]], // Thursday evening: a quiet pint
     [8, 12, 'library'],
     [12, 14, 'courtyard'],
@@ -145,7 +131,7 @@ registerNPC('prof-eleanor-hurst', {
   generate: (_game: Game, npc) => {
     npc.nameKnown = 1
   },
-  onMove: professorOnMove('prof-eleanor-hurst', [
+  planner: professorPlanner('prof-eleanor-hurst', [
     [14, 17, 'lake', [2]],     // Tuesday afternoon: reflective walk by the lake
     [12, 14, 'market', [4]],   // Thursday lunchtime: browsing the bookstalls
     [9, 12, 'courtyard'],

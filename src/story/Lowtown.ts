@@ -1,6 +1,6 @@
 import { Game } from '../model/Game'
 import { registerNPC } from '../model/NPC'
-import type { ScheduleEntry } from '../model/NPC'
+import { schedulePlanner } from '../model/Planner'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { dangerousIndecency } from './Public'
@@ -48,19 +48,15 @@ registerNPC('elvis-crowe', {
   description: 'Tall and imposing, with eyes that have seen too much and forgotten nothing. His presence commands respect and fear in equal measure. Dressed in fine but practical attire, he moves through the streets like a predator, and the very air seems to still when he passes. Those who cross him don\'t last long in these parts.',
   image: '/images/npcs/boss1.jpg',
   speechColor: '#8b7355',
-  onMove: (game: Game) => {
-    const npc = game.getNPC('elvis-crowe')
-    const schedule: ScheduleEntry[] = [
-      [11, 14, 'docks', [1]],           // Monday: overseeing dock operations
-      [14, 17, 'lake', [3]],            // Wednesday: a quiet stroll — even bosses need air
-      [10, 13, 'market', [5]],          // Friday: collecting his cut from the stallholders
-      [10, 12, 'lowtown'],              // default: morning rounds in Lowtown
-      [12, 13, 'backstreets'],           // checking the backstreets
-      [17, 19, 'lowtown'],              // evening presence in Lowtown
-      [19, 23, 'copper-pot-tavern'],     // holding court at the Copper Pot
-    ]
-    npc.followSchedule(game, schedule)
-  },
+  planner: schedulePlanner([
+    [11, 14, 'docks', [1]],           // Monday: overseeing dock operations
+    [14, 17, 'lake', [3]],            // Wednesday: a quiet stroll — even bosses need air
+    [10, 13, 'market', [5]],          // Friday: collecting his cut from the stallholders
+    [10, 12, 'lowtown'],              // default: morning rounds in Lowtown
+    [12, 13, 'backstreets'],           // checking the backstreets
+    [17, 19, 'lowtown'],              // evening presence in Lowtown
+    [19, 23, 'copper-pot-tavern'],     // holding court at the Copper Pot
+  ]),
   onApproach: (game: Game) => {
     const npc = game.npc
     if (npc.nameKnown > 0) {

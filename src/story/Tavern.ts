@@ -36,6 +36,7 @@
 
 import { Game } from '../model/Game'
 import { PRONOUNS, registerNPC } from '../model/NPC'
+import { schedulePlanner } from '../model/Planner'
 import type { LocationId, LocationDefinition } from '../model/Location'
 import { registerLocation } from '../model/Location'
 import { consumeAlcohol, freshenUp } from './Effects'
@@ -171,10 +172,7 @@ registerNPC('ivan-hess', {
   pronouns: PRONOUNS.he,
   faction: 'lowtown',
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('ivan-hess')
-    npc.followSchedule(game, [[10, 2, 'copper-pot-tavern']])
-  },
+  planner: schedulePlanner([[10, 2, 'copper-pot-tavern']]),
 
   onFirstApproach: seq(
     'A man with a huge moustache looks up from behind the bar, sizing you up with practised eyes. His mechanical arm whirs softly as he sets down a polished glass.',

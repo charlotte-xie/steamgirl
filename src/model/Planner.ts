@@ -8,21 +8,34 @@
  */
 
 import type { Game } from './Game'
-import type { Script } from './Scripts'
-import type { NPC, Planner, ScheduleEntry } from './NPC'
+import type { Instruction, Script } from './Scripts'
+import type { NPC, Planner } from './NPC'
+
+// ============================================================================
+// SCHEDULE TYPES
+// ============================================================================
+
+/**
+ * Schedule entry: [startHour, endHour, target, days?]
+ *
+ * target: string → beAt(location), Instruction → run as plan.
+ * days: optional array of day-of-week numbers (0/7=Sun, 1=Mon ... 6=Sat).
+ * Hours support wrap-around (e.g. [22, 2, ...] = 10pm to 2am).
+ */
+export type SchedulePlanEntry = [number, number, string | Instruction, number[]?]
 
 // ============================================================================
 // BUILT-IN PLANNERS
 // ============================================================================
 
 /**
- * Match a schedule entry for the current hour/day. Returns the location or null.
+ * Match a schedule entry for the current hour/day. Returns the target or null.
  */
-function matchSchedule(game: Game, schedule: ScheduleEntry[]): string | null {
+function matchSchedule(game: Game, schedule: SchedulePlanEntry[]): string | Instruction | null {
   const currentHour = Math.floor(game.hourOfDay)
   const currentDay = game.date.getDay() // 0=Sunday
 
-  for (const [startHour, endHour, locationId, days] of schedule) {
+  for (const [startHour, endHour, target, days] of schedule) {
     // Day filter
     if (days && !days.some(d => d % 7 === currentDay)) continue
 
@@ -34,21 +47,29 @@ function matchSchedule(game: Game, schedule: ScheduleEntry[]): string | null {
       matches = currentHour >= startHour || currentHour < endHour
     }
 
-    if (matches) return locationId
+    if (matches) return target
   }
   return null
 }
 
-/** Follow a timetable. Returns beAt for the matching entry, or beAt(null) to leave. */
-export function schedulePlanner(schedule: ScheduleEntry[]): Planner {
+/**
+ * Follow a timetable. Entries map time windows to locations or plans.
+ * String targets → beAt(location). Instruction targets → run as plan.
+ * No match → beAt(null) to go offscreen (if currently somewhere).
+ */
+export function schedulePlanner(schedule: SchedulePlanEntry[]): Planner {
   return (game: Game, npc: NPC) => {
-    const location = matchSchedule(game, schedule)
-    if (!location) {
+    const target = matchSchedule(game, schedule)
+    if (target === null) {
       if (npc.location) return ['beAt', { location: null }] // leave
       return null // already offscreen
     }
-    if (npc.location === location) return null // already there
-    return ['beAt', { location }]
+    if (typeof target === 'string') {
+      if (npc.location === target) return null // already there
+      return ['beAt', { location: target }]
+    }
+    // Custom plan for this time window
+    return target
   }
 }
 
@@ -82,6 +103,21 @@ export function idlePlanner(reactions: IdleReaction[]): Planner {
       return null
     }
     return null
+  }
+}
+
+/**
+ * Stay in a bedroom with the player instead of following the schedule.
+ * Returns null (absorbs the tick) if the NPC is in a bedroom at the player's location.
+ * Optional `before` hour: only stay if current hour < before (e.g. morning departures).
+ */
+export function bedroomStayPlanner(opts?: { before?: number }): Planner {
+  return (game: Game, npc: NPC) => {
+    if (npc.location !== game.currentLocation) return null
+    const loc = npc.location ? game.getLocation(npc.location) : undefined
+    if (!loc?.template.isBedroom) return null
+    if (opts?.before !== undefined && game.hourOfDay >= opts.before) return null
+    return null // absorb — NPC stays put
   }
 }
 

@@ -8,6 +8,7 @@ import { makeScripts } from '../model/Scripts'
 import type { Instruction } from '../model/ScriptDSL'
 import { script, text, paragraph, when, npcStat, seq, cond, hasItem, removeItem, time, eatFood, addStat, random, run, scenes, scene, addItem, say, option, npcInteract, npcLeaveOption, addNpcStat, learnNpcName, hideNpcImage, showNpcImage, wait, discoverLocation, hasCard, npcLocation, move, lt, sub, gameTime, exit } from '../model/ScriptDSL'
 import { NPC, registerNPC, PRONOUNS } from '../model/NPC'
+import { schedulePlanner } from '../model/Planner'
 import { freshenUp, applyMakeup, consumeAlcohol, applyRelaxation, riskDirty } from './Effects'
 import { bedActivity } from './systems/Sleep'
 import { staffDecencyGate } from './Public'
@@ -883,16 +884,12 @@ registerNPC('hotel-chef', {
   pronouns: PRONOUNS.he,
 
   generate: (_game: Game, npc: NPC) => {
-    npc.location = 'hotel-kitchens'
     npc.stats.set('affection', 0)
   },
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('hotel-chef')
-    npc.followSchedule(game, [
-      [6, 22, 'hotel-kitchens'],
-    ])
-  },
+  planner: schedulePlanner([
+    [6, 22, 'hotel-kitchens'],
+  ]),
 
   onFirstApproach: seq(
     'A broad man in chef\'s whites looks up from a simmering stockpot and fixes you with a sharp eye.',

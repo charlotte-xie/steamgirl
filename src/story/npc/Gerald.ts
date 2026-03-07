@@ -99,6 +99,7 @@
 
 import { Game } from '../../model/Game'
 import { registerNPC } from '../../model/NPC'
+import { schedulePlanner } from '../../model/Planner'
 import {
   say, npcLeaveOption, run,
   seq, random, when, cond, and,
@@ -130,13 +131,10 @@ registerNPC('landlord', {
     npc.stats.set('lust', 0)
   },
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('landlord')
-    npc.followSchedule(game, [
-      [9, 12, 'landlord-office', WEEKDAYS],
-      [16, 18, 'landlord-office', WEEKDAYS],
-    ])
-  },
+  planner: schedulePlanner([
+    [9, 12, 'landlord-office', WEEKDAYS],
+    [16, 18, 'landlord-office', WEEKDAYS],
+  ]),
 
   onApproach: seq(
     // First meeting handled by showAround, so this is for repeat encounters

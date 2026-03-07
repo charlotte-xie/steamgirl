@@ -57,6 +57,7 @@
 
 import { Game } from '../../model/Game'
 import { NPC, PRONOUNS, registerNPC } from '../../model/NPC'
+import { priority, schedulePlanner, bedroomStayPlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, npcLeaveOption, npcInteract, learnNpcName,
@@ -402,25 +403,13 @@ registerNPC('tour-guide', {
   pronouns: PRONOUNS.he,
 
   generate: (_game: Game, npc: NPC) => {
-    npc.location = 'station'
     npc.stats.set('affection', 0)
   },
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('tour-guide')
-    const loc = npc.location ? game.getLocation(npc.location) : undefined
-
-    // Stay in bedroom with the player outside of work hours
-    if (loc?.template.isBedroom && npc.location === game.currentLocation && game.hourOfDay < 9) {
-      return
-    }
-
-    // Normal schedule — date positioning is handled by the Date card's afterUpdate
-    // If Rob is leaving the player's location, followSchedule fires onLeavePlayer
-    npc.followSchedule(game, [
-      [9, 18, 'station'],
-    ])
-  },
+  planner: priority(
+    bedroomStayPlanner({ before: 9 }),
+    schedulePlanner([[9, 18, 'station']]),
+  ),
 
   maybeApproach: (game: Game) => {
     handleDateApproach(game, 'tour-guide')

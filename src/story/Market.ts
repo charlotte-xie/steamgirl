@@ -8,6 +8,7 @@ import { registerLocation } from '../model/Location'
 import { Item } from '../model/Item'
 import { registerItemDefinition, shopItems } from '../model/Item'
 import { registerNPC } from '../model/NPC'
+import { schedulePlanner } from '../model/Planner'
 import { makeScripts } from '../model/Scripts'
 import { publicChecks } from './Public'
 import { text, option, seq, random, time, cond, not, and, hourBetween, locationDiscovered, skillCheck, discoverLocation, script, run } from '../model/ScriptDSL'
@@ -154,10 +155,7 @@ registerNPC('madame-voss', {
   uname: 'boutique owner',
   description: 'The proprietress of a fine clothing boutique. She has an impeccable eye for fashion and a shrewd head for business.',
   speechColor: '#c49bd4',
-  onMove: (game: Game) => {
-    const npc = game.getNPC('madame-voss')
-    npc.followSchedule(game, [[8, 18, 'market']])
-  },
+  planner: schedulePlanner([[8, 18, 'market']]),
 })
 
 registerNPC('maeve-kelly', {
@@ -165,10 +163,7 @@ registerNPC('maeve-kelly', {
   uname: 'snack vendor',
   description: 'A stout, rosy-cheeked woman with a booming laugh and flour permanently dusted across her apron. Her stall smells of toffee and spices.',
   speechColor: '#e8915a',
-  onMove: (game: Game) => {
-    const npc = game.getNPC('maeve-kelly')
-    npc.followSchedule(game, [[7, 20, 'market']])
-  },
+  planner: schedulePlanner([[7, 20, 'market']]),
 })
 
 registerNPC('tinker-grosz', {
@@ -176,10 +171,7 @@ registerNPC('tinker-grosz', {
   uname: 'components dealer',
   description: 'A wiry old man with magnifying lenses strapped over one eye and grease permanently worked into the lines of his hands. He knows every gear and valve in Aetheria.',
   speechColor: '#d4a43e',
-  onMove: (game: Game) => {
-    const npc = game.getNPC('tinker-grosz')
-    npc.followSchedule(game, [[7, 19, 'market']])
-  },
+  planner: schedulePlanner([[7, 19, 'market']]),
 })
 
 // ============================================================================

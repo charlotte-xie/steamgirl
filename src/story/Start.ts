@@ -4,6 +4,7 @@ import { p, highlight, COLOURS } from '../model/Format'
 import type { Card, CardDefinition, Reminder } from '../model/Card'
 import { registerCardDefinition } from '../model/Card'
 import { NPC, registerNPC } from '../model/NPC'
+import { schedulePlanner } from '../model/Planner'
 import { discoverAllLocations } from '../story/Utility'
 import { text, say, npcLeaveOption, seq, skillCheck, addStat, discoverLocation, option, time, run } from '../model/ScriptDSL'
 import type { Specialty } from '../screens/NewCharacterScreen'
@@ -85,16 +86,11 @@ registerNPC('commuter', {
   onApproach: (game: Game) => {
     game.add('The commuter looks up from their pocket watch, giving you a brief nod before returning their attention to the station clock.')
   },
-  onMove: (game: Game) => {
-    const npc = game.getNPC('commuter')
-    // Update location based on schedule when hour changes
-    const schedule: [number, number, string][] = [
-      [6, 7, 'station'],    // Morning rush hour
-      [17, 18, 'default'],    // Heading home
-      [18, 19, 'station'],   // Evening rush hour
-    ]
-    npc.followSchedule(game, schedule)
-  },
+  planner: schedulePlanner([
+    [6, 7, 'station'],      // Morning rush hour
+    [17, 18, 'default'],    // Heading home
+    [18, 19, 'station'],    // Evening rush hour
+  ]),
 })
 
 export const startScripts = {

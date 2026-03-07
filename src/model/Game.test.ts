@@ -301,14 +301,14 @@ describe('Game', () => {
     // Move player to lowtown
     game.moveToLocation('lowtown')
 
-    // Get Timmy Bug (this will trigger onMove and position him)
+    // Get Timmy Bug (this sets up his plan)
     const timmy = game.getNPC('spice-dealer')
+
+    // Tick NPCs to run planners and set locations
+    game.tickNPCs()
 
     // Check that Timmy's location is lowtown
     expect(timmy.location).toBe('lowtown')
-
-    // Update npcsPresent to reflect current NPC locations
-    game.updateNPCsPresent()
 
     // Check that Timmy is in npcsPresent
     expect(game.npcsPresent).toContain('spice-dealer')

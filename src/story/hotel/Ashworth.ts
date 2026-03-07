@@ -1,6 +1,7 @@
 import { Game } from '../../model/Game'
 import { Item } from '../../model/Item'
 import { NPC, registerNPC, PRONOUNS } from '../../model/NPC'
+import { priority, schedulePlanner, bedroomStayPlanner } from '../../model/Planner'
 import { makeScripts } from '../../model/Scripts'
 import type { Instruction } from '../../model/ScriptDSL'
 import {
@@ -367,20 +368,13 @@ registerNPC('bar-patron', {
     npc.stats.set('control', 0)
   },
 
-  onMove: (game: Game) => {
-    const npc = game.getNPC('bar-patron')
-    const loc = npc.location ? game.getLocation(npc.location) : undefined
-
-    // Stay in room 533 with the player outside schedule hours
-    if (loc?.template.isBedroom && npc.location === game.currentLocation && game.hourOfDay < 9) {
-      return
-    }
-
-    npc.followSchedule(game, [
+  planner: priority(
+    bedroomStayPlanner({ before: 9 }),
+    schedulePlanner([
       [20, 22, 'hotel-bar'],
       [22, 9, 'room-533'],
-    ])
-  },
+    ]),
+  ),
 
   onFirstApproach: seq(
     showNpcImage(),
