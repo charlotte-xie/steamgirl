@@ -34,6 +34,7 @@ import { type Instruction, run, seq, say, option } from '../model/ScriptDSL'
 import type { ClothingLayer, ClothingPosition } from '../model/Item'
 import type { Item } from '../model/Item'
 import type { Player } from '../model/Player'
+import type { NPC, Planner } from '../model/NPC'
 
 // ============================================================================
 // DATE CARD DATA
@@ -177,6 +178,34 @@ export function getDateCard(game: Game): Card | undefined {
 }
 
 // ============================================================================
+// DATE PLANNER
+// ============================================================================
+
+/**
+ * Planner that sends an NPC to the date meeting location during the wait window.
+ * Use in a priority() chain above the NPC's normal schedule.
+ */
+export function datePlanner(npcId: string): Planner {
+  return (game: Game, _npc: NPC) => {
+    const card = getDateCard(game)
+    if (!card || dateCardData(card).npc !== npcId || card.dateStarted) return null
+
+    const data = dateCardData(card)
+    const plan = DATE_PLANS[npcId]
+    if (!plan) return null
+
+    const waitMinutes = plan.waitMinutes ?? 120
+    const deadline = data.meetTime + waitMinutes * 60
+
+    if (game.time >= data.meetTime && game.time < deadline) {
+      return ['attendDate', { location: data.meetLocation, until: deadline }]
+    }
+
+    return null
+  }
+}
+
+// ============================================================================
 // NPC HOOK HELPERS
 // ============================================================================
 
@@ -187,10 +216,6 @@ export function getDateCard(game: Game): Card | undefined {
  * If the player is at the meeting location during the date window,
  * triggers `dateApproach`. Returns true if the date system handled
  * the interaction (caller should return), false otherwise.
- *
- * NPC positioning is handled automatically by the date card's afterUpdate
- * hook (which runs after onMove), so NPCs do **not** need date logic in
- * their onMove hooks.
  *
  * @example
  * onWait: (game) => {
@@ -334,14 +359,8 @@ const dateCardDefinition: CardDefinition = {
       return
     }
 
-    // During the wait window, override NPC position to the meeting location.
-    // This runs after onMove, so the NPC's normal schedule is set first,
-    // then the date card moves them to the meeting point.
-    if (game.time >= data.meetTime && game.time < deadline) {
-      const npc = game.getNPC(data.npc)
-      npc.location = data.meetLocation
-      game.updateNPCsPresent()
-    }
+    // NPC positioning during the wait window is handled by datePlanner,
+    // which should be in the NPC's priority chain above their schedule.
   },
 }
 
@@ -352,6 +371,25 @@ registerCardDefinition('date', dateCardDefinition)
 // ============================================================================
 
 const dateScripts = {
+  // ── Date attendance plan ──
+
+  /** Persistent plan: move NPC to date location and wait for the player. */
+  attendDate: (game: Game, params: { location?: string; until?: number }) => {
+    const location = params.location as string
+    const until = params.until as number
+
+    // Move to date location if not there
+    if (game.npc.location !== location) {
+      game.run(['beAt', { location }])
+    }
+
+    // Past deadline — done waiting
+    if (game.time >= until) return null
+
+    // Keep waiting
+    return ['attendDate', params]
+  },
+
   // ── Standard date helpers (called via DSL accessors) ──
 
   /** Standard greeting: NPC says hello, player gets Cancel / Go options. */

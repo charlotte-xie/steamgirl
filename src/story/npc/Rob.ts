@@ -72,7 +72,7 @@ import {
   inBedroom, inPrivate, kiss, exposed, replaceScene,
 } from '../../model/ScriptDSL'
 import {
-  registerDatePlan, endDate,
+  registerDatePlan, datePlanner, endDate,
   handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
   tryStrip,
@@ -408,6 +408,7 @@ registerNPC('tour-guide', {
 
   planner: priority(
     bedroomStayPlanner({ before: 9 }),
+    datePlanner('tour-guide'),
     schedulePlanner([[9, 18, 'station']]),
   ),
 

@@ -5,11 +5,12 @@ import '../story/World' // Load all story content
 
 import {
   getDateCard, getDatePlan, dateCardData,
-  registerDatePlan, handleDateApproach,
+  registerDatePlan, datePlanner, handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
   endDate,
 } from './Dating'
 import { scene, scenes } from '../model/ScriptDSL'
+import { priority, schedulePlanner } from '../model/Planner'
 
 // ============================================================================
 // TEST FIXTURES
@@ -45,10 +46,10 @@ registerNPC('date-test-npc', {
   uname: 'test date person',
   pronouns: PRONOUNS.he,
   speechColor: '#aabbcc',
-  onMove: (game: Game) => {
-    const npc = game.getNPC('date-test-npc')
-    npc.followSchedule(game, [[9, 18, 'station']])
-  },
+  planner: priority(
+    datePlanner('date-test-npc'),
+    schedulePlanner([[9, 18, 'station']]),
+  ),
 })
 
 registerDatePlan({
@@ -244,15 +245,15 @@ describe('Dating System', () => {
     })
   })
 
-  describe('NPC positioning via afterUpdate', () => {
+  describe('NPC positioning via datePlanner', () => {
     it('moves NPC to meeting location during wait window', () => {
       const game = gameAt(1902, 1, 6, 19) // 7pm, within 6pm–8pm window
+      game.moveToLocation('default')
       const npc = game.getNPC('date-test-npc')
-      npc.location = 'station' // Normal schedule position
+      game.tickNPCs() // initial tick — schedule would send to station but it's after 18:00
 
       addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
-
-      game.afterAction()
+      game.tickNPCs()
 
       // NPC should be at meeting location
       expect(npc.location).toBe('default')
@@ -260,30 +261,31 @@ describe('Dating System', () => {
 
     it('does not move NPC before meeting time', () => {
       const game = gameAt(1902, 1, 6, 14) // 2pm, before 6pm
+      game.moveToLocation('default')
       const npc = game.getNPC('date-test-npc')
-      npc.location = 'station'
+      game.tickNPCs() // schedule sends to station (14:00 is within 9–18)
 
       addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
+      game.tickNPCs()
 
-      game.afterAction()
-
-      // NPC should stay at station
+      // NPC should stay at station (date hasn't started yet)
       expect(npc.location).toBe('station')
     })
 
     it('does not move NPC after date has started', () => {
       const game = gameAt(1902, 1, 6, 19)
+      game.moveToLocation('default')
       const npc = game.getNPC('date-test-npc')
-      npc.location = 'lake' // Moved during date scene
+      game.tickNPCs()
 
       addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
       const card = getDateCard(game)!
       card.dateStarted = true
+      game.tickNPCs()
 
-      game.afterAction()
-
-      // NPC should stay at lake (not overridden)
-      expect(npc.location).toBe('lake')
+      // datePlanner should not fire — date already started
+      // schedule has no entry for 19:00 so NPC goes offscreen
+      expect(npc.location).toBeNull()
     })
   })
 

@@ -1519,10 +1519,12 @@ const coreScripts: Record<string, ScriptFn> = {
         game.scene.npc = undefined
         return
       }
-    } else if (npcDef.maybeApproach) {
-      // Legacy: maybeApproach — NPC-initiated intercepts (date approach, etc.)
+    }
+
+    // maybeApproach — NPC-initiated intercepts (date approach, etc.)
+    if (npcDef.maybeApproach) {
       game.run(npcDef.maybeApproach)
-      if (game.inScene) return // NPC took over — skip normal approach
+      if (game.inScene) return
     }
 
     npc.approachCount++
