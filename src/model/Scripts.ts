@@ -1516,7 +1516,6 @@ const coreScripts: Record<string, ScriptFn> = {
       if (game.inScene) return // NPC plan created a scene — skip normal approach
       if (npc.location !== game.currentLocation) {
         game.add(`{npc} leaves before you can reach {npc:him}.`)
-        game.scene.npc = undefined
         return
       }
     }

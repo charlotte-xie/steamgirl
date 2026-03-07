@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import type { Content, InlineContent, SceneData } from '../model/Game'
+import type { Content, InlineContent, Scene } from '../model/Game'
 import { getNPCDefinition } from '../model/NPC'
 import { Tooltip } from './Tooltip'
 
 /**
- * Renders a SceneData object into React components
+ * Renders a Scene object into React components
  */
-export function renderScene(scene: SceneData): ReactNode {
+export function renderScene(scene: Scene): ReactNode {
   if (scene.content.length === 0) {
     return null
   }

@@ -1172,4 +1172,129 @@ describe('Game', () => {
       expect(reloaded2.isStarted()).toBe(true)
     })
   })
+
+  describe('Scene NPC frame scoping', () => {
+    it('scene.npc reads from the top frame', () => {
+      const game = new Game()
+      expect(game.scene.npc).toBeUndefined()
+      game.scene.npc = 'test-npc-a'
+      expect(game.scene.npc).toBe('test-npc-a')
+    })
+
+    it('pushing a frame with a different NPC overrides the parent', () => {
+      const game = new Game()
+      game.scene.npc = 'npc-parent'
+      expect(game.scene.npc).toBe('npc-parent')
+
+      game.pushFrame([])
+      game.topFrame.npc = 'npc-child'
+      expect(game.scene.npc).toBe('npc-child')
+    })
+
+    it('popping a frame restores the parent NPC context', () => {
+      const game = new Game()
+      game.scene.npc = 'npc-parent'
+
+      game.pushFrame([])
+      game.topFrame.npc = 'npc-child'
+      expect(game.scene.npc).toBe('npc-child')
+
+      game.popFrame()
+      expect(game.scene.npc).toBe('npc-parent')
+    })
+
+    it('inherits NPC from parent frame when child has none', () => {
+      const game = new Game()
+      game.scene.npc = 'npc-parent'
+
+      game.pushFrame([]) // child frame with no NPC
+      expect(game.scene.npc).toBe('npc-parent')
+    })
+
+    it('clearing the stack clears NPC context', () => {
+      const game = new Game()
+      game.scene.npc = 'some-npc'
+      expect(game.scene.npc).toBe('some-npc')
+
+      game.scene.stack = []
+      expect(game.scene.npc).toBeUndefined()
+    })
+
+    it('hideNpcImage is a no-op setter when stack is empty', () => {
+      const game = new Game()
+      game.scene.hideNpcImage = true
+      // No frame exists, setter is a no-op
+      expect(game.scene.hideNpcImage).toBeUndefined()
+    })
+
+    it('hideNpcImage reads from top frame only (no inheritance)', () => {
+      const game = new Game()
+      game.pushFrame([]) // parent frame
+      game.scene.hideNpcImage = true
+      expect(game.scene.hideNpcImage).toBe(true)
+
+      game.pushFrame([]) // child frame — independent, no inheritance
+      expect(game.scene.hideNpcImage).toBeUndefined()
+
+      game.topFrame.hideNpcImage = false
+      expect(game.scene.hideNpcImage).toBe(false)
+
+      game.popFrame()
+      expect(game.scene.hideNpcImage).toBe(true) // parent restored
+    })
+
+    it('tickNPCs does not clobber scene.npc from a parent frame', () => {
+      const game = new Game()
+      game.moveToLocation('lowtown')
+      const lowtownLoc = game.getLocation('lowtown')
+      lowtownLoc.discovered = true
+
+      // Set up an NPC with a planner (Timmy has one via World)
+      game.getNPC('spice-dealer')
+      game.tickNPCs() // initial tick
+
+      // Simulate being mid-script with scene.npc set (like sleepTogether)
+      game.scene.npc = 'spice-dealer'
+
+      // tickNPCs should not clobber the parent frame's NPC
+      game.tickNPCs()
+      expect(game.scene.npc).toBe('spice-dealer')
+    })
+
+    it('serialises and deserialises NPC on stack frames', () => {
+      const game = new Game()
+      game.moveToLocation('station')
+      game.scene.npc = 'tour-guide'
+      game.scene.hideNpcImage = true
+      game.addOption('test', 'Test') // keep the scene active
+
+      const json = JSON.stringify(game.toJSON())
+      const game2 = Game.fromJSON(json)
+
+      expect(game2.scene.npc).toBe('tour-guide')
+      expect(game2.scene.hideNpcImage).toBe(true)
+    })
+
+    it('migrates legacy top-level scene.npc from old saves', () => {
+      // Simulate an old save with top-level npc on scene
+      const game = new Game()
+      game.moveToLocation('station')
+      const data = game.toJSON()
+      // Manually create old-format scene data
+      data.scene = {
+        type: 'story' as const,
+        content: [],
+        options: [{ type: 'button' as const, action: 'test' }],
+        stack: [{ pages: [] }],
+        npc: 'tour-guide',
+        hideNpcImage: true,
+      }
+
+      const loaded = Game.fromJSON(data)
+      expect(loaded.scene.npc).toBe('tour-guide')
+      expect(loaded.scene.hideNpcImage).toBe(true)
+      // Should be on the frame, not a top-level property
+      expect(loaded.scene.stack[0].npc).toBe('tour-guide')
+    })
+  })
 })

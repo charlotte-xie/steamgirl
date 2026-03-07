@@ -1,13 +1,13 @@
 import { Button } from './Button'
 import { Panel } from './Panel'
 import { useGame } from '../context/GameContext'
-import type { SceneData } from '../model/Game'
+import type { Scene } from '../model/Game'
 import { renderScene } from './Content'
 import { getNPCDefinition } from '../model/NPC'
 import { assetUrl } from '../utils/assetUrl'
 
 interface SceneOverlayProps {
-  scene: SceneData
+  scene: Scene
 }
 
 export function SceneOverlay({ scene }: SceneOverlayProps) {

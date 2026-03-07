@@ -33,23 +33,71 @@ export type ActiveShop = {
   items: ShopItemEntry[]
 }
 
-/** A single stack frame. Frames isolate nested contexts (e.g. a menu inside a scenes() sequence). */
+/**
+ * A single stack frame. Frames isolate nested contexts (e.g. a menu inside
+ * a scenes() sequence). NPC context is scoped to frames — pushing a frame
+ * can set a different NPC, and popping it restores the previous context.
+ */
 export interface StackFrame {
   pages: Instruction[]
+  /** NPC context for this frame. Inherited from parent frames via Scene getter. */
+  npc?: string
+  /** When true, do not show the NPC image. Set on existing frames only (no-op if stack empty). */
+  hideNpcImage?: boolean
 }
 
-export type SceneData = {
-  type: 'story'
-  content: Content[]
-  options: SceneOptionItem[]
-  /** Set when the scene is an NPC interaction (from the approach script). */
-  npc?: string
-  /** When true, do not show the NPC image in the scene overlay. Set by approach to false; e.g. landlord sets true when showing rooms. */
-  hideNpcImage?: boolean
-  /** When set, the scene renders as a shop interface. */
+/**
+ * Scene state container. NPC context (npc, hideNpcImage) is stored per
+ * stack frame and accessed via getters that walk the stack from top to
+ * bottom, returning the first defined value. This gives natural scoping:
+ * pushing a frame can override the NPC, popping restores the parent's.
+ */
+export class Scene {
+  readonly type = 'story' as const
+  content: Content[] = []
+  options: SceneOptionItem[] = []
   shop?: ActiveShop
-  /** Stack frames for nested scene contexts. stack[0] is the top (innermost) frame. */
-  stack: StackFrame[]
+  stack: StackFrame[] = []
+
+  /** Walk the stack from top to find the current NPC context. */
+  get npc(): string | undefined {
+    for (const frame of this.stack) {
+      if (frame.npc !== undefined) return frame.npc
+    }
+    return undefined
+  }
+
+  /** Set the NPC context on the top frame (creates one if needed). */
+  set npc(value: string | undefined) {
+    if (this.stack.length === 0) {
+      this.stack.unshift({ pages: [] })
+    }
+    this.stack[0].npc = value
+  }
+
+  /** Read hideNpcImage from the top frame only (frames are independent). */
+  get hideNpcImage(): boolean | undefined {
+    return this.stack.length > 0 ? this.stack[0].hideNpcImage : undefined
+  }
+
+  /** Set hideNpcImage on the top frame. No-op if the stack is empty. */
+  set hideNpcImage(value: boolean | undefined) {
+    if (this.stack.length === 0) return
+    this.stack[0].hideNpcImage = value
+  }
+
+  toJSON(): { type: 'story'; content: Content[]; options: SceneOptionItem[]; stack: StackFrame[]; shop?: ActiveShop } {
+    const result: ReturnType<Scene['toJSON']> = { type: this.type, content: this.content, options: this.options, stack: this.stack }
+    if (this.shop) result.shop = this.shop
+    return result
+  }
+}
+
+/** Serialised scene shape (for GameData). */
+export type SceneData = ReturnType<Scene['toJSON']> & {
+  /** Legacy: top-level NPC from old saves (migrated to stack frame on load). */
+  npc?: string
+  hideNpcImage?: boolean
 }
 
 export interface GameData {
@@ -88,7 +136,7 @@ export class Game {
   npcs: Map<string, NPC>
   npcsPresent: string[] // List of NPC IDs at the current location
   currentLocation: string
-  scene: SceneData
+  scene: Scene
   time: number
   settings: Map<string, boolean>
 
@@ -105,12 +153,7 @@ export class Game {
     this.npcsPresent = []
     this.settings = new Map([['steamy', false]])
     this.currentLocation = 'station'
-    this.scene = {
-      type: 'story',
-      content: [],
-      options: [],
-      stack: [],
-    }
+    this.scene = new Scene()
     
     // Initialize time to noon on January 1, 1902 (unix timestamp in seconds)
     // JavaScript Date: year, month (0-indexed), day, hours, minutes, seconds
@@ -388,11 +431,10 @@ export class Game {
       this.run(card.template.afterUpdate)
     })
 
-    // If no options remain, the scene is complete — clear stack and NPC
+    // If no options remain, the scene is complete — clear the stack
+    // (NPC context lives on frames, so clearing the stack clears it naturally)
     if (this.scene.options.length === 0) {
       this.scene.stack = []
-      this.scene.npc = undefined
-      this.scene.hideNpcImage = undefined
     }
 
     // Recalculate stats to ensure UI reflects any basestat changes from the action
@@ -405,25 +447,21 @@ export class Game {
   /**
    * Tick all NPC plans. Called after actions (via afterAction) and during waits.
    *
-   * May be called while scene.npc is already set but inScene is false — this
-   * happens when a script calls wait() mid-execution (e.g. sleepTogether sets
-   * scene.npc to the NPC, then wait() calls tickNPCs before any options exist).
-   * We save/restore scene.npc so we don't clobber the caller's NPC context.
-   *
-   * If a plan creates a scene (adds options), we stop ticking and return
-   * without restoring — the plan's scene takes over (e.g. sleep interruption).
+   * Each NPC tick runs in a temporary stack frame so the NPC context is scoped
+   * and doesn't clobber the caller's (e.g. during sleep, the parent frame's NPC
+   * is naturally preserved). If a plan creates a scene, the frame stays.
    */
   tickNPCs(): void {
     if (this.inScene) return
 
-    const prevNpc = this.scene.npc
     for (const [, npc] of this.npcs) {
       if (!npc.plan) continue
-      this.scene.npc = npc.id
+      this.pushFrame([])
+      this.topFrame.npc = npc.id
       npc.plan = this.run(npc.plan) as Instruction
-      if (this.inScene) return // NPC created a scene — stop ticking
+      if (this.inScene) return // NPC created a scene — frame stays
+      this.popFrame()
     }
-    this.scene.npc = prevNpc
     this.updateNPCsPresent()
   }
 
@@ -662,7 +700,7 @@ export class Game {
 
   /** Dismiss the current scene entirely — clears all content, options, and the scene stack. */
   dismissScene(): void {
-    this.scene = { type: 'story', content: [], options: [], stack: [] }
+    this.scene = new Scene()
   }
 
   toJSON(): GameData {
@@ -726,37 +764,44 @@ export class Game {
     // Recalculate stats after loading player
     game.player.calcStats()
     
-    // Handle scene deserialization - migrate old format or use new format
+    // Handle scene deserialization — reconstruct a Scene instance from saved data
     if (data.scene) {
+      const scene = new Scene()
       if ('type' in data.scene && data.scene.type === 'story') {
-        // New format — migrate any old 'script' options to 'action'
-        const scene = data.scene as SceneData
-        scene.options = (scene.options ?? []).map((opt: Record<string, unknown>) => {
+        const saved = data.scene as SceneData
+        scene.content = saved.content ?? []
+        scene.shop = saved.shop
+        // Migrate any old 'script' options to 'action'
+        scene.options = (saved.options ?? []).map((opt: Record<string, unknown>) => {
           if ('script' in opt && !('action' in opt)) {
             return { type: opt.type, action: opt.script, label: opt.label }
           }
           return opt
-        }) as SceneData['options']
-        game.scene = scene
-      } else if ('dialog' in data.scene || 'next' in data.scene) {
-        // Old format - migrate to new format
-        const oldScene = data.scene as { dialog?: string; next?: string }
-        game.scene = {
-          type: 'story',
-          content: oldScene.dialog ? [{ type: 'text', text: oldScene.dialog }] : [],
-          options: oldScene.next ? [{ type: 'button', action: oldScene.next }] : [],
-          stack: [],
+        }) as SceneOptionItem[]
+        // Migrate stack to frame format
+        const rawStack = saved.stack ?? []
+        if (rawStack.length > 0 && !('pages' in rawStack[0])) {
+          scene.stack = [{ pages: rawStack as unknown as Instruction[] }]
+        } else {
+          scene.stack = rawStack
         }
+        // Migrate legacy top-level npc/hideNpcImage to the first stack frame
+        if (saved.npc !== undefined || saved.hideNpcImage !== undefined) {
+          if (scene.stack.length === 0) scene.stack.unshift({ pages: [] })
+          if (saved.npc !== undefined && scene.stack[0].npc === undefined) {
+            scene.stack[0].npc = saved.npc
+          }
+          if (saved.hideNpcImage !== undefined && scene.stack[0].hideNpcImage === undefined) {
+            scene.stack[0].hideNpcImage = saved.hideNpcImage
+          }
+        }
+      } else if ('dialog' in data.scene || 'next' in data.scene) {
+        // Very old format
+        const oldScene = data.scene as { dialog?: string; next?: string }
+        scene.content = oldScene.dialog ? [{ type: 'text', text: oldScene.dialog }] : []
+        scene.options = oldScene.next ? [{ type: 'button', action: oldScene.next }] : []
       }
-      // If scene exists but doesn't match expected format, keep default from constructor
-    }
-
-    // Ensure scene stack is initialized and migrated to frame format
-    if (!game.scene.stack) {
-      game.scene.stack = []
-    } else if (game.scene.stack.length > 0 && !('pages' in game.scene.stack[0])) {
-      // Migrate old flat Instruction[] stack to StackFrame[]
-      game.scene.stack = [{ pages: game.scene.stack as unknown as Instruction[] }]
+      game.scene = scene
     }
 
     // Deserialize locations map - create copies from prototypes and apply serialized changes
