@@ -41,7 +41,7 @@ describe('NPC AI — plan system', () => {
     const npc = game.getNPC('ai-test-npc')
     // NPC has no location until tickNPCs runs
     expect(npc.location).toBeNull()
-    game.tickNPCs()
+    game.tickNPCs(true)
     expect(npc.location).toBe('ai-test-loc')
   })
 
@@ -82,7 +82,7 @@ describe('NPC AI — beAt script', () => {
     game.time = Math.floor(morning.getTime() / 1000)
     game.moveToLocation('ai-test-loc')
     const npc = game.getNPC('ai-move-npc')
-    game.tickNPCs()
+    game.tickNPCs(true)
     expect(npc.location).toBe('ai-test-loc')
   })
 
@@ -92,7 +92,7 @@ describe('NPC AI — beAt script', () => {
     game.time = Math.floor(morning.getTime() / 1000)
     game.moveToLocation('ai-test-loc2') // player is at loc2
     const npc = game.getNPC('ai-move-npc')
-    game.tickNPCs()
+    game.tickNPCs(true)
     // NPC should be at ai-test-loc (morning), not where player is
     expect(npc.location).toBe('ai-test-loc')
 
@@ -100,7 +100,7 @@ describe('NPC AI — beAt script', () => {
     game.clearScene()
     const afternoon = new Date(1902, 0, 5, 14, 0, 0)
     game.time = Math.floor(afternoon.getTime() / 1000)
-    game.tickNPCs()
+    game.tickNPCs(true)
 
     expect(npc.location).toBe('ai-test-loc2')
     // Should have arrival text
@@ -188,7 +188,7 @@ describe('NPC AI — tickNPCs', () => {
 
     // Create a scene (add options)
     game.addOption('test', 'Test')
-    game.tickNPCs()
+    game.tickNPCs(true)
 
     // NPC should NOT have moved because we're in a scene
     expect(npc.location).toBeNull()
@@ -210,7 +210,7 @@ describe('NPC AI — approach intercept', () => {
     const game = new Game()
     game.moveToLocation('ai-test-loc')
     game.getNPC('ai-approach-npc')
-    game.tickNPCs()
+    game.tickNPCs(true)
 
     game.clearScene()
     game.run('approach', { npc: 'ai-approach-npc' })
@@ -237,11 +237,11 @@ describe('NPC AI — idlePlanner', () => {
     const game = new Game()
     game.moveToLocation('ai-test-loc')
     game.getNPC('ai-idle-npc')
-    game.tickNPCs() // first tick sets location via schedulePlanner
+    game.tickNPCs(true) // first tick sets location via schedulePlanner
     game.clearScene()
 
     // Second tick — idlePlanner should fire since NPC is now co-located
-    game.tickNPCs()
+    game.tickNPCs(true)
 
     const text = game.scene.content.map(c =>
       c.type === 'paragraph' ? (c as { content: { text: string }[] }).content.map(p => p.text).join('') : ''

@@ -460,11 +460,17 @@ export class Game {
    * and doesn't clobber the caller's (e.g. during sleep, the parent frame's NPC
    * is naturally preserved). If a plan creates a scene, the frame stays.
    */
-  tickNPCs(): void {
+  tickNPCs(force = false): void {
     if (this.inScene) return
+
+    // Non-present NPCs only tick when a 15-minute boundary is crossed
+    const tickAll = force || intervalsCrossed(
+      this.player.getTimer('lastAction'), this.time, 15 * 60,
+    ) > 0
 
     for (const [, npc] of this.npcs) {
       if (!npc.plan) continue
+      if (!tickAll && npc.location !== this.currentLocation) continue
       this.pushFrame([])
       this.topFrame.npc = npc.id
       npc.plan = this.run(npc.plan) as Instruction

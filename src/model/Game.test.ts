@@ -305,7 +305,7 @@ describe('Game', () => {
     const timmy = game.getNPC('spice-dealer')
 
     // Tick NPCs to run planners and set locations
-    game.tickNPCs()
+    game.tickNPCs(true)
 
     // Check that Timmy's location is lowtown
     expect(timmy.location).toBe('lowtown')
@@ -1251,13 +1251,13 @@ describe('Game', () => {
 
       // Set up an NPC with a planner (Timmy has one via World)
       game.getNPC('spice-dealer')
-      game.tickNPCs() // initial tick
+      game.tickNPCs(true) // initial tick
 
       // Simulate being mid-script with scene.npc set (like sleepTogether)
       game.scene.npc = 'spice-dealer'
 
       // tickNPCs should not clobber the parent frame's NPC
-      game.tickNPCs()
+      game.tickNPCs(true)
       expect(game.scene.npc).toBe('spice-dealer')
     })
 
