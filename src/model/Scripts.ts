@@ -623,8 +623,7 @@ const coreScripts: Record<string, ScriptFn> = {
     const change = params.change
     if (typeof change !== 'number') throw new Error('addNpcStat requires a change parameter')
 
-    const npc = game.npcs.get(npcId)
-    if (!npc) throw new Error(`addNpcStat: NPC not found '${npcId}'`)
+    const npc = game.getNPC(npcId)
 
     const current = npc.stats.get(stat) ?? 0
     let newValue = current + change
@@ -1355,6 +1354,9 @@ const coreScripts: Record<string, ScriptFn> = {
 
     gameLocation.discovered = true
 
+    // Position NPCs before arrival hooks so they're already present
+    game.tickNPCs()
+
     if (isFirstVisit && gameLocation.template.onFirstArrive) {
       game.run(gameLocation.template.onFirstArrive)
     }
@@ -1362,9 +1364,6 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!game.inScene && gameLocation.template.onArrive) {
       game.run(gameLocation.template.onArrive)
     }
-
-    // Position NPCs as part of arrival so they're already present
-    game.tickNPCs()
   },
 
   /** Discover a location - sets discovered flag and optionally displays text */
