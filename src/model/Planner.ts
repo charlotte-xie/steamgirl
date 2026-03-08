@@ -66,11 +66,10 @@ export function schedulePlanner(schedule: SchedulePlanEntry[]): Planner {
 
   return (game: Game, npc: NPC) => {
     const target = matchSchedule(game, schedule)
-    // If the NPC is at an unscheduled location, the schedule doesn't own it —
-    // leave them alone. Only manage NPCs at scheduled locations or offscreen.
-    if (!scheduledLocations.has(npc.location)) return null
-
     if (target === null) {
+      // No scheduled destination — if the NPC is at an unscheduled location,
+      // let them stay (they have nowhere to be). Otherwise send them offscreen.
+      if (!scheduledLocations.has(npc.location)) return null
       if (npc.location) return ['beAt', { location: null }] // leave
       return null // already offscreen
     }

@@ -684,7 +684,10 @@ registerNPC('tour-guide', {
 
     // Repeatable lodgings interaction — more intimate than hotel roomChat
     lodgingsChat: seq(
+      'You chat with {npc} for a while.',
+      time(10),
       random(
+        // General — always available
         say('It\'s cosy in here. I like it. It\'s very you.'),
         say('Have you read all these books? I can barely manage a newspaper.'),
         seq(
@@ -693,41 +696,20 @@ registerNPC('tour-guide', {
         ),
         say('I like your room. It\'s small but it\'s... warm. Like you.'),
         say('This is much better than the station. Better company, too.'),
-        when(npcStat('affection', { max: 49 }),
-          seq(
-            'He\'s quiet for a while, turning his cap over in his hands.',
-            say('Do you ever think about us? Where this is going?'),
-          ),
-        ),
-        when(npcStat('affection', { max: 39 }),
-          seq(
-            'He stares at the floor. The silence stretches.',
-            say('I feel like I\'m losing you. Am I losing you?'),
-          ),
-        ),
-        when(npcStat('affection', { max: 29 }),
-          seq(
-            say('You don\'t look at me the way you used to.'),
-            'He says it quietly, like he\'s been rehearsing it. The hurt in his voice is unmistakable.',
-          ),
-        ),
-      ),
-      when(npcStat('madeLove'),
-        random(
-          seq(
-            'He catches your eye across the room. The look he gives you is slow and knowing.',
-            say('Come here.'),
-          ),
+        // Post-intimacy — confident, knowing
+        when(npcStat('madeLove'), seq(
+          'He catches your eye across the room. The look he gives you is slow and knowing.',
+          say('Come here.'),
+        )),
+        when(npcStat('madeLove'),
           say('I keep thinking about you. About us. I can\'t help it.'),
-          seq(
-            'He pulls you close and presses his lips to your neck.',
-            say('You smell incredible. Has anyone told you that?'),
-          ),
         ),
-      ),
-      // Perception: notice something about him — small bonding moment
-      skillCheck('Perception', 8,
-        seq(
+        when(npcStat('madeLove'), seq(
+          'He pulls you close and presses his lips to your neck.',
+          say('You smell incredible. Has anyone told you that?'),
+        )),
+        // Perception — noticing details, earns affection
+        when(stat('Perception', 8), seq(
           random(
             seq(
               'You notice a new scratch on his hand — a graze from the station machinery.',
@@ -746,7 +728,20 @@ registerNPC('tour-guide', {
             ),
           ),
           addNpcStat('affection', 1, { max: 80, hidden: true }),
-        ),
+        )),
+        // Low affection — relationship cooling
+        when(npcStat('affection', { max: 49 }), seq(
+          'He\'s quiet for a while, turning his cap over in his hands.',
+          say('Do you ever think about us? Where this is going?'),
+        )),
+        when(npcStat('affection', { max: 39 }), seq(
+          'He stares at the floor. The silence stretches.',
+          say('I feel like I\'m losing you. Am I losing you?'),
+        )),
+        when(npcStat('affection', { max: 29 }), seq(
+          say('You don\'t look at me the way you used to.'),
+          'He says it quietly, like he\'s been rehearsing it. The hurt in his voice is unmistakable.',
+        )),
       ),
       option('Chat', run('npc:lodgingsChat')),
       option('Kiss him', run('npc:lodgingsKiss')),

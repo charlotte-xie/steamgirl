@@ -5,10 +5,13 @@ For the scripting API reference, see [SCRIPTING.md](./SCRIPTING.md).
 
 ## Golden Rule
 
-Everything must lead to a interesting player decision. The standard format should .
-- Say what happens as a result of the player's last decision
-- Present new information / flavour / twists as needed
-- Give the player a new decision
+Everything must lead to an interesting player decision. Each interaction should be a single coherent beat:
+
+1. **Result** — What happens as a result of the player's last action (e.g. "You chat with {npc}"). Can be randomised / gated on status for variety.
+2. **Reaction** — A single NPC action, statement, or reaction as a coherent unit. Not multiple unrelated moments — pick one.
+3. **Choices** — The player gets new decisions.
+
+**Common mistake:** stacking multiple `random()` blocks or `when()` gates in a `seq()` so the player sees a greeting AND an intimacy line AND a perception observation all at once. These are three separate beats that should each stand alone. Use a single `random()` with gated entries inside it, so one cohesive moment is picked per interaction. Always include at least one ungated fallback so something always fires.
 
 ## Scenes
 
