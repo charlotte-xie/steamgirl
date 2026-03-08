@@ -67,7 +67,7 @@ import {
   move, time,
   hideNpcImage, showNpcImage,
   stat, npcStat, skillCheck,
-  run, and, not, or, hasCard, inLocation,
+  run, and, not, or, hasCard, inLocation, hourBetween,
   hasRelationship, setRelationship, chance,
   inBedroom, inPrivate, kiss, exposed, replaceScene,
 } from '../../model/ScriptDSL'
@@ -817,7 +817,7 @@ registerNPC('tour-guide', {
             ),
           ),
           option('Let him', run('npc:makeOut')),
-          option('Not tonight',
+          option('Not now',
             seq(cond(
               npcStat('madeLove'),
               skillCheck('Charm', 12,
@@ -1212,8 +1212,26 @@ registerNPC('tour-guide', {
       ),
       addNpcStat('affection', 3, { max: 90, hidden: true }),
       time(10),
-      option('Sleep', ['sleep', {}]),
-      option('Stay awake', run('npc:lodgingsChat')),
+      when(hourBetween(21, 6), option('Sleep', ['sleep', {}])),
+      option('Relax', seq(
+        time(20),
+        random(
+          seq(
+            'You lie together in comfortable silence. His fingers trace idle circles on your arm.',
+            say('This is nice. Just... this.'),
+          ),
+          seq(
+            'He pulls you closer and rests his chin on top of your head.',
+            say('Five more minutes. Then I\'ll let you go. Maybe.'),
+          ),
+          seq(
+            'You settle against his chest and listen to his heartbeat. The world outside the door can wait.',
+            say('I could stay like this all day.'),
+          ),
+        ),
+        replaceScene(npcInteract('makeLoveAftermath')),
+      )),
+      option('Get up', run('npc:lodgingsChat')),
     ),
 
     // Rob leaves your room
@@ -1919,7 +1937,7 @@ function robWalkHome(): Instruction[] {
               endDate(),
             ),
           )),
-          option('Not tonight',
+          option('Not now',
             seq(say('Of course. No — of course. I\'m sorry, I shouldn\'t have—'),
             'You tell him there\'s nothing to apologise for. He nods, manages a smile.',
             say('Get home safe. And... I hope we can do this again sometime.'),

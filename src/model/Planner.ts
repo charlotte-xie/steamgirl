@@ -58,8 +58,18 @@ function matchSchedule(game: Game, schedule: SchedulePlanEntry[]): string | Inst
  * No match → beAt(null) to go offscreen (if currently somewhere).
  */
 export function schedulePlanner(schedule: SchedulePlanEntry[]): Planner {
+  // Collect all scheduled locations so we know which are "ours" to manage
+  const scheduledLocations = new Set<string | null>(
+    schedule.filter(e => typeof e[2] === 'string').map(e => e[2] as string),
+  )
+  scheduledLocations.add(null) // offscreen is always a scheduled state
+
   return (game: Game, npc: NPC) => {
     const target = matchSchedule(game, schedule)
+    // If the NPC is at an unscheduled location, the schedule doesn't own it —
+    // leave them alone. Only manage NPCs at scheduled locations or offscreen.
+    if (!scheduledLocations.has(npc.location)) return null
+
     if (target === null) {
       if (npc.location) return ['beAt', { location: null }] // leave
       return null // already offscreen
