@@ -313,7 +313,7 @@ export class Game {
       definition.generate(this, npc)
     }
     
-    // Add NPC to map BEFORE calling onMove/planner to prevent infinite recursion
+    // Add NPC to map BEFORE calling planner to prevent infinite recursion
     this.npcs.set(npcId, npc)
 
     if (definition.planner) {
@@ -323,9 +323,6 @@ export class Game {
       this.topFrame.npc = npc.id
       npc.plan = this.run(npc.plan) as Instruction
       this.popFrame()
-    } else {
-      // Legacy: call onMove to position the NPC
-      this.run(definition.onMove)
     }
 
     return npc

@@ -5,9 +5,9 @@ import '../story/World' // Load all story content
 
 import {
   getDateCard, getDatePlan, dateCardData,
-  registerDatePlan, datePlanner, handleDateApproach,
+  registerDatePlan, datePlanner,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
-  endDate,
+  endDate
 } from './Dating'
 import { scene, scenes } from '../model/ScriptDSL'
 import { priority, schedulePlanner } from '../model/Planner'
@@ -286,67 +286,6 @@ describe('Dating System', () => {
       // datePlanner should not fire — date already started
       // schedule has no entry for 19:00 so NPC goes offscreen
       expect(npc.location).toBeNull()
-    })
-  })
-
-  describe('handleDateApproach helper', () => {
-    it('returns true and runs dateApproach when player is at meeting location during window', () => {
-      const game = gameAt(1902, 1, 6, 19)
-      game.moveToLocation('default') // Player at City Centre
-      game.getNPC('date-test-npc') // Ensure NPC is generated
-      addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
-
-      const result = handleDateApproach(game, 'date-test-npc')
-      expect(result).toBe(true)
-
-      // dateStarted should be set by dateApproach
-      const card = getDateCard(game)!
-      expect(card.dateStarted).toBe(true)
-    })
-
-    it('returns false when player is at wrong location', () => {
-      const game = gameAt(1902, 1, 6, 19)
-      // Player at station, date is at City Centre
-      addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
-
-      const result = handleDateApproach(game, 'date-test-npc')
-      expect(result).toBe(false)
-    })
-
-    it('returns false when outside date window', () => {
-      const game = gameAt(1902, 1, 6, 14) // Before meeting time
-      game.moveToLocation('default')
-      addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
-
-      const result = handleDateApproach(game, 'date-test-npc')
-      expect(result).toBe(false)
-    })
-
-    it('returns false when date already started', () => {
-      const game = gameAt(1902, 1, 6, 19)
-      game.moveToLocation('default')
-      addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
-      getDateCard(game)!.dateStarted = true
-
-      const result = handleDateApproach(game, 'date-test-npc')
-      expect(result).toBe(false)
-    })
-
-    it('returns false for wrong NPC', () => {
-      const game = gameAt(1902, 1, 6, 19)
-      game.moveToLocation('default')
-      addDateCard(game, 'date-test-npc', meetTimeAt(1902, 1, 6))
-
-      const result = handleDateApproach(game, 'some-other-npc')
-      expect(result).toBe(false)
-    })
-
-    it('returns false when no date card exists', () => {
-      const game = gameAt(1902, 1, 6, 19)
-      game.moveToLocation('default')
-
-      const result = handleDateApproach(game, 'date-test-npc')
-      expect(result).toBe(false)
     })
   })
 

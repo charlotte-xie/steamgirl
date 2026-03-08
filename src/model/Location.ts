@@ -35,7 +35,7 @@ export interface LocationDefinition {
   /**
    * Called each 10-minute chunk when the player waits at this location.
    * Receives { minutes: number }. May create a scene to interrupt the wait.
-   * Fires after NPC onWait hooks (so NPC interactions take priority over ambient events).
+   * Fires after NPC plan ticks (so NPC actions take priority over ambient events).
    */
   onWait?: Script
   /**

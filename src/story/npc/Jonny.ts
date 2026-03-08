@@ -72,11 +72,11 @@
 
 import { Game } from '../../model/Game'
 import { PRONOUNS, registerNPC } from '../../model/NPC'
-import { priority, schedulePlanner } from '../../model/Planner'
+import { priority, schedulePlanner, actionPlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, seq,
-  addNpcStat,
+  addNpcStat, npcStat, not, hasCard, run, and,
   option, scene, scenes,
   move,
   hideNpcImage, showNpcImage,
@@ -84,7 +84,6 @@ import {
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, datePlanner, endDate,
-  handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
 } from '../Dating'
 
@@ -106,6 +105,11 @@ registerNPC('jonny-elric', {
   },
 
   planner: priority(
+    actionPlanner([
+      // Random "do a round" offer at high affection
+      { rate: 1800, condition: and(npcStat('affection', { min: 16 }), not(hasCard('date'))),
+        script: run('approach', { npc: 'jonny-elric' }) },
+    ]),
     datePlanner('jonny-elric'),
     schedulePlanner([
       [6, 10, 'docks', [1]],            // Monday: early morning dockside intimidation
@@ -120,19 +124,6 @@ registerNPC('jonny-elric', {
       [20, 24, 'copper-pot-tavern'],     // evening drinks at the Copper Pot
     ]),
   ),
-
-  maybeApproach: (game: Game) => {
-    handleDateApproach(game, 'jonny-elric')
-  },
-
-  onWait: (game: Game) => {
-    const npc = game.getNPC('jonny-elric')
-    if (npc.location !== game.currentLocation) return
-    // Random "do a round" offer at high affection
-    if (npc.affection > 15 && !game.player.hasCard('date') && Math.random() < 0.3) {
-      game.run('approach', { npc: 'jonny-elric' })
-    }
-  },
 
   onApproach: (game: Game) => {
     const npc = game.npc
@@ -462,9 +453,6 @@ registerNPC('jonny-elric', {
       // Timmy hears you met the boss face-to-face
       game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
 
-      // Return NPCs to schedule
-      if (jonny.template.onMove) game.run(jonny.template.onMove)
-      if (elvis.template.onMove) game.run(elvis.template.onMove)
       game.updateNPCsPresent()
 
       jonny.leaveOption('You leave the cellars. The air outside feels warmer than it should.')
@@ -500,9 +488,6 @@ registerNPC('jonny-elric', {
       // Timmy hears you met the boss face-to-face
       game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
 
-      // Return NPCs to schedule
-      if (jonny.template.onMove) game.run(jonny.template.onMove)
-      if (elvis.template.onMove) game.run(elvis.template.onMove)
       game.updateNPCsPresent()
 
       jonny.leaveOption('You climb the stairs alone. You\'ve picked a side. There\'s no going back.')
@@ -564,9 +549,6 @@ registerNPC('jonny-elric', {
         game.run(addNpcStat('respect', 10, { npc: 'spice-dealer', hidden: true }))
       }
 
-      // Return NPCs to schedule
-      if (jonny.template.onMove) game.run(jonny.template.onMove)
-      if (elvis.template.onMove) game.run(elvis.template.onMove)
       game.updateNPCsPresent()
 
       jonny.leaveOption('You leave the cellars.')

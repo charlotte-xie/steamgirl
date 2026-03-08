@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import { registerNPC, type Planner } from './NPC'
 import { registerLocation } from './Location'
-import { priority, schedulePlanner, idlePlanner, actionPlanner, randomPick } from './Planner'
+import { priority, schedulePlanner, actionPlanner, randomPick } from './Planner'
 import '../story/World'
 
 // Test location for NPC AI tests
@@ -216,35 +216,6 @@ describe('NPC AI — approach intercept', () => {
     // Should have NPC speech content
     expect(game.scene.content.length).toBeGreaterThan(0)
     expect(game.scene.npc).toBe('ai-approach-npc')
-  })
-})
-
-describe('NPC AI — idlePlanner', () => {
-  registerNPC('ai-idle-npc', {
-    name: 'Idler',
-    uname: 'idler',
-    planner: priority(
-      idlePlanner([
-        { chance: 1.0, script: ['text', { parts: ['Idler fidgets.'] }] },
-      ]),
-      schedulePlanner([[0, 24, 'ai-test-loc']]),
-    ),
-  })
-
-  it('should produce ambient text when co-located', () => {
-    const game = new Game()
-    game.moveToLocation('ai-test-loc')
-    game.getNPC('ai-idle-npc')
-    game.tickNPCs(true) // first tick sets location via schedulePlanner
-    game.clearScene()
-
-    // Second tick — idlePlanner should fire since NPC is now co-located
-    game.tickNPCs(true)
-
-    const text = game.scene.content.map(c =>
-      c.type === 'paragraph' ? (c as { content: { text: string }[] }).content.map(p => p.text).join('') : ''
-    ).join(' ')
-    expect(text).toContain('fidgets')
   })
 })
 

@@ -333,16 +333,10 @@ const coreScripts: Record<string, ScriptFn> = {
       // This runs after onTime so newly added cards don't get onTime in the same tick
       game.run('timeEffects', { seconds: totalSeconds })
 
-      // If hour boundary crossed, call onMove for legacy NPCs (skip during scenes)
-      // Planner-enabled NPCs are handled by tickNPCs() instead.
+      // If hour boundary crossed, update NPC presence (skip during scenes)
       if (!game.inScene) {
         const hoursCrossed = game.calcTicks(totalSeconds, 60 * 60) // 1 hour in seconds
         if (hoursCrossed > 0) {
-          game.npcs.forEach((npc) => {
-            if (!npc.template.planner) {
-              game.run(npc.template.onMove)
-            }
-          })
           game.updateNPCsPresent()
         }
       }
@@ -1224,9 +1218,9 @@ const coreScripts: Record<string, ScriptFn> = {
    * Conscious wait at current location.
    *
    * Time advances in 10-minute chunks. After each chunk, event hooks fire:
-   *   1. NPC maybeApproach + onWait — for each NPC present
-   *   2. NPC onWaitAway — for each NPC NOT present (e.g. boyfriend visits)
-   *   3. Location onWait — receives { minutes }
+   *   1. NPC plan ticks (via tickNPCs) — planner-driven actions and movement
+   *   2. Location onTick — system-level checks (indecency, curfew, etc.)
+   *   3. Location onWait — ambient events, random encounters
    *
    * If any hook creates a scene (adds options), the wait stops immediately.
    * The optional `then` script only runs if no scene was created.
@@ -1255,32 +1249,6 @@ const coreScripts: Record<string, ScriptFn> = {
       // Tick NPC AI plans (planner-enabled NPCs)
       game.tickNPCs()
       if (game.inScene) return
-
-      // Legacy NPC hooks — only for NPCs without a planner
-      for (const npcId of game.npcsPresent) {
-        const npc = game.getNPC(npcId)
-        if (npc.template.planner) continue // handled by tickNPCs above
-        // maybeApproach — NPC-initiated intercepts (dates, auto-greets)
-        if (npc.template.maybeApproach) {
-          game.run(npc.template.maybeApproach)
-          if (game.inScene) return
-        }
-        // onWait — ambient behaviour (flavour text, reputation-aware reactions)
-        if (npc.template.onWait) {
-          game.run(npc.template.onWait, { npc: npcId, minutes: chunk })
-        }
-        if (game.inScene) return // NPC created a scene — stop waiting
-      }
-
-      // Away NPC hooks — only for NPCs without a planner
-      for (const [, npc] of game.npcs) {
-        if (npc.template.planner) continue // handled by tickNPCs above
-        if (game.npcsPresent.includes(npc.id)) continue // already handled above
-        if (npc.template.onWaitAway) {
-          game.run(npc.template.onWaitAway)
-          if (game.inScene) return
-        }
-      }
 
       // Location onTick hook — system-level checks (indecency, curfew, etc.)
       const onTick = game.location.template.onTick
@@ -1520,12 +1488,6 @@ const coreScripts: Record<string, ScriptFn> = {
         game.add(`{npc} leaves before you can reach {npc:him}.`)
         return
       }
-    }
-
-    // maybeApproach — NPC-initiated intercepts (date approach, etc.)
-    if (npcDef.maybeApproach) {
-      game.run(npcDef.maybeApproach)
-      if (game.inScene) return
     }
 
     npc.approachCount++

@@ -3,6 +3,7 @@ import { Game } from './Game'
 import { Item } from './Item'
 import { registerNPC } from './NPC'
 import { registerLocation } from './Location'
+import { actionPlanner } from './Planner'
 import '../story/World' // Register all story content (locations, NPCs, cards, scripts)
 
 describe('Game', () => {
@@ -643,29 +644,33 @@ describe('Game', () => {
     })
   })
 
-  describe('wait onWait hooks', () => {
-    // Register aggressive test fixtures (always create a scene)
+  describe('wait hooks', () => {
+    // Register planner-based NPC test fixtures (rate=1 with 10min chunks = near-certain firing)
     const aggressiveNpcId = 'wait-test-aggressive-npc'
-    let npcWaitCount = 0
+    let npcActionCount = 0
     registerNPC(aggressiveNpcId, {
       name: 'Aggressive NPC',
       description: 'An NPC that always interrupts your wait.',
-      onWait: (game: Game) => {
-        npcWaitCount++
-        game.add('The aggressive NPC accosts you!')
-        game.addOption('endConversation', 'Back off')
-      },
+      planner: actionPlanner([
+        { rate: 1, script: (game: Game) => {
+          npcActionCount++
+          game.add('The aggressive NPC accosts you!')
+          game.addOption('endConversation', 'Back off')
+        }},
+      ]),
     })
 
     const passiveNpcId = 'wait-test-passive-npc'
-    let passiveWaitCount = 0
+    let passiveActionCount = 0
     registerNPC(passiveNpcId, {
       name: 'Passive NPC',
-      description: 'An NPC that never interrupts.',
-      onWait: (_game: Game) => {
-        passiveWaitCount++
-        // No scene created — just counting
-      },
+      description: 'An NPC that acts but never creates a scene.',
+      planner: actionPlanner([
+        { rate: 1, script: () => {
+          passiveActionCount++
+          // No scene created — just counting
+        }},
+      ]),
     })
 
     let locationWaitCount = 0
@@ -698,20 +703,20 @@ describe('Game', () => {
 
     // Reset counters before each test
     function resetCounters() {
-      npcWaitCount = 0
-      passiveWaitCount = 0
+      npcActionCount = 0
+      passiveActionCount = 0
       locationWaitCount = 0
     }
 
-    it('should call NPC onWait and create a scene, stopping the wait', () => {
+    it('should fire NPC action and create a scene, stopping the wait', () => {
       resetCounters()
       const game = setupGame('wait-test-quiet', [aggressiveNpcId])
 
       const timeBefore = game.time
       game.run('wait', { minutes: 30 })
 
-      // NPC onWait should have been called once (first chunk triggers scene)
-      expect(npcWaitCount).toBe(1)
+      // NPC actionPlanner should have fired once (first chunk triggers scene)
+      expect(npcActionCount).toBe(1)
       // Should be in a scene (NPC created options)
       expect(game.inScene).toBe(true)
       // Time should have advanced by only one chunk (10 min = 600s)
@@ -731,15 +736,15 @@ describe('Game', () => {
       expect(game.time - timeBefore).toBe(600)
     })
 
-    it('should call NPC onWait before location onWait', () => {
+    it('should fire NPC action before location onWait', () => {
       resetCounters()
       // Both aggressive NPC and aggressive location present
       const game = setupGame('wait-test-location', [aggressiveNpcId])
 
       game.run('wait', { minutes: 30 })
 
-      // NPC fires first and creates a scene — location should not fire
-      expect(npcWaitCount).toBe(1)
+      // NPC fires first via tickNPCs and creates a scene — location should not fire
+      expect(npcActionCount).toBe(1)
       expect(locationWaitCount).toBe(0)
       expect(game.inScene).toBe(true)
     })
@@ -752,7 +757,7 @@ describe('Game', () => {
       game.run('wait', { minutes: 30 })
 
       // Passive NPC fires but doesn't create scene, location fires and does
-      expect(passiveWaitCount).toBe(1)
+      expect(passiveActionCount).toBe(1)
       expect(locationWaitCount).toBe(1)
       expect(game.inScene).toBe(true)
     })
@@ -766,7 +771,7 @@ describe('Game', () => {
       game.run('wait', { minutes: 30 })
 
       // 30 minutes = 3 chunks of 10
-      expect(passiveWaitCount).toBe(3)
+      expect(passiveActionCount).toBe(3)
       expect(game.inScene).toBe(false)
       expect(game.time - timeBefore).toBe(1800)
     })
@@ -779,7 +784,7 @@ describe('Game', () => {
       game.run('wait', { minutes: 25 })
 
       // 25 minutes = chunks of 10, 10, 5
-      expect(passiveWaitCount).toBe(3)
+      expect(passiveActionCount).toBe(3)
       expect(game.time - timeBefore).toBe(1500)
     })
 

@@ -14,8 +14,8 @@
  * when a DatePlan doesn't supply custom scripts.
  *
  * NPC positioning during dates is handled automatically by the Date card's
- * afterUpdate hook — NPC onMove hooks do not need date-awareness. The
- * handleDateApproach helper simplifies onWait/onApproach hooks.
+ * afterUpdate hook. The datePlanner handles date approach when the player
+ * arrives at the meeting location during the date window.
  *
  * Usage:
  *   1. Import { registerDatePlan } in your NPC file
@@ -206,43 +206,6 @@ export function datePlanner(npcId: string): Planner {
 }
 
 // ============================================================================
-// NPC HOOK HELPERS
-// ============================================================================
-
-/**
- * Handle date-related NPC approach / wait. Call from an NPC's onWait
- * or onApproach hook.
- *
- * If the player is at the meeting location during the date window,
- * triggers `dateApproach`. Returns true if the date system handled
- * the interaction (caller should return), false otherwise.
- *
- * @example
- * onWait: (game) => {
- *   if (handleDateApproach(game, 'tour-guide')) return
- *   // ...normal wait logic
- * },
- */
-export function handleDateApproach(game: Game, npcId: string): boolean {
-  const card = getDateCard(game)
-  if (!card || dateCardData(card).npc !== npcId || card.dateStarted) return false
-
-  const data = dateCardData(card)
-  const plan = DATE_PLANS[npcId]
-  if (!plan) return false
-
-  const waitMinutes = plan.waitMinutes ?? 120
-  const deadline = data.meetTime + waitMinutes * 60
-
-  if (game.time >= data.meetTime && game.time < deadline && game.currentLocation === data.meetLocation) {
-    game.run('dateApproach', { npc: npcId })
-    return true
-  }
-
-  return false
-}
-
-// ============================================================================
 // DATE CARD DEFINITION
 // ============================================================================
 
@@ -410,7 +373,6 @@ const dateScripts = {
     npc.say(params.response ?? 'Oh. Right. Maybe some other time, then.')
     game.run('addNpcStat', { npc: npcId, stat: 'affection', change: -penalty, min: 0 })
     game.removeCard('date', true)
-    if (npc.template.onMove) game.run(npc.template.onMove)
   },
 
   /** Standard no-show: narration + affection penalty + card removed. */
@@ -433,11 +395,9 @@ const dateScripts = {
     if (!card) return
     const data = dateCardData(card)
     const npcId = data.npc
-    const npc = game.getNPC(npcId)
     const bonus = params.bonus ?? 15
     game.run('addNpcStat', { npc: npcId, stat: 'affection', change: bonus, max: 100 })
     game.removeCard('date', true)
-    if (npc.template.onMove) game.run(npc.template.onMove)
   },
 
   // ── Date lifecycle scripts ──

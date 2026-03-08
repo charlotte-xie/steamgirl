@@ -74,14 +74,14 @@
 
 import { Game } from '../../model/Game'
 import { PRONOUNS, registerNPC } from '../../model/NPC'
-import { priority, schedulePlanner } from '../../model/Planner'
+import { priority, schedulePlanner, actionPlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, seq, scene, scenes,
   addNpcStat,
   addReputation,
   reputation,
-  npcStat,
+  npcStat, and, not,
   random,
   when,
   option, run,
@@ -92,7 +92,6 @@ import {
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, datePlanner, endDate,
-  handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
 } from '../Dating'
 
@@ -115,6 +114,47 @@ registerNPC('spice-dealer', {
   },
 
   planner: priority(
+    actionPlanner([
+      // Ambient text when co-located and name known
+      { rate: 3600, condition: npcStat('nameKnown', { min: 1 }),
+        script: random(
+          'Timmy is leaning against the wall, turning a packet over in his mechanical hand. He doesn\'t notice you.',
+          'Timmy is haggling with someone in a doorway. His mechanical hand jabs the air for emphasis.',
+          'You catch a glimpse of Timmy ducking between buildings, coat collar turned up.',
+          when(reputation('gangster', { min: 30 }),
+            'Timmy glances your way and quickly looks elsewhere. He knows who you run with.',
+          ),
+          when(reputation('gangster', { min: 30 }),
+            'Timmy straightens his coat when he notices you. Word travels fast in Lowtown.',
+          ),
+          when(npcStat('respect', { min: 30 }),
+            'Timmy notices you and finds somewhere else to be. He\'s not avoiding you exactly — he\'s just careful now.',
+          ),
+          when(reputation('junkie', { min: 15 }),
+            'Timmy catches your eye and taps his coat pocket with a knowing look.',
+          ),
+          when(reputation('junkie', { min: 15 }),
+            'Timmy gives you a conspiratorial nod as you pass. Fellow travellers.',
+          ),
+          when(reputation('junkie', { min: 20 }),
+            'Timmy catches your eye and mimes taking a hit. He grins. You grin back. It\'s your thing now.',
+          ),
+          when(npcStat('affection', { min: 20 }),
+            'Timmy is staring at his mechanical hand, turning it over slowly. He looks like he\'s thinking about something.',
+          ),
+        ) },
+      // Spice pushing: only when not too respected/feared, 24h cooldown
+      { rate: 2400,
+        condition: and(npcStat('nameKnown', { min: 1 }), npcStat('respect', { max: 39 }), not(reputation('gangster', { min: 40 }))),
+        script: (game: Game) => {
+          const npc = game.getNPC('spice-dealer')
+          const lastPush = npc.stats.get('lastPush') ?? 0
+          if ((game.time - lastPush) / 3600 < 24) return
+          game.scene.npc = 'spice-dealer'
+          game.scene.hideNpcImage = false
+          game.run('interact', { script: 'spicePush' })
+        } },
+    ]),
     datePlanner('spice-dealer'),
     schedulePlanner([
       [10, 13, 'market', [3]],        // Wednesday: sourcing supplies at the market
@@ -124,58 +164,6 @@ registerNPC('spice-dealer', {
       [4, 7, 'docks'],               // early morning: checking the docks
     ]),
   ),
-
-  maybeApproach: (game: Game) => {
-    handleDateApproach(game, 'spice-dealer')
-  },
-
-  onWait: (game: Game) => {
-    const npc = game.getNPC('spice-dealer')
-    if (npc.location !== game.currentLocation) return
-    if (npc.nameKnown <= 0) return
-
-    // Reputation-flavoured ambient text (random + when pattern)
-    if (Math.random() < 0.15) {
-      game.run(random(
-        'Timmy is leaning against the wall, turning a packet over in his mechanical hand. He doesn\'t notice you.',
-        'Timmy is haggling with someone in a doorway. His mechanical hand jabs the air for emphasis.',
-        'You catch a glimpse of Timmy ducking between buildings, coat collar turned up.',
-        when(reputation('gangster', { min: 30 }),
-          'Timmy glances your way and quickly looks elsewhere. He knows who you run with.',
-        ),
-        when(reputation('gangster', { min: 30 }),
-          'Timmy straightens his coat when he notices you. Word travels fast in Lowtown.',
-        ),
-        when(npcStat('respect', { min: 30 }),
-          'Timmy notices you and finds somewhere else to be. He\'s not avoiding you exactly — he\'s just careful now.',
-        ),
-        when(reputation('junkie', { min: 15 }),
-          'Timmy catches your eye and taps his coat pocket with a knowing look.',
-        ),
-        when(reputation('junkie', { min: 15 }),
-          'Timmy gives you a conspiratorial nod as you pass. Fellow travellers.',
-        ),
-        when(reputation('junkie', { min: 20 }),
-          'Timmy catches your eye and mimes taking a hit. He grins. You grin back. It\'s your thing now.',
-        ),
-        when(npcStat('affection', { min: 20 }),
-          'Timmy is staring at his mechanical hand, turning it over slowly. He looks like he\'s thinking about something.',
-        ),
-      ))
-    }
-
-    // Spice pushing: only when not too respected/feared
-    const respect = npc.stats.get('respect') ?? 0
-    if (respect < 40 && !game.run(reputation('gangster', { min: 40 }))) {
-      const lastPush = npc.stats.get('lastPush') ?? 0
-      const hoursSincePush = (game.time - lastPush) / 3600
-      if (hoursSincePush >= 24 && Math.random() < 0.2) {
-        game.scene.npc = 'spice-dealer'
-        game.scene.hideNpcImage = false
-        game.run('interact', { script: 'spicePush' })
-      }
-    }
-  },
 
   onFirstApproach: seq(
     'A shady figure eyes you from the shadows, his mechanical hand twitching at his side. He sizes you up — customer or constable?',

@@ -99,7 +99,7 @@
 
 import { Game } from '../../model/Game'
 import { registerNPC } from '../../model/NPC'
-import { schedulePlanner } from '../../model/Planner'
+import { schedulePlanner, priority, actionPlanner } from '../../model/Planner'
 import {
   say, npcLeaveOption, run,
   seq, random, when, cond, and,
@@ -131,10 +131,27 @@ registerNPC('landlord', {
     npc.stats.set('lust', 0)
   },
 
-  planner: schedulePlanner([
-    [9, 12, 'landlord-office', WEEKDAYS],
-    [16, 18, 'landlord-office', WEEKDAYS],
-  ]),
+  planner: priority(
+    actionPlanner([
+      { rate: 2400, script: cond(
+        isLustful(),
+        random(
+          text('Gerald glances at you over his ledger, then looks away quickly when you notice.'),
+          text('Gerald clears his throat and adjusts his collar. He seems warm, despite the draught.'),
+          text('You catch Gerald watching you. He pretends to be reading.'),
+        ),
+        random(
+          text('Gerald turns a page in his ledger and sighs.'),
+          text('Gerald sips his tea and stares at a damp patch on the wall with evident resignation.'),
+          text('Gerald scratches something out in his ledger and rewrites it, shaking his head.'),
+        ),
+      ) },
+    ]),
+    schedulePlanner([
+      [9, 12, 'landlord-office', WEEKDAYS],
+      [16, 18, 'landlord-office', WEEKDAYS],
+    ]),
+  ),
 
   onApproach: seq(
     // First meeting handled by showAround, so this is for repeat encounters
@@ -207,23 +224,6 @@ registerNPC('landlord', {
       option('Flirt', run('npc:onFlirt')),
     ),
     npcLeaveOption('You leave Gerald to his paperwork.', 'Right then. You know where I am.', 'Leave'),
-  ),
-
-  onWait: when(chance(0.2),
-    cond(
-      isLustful(),
-      random(
-        text('Gerald glances at you over his ledger, then looks away quickly when you notice.'),
-        text('Gerald clears his throat and adjusts his collar. He seems warm, despite the draught.'),
-        text('You catch Gerald watching you. He pretends to be reading.'),
-      ),
-      // Normal ambient
-      random(
-        text('Gerald turns a page in his ledger and sighs.'),
-        text('Gerald sips his tea and stares at a damp patch on the wall with evident resignation.'),
-        text('Gerald scratches something out in his ledger and rewrites it, shaking his head.'),
-      ),
-    ),
   ),
 
   scripts: {

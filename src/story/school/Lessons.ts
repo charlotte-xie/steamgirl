@@ -485,11 +485,8 @@ const lessonScripts = {
     quest.inLesson = false
     quest.attended = ((quest.attended as number) ?? 0) + 1
 
-    // Release the professor back to their normal schedule
+    // Release the professor — planner will reposition on next tick
     if (npcId) {
-      const prof = g.getNPC(npcId)
-      const profDef = prof.template
-      if (profDef.onMove) g.run(profDef.onMove)
       g.scene.npc = undefined
     }
   },

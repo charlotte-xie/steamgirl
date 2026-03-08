@@ -1,7 +1,7 @@
 import { Game } from '../../model/Game'
 import { Item } from '../../model/Item'
 import { NPC, registerNPC, PRONOUNS } from '../../model/NPC'
-import { priority, schedulePlanner, bedroomStayPlanner } from '../../model/Planner'
+import { priority, schedulePlanner } from '../../model/Planner'
 import { makeScripts } from '../../model/Scripts'
 import type { Instruction } from '../../model/ScriptDSL'
 import {
@@ -362,14 +362,13 @@ registerNPC('bar-patron', {
   pronouns: PRONOUNS.he,
 
   generate: (_game: Game, npc: NPC) => {
-    // Starts offscreen — onMove schedule places him at the bar 8–10pm
+    // Starts offscreen — schedulePlanner places him at the bar 8–10pm
     npc.location = null
     npc.stats.set('affection', 0)
     npc.stats.set('control', 0)
   },
 
   planner: priority(
-    bedroomStayPlanner({ before: 9 }),
     schedulePlanner([
       [20, 22, 'hotel-bar'],
       [22, 9, 'room-533'],

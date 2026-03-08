@@ -50,14 +50,14 @@
  * see the warning signs — but acting on them means losing him.
  *
  * Rob breaks up with the player if affection drops below ~25 while
- * boyfriend. (TODO: implement via onApproach/onWaitAway check)
+ * boyfriend. (TODO: implement via actionPlanner check)
  *
  * ═══════════════════════════════════════════════════════════════════════
  */
 
 import { Game } from '../../model/Game'
 import { NPC, PRONOUNS, registerNPC } from '../../model/NPC'
-import { priority, schedulePlanner, bedroomStayPlanner, actionPlanner } from '../../model/Planner'
+import { priority, schedulePlanner, actionPlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, npcLeaveOption, npcInteract, learnNpcName,
@@ -417,7 +417,6 @@ registerNPC('tour-guide', {
         condition: and(hasRelationship('boyfriend', 'tour-guide'), inBedroom(), hourBetween(18, 22), not(hasCard('date'))),
         script: run('interact', { npc: 'tour-guide', script: 'robVisit' }) },
     ]),
-    bedroomStayPlanner({ before: 9 }),
     datePlanner('tour-guide'),
     schedulePlanner([[9, 18, 'station']]),
   ),

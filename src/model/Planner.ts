@@ -82,39 +82,6 @@ export function schedulePlanner(schedule: SchedulePlanEntry[]): Planner {
   }
 }
 
-/** Return approachPlayer when a condition is met and NPC is co-located with player. */
-export function approachPlayerPlanner(condition: Script): Planner {
-  return (game: Game, npc: NPC) => {
-    if (npc.location !== game.currentLocation) return null
-    if (game.player.sleeping) return null
-    if (!game.run(condition)) return null
-    return ['approachPlayer', {}]
-  }
-}
-
-/** Idle reaction definition for idlePlanner. */
-export interface IdleReaction {
-  chance?: number
-  condition?: Script
-  script: Script
-}
-
-/** Run ambient reactions when NPC is co-located with player. */
-export function idlePlanner(reactions: IdleReaction[]): Planner {
-  return (game: Game, npc: NPC) => {
-    if (npc.location !== game.currentLocation) return null
-    if (game.player.sleeping) return null
-    for (const r of reactions) {
-      if (r.chance !== undefined && Math.random() >= r.chance) continue
-      if (r.condition && !game.run(r.condition)) continue
-      // Run the reaction directly (one-shot, no intermediate plan)
-      game.run(r.script)
-      return null
-    }
-    return null
-  }
-}
-
 // ============================================================================
 // ACTION PLANNER — rate-driven NPC actions
 // ============================================================================
@@ -185,21 +152,6 @@ export function actionPlanner(entries: ActionEntry[]): Planner {
 
 /** @deprecated Use actionPlanner instead. */
 export const interactPlanner = actionPlanner
-
-/**
- * Stay in a bedroom with the player instead of following the schedule.
- * Returns null (absorbs the tick) if the NPC is in a bedroom at the player's location.
- * Optional `before` hour: only stay if current hour < before (e.g. morning departures).
- */
-export function bedroomStayPlanner(opts?: { before?: number }): Planner {
-  return (game: Game, npc: NPC) => {
-    if (npc.location !== game.currentLocation) return null
-    const loc = npc.location ? game.getLocation(npc.location) : undefined
-    if (!loc?.template.isBedroom) return null
-    if (opts?.before !== undefined && game.hourOfDay >= opts.before) return null
-    return null // absorb — NPC stays put
-  }
-}
 
 // ============================================================================
 // COMPOSITE PLANNERS

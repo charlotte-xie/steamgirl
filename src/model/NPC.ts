@@ -72,28 +72,8 @@ export interface NPCDefinition {
   /** Script to run when player approaches this NPC (used after first approach, or if no onFirstApproach) */
   onApproach?: Script
 
-  /** Script to periodically for NPC movement (typically hourly) */
-  onMove?: Script
   /**
-   * Called when a NPC has a chance to approach the player (e.g. waiting).
-   * May create a scene to interrupt.
-   * Use for date intercepts, auto-greets, and NPC-initiated encounters.
-   */
-  maybeApproach?: Script
-  /**
-   * Called each 10-minute chunk when the player waits at a location where this NPC is present.
-   * Receives { npc: string, minutes: number }. May create a scene to interrupt the wait.
-   * Fires before the location's onWait. Use NPC state (e.g. nameKnown) to gate one-shot events.
-   */
-  onWait?: Script
-  /**
-   * Called each 10-minute chunk during waits for NPCs that are NOT at the player's location.
-   * Use for NPCs that can visit the player (e.g. boyfriend dropping by in the evening).
-   * May create a scene to interrupt the wait.
-   */
-  onWaitAway?: Script
-  /**
-   * Called when followSchedule is about to move this NPC away from the player's location.
+   * Called when the NPC is about to leave the player's location (via beAt script).
    * Fires only if the player is awake and not already in a scene.
    * Use for farewell scenes (e.g. boyfriend leaving in the morning).
    * The NPC's location is updated after this script runs — no need to call moveNpc.
@@ -165,69 +145,6 @@ export class NPC {
   /** Sets the affection stat (for convenience). */
   set affection(value: number) {
     this.stats.set('affection', value)
-  }
-
-  /**
-   * Follow a schedule to determine NPC location based on current hour and day.
-   * Schedule entries: [startHour, endHour, locationId, days?]
-   * Hours are 0-23. If current hour falls within a range, NPC moves to that location.
-   * Optional `days` array restricts the entry to specific days of the week
-   * (0 and 7 both mean Sunday, 1=Monday ... 6=Saturday).
-   * If no schedule matches, NPC location is set to null.
-   */
-  followSchedule(game: Game, schedule: ScheduleEntry[]): void {
-    const currentHour = Math.floor(game.hourOfDay)
-    const currentDay = game.date.getDay() // 0=Sunday
-
-    // Find matching schedule entry
-    let newLocation: string | null = null
-    let found = false
-    for (const entry of schedule) {
-      const [startHour, endHour, locationId, days] = entry
-
-      // Day filter: skip if days are specified and today isn't one of them
-      if (days && !days.some(d => d % 7 === currentDay)) continue
-
-      // Handle wrap-around (e.g., 22-2 means 22:00 to 02:00 next day)
-      let matches = false
-      if (startHour <= endHour) {
-        // Normal case: startHour to endHour within same day
-        matches = currentHour >= startHour && currentHour < endHour
-      } else {
-        // Wrap-around case: e.g., 22 to 2 means 22:00-23:59 and 00:00-01:59
-        matches = currentHour >= startHour || currentHour < endHour
-      }
-
-      if (matches) {
-        newLocation = locationId
-        found = true
-        break
-      }
-    }
-
-    // Determine final location: if a schedule matched, go there.
-    // If not, leave scheduled locations (e.g. end of shift) but stay put elsewhere.
-    let finalLocation = this.location
-    if (found) {
-      finalLocation = newLocation
-    } else {
-      const scheduledLocations = new Set(schedule.map(e => e[2]))
-      if (this.location && scheduledLocations.has(this.location)) {
-        finalLocation = null
-      }
-    }
-
-    // If the NPC is currently at the player's location and about to leave,
-    // fire the onLeavePlayer hook (if player is awake and not in a scene).
-    if (this.location === game.currentLocation && finalLocation !== this.location) {
-      const hook = this.template.onLeavePlayer
-      if (hook && !game.player.sleeping && !game.inScene) {
-        game.scene.npc = this.id
-        game.run(hook)
-      }
-    }
-
-    this.location = finalLocation
   }
 
   /** Gets the NPC definition template. */
