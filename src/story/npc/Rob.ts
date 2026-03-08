@@ -886,6 +886,48 @@ registerNPC('tour-guide', {
     // Looping menu for the makeout scene
     makeOutMenu: seq(
       cond(
+        // Exposed hips — most intense
+        exposed('hips'),
+        random(
+          seq(
+            'His hand slides down to your hip, fingers tracing the line of bare skin. He swallows hard.',
+            say('God. I can\'t — you\'re so—'),
+            'He loses the words. His touch says the rest.',
+            kiss(10, 100),
+          ),
+          seq(
+            'He pulls you closer, his hand warm against your bare hip. You can feel him trembling.',
+            say('I\'ve never — I don\'t really know what I\'m doing.'),
+            'His honesty is disarming.',
+            kiss(10, 100),
+          ),
+          seq(
+            'His fingers trace along your inner thigh. His breathing is ragged.',
+            say('Tell me what you want. Please.'),
+            kiss(10, 100),
+          ),
+        ),
+        // Exposed chest — he notices
+        exposed('chest'),
+        random(
+          seq(
+            'His gaze drops. His hand hovers, trembling, then brushes tentatively across your breast.',
+            say('Is this — can I—?'),
+            'You guide his hand. He exhales shakily.',
+            kiss(8, 80),
+          ),
+          seq(
+            'He presses his lips to your collarbone, then lower, kissing the soft curve of your breast.',
+            say('You\'re incredible. I mean it.'),
+            kiss(8, 80),
+          ),
+          seq(
+            'His thumb traces a slow circle across your skin. He watches your face, checking, always checking.',
+            say('Tell me if I should stop.'),
+            kiss(8, 80),
+          ),
+        ),
+        // Post-intimacy — confident
         npcStat('madeLove'),
         random(
           seq(
@@ -900,14 +942,9 @@ registerNPC('tour-guide', {
             'He pulls you against him, one hand firm on your hip.',
             say('You feel so good. I can\'t get enough of you.'),
           ),
-          seq(
-            'His mouth finds the spot below your ear that makes you shiver. He knows exactly what he\'s doing.',
-          ),
-          seq(
-            'You run your hands through his hair and he groans softly.',
-            say('Keep doing that. Don\'t stop.'),
-          ),
+          'His mouth finds the spot below your ear that makes you shiver. He knows exactly what he\'s doing.',
         ),
+        // General — shy, eager. Perception entries mixed in for variety.
         random(
           seq(
             'His hands trace the curve of your waist. His breath is warm against your neck.',
@@ -921,76 +958,27 @@ registerNPC('tour-guide', {
             'You press against him and he makes a soft, helpless sound.',
             say('Don\'t stop. Please don\'t stop.'),
           ),
-          seq(
-            'His fingers trace along your jawline. He kisses you slowly, deliberately, as if memorising the shape of you.',
-          ),
+          'His fingers trace along your jawline. He kisses you slowly, deliberately, as if memorising the shape of you.',
           seq(
             'You run your hands through his hair and he shivers.',
             say('You have no idea what you do to me.'),
           ),
+          when(stat('Perception', 10), seq(
+            'You notice his hands are trembling slightly. You lace your fingers through his and squeeze.',
+            'He lets out a breath he didn\'t know he was holding.',
+            say('How do you always know exactly what I need?'),
+            addNpcStat('affection', 2, { max: 85, hidden: true }),
+          )),
+          when(stat('Perception', 10), seq(
+            'There\'s a tension in his shoulders — he\'s holding back, afraid of going too far.',
+            'You pull him closer, giving him permission. The relief on his face is beautiful.',
+            addNpcStat('affection', 2, { max: 85, hidden: true }),
+          )),
         ),
       ),
       kiss(5),
       time(3),
       addNpcStat('affection', 1, { max: 80, hidden: true }),
-      // Perception: read his body language for a deeper moment
-      skillCheck('Perception', 10,
-        random(
-          seq(
-            'You notice his hands are trembling slightly. You lace your fingers through his and squeeze.',
-            'He lets out a breath he didn\'t know he was holding.',
-            say('How do you always know exactly what I need?'),
-            addNpcStat('affection', 2, { max: 85, hidden: true }),
-          ),
-          seq(
-            'There\'s a tension in his shoulders — he\'s holding back, afraid of going too far.',
-            'You pull him closer, giving him permission. The relief on his face is beautiful.',
-            addNpcStat('affection', 2, { max: 85, hidden: true }),
-          ),
-        ),
-      ),
-      // Exposure-dependent intimacy
-      when(exposed('chest'),
-        seq(
-          random(
-            seq(
-              'His gaze drops. His hand hovers, trembling, then brushes tentatively across your breast.',
-              say('Is this — can I—?'),
-              'You guide his hand. He exhales shakily.',
-            ),
-            seq(
-              'He presses his lips to your collarbone, then lower, kissing the soft curve of your breast.',
-              say('You\'re incredible. I mean it.'),
-            ),
-            seq(
-              'His thumb traces a slow circle across your skin. He watches your face, checking, always checking.',
-              say('Tell me if I should stop.'),
-            ),
-          ),
-          kiss(8, 80),
-        ),
-      ),
-      when(exposed('hips'),
-        seq(
-          random(
-            seq(
-              'His hand slides down to your hip, fingers tracing the line of bare skin. He swallows hard.',
-              say('God. I can\'t — you\'re so—'),
-              'He loses the words. His touch says the rest.',
-            ),
-            seq(
-              'He pulls you closer, his hand warm against your bare hip. You can feel him trembling.',
-              say('I\'ve never — I don\'t really know what I\'m doing.'),
-              'His honesty is disarming.',
-            ),
-            seq(
-              'His fingers trace along your inner thigh. His breathing is ragged.',
-              say('Tell me what you want. Please.'),
-            ),
-          ),
-          kiss(10, 100),
-        ),
-      ),
       when(exposed('hips'),
         option('Make love', run('npc:makeLove')),
       ),
@@ -1029,6 +1017,36 @@ registerNPC('tour-guide', {
     // Kissing within the makeout scene — more intense
     makeOutKiss: seq(
       cond(
+        // Exposed hips — most intense
+        exposed('hips'),
+        random(
+          seq(
+            'His hand slides down your body, tentative but wanting. You feel him shudder against you.',
+            say('I want — I want to touch you. Everywhere. Is that mad?'),
+            kiss(12, 100),
+          ),
+          seq(
+            'He pulls you flush against him, one hand gripping your bare hip. The contact sends a jolt through you both.',
+            'His breathing is uneven, his pupils blown wide.',
+            kiss(12, 100),
+          ),
+        ),
+        // Exposed chest — mouth wanders
+        exposed('chest'),
+        random(
+          seq(
+            'He breaks the kiss and his mouth trails down your neck, across your collarbone, lower.',
+            'His lips find your breast and you feel him smile against your skin.',
+            say('You taste like — I don\'t know. Like something I want more of.'),
+            kiss(10, 80),
+          ),
+          seq(
+            'His hand cups your breast, gentle and uncertain. He watches your reaction as though it\'s the most important thing in the world.',
+            say('Is this all right?'),
+            kiss(10, 80),
+          ),
+        ),
+        // Post-intimacy — confident
         npcStat('madeLove'),
         random(
           seq(
@@ -1045,6 +1063,7 @@ registerNPC('tour-guide', {
             'He grins against your mouth. He\'s teasing, but only just.',
           ),
         ),
+        // General — shy, eager
         random(
           seq(
             'You kiss him hard. He gasps against your mouth, his hands tightening on your hips.',
@@ -1065,38 +1084,6 @@ registerNPC('tour-guide', {
       kiss(8),
       time(2),
       addNpcStat('affection', 1, { max: 80, hidden: true }),
-      // Exposure-dependent intimacy
-      when(exposed('chest'),
-        seq(
-          random(
-            seq(
-              'He breaks the kiss and his mouth trails down your neck, across your collarbone, lower.',
-              'His lips find your breast and you feel him smile against your skin.',
-              say('You taste like — I don\'t know. Like something I want more of.'),
-            ),
-            seq(
-              'His hand cups your breast, gentle and uncertain. He watches your reaction as though it\'s the most important thing in the world.',
-              say('Is this all right?'),
-            ),
-          ),
-          kiss(10, 80),
-        ),
-      ),
-      when(exposed('hips'),
-        seq(
-          random(
-            seq(
-              'His hand slides down your body, tentative but wanting. You feel him shudder against you.',
-              say('I want — I want to touch you. Everywhere. Is that mad?'),
-            ),
-            seq(
-              'He pulls you flush against him, one hand gripping your bare hip. The contact sends a jolt through you both.',
-              'His breathing is uneven, his pupils blown wide.',
-            ),
-          ),
-          kiss(12, 100),
-        ),
-      ),
       when(exposed('hips'),
         option('Make love', run('npc:makeLove')),
       ),
