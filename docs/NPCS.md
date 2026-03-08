@@ -88,7 +88,8 @@ registerNPC('barkeeper', {
 - `schedulePlanner(entries)` — follow a timetable. String targets become `beAt(location)`. No match → go offscreen. Only manages NPCs at scheduled locations — NPCs at unscheduled locations (e.g. the player's room) are left alone until the schedule has somewhere to send them.
 - `bedroomStayPlanner({ before })` — stay in a bedroom with the player (e.g. until morning)
 - `datePlanner(npcId)` — attend dates at the meeting location during the wait window
-- `idlePlanner(reactions)` — ambient reactions when co-located with the player
+- `actionPlanner(entries)` — rate-driven NPC actions: interactions, ambient behaviour, independent plans (see below)
+- `idlePlanner(reactions)` — simple ambient reactions when co-located (use `actionPlanner` for new NPCs)
 - `approachPlayerPlanner(condition)` — approach the player when a condition is met
 
 **Compositors:**
@@ -214,22 +215,27 @@ This gives the player clear feedback ("he wasn't interested — I need to look b
 - **Decency gates on locations** (staff ejecting you) are fine — these are NPC-initiated and happen on arrival, not as disabled options.
 - **Skill gates** (`gatedBranch(hasStat(...))`) on player actions are fine — these represent the player's own ability, not NPC perception. You can't attempt a backflip if you've never trained gymnastics.
 
-## Wait Encounters
+## NPC Actions
 
-For new NPCs, use `idlePlanner` to handle ambient reactions during waits. The planner fires each tick when the NPC is co-located with the player:
+Use `actionPlanner` for rate-driven NPC actions — interactions, ambient behaviour, independent plans. Each entry has a `rate` (average seconds between occurrences) and a `script` to run. Probability follows a Poisson model: `p = 1 - e^(-elapsed/rate)`, so actions feel natural rather than clockwork.
 
 ```typescript
-import { idlePlanner, priority, schedulePlanner } from '../model/Planner'
+import { actionPlanner, priority, schedulePlanner } from '../model/Planner'
 
 registerNPC('barkeeper', {
   planner: priority(
-    idlePlanner([
-      { chance: 0.2, script: random(
+    actionPlanner([
+      { rate: 1800, script: random(                    // ~every 30 min
         'Martha polishes a glass, watching the room.',
         'Martha refills your drink without being asked.',
       )},
-      { chance: 0.1, condition: npcStat('affection', { min: 20 }),
+      { rate: 3600, condition: npcStat('affection', { min: 20 }),
         script: say('You know, you\'re one of my favourite regulars.'),
+      },
+      // Boyfriend evening visit — fires when NPC is elsewhere
+      { rate: 3600, away: true,
+        condition: and(hasRelationship('boyfriend'), inBedroom(), hourBetween(18, 22)),
+        script: run('approach', { npc: 'barkeeper' }),
       },
     ]),
     schedulePlanner([[10, 23, 'tavern']]),
@@ -237,9 +243,16 @@ registerNPC('barkeeper', {
 })
 ```
 
-For NPC-initiated approaches (e.g. auto-greet, date intercepts), use `approachPlayerPlanner` or `maybeApproach`.
+Entries default to **co-located** (fires when NPC is at the player's location). Set `away: true` for actions when the NPC is elsewhere (e.g. boyfriend visits, independent plans).
 
-> **Legacy:** The `onWait` hook still functions for unmigrated NPCs. It fires each 10-minute chunk before the location's own `onWait` hook.
+Conditions can be applied at three levels:
+- **Per-entry** — `condition` field on each entry (checked after the probability roll)
+- **Whole planner** — wrap `actionPlanner` in a conditional planner or `priority()` gating
+- **In-script** — the script itself handles gating (fires but may do nothing)
+
+The NPC's `_lastTick` stat tracks timing automatically. The first tick sets a baseline without firing.
+
+> **Legacy:** `idlePlanner`, `approachPlayerPlanner`, `onWait`, `onWaitAway`, and `maybeApproach` are legacy hooks superseded by `actionPlanner`. They still function for unmigrated NPCs but should not be used for new NPCs.
 
 ## Serialisation
 

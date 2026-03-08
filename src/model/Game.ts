@@ -317,8 +317,12 @@ export class Game {
     this.npcs.set(npcId, npc)
 
     if (definition.planner) {
-      // Plan-based AI: set up plan structure. tickNPCs() will run it.
+      // Plan-based AI: set up plan, then tick immediately to position the NPC
       npc.plan = ['plan', { current: null, planner: ['basePlanner', {}] }]
+      this.pushFrame([])
+      this.topFrame.npc = npc.id
+      npc.plan = this.run(npc.plan) as Instruction
+      this.popFrame()
     } else {
       // Legacy: call onMove to position the NPC
       this.run(definition.onMove)

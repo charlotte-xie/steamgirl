@@ -115,6 +115,77 @@ export function idlePlanner(reactions: IdleReaction[]): Planner {
   }
 }
 
+// ============================================================================
+// ACTION PLANNER — rate-driven NPC actions
+// ============================================================================
+
+/** Entry for actionPlanner: a rate-driven NPC action. */
+export interface ActionEntry {
+  /** Average time between occurrences in seconds (e.g. 3600 = once per hour). */
+  rate: number
+  /** Optional condition — entry is skipped if this returns falsy. */
+  condition?: Script
+  /** Script to run when this action fires. */
+  script: Script
+  /** If true, fires when NPC is NOT at the player's location (default: co-located only). */
+  away?: boolean
+}
+
+/**
+ * Rate-driven planner for NPC actions — interactions, ambient behaviour, independent plans.
+ *
+ * Each tick, calculates elapsed time since the NPC's last action tick and uses
+ * Poisson probability: p = 1 - e^(-elapsed/rate). Entries are checked in order;
+ * the first that passes its probability roll and condition fires.
+ *
+ * Entries default to co-located (fires when NPC is at the player's location).
+ * Set `away: true` for actions when the NPC is elsewhere (e.g. boyfriend visits).
+ *
+ * The NPC's `_lastTick` stat tracks timing. The first tick sets a baseline
+ * without firing.
+ */
+export function actionPlanner(entries: ActionEntry[]): Planner {
+  return (game: Game, npc: NPC) => {
+    if (game.player.sleeping) return null
+
+    const now = game.time
+    const lastTick = npc.stats.get('_lastTick')
+
+    // First tick — set baseline, don't fire
+    if (lastTick === undefined) {
+      npc.stats.set('_lastTick', now)
+      return null
+    }
+
+    const elapsed = now - lastTick
+
+    // No time has passed — nothing to roll
+    if (elapsed <= 0) return null
+
+    const coLocated = npc.location === game.currentLocation
+
+    for (const entry of entries) {
+      // Location filter: away entries fire when NOT co-located, default when co-located
+      if (entry.away ? coLocated : !coLocated) continue
+
+      // Poisson probability: p = 1 - e^(-elapsed/rate)
+      const p = 1 - Math.exp(-elapsed / entry.rate)
+      if (Math.random() >= p) continue
+      if (entry.condition && !game.run(entry.condition)) continue
+
+      // Fire this action
+      npc.stats.set('_lastTick', now)
+      game.run(entry.script)
+      return null
+    }
+
+    return null
+  }
+}
+
+/** @deprecated Use actionPlanner instead. */
+export const interactPlanner = actionPlanner
+
 /**
  * Stay in a bedroom with the player instead of following the schedule.
  * Returns null (absorbs the tick) if the NPC is in a bedroom at the player's location.

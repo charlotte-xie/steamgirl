@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Game } from './Game'
 import { registerNPC, type Planner } from './NPC'
 import { registerLocation } from './Location'
-import { priority, schedulePlanner, idlePlanner, randomPick } from './Planner'
+import { priority, schedulePlanner, idlePlanner, actionPlanner, randomPick } from './Planner'
 import '../story/World'
 
 // Test location for NPC AI tests
@@ -36,12 +36,10 @@ describe('NPC AI — plan system', () => {
     expect(npc.plan![0]).toBe('plan')
   })
 
-  it('should set NPC location via schedulePlanner on first tick', () => {
+  it('should set NPC location immediately on instantiation', () => {
     const game = makeTestGame('ai-test-npc')
     const npc = game.getNPC('ai-test-npc')
-    // NPC has no location until tickNPCs runs
-    expect(npc.location).toBeNull()
-    game.tickNPCs(true)
+    // NPC is positioned immediately by the initial plan tick in getNPC
     expect(npc.location).toBe('ai-test-loc')
   })
 
@@ -247,5 +245,161 @@ describe('NPC AI — idlePlanner', () => {
       c.type === 'paragraph' ? (c as { content: { text: string }[] }).content.map(p => p.text).join('') : ''
     ).join(' ')
     expect(text).toContain('fidgets')
+  })
+})
+
+describe('NPC AI — actionPlanner', () => {
+  registerNPC('ai-interact-npc', {
+    name: 'Interactor',
+    uname: 'interactor',
+    planner: priority(
+      actionPlanner([
+        // rate=1s: with 1 hour elapsed, p ≈ 1.0
+        { rate: 1, script: ['text', { parts: ['Interactor waves.'] }] },
+      ]),
+      schedulePlanner([[0, 24, 'ai-test-loc']]),
+    ),
+  })
+
+  it('should set baseline on first co-located tick without firing', () => {
+    const game = new Game()
+    game.moveToLocation('ai-test-loc')
+    game.getNPC('ai-interact-npc')
+    game.tickNPCs(true) // schedulePlanner places NPC
+    game.clearScene()
+
+    game.tickNPCs(true) // actionPlanner sets baseline
+    const npc = game.getNPC('ai-interact-npc')
+    expect(npc.stats.get('_lastTick')).toBe(game.time)
+    expect(game.scene.content.length).toBe(0)
+  })
+
+  it('should fire after time elapses (rate=1s, elapsed=1h)', () => {
+    const game = new Game()
+    game.moveToLocation('ai-test-loc')
+    game.getNPC('ai-interact-npc')
+    game.tickNPCs(true) // place NPC
+    game.clearScene()
+    game.tickNPCs(true) // baseline
+    game.clearScene()
+
+    game.time += 3600
+    game.tickNPCs(true)
+
+    const text = game.scene.content.map(c =>
+      c.type === 'paragraph' ? (c as { content: { text: string }[] }).content.map(p => p.text).join('') : ''
+    ).join(' ')
+    expect(text).toContain('waves')
+  })
+
+  it('should respect entry conditions', () => {
+    registerNPC('ai-interact-cond', {
+      name: 'Conditional Interactor',
+      uname: 'conditional interactor',
+      planner: priority(
+        actionPlanner([
+          {
+            rate: 1,
+            condition: ['stat', { stat: 'Charm', min: 999 }],
+            script: ['text', { parts: ['Should not fire.'] }],
+          },
+        ]),
+        schedulePlanner([[0, 24, 'ai-test-loc']]),
+      ),
+    })
+
+    const game = new Game()
+    game.moveToLocation('ai-test-loc')
+    game.getNPC('ai-interact-cond')
+    game.tickNPCs(true) // place
+    game.clearScene()
+    game.tickNPCs(true) // baseline
+    game.clearScene()
+
+    game.time += 3600
+    game.tickNPCs(true)
+
+    expect(game.scene.content.length).toBe(0)
+  })
+
+  it('should not fire when NPC is not at player location', () => {
+    const game = new Game()
+    game.moveToLocation('ai-test-loc')
+    game.getNPC('ai-interact-npc')
+    game.tickNPCs(true) // place
+    game.tickNPCs(true) // baseline
+    game.clearScene()
+
+    game.moveToLocation('ai-test-loc2')
+    game.time += 3600
+    game.tickNPCs(true)
+
+    expect(game.scene.content.length).toBe(0)
+  })
+
+  it('should not fire when player is sleeping', () => {
+    const game = new Game()
+    game.moveToLocation('ai-test-loc')
+    game.getNPC('ai-interact-npc')
+    game.tickNPCs(true) // place
+    game.tickNPCs(true) // baseline
+    game.clearScene()
+
+    game.player.sleeping = true
+    game.time += 3600
+    game.tickNPCs(true)
+
+    expect(game.scene.content.length).toBe(0)
+  })
+
+  it('away entry should fire when NPC is NOT at player location', () => {
+    registerNPC('ai-away-npc', {
+      name: 'Away Actor',
+      uname: 'away actor',
+      planner: priority(
+        actionPlanner([
+          { rate: 1, away: true, script: ['text', { parts: ['Away action fires.'] }] },
+        ]),
+        schedulePlanner([[0, 24, 'ai-test-loc2']]),
+      ),
+    })
+
+    const game = new Game()
+    game.moveToLocation('ai-test-loc') // player at loc1
+    game.getNPC('ai-away-npc') // NPC placed at loc2 by scheduler
+    game.tickNPCs(true) // baseline
+    game.clearScene()
+
+    game.time += 3600
+    game.tickNPCs(true)
+
+    const text = game.scene.content.map(c =>
+      c.type === 'paragraph' ? (c as { content: { text: string }[] }).content.map(p => p.text).join('') : ''
+    ).join(' ')
+    expect(text).toContain('Away action')
+  })
+
+  it('away entry should NOT fire when NPC IS at player location', () => {
+    registerNPC('ai-away-npc2', {
+      name: 'Away Actor 2',
+      uname: 'away actor 2',
+      planner: priority(
+        actionPlanner([
+          { rate: 1, away: true, script: ['text', { parts: ['Should not fire.'] }] },
+        ]),
+        schedulePlanner([[0, 24, 'ai-test-loc']]),
+      ),
+    })
+
+    const game = new Game()
+    game.moveToLocation('ai-test-loc') // same location
+    game.getNPC('ai-away-npc2')
+    game.tickNPCs(true) // baseline
+    game.clearScene()
+
+    game.time += 3600
+    game.tickNPCs(true)
+
+    expect(game.scene.content.length).toBe(0)
   })
 })

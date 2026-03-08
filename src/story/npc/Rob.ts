@@ -57,7 +57,7 @@
 
 import { Game } from '../../model/Game'
 import { NPC, PRONOUNS, registerNPC } from '../../model/NPC'
-import { priority, schedulePlanner, bedroomStayPlanner } from '../../model/Planner'
+import { priority, schedulePlanner, bedroomStayPlanner, actionPlanner } from '../../model/Planner'
 import {
   type Instruction,
   say, npcLeaveOption, npcInteract, learnNpcName,
@@ -73,7 +73,6 @@ import {
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, datePlanner, endDate,
-  handleDateApproach,
   standardGreeting, standardCancel, standardNoShow, standardComplete,
   tryStrip,
 } from '../Dating'
@@ -409,39 +408,21 @@ registerNPC('tour-guide', {
   intimacyCooldown: 60 * 60, // 1 hour
 
   planner: priority(
+    actionPlanner([
+      // Auto-greet at station if not yet met
+      { rate: 1, condition: npcStat('nameKnown', { max: 0 }),
+        script: run('approach', { npc: 'tour-guide' }) },
+      // Boyfriend evening visit — drops by the player's room
+      { rate: 3600, away: true,
+        condition: and(hasRelationship('boyfriend', 'tour-guide'), inBedroom(), hourBetween(18, 22), not(hasCard('date'))),
+        script: run('interact', { npc: 'tour-guide', script: 'robVisit' }) },
+    ]),
     bedroomStayPlanner({ before: 9 }),
     datePlanner('tour-guide'),
     schedulePlanner([[9, 18, 'station']]),
   ),
 
-  maybeApproach: (game: Game) => {
-    handleDateApproach(game, 'tour-guide')
-  },
-
   onLeavePlayer: when(inPrivate(), npcInteract('morningDepart')),
-
-  onWait: (game: Game) => {
-    // Auto-greet at station if not yet met
-    const npc = game.getNPC('tour-guide')
-    if (npc.nameKnown === 0) {
-      game.run('approach', { npc: 'tour-guide' })
-    }
-  },
-
-  onWaitAway: (game: Game) => {
-    // Random evening visit — boyfriend drops by your room
-    if (
-      game.player.relationships.get('tour-guide') === 'boyfriend' &&
-      game.location.template.isBedroom &&
-      game.hourOfDay >= 18 && game.hourOfDay < 22 &&
-      !game.player.hasCard('date') &&
-      Math.random() < 0.2
-    ) {
-      game.scene.npc = 'tour-guide'
-      game.scene.hideNpcImage = false
-      game.run('interact', { script: 'robVisit' })
-    }
-  },
 
   onFirstApproach: seq(
     'A man with a well-worn guidebook catches your eye and steps over with a warm smile.',
