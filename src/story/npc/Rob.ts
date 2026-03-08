@@ -69,7 +69,7 @@ import {
   stat, npcStat, skillCheck,
   run, and, not, or, hasCard, inLocation, hourBetween,
   hasRelationship, setRelationship, chance,
-  inBedroom, inPrivate, kiss, exposed, replaceScene,
+  inBedroom, inPrivate, kiss, exposed, replaceScene, wantsIntimacy,
 } from '../../model/ScriptDSL'
 import {
   registerDatePlan, datePlanner, endDate,
@@ -406,6 +406,8 @@ registerNPC('tour-guide', {
     npc.stats.set('affection', 0)
   },
 
+  intimacyCooldown: 60 * 60, // 1 hour
+
   planner: priority(
     bedroomStayPlanner({ before: 9 }),
     datePlanner('tour-guide'),
@@ -696,15 +698,15 @@ registerNPC('tour-guide', {
         ),
         say('I like your room. It\'s small but it\'s... warm. Like you.'),
         say('This is much better than the station. Better company, too.'),
-        // Post-intimacy — confident, knowing
-        when(npcStat('madeLove'), seq(
+        // Post-intimacy — confident, knowing. Physical ones gated on wantsIntimacy (Rob initiating)
+        when(and(npcStat('madeLove'), wantsIntimacy()), seq(
           'He catches your eye across the room. The look he gives you is slow and knowing.',
           say('Come here.'),
         )),
         when(npcStat('madeLove'),
           say('I keep thinking about you. About us. I can\'t help it.'),
         ),
-        when(npcStat('madeLove'), seq(
+        when(and(npcStat('madeLove'), wantsIntimacy()), seq(
           'He pulls you close and presses his lips to your neck.',
           say('You smell incredible. Has anyone told you that?'),
         )),
@@ -781,8 +783,8 @@ registerNPC('tour-guide', {
       ),
       npcLeaveOption('You leave Rob to it for now.', undefined, 'Do something else'),
       option('Ask him to leave', run('npc:leaveLodgings')),
-      // Chance Rob tries to escalate to makeout — replaces current scene
-      when(chance(0.25),
+      // Chance Rob tries to escalate to makeout — only if he wants intimacy
+      when(and(wantsIntimacy(), chance(0.25)),
         replaceScene(
           cond(
             npcStat('madeLove'),

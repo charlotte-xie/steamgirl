@@ -129,16 +129,17 @@ makeScript('madeLove', (game: Game, params: { npc?: string }) => {
   madeLove(game, params.npc)
 })
 
-const INTIMACY_COOLDOWN = 6 * 60 * 60 // 6 hours in seconds
+const DEFAULT_INTIMACY_COOLDOWN = 6 * 60 * 60 // 6 hours in seconds
 
 /**
- * Check if an NPC wants intimacy (lastIntimacy was more than 6 hours ago, or never).
- * Returns true if the NPC is ready for intimacy again.
+ * Check if an NPC wants intimacy (lastIntimacy cooldown has elapsed, or never intimate).
+ * Priority: cooldown param > NPC's intimacyCooldown field > default 6 hours.
  */
-makeScript('wantsIntimacy', (game: Game, params: { npc?: string }): boolean => {
+makeScript('wantsIntimacy', (game: Game, params: { npc?: string; cooldown?: number }): boolean => {
   const npc = params.npc ? game.getNPC(params.npc) : game.scene.npc ? game.npc : undefined
   if (!npc) return false
   const last = npc.stats.get('lastIntimacy')
   if (last === undefined) return true
-  return (game.time - last) >= INTIMACY_COOLDOWN
+  const cooldown = params.cooldown ?? npc.template.intimacyCooldown ?? DEFAULT_INTIMACY_COOLDOWN
+  return (game.time - last) >= cooldown
 })

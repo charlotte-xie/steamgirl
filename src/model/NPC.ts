@@ -109,6 +109,8 @@ export interface NPCDefinition {
   modifyImpression?: (npc: NPC, impression: string, score: number) => number
   /** Called after every player action while this NPC is at the player's location. */
   afterUpdate?: Script
+  /** Intimacy cooldown in seconds. Default 6 hours. After intimacy, NPC won't want it again until this elapses. */
+  intimacyCooldown?: number
   /** Plan-based AI planner. Returns an Instruction (plan) or null. Never serialised. */
   planner?: Planner
   /** NPC-specific scripts run via the global "interact" script with { npc, script, params? }. */

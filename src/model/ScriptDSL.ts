@@ -397,9 +397,9 @@ export const sleepTogether = (quality?: number): Instruction =>
 export const madeLove = (npc?: string): Instruction =>
   run('madeLove', { npc })
 
-/** True if NPC's lastIntimacy was more than 6 hours ago (or never). Uses scene NPC by default. */
-export const wantsIntimacy = (npc?: string): Instruction =>
-  run('wantsIntimacy', { npc })
+/** True if NPC's intimacy cooldown has elapsed (or never intimate). Default 6 hours, override with cooldown (seconds). */
+export const wantsIntimacy = (npc?: string, cooldown?: number): Instruction =>
+  run('wantsIntimacy', { npc, cooldown })
 
 /** Record the current game time to a named timer */
 export const recordTime = (timer: string): Instruction =>
