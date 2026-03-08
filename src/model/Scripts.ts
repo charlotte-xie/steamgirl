@@ -1362,6 +1362,9 @@ const coreScripts: Record<string, ScriptFn> = {
     if (!game.inScene && gameLocation.template.onArrive) {
       game.run(gameLocation.template.onArrive)
     }
+
+    // Position NPCs as part of arrival so they're already present
+    game.tickNPCs()
   },
 
   /** Discover a location - sets discovered flag and optionally displays text */
@@ -1612,8 +1615,8 @@ const coreScripts: Record<string, ScriptFn> = {
         }
       }
       npc.location = newLocation
-      // Arrival text if entering the player's location
-      if (newLocation === game.currentLocation && !game.player.sleeping) {
+      // Arrival text if entering the player's location (not on initial placement)
+      if (newLocation === game.currentLocation && !game.player.sleeping && oldLocation !== null) {
         game.add(`{npc} arrives.`)
       }
     }

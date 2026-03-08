@@ -6,6 +6,14 @@ import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem, COLOURS } from './Format'
 import { intervalsCrossed } from '../utils/intervalsCrossed'
 import { mapToRecord } from '../utils/mapRecord'
+import { capitalise } from './Text'
+
+/** Capitalise the first character of the first part in a paragraph content array. */
+function capitaliseFirst(content: ParagraphContent[]): void {
+  if (content.length > 0 && content[0].text) {
+    content[0] = { ...content[0], text: capitalise(content[0].text) }
+  }
+}
 
 /** Find the index of the first expression character (: or () in a script name, or -1 if plain. */
 function findExpressionStart(script: string): number {
@@ -340,9 +348,10 @@ export class Game {
         const content: ParagraphContent[] = parts.map(part =>
           typeof part === 'string' ? { type: 'text' as const, text: part } : part
         )
+        capitaliseFirst(content)
         this.scene.content.push({ type: 'paragraph', content })
       } else {
-        this.scene.content.push({ type: 'paragraph', content: [{ type: 'text', text: item }] })
+        this.scene.content.push({ type: 'paragraph', content: [{ type: 'text', text: capitalise(item) }] })
       }
     } else if (Array.isArray(item)) {
       item.forEach(i => this.add(i))
