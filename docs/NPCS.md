@@ -9,7 +9,7 @@ NPCs follow the same template/instance pattern as the rest of the game model (se
 ```
 NPCDefinition   (static, registered via registerNPC())
   name, uname, description, image, speechColor
-  generate, onFirstApproach, onApproach, onMove, onWait
+  generate, onFirstApproach, onApproach, planner
   scripts: Record<string, Script>
 
 NPC              (mutable instance, serialised)
@@ -29,7 +29,7 @@ registerNPC('npc-id', {
   image: '/images/npcs/npc.jpg',
   speechColor: '#c4a35a',
   generate: (game, npc) => { ... }, // called once on first instantiation
-  onMove: (game) => { ... },        // called each hour change
+  planner: schedulePlanner([...]),   // AI behaviour (movement, schedules)
   onFirstApproach: ...,             // script for first meeting
   onApproach: ...,                  // script for subsequent meetings
   scripts: { ... },                 // named interaction scripts
@@ -44,10 +44,10 @@ NPCs are **lazily instantiated** via `game.getNPC(id)`. The first call:
 
 1. Creates a new `NPC` instance
 2. Calls `definition.generate()` (if defined) to set initial state
-3. Calls `definition.onMove()` (if defined) to position the NPC
+3. Sets up the plan structure if the NPC has a `planner`
 4. Adds the instance to `game.npcs`
 
-Subsequent calls return the existing instance. Location `onArrive` hooks typically call `getNPC()` to ensure NPCs at that location exist.
+Subsequent calls return the existing instance. NPCs are positioned by `tickNPCs()` which runs their planners. Location `onArrive` hooks may call `getNPC()` to ensure NPCs at that location exist.
 
 ## Stats
 
@@ -67,24 +67,48 @@ When `nameKnown` is 0, the UI shows the NPC's `uname` (e.g. "barkeeper"). Once `
 
 ## AI and Behaviour
 
-NPC-initiated behaviour (movement, approaching the player, ambient reactions, visits) is driven by a plan-based AI system. Each NPC has a `plan` field — a serialisable instruction that runs each tick — and a `planner` on its definition that provides new plans when the current one completes. See [NPC_AI.md](./NPC_AI.md) for the full design.
+NPC behaviour is driven by a **plan-based AI system**. Each NPC has a `plan` field (a serialisable instruction that runs each tick) and a `planner` on its definition that provides new plans when the current one completes.
 
-### Legacy: Movement and Schedules
+### Planners
 
-NPCs have a nullable `location` property. When set, the NPC appears at that location and is listed in `game.npcsPresent` (recalculated each action).
-
-The `onMove` hook fires each time the game hour changes (during `timeLapse`). It is the standard place to implement NPC schedules. The `followSchedule` helper sets the NPC's location based on the current hour:
+A planner is a stateless function `(game, npc) => Instruction | null`. It examines game state and returns a plan. Planners are defined on `NPCDefinition` and never serialised — only their output is.
 
 ```typescript
-npc.followSchedule(game, [
-  [10, 18, 'market'],      // 10am--6pm at the market
-  [19, 23, 'tavern'],      // 7pm--11pm at the tavern
-])
+import { schedulePlanner, priority } from '../model/Planner'
+
+registerNPC('barkeeper', {
+  planner: priority(
+    datePlanner('barkeeper'),                    // highest priority: attend dates
+    schedulePlanner([[10, 18, 'market']]),        // default: follow timetable
+  ),
+})
 ```
 
-Format: `[startHour, endHour, locationId]`. Hours are 0--23 integers (floor of `hourOfDay`). Supports midnight wrap-around (e.g. `[22, 2, 'tavern']`). If no entry matches, location is set to `null` (NPC is offscreen).
+**Built-in planners:**
+- `schedulePlanner(entries)` — follow a timetable. String targets become `beAt(location)`. No match → go offscreen. Only manages NPCs at scheduled locations — NPCs at unscheduled locations (e.g. the player's room) are left alone until the schedule has somewhere to send them.
+- `bedroomStayPlanner({ before })` — stay in a bedroom with the player (e.g. until morning)
+- `datePlanner(npcId)` — attend dates at the meeting location during the wait window
+- `idlePlanner(reactions)` — ambient reactions when co-located with the player
+- `approachPlayerPlanner(condition)` — approach the player when a condition is met
 
-> **Note:** `onMove`, `onWait`, `onWaitAway`, and `maybeApproach` are legacy hooks superseded by the planner system. They still function for NPCs that haven't been migrated. See [NPC_AI.md](./NPC_AI.md) for the replacement patterns.
+**Compositors:**
+- `priority(...planners)` — try in order, return first non-null
+- `randomPick(...planners)` — shuffle then try in order
+- `weighted([weight, planner], ...)` — weighted random selection
+
+### Tick Rate
+
+`tickNPCs()` runs after every player action and during travel. NPCs at the player's location tick every action. Non-present NPCs only tick when a 15-minute game-time boundary is crossed.
+
+### Movement
+
+NPCs have a nullable `location` property. When set, the NPC appears at that location and is listed in `game.npcsPresent`. The `beAt` script handles movement with arrival/departure text:
+- Departure text when leaving the player's location (uses `onLeavePlayer` if defined)
+- Arrival text when entering the player's location (suppressed on initial placement)
+
+### Legacy Hooks
+
+> `onMove`, `onWait`, `onWaitAway`, and `maybeApproach` are legacy hooks superseded by the planner system. They still function for NPCs that haven't been migrated but should not be used for new NPCs.
 
 ## Interaction
 
@@ -192,18 +216,30 @@ This gives the player clear feedback ("he wasn't interested — I need to look b
 
 ## Wait Encounters
 
-The `onWait` hook fires each 10-minute chunk when the player waits at a location where the NPC is present. It can create a scene to interrupt the wait -- useful for ambient encounters and one-shot events.
+For new NPCs, use `idlePlanner` to handle ambient reactions during waits. The planner fires each tick when the NPC is co-located with the player:
 
 ```typescript
-onWait: (game: Game) => {
-  const npc = game.getNPC('tour-guide')
-  if (npc.nameKnown === 0) {
-    game.run('approach', { npc: 'tour-guide' })
-  }
-}
+import { idlePlanner, priority, schedulePlanner } from '../model/Planner'
+
+registerNPC('barkeeper', {
+  planner: priority(
+    idlePlanner([
+      { chance: 0.2, script: random(
+        'Martha polishes a glass, watching the room.',
+        'Martha refills your drink without being asked.',
+      )},
+      { chance: 0.1, condition: npcStat('affection', { min: 20 }),
+        script: say('You know, you\'re one of my favourite regulars.'),
+      },
+    ]),
+    schedulePlanner([[10, 23, 'tavern']]),
+  ),
+})
 ```
 
-NPC `onWait` hooks fire before the location's own `onWait` hook.
+For NPC-initiated approaches (e.g. auto-greet, date intercepts), use `approachPlayerPlanner` or `maybeApproach`.
+
+> **Legacy:** The `onWait` hook still functions for unmigrated NPCs. It fires each 10-minute chunk before the location's own `onWait` hook.
 
 ## Serialisation
 
@@ -220,19 +256,27 @@ Definitions are never serialised -- they are rebuilt from `registerNPC()` calls 
 1. Register the NPC definition in the appropriate story module:
 
 ```typescript
+import { schedulePlanner } from '../model/Planner'
+
 registerNPC('my-npc', {
   name: 'Name',
   uname: 'description when unknown',
   speechColor: '#aabbcc',
-  generate: (_game, npc) => { npc.location = 'some-location' },
-  onMove: (game) => {
-    game.getNPC('my-npc').followSchedule(game, [[9, 17, 'some-location']])
+  planner: schedulePlanner([[9, 17, 'some-location']]),
+  onApproach: seq(
+    say('Hello there.'),
+    option('Chat', run('npc:onChat')),
+    npcLeaveOption(),
+  ),
+  scripts: {
+    onChat: seq(
+      say('Nice weather, isn\'t it?'),
+      npcLeaveOption(),
+    ),
   },
-  onApproach: (game) => { ... },
-  scripts: { onGeneralChat: (g) => { ... } },
 })
 ```
 
-2. Ensure the NPC is instantiated by calling `game.getNPC('my-npc')` somewhere -- typically in the location's `onArrive` hook.
+2. Ensure the NPC is instantiated by calling `game.getNPC('my-npc')` somewhere — typically in the location's `onArrive` hook.
 
 3. Import the module in `World.ts`.
