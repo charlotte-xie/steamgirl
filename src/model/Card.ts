@@ -61,12 +61,18 @@ const cardRegistry = createRegistry<CardDefinition>('Card')
 export class Card {
   id: CardId
   type: CardType
-  // Additional instance-specific properties
+  /** Whether this card has been completed (quests, dates, tasks). */
+  completed: boolean
+  /** Whether this card has failed (quests, dates, tasks). */
+  failed: boolean
+  // Additional instance-specific properties (content-authored)
   [key: string]: unknown
 
   constructor(id: CardId, type: CardType) {
     this.id = id
     this.type = type
+    this.completed = false
+    this.failed = false
   }
 
   /** Read a numeric custom property (returns 0 if absent/non-numeric). */
@@ -80,20 +86,24 @@ export class Card {
     return cardRegistry.getOrThrow(this.id)
   }
 
+  /** Standard fields that are serialised explicitly (not via the generic property loop). */
+  private static readonly KNOWN_KEYS = new Set(['id', 'type', 'completed', 'failed', 'template'])
+
   toJSON(): CardData {
-    // Serialize id, type, and any additional properties
     const data: CardData = {
       id: this.id,
       type: this.type,
+      completed: this.completed,
+      failed: this.failed,
     }
-    
-    // Include any additional properties that are not part of the base class
+
+    // Include content-authored custom properties
     Object.keys(this).forEach(key => {
-      if (key !== 'id' && key !== 'type' && key !== 'template') {
+      if (!Card.KNOWN_KEYS.has(key)) {
         data[key] = this[key]
       }
     })
-    
+
     return data
   }
 
@@ -113,12 +123,14 @@ export class Card {
     // Verify definition exists
     cardRegistry.getOrThrow(cardId)
 
-    // Create card instance
+    // Create card instance and restore standard fields
     const card = new Card(cardId, cardType)
-    
-    // Apply any additional serialized properties
+    card.completed = !!data.completed
+    card.failed = !!data.failed
+
+    // Apply content-authored custom properties
     Object.keys(data).forEach(key => {
-      if (key !== 'id' && key !== 'type') {
+      if (!Card.KNOWN_KEYS.has(key)) {
         card[key] = data[key]
       }
     })
