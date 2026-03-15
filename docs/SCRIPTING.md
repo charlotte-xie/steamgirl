@@ -327,9 +327,11 @@ Common scripts already defined in `Scripts.ts`:
 
 | File | Purpose |
 |------|---------|
-| `model/Scripts.ts` | Core script registry, generic scripts |
-| `model/ScriptDSL.ts` | DSL builder functions |
+| `model/Scripts.ts` | Script registry, types, interpolation infrastructure |
+| `model/scripts/` | Core script implementations (gameActions, controlFlow, predicates, content, cards, playerActions, npcAI) |
+| `model/ScriptDSL.ts` | Declarative DSL builder functions |
+| `model/Planner.ts` | NPC AI planner factories and compositors |
 | `story/Utility.ts` | Story-specific utility scripts |
 | `story/[Area].ts` | Area-specific content and scripts |
 
-Scripts belong in `Scripts.ts` unless they contain story-specific content. Subsystem logic (e.g. lesson scripts) lives in the relevant story module.
+Core scripts (generic, reusable across any game content) live in `model/scripts/`. Story-specific scripts live in `story/Utility.ts` or the relevant story module. Subsystem logic (e.g. lesson scripts) lives in the relevant story module.

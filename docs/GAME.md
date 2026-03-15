@@ -9,9 +9,11 @@ The game model is built on a **template/instance** pattern. Every entity type (L
 | `Game` | -- | Score, time, scene, current location | -- |
 | `Player` | -- | Stats, inventory, cards, outfits, timers | -- |
 | `Location` | `LocationDefinition` | `numVisits`, `discovered` | `registerLocation()` |
-| `NPC` | `NPCDefinition` | `location`, `stats` (affection, approachCount, nameKnown) | `registerNPC()` |
+| `NPC` | `NPCDefinition` | `location`, `stats`, `plan` | `registerNPC()` |
 | `Item` | `ItemDefinition` | `number`, `worn`, `locked` | `registerItemDefinition()` |
-| `Card` | `CardDefinition` | `type`, custom properties (completed, failed, etc.) | `registerCardDefinition()` |
+| `Card` | `CardDefinition` | `completed`, `failed`, custom properties | `registerCardDefinition()` |
+
+All registries are built with `createRegistry()` from `src/utils/registry.ts` — a typed factory that throws on duplicate IDs and provides `register`, `get`, `getOrThrow`, `has`, and `getAll` methods. Entity modules expose wrapper functions (e.g. `registerNPC()`) that delegate to the underlying registry.
 
 Instances access their definition via a `template` getter that looks up the registry by ID. Definitions are never serialised.
 

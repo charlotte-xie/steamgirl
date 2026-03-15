@@ -52,8 +52,10 @@ src/
 │   ├── Item.ts     # Inventory items
 │   ├── Location.ts # Locations and navigation
 │   ├── NPC.ts      # NPC entities
+│   ├── Planner.ts  # NPC AI planner factories
 │   ├── Stats.ts    # Stat definitions
-│   └── Scripts.ts  # Script registry system
+│   ├── Scripts.ts  # Script registry, types, interpolation
+│   └── scripts/    # Core script implementations
 ├── story/          # Narrative content & game world
 │   ├── World.ts    # Central registration (imports all story modules)
 │   ├── Start.ts    # Initial setup & station NPCs

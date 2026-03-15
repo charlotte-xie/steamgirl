@@ -107,10 +107,6 @@ NPCs have a nullable `location` property. When set, the NPC appears at that loca
 - Departure text when leaving the player's location (uses `onLeavePlayer` if defined)
 - Arrival text when entering the player's location (suppressed on initial placement)
 
-### Legacy Hooks
-
-> `onMove`, `onWait`, `onWaitAway`, and `maybeApproach` are legacy hooks superseded by the planner system. They still function for NPCs that haven't been migrated but should not be used for new NPCs.
-
 ## Interaction
 
 ### Approaching an NPC
@@ -251,8 +247,6 @@ Conditions can be applied at three levels:
 - **In-script** — the script itself handles gating (fires but may do nothing)
 
 The NPC's `_lastTick` stat tracks timing automatically. The first tick sets a baseline without firing.
-
-> **Legacy:** `idlePlanner`, `approachPlayerPlanner`, `onWait`, `onWaitAway`, and `maybeApproach` are legacy hooks superseded by `actionPlanner`. They still function for unmigrated NPCs but should not be used for new NPCs.
 
 ## Serialisation
 

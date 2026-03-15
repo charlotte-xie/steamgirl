@@ -488,33 +488,30 @@ registerNPC('spice-dealer', {
 
 ## When Does the AI Run?
 
-The AI replaces several current hooks:
-
-| Current Hook | Replaced By | When |
-|---|---|---|
-| `onMove` | `schedulePlanner` | Per NPC tick |
-| `maybeApproach` | `approachPlayerPlanner` / `datePlanner` | Per NPC tick |
-| `onWait` (ambient) | `idlePlanner` | Per NPC tick |
-| `onWait` (events) | `approachPlayerPlanner` with conditions | Per NPC tick |
-| `onWaitAway` | `visitPlanner` | Per NPC tick |
-
 ### NPC Tick — Separated from timeLapse
 
 The NPC AI tick is a **game-level concern**, not part of time advancement. `timeLapse` only handles low-level time effects (energy, card `onTime`, hunger). NPC plan execution is called explicitly by higher-level code.
 
-```typescript
-/** Tick all NPC plans. Called by game loop after time advancement. */
-function tickNPCs(game: Game): void {
-  if (game.inScene) return  // don't move NPCs during scenes
+NPCs at the player's location tick every action. Non-present NPCs only tick when a 15-minute game-time boundary is crossed.
 
-  for (const [, npc] of game.npcs) {
+```typescript
+tickNPCs(force = false): void {
+  if (this.inScene) return
+
+  const tickAll = force || intervalsCrossed(
+    this.player.getTimer('lastAction'), this.time, 15 * 60,
+  ) > 0
+
+  for (const [, npc] of this.npcs) {
     if (!npc.plan) continue
-    game.scene.npc = npc.id
-    npc.plan = game.run(npc.plan) as Instruction
-    game.scene.npc = undefined
-    if (game.inScene) return  // NPC created a scene — stop ticking
+    if (!tickAll && npc.location !== this.currentLocation) continue
+    this.pushFrame([])
+    this.topFrame.npc = npc.id
+    npc.plan = this.run(npc.plan) as Instruction
+    if (this.inScene) return  // NPC created a scene — frame stays
+    this.popFrame()
   }
-  game.updateNPCsPresent()
+  this.updateNPCsPresent()
 }
 ```
 
@@ -590,18 +587,6 @@ if (definition.planner) {
   game.scene.npc = undefined
 }
 ```
-
-## Migration Path
-
-1. Add `plan` field to NPC instance and serialisation.
-2. Implement the `plan` / `basePlanner` scripts and the built-in plan scripts (`beAt`, `idle`, `approachPlayer`).
-3. Implement the built-in planner factories (`schedulePlanner`, `approachPlayerPlanner`, etc.) and compositors (`priority`, `randomPick`).
-4. Add `planner` field to `NPCDefinition`.
-5. Extract NPC movement from `timeLapse` into `tickNPCs`.
-6. Migrate one NPC at a time: add `planner`, remove `onMove` / `maybeApproach` / `onWait` / `onWaitAway`.
-7. Once all NPCs are migrated, remove the old hook dispatch code.
-
-NPCs with a `planner` use the new system; NPCs without one use the legacy hooks. Both coexist during migration.
 
 ## Future Possibilities
 

@@ -5,7 +5,7 @@ Cards are the primary mechanism for applying ongoing effects to the player. Ever
 ## Card Types
 
 ```typescript
-type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task' | 'Access'
+type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task' | 'Access' | 'Date'
 ```
 
 | Type | Purpose | Typical Lifespan |
@@ -15,8 +15,9 @@ type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task' | 'Access'
 | **Trait** | Fundamental character attributes or perks | Permanent -- set at game start or earned, last the whole game |
 | **Task** | Tracked activities or assignments | Variable |
 | **Access** | Keys, passes, and bookings that gate location access | Variable -- often time-limited, checked via `hasCard` in `checkAccess` |
+| **Date** | Scheduled dates with NPCs (see [DATING.md](./DATING.md)) | Short -- created on invitation, removed on completion/failure |
 
-Trait, Task, and Access types are not shown in the character or avatar UI. Access cards are invisible to the player but participate in lifecycle hooks (`onTime` for expiry, `onRemoved` for cleanup).
+Trait, Task, Access, and Date types are not shown in the character or avatar UI. Access cards are invisible to the player but participate in lifecycle hooks (`onTime` for expiry, `onRemoved` for cleanup).
 
 ## Card Definition
 
@@ -71,9 +72,13 @@ A `Card` instance is the mutable, per-player state. It stores the definition ID,
 class Card {
   id: CardId          // Links to the registered CardDefinition
   type: CardType
-  [key: string]: unknown  // Custom instance properties
+  completed: boolean  // Typed standard field (default false)
+  failed: boolean     // Typed standard field (default false)
+  [key: string]: unknown  // Content-authored custom properties
 }
 ```
+
+The `completed` and `failed` fields are typed booleans on the Card class — they're used by infrastructure code (quest completion, reminder suppression, UI display) and benefit from type safety. All other per-instance state uses the dynamic index signature.
 
 Custom properties are the key mechanism for per-instance state. For example, the Intoxicated effect stores an `alcohol` level that changes over time:
 
@@ -84,9 +89,9 @@ game.addEffect('intoxicated', { alcohol: 60 })
 card.alcohol = Math.max(0, currentAlcohol - reduction)
 ```
 
-Quest cards use `completed` and `failed` boolean properties to track their state.
+Use `card.num(key)` for safe numeric access (returns 0 if absent or non-numeric).
 
-All custom properties are automatically serialised and restored on save/load.
+All properties (both typed and custom) are automatically serialised and restored on save/load.
 
 ## Lifecycle Hooks
 
@@ -270,7 +275,9 @@ Only mutable instance state is saved:
 interface CardData {
   id?: CardId
   type?: CardType
-  [key: string]: unknown  // All custom properties (alcohol, completed, failed, etc.)
+  completed?: boolean
+  failed?: boolean
+  [key: string]: unknown  // Content-authored custom properties
 }
 ```
 
