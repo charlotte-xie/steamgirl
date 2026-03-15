@@ -86,6 +86,9 @@
   --font-xl: 2rem;
 
   --font-sans: 'Open Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --bg-deep-purple: #1a0e1e; /* deep purple tint for grid headers */
+  --space-tiny: 0.2rem;
 }
 
 /* ==========================================================================
@@ -313,7 +316,7 @@ img {
 
 .effect-tag {
   font-size: var(--font-md);
-  padding: 0.2rem;
+  padding: var(--space-tiny);
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -325,62 +328,6 @@ img {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   pointer-events: auto; /* Enable tooltips even when parent has pointer-events: none */
   cursor: help; /* Indicate that tooltip is available */
-}
-
-.game-canvas {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  width: 100%;
-}
-
-.panel-tabs {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-}
-
-.tabs-header {
-  display: flex;
-  gap: var(--space-xs);
-  padding: var(--space-xs);
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-panel-soft);
-}
-
-.tab-button {
-  flex: 1;
-  padding: var(--space-xs);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: var(--font-md);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tab-button:hover {
-  background: var(--bg-panel-soft);
-  color: var(--text-main);
-  border-color: var(--border-subtle);
-}
-
-.tab-button.active {
-  background: var(--bg-panel);
-  color: var(--text-main);
-  border-color: var(--border-main);
-}
-
-.tabs-content {
-  flex: 1;
-  padding: var(--space-xs);
-  overflow-y: auto;
-  min-width: 0;
-  max-width: 25em;
 }
 
 /* Dev controls overlay - fixed position, top right */
@@ -596,7 +543,7 @@ img {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: 0.2rem var(--space-xs);
+  padding: var(--space-tiny) var(--space-xs);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
@@ -684,14 +631,6 @@ img {
 #react-tooltip-portal,
 [data-tooltip-id] {
   z-index: 99999 !important;
-}
-
-.button-column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  align-items: stretch;
-  width: 12.5rem;
 }
 
 /* ==========================================================================
@@ -900,46 +839,8 @@ img {
   backdrop-filter: blur(0.625rem);
 }
 
-.heading-main {
-  font-size: var(--font-xl);
-  letter-spacing: 0.01em;
-}
-
 .text-muted {
   color: var(--text-muted);
-}
-
-.canvas-framed {
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--border-dashed);
-  background: var(--bg-placeholder);
-}
-
-.placeholder-card {
-  color: var(--text-muted);
-  background: var(--bg-panel-soft);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-}
-
-.hover-panel {
-  background: radial-gradient(circle at 0 0, rgb(43, 32, 20)),
-    var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-strong);
-  padding: var(--space-sm);
-  min-width: 12.5rem;
-  max-width: 20rem;
-  word-wrap: break-word;
-}
-
-.chip-basic {
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  padding: 0.375rem 0.875rem;
-  background: rgba(0, 0, 0, 0.3);
-  font-size: var(--font-md);
 }
 
 /* Clock and wait: widget container */
@@ -1319,12 +1220,6 @@ img {
   color: var(--text-main);
 }
 
-.item-worn-badge {
-  font-size: var(--font-xs);
-  color: var(--text-muted);
-  font-style: italic;
-}
-
 .item-name {
   font-size: var(--font-sm);
   color: var(--text-main);
@@ -1462,7 +1357,7 @@ img {
 
 .clothing-grid-label {
   width: 3rem;
-  padding: 0.2rem;
+  padding: var(--space-tiny);
   background: var(--bg-deep-purple);
   border-right: 1px solid var(--border-subtle);
   color: var(--text-muted);
@@ -1502,19 +1397,6 @@ img {
   outline-offset: -1px;
 }
 
-.clothing-grid-item {
-  width: 1.2rem;
-  height: 1.2rem;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-xs);
-  color: var(--text-main);
-}
-
 /* Outfit management */
 .outfit-management {
   display: flex;
@@ -1531,13 +1413,6 @@ img {
 .outfit-management h4 {
   margin: 0 0 var(--space-xs) 0;
   color: var(--text-main);
-}
-
-.outfit-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: var(--space-xs);
 }
 
 .outfit-item {
@@ -1683,18 +1558,6 @@ img {
   overflow-y: auto;
 }
 
-.effects-section h4 {
-  margin: 0 0 var(--space-sm);
-  font-size: var(--font-md);
-  color: var(--text-muted);
-}
-
-.effects-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
 /* Reminders panel (lesson timetable, events) */
 .reminders-panel {
   display: flex;
@@ -1724,19 +1587,6 @@ img {
   border-radius: 1px;
   position: relative;
   top: -0.05em;
-}
-
-.reminder-info {
-  color: var(--text-muted);
-}
-
-.reminder-warning {
-  color: #f0c060;
-}
-
-.reminder-urgent {
-  color: #ef4444;
-  font-weight: 600;
 }
 
 /* Screen switcher - brass buttons on a decorative rail */
@@ -1834,13 +1684,6 @@ img {
   overflow-y: auto;
 }
 
-/* Info screen */
-.info-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
 .info-section h3 {
   margin: 0 0 var(--space-sm);
   font-size: var(--font-md);
@@ -1851,28 +1694,6 @@ img {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-}
-
-.info-item {
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--bg-panel-soft);
-  border-radius: var(--radius-sm);
-  color: var(--text-main);
-  font-size: var(--font-md);
-}
-
-.info-item-clickable {
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.info-item-clickable:hover {
-  background: var(--bg-panel);
-}
-
-.info-item-selected {
-  border-left: 3px solid var(--border-main);
-  background: var(--bg-panel);
 }
 
 /* NPC detail panel */
@@ -2092,7 +1913,7 @@ img {
 .debug-effects {
   margin-top: var(--space-md);
   padding-top: var(--space-md);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .debug-effect-grid {
@@ -2108,10 +1929,10 @@ img {
   gap: 0.35em;
   padding: 0.2em 0.6em;
   font-size: var(--font-sm);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text-main);
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -2121,7 +1942,7 @@ img {
 }
 
 .debug-effect-btn.active {
-  background: var(--surface-raised);
+  background: var(--copper-mid);
 }
 
 .debug-effect-dot {
