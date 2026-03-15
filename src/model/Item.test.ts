@@ -88,7 +88,7 @@ describe('Item', () => {
     
     expect(() => {
       Item.fromJSON(itemData)
-    }).toThrow('Item definition not found: non-existent-item')
+    }).toThrow("Item definition not found: 'non-existent-item'")
   })
 
   it('should handle string JSON input', () => {

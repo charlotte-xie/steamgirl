@@ -1,15 +1,14 @@
 import type { Script } from "./Scripts"
 import type { Game } from "./Game"
-import { getDefinition } from "../utils/registry"
+import { createRegistry } from "../utils/registry"
 
 // Location definitions registry
-// Locations can be added from various story modules
-const LOCATION_DEFINITIONS: Record<LocationId, LocationDefinition> = {}
+const locationRegistry = createRegistry<LocationDefinition>('Location')
 
 // Register location definitions (can be called from story modules)
 export function registerLocation(id: LocationId, definition: LocationDefinition): void {
-  if (definition.isBedroom) definition.private = true
-  LOCATION_DEFINITIONS[id] = definition
+  if (definition.isBedroom) definition = { ...definition, private: true }
+  locationRegistry.register(id, definition)
 }
 
 export type LocationId = string
@@ -92,13 +91,13 @@ export class Location {
     this.id = id
     this.numVisits = 0
     // Check if location definition has secret flag - if so, start undiscovered
-    const definition = LOCATION_DEFINITIONS[id]
+    const definition = locationRegistry.get(id)
     this.discovered = definition?.secret === true ? false : true
   }
 
   /** Gets the location definition template. */
   get template(): LocationDefinition {
-    return getDefinition(LOCATION_DEFINITIONS, this.id, 'Location')
+    return locationRegistry.getOrThrow(this.id)
   }
 
   toJSON(): LocationData {
@@ -119,7 +118,7 @@ export class Location {
     }
     
     // Verify definition exists
-    getDefinition(LOCATION_DEFINITIONS, locationId, 'Location')
+    locationRegistry.getOrThrow(locationId)
 
     // Create location instance with id (this will set discovered based on secret field if not overridden)
     const location = new Location(locationId)
@@ -134,12 +133,12 @@ export class Location {
 
 // Get a location definition by id
 export function getLocation(id: LocationId): LocationDefinition | undefined {
-  return LOCATION_DEFINITIONS[id]
+  return locationRegistry.get(id)
 }
 
 // Get all registered location IDs (for iteration, e.g. discover-all in debug)
 export function getAllLocationIds(): LocationId[] {
-  return Object.keys(LOCATION_DEFINITIONS)
+  return Object.keys(locationRegistry.getAll())
 }
 
 

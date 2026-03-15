@@ -2,7 +2,7 @@ import type { Script } from "./Scripts"
 import type { StatName } from "./Stats"
 import type { Player } from "./Player"
 import type { Game } from "./Game"
-import { getDefinition } from "../utils/registry"
+import { createRegistry } from "../utils/registry"
 
 export type CardId = string
 export type CardType = 'Quest' | 'Effect' | 'Trait' | 'Task' | 'Access' | 'Date'
@@ -54,10 +54,8 @@ export interface CardDefinition {
   [key: string]: unknown
 }
 
-// Card definitions - currently empty, can be populated in story files
-const CARD_DEFINITIONS: Record<CardId, CardDefinition> = {
-  // Card definitions will be added here
-}
+// Card definitions registry
+const cardRegistry = createRegistry<CardDefinition>('Card')
 
 /** Represents a game card instance with mutable state. Definitional data is accessed via the template property. */
 export class Card {
@@ -79,7 +77,7 @@ export class Card {
 
   /** Gets the card definition template. */
   get template(): CardDefinition {
-    return getDefinition(CARD_DEFINITIONS, this.id, 'Card')
+    return cardRegistry.getOrThrow(this.id)
   }
 
   toJSON(): CardData {
@@ -113,7 +111,7 @@ export class Card {
     }
     
     // Verify definition exists
-    getDefinition(CARD_DEFINITIONS, cardId, 'Card')
+    cardRegistry.getOrThrow(cardId)
 
     // Create card instance
     const card = new Card(cardId, cardType)
@@ -131,16 +129,16 @@ export class Card {
 
 // Get a card definition by id
 export function getCard(id: CardId): CardDefinition | undefined {
-  return CARD_DEFINITIONS[id]
+  return cardRegistry.get(id)
 }
 
 /** Return all registered definitions of a given type, as [id, definition] pairs. */
 export function getCardDefinitions(type: CardType): [CardId, CardDefinition][] {
-  return Object.entries(CARD_DEFINITIONS)
+  return Object.entries(cardRegistry.getAll())
     .filter(([, def]) => def.type === type) as [CardId, CardDefinition][]
 }
 
 // Export for use in story files
 export function registerCardDefinition(id: CardId, definition: CardDefinition): void {
-  CARD_DEFINITIONS[id] = definition
+  cardRegistry.register(id, definition)
 }

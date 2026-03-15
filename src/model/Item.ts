@@ -4,7 +4,7 @@ import { consumeAlcohol, eatFood } from '../story/Effects'
 import { capitalise } from './Text'
 import type { StatName } from './Stats'
 import type { Player } from './Player'
-import { getDefinition } from '../utils/registry'
+import { createRegistry } from '../utils/registry'
 
 export type ItemId = string
 
@@ -102,9 +102,11 @@ export interface ItemDefinition {
   calcStats?: (player: Player, item: Item, stats: Map<StatName, number>) => void
 }
 
-// Item definitions as a plain object for better ergonomics and editing
-// These are the standard items. Others might be added elsewhere
-const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
+// Item definitions registry
+const itemRegistry = createRegistry<ItemDefinition>('Item')
+
+// Standard items — registered below after the class definition
+const STANDARD_ITEMS: Record<ItemId, ItemDefinition> = {
   crown: {
     name: 'Krona',
     description: 'A currency used throughout the city.',
@@ -231,6 +233,9 @@ const ITEM_DEFINITIONS: Record<ItemId, ItemDefinition> = {
   },
 }
 
+// Register standard items
+itemRegistry.registerAll(STANDARD_ITEMS)
+
 /** Represents a game item instance with mutable state. Definitional data is accessed via the template property. */
 export class Item {
   id: ItemId
@@ -248,7 +253,7 @@ export class Item {
 
   /** Gets the item definition template. */
   get template(): ItemDefinition {
-    return getDefinition(ITEM_DEFINITIONS, this.id, 'Item')
+    return itemRegistry.getOrThrow(this.id)
   }
 
   /**
@@ -297,7 +302,7 @@ export class Item {
     }
     
     // Verify definition exists
-    getDefinition(ITEM_DEFINITIONS, itemId, 'Item')
+    itemRegistry.getOrThrow(itemId)
 
     // Create item instance with id, number, worn state, and locked state
     const number = data.number ?? 1
@@ -314,10 +319,7 @@ export class Item {
 
 // Register a new item definition
 export function registerItemDefinition(id: ItemId, definition: ItemDefinition): void {
-  if (ITEM_DEFINITIONS[id]) {
-    console.warn(`Item definition already exists for id: ${id}`)
-  }
-  ITEM_DEFINITIONS[id] = definition
+  itemRegistry.register(id, definition)
 }
 
 /**
@@ -328,7 +330,7 @@ export function registerItemDefinition(id: ItemId, definition: ItemDefinition): 
  * @returns A new ItemDefinition combining base and overrides
  */
 export function extendItem(baseId: ItemId, overrides: Partial<ItemDefinition>): ItemDefinition {
-  const base = ITEM_DEFINITIONS[baseId]
+  const base = itemRegistry.get(baseId)
   if (!base) {
     throw new Error(`Cannot extend item: base definition not found for id: ${baseId}`)
   }
@@ -371,7 +373,7 @@ export function getItemZOrder(def: ItemDefinition): number {
 
 // Get an item definition by id
 export function getItem(id: ItemId): ItemDefinition | undefined {
-  return ITEM_DEFINITIONS[id]
+  return itemRegistry.get(id)
 }
 
 /**
@@ -385,7 +387,7 @@ export function tintedItem(baseId: ItemId, colour: string, overrides: Partial<It
 /** Build a shop inventory from item IDs and a price multiplier applied to each item's base value. */
 export function shopItems(itemIds: string[], multiplier: number): { itemId: string; price: number }[] {
   return itemIds.map(itemId => {
-    const def = ITEM_DEFINITIONS[itemId]
+    const def = itemRegistry.get(itemId)
     const value = def?.value ?? 1
     return { itemId, price: Math.round(value * multiplier) }
   })

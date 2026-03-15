@@ -4,7 +4,7 @@ import { type InlineContent, speech } from "./Format"
 import { capitalise } from "./Text"
 import { getFaction } from "./Faction"
 import { mapToRecord } from "../utils/mapRecord"
-import { getDefinition } from "../utils/registry"
+import { createRegistry } from "../utils/registry"
 
 export type NPCId = string
 
@@ -149,7 +149,7 @@ export class NPC {
 
   /** Gets the NPC definition template. */
   get template(): NPCDefinition {
-    return getDefinition(NPC_DEFINITIONS, this.id, 'NPC')
+    return npcRegistry.getOrThrow(this.id)
   }
 
   /** Gets this NPC's pronouns (defaults to they/them/their). */
@@ -215,7 +215,7 @@ export class NPC {
     }
     
     // Verify definition exists
-    getDefinition(NPC_DEFINITIONS, npcId, 'NPC')
+    npcRegistry.getOrThrow(npcId)
 
     // Create the NPC instance
     const npc = new NPC(npcId, game)
@@ -242,22 +242,21 @@ export class NPC {
 }
 
 // NPC definitions registry
-// NPCs can be added from various story modules
-const NPC_DEFINITIONS: Record<NPCId, NPCDefinition> = {}
+const npcRegistry = createRegistry<NPCDefinition>('NPC')
 
 // Register NPC definitions (can be called from story modules)
 export function registerNPC(id: NPCId, definition: NPCDefinition): void {
-  NPC_DEFINITIONS[id] = definition
+  npcRegistry.register(id, definition)
 }
 
 // Get an NPC definition by id
 export function getNPCDefinition(id: NPCId): NPCDefinition | undefined {
-  return NPC_DEFINITIONS[id]
+  return npcRegistry.get(id)
 }
 
 // Get all registered NPC IDs
 export function getAllNPCIds(): NPCId[] {
-  return Object.keys(NPC_DEFINITIONS)
+  return Object.keys(npcRegistry.getAll())
 }
 
 // ============================================================================

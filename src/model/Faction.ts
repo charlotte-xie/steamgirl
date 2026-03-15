@@ -42,52 +42,48 @@ export interface FactionDefinition {
   reputations: ReputationId[]
 }
 
+import { createRegistry } from '../utils/registry'
+
 // ── Registries ──
 
-const FACTION_DEFINITIONS: Record<FactionId, FactionDefinition> = {}
-const REPUTATION_DEFINITIONS: Record<ReputationId, ReputationDefinition> = {}
+const factionRegistry = createRegistry<FactionDefinition>('Faction')
+const reputationRegistry = createRegistry<ReputationDefinition>('Reputation')
 
 // ── Registration ──
 
 /** Register a faction definition. Called by story modules at import time. */
 export function registerFaction(id: FactionId, definition: FactionDefinition): void {
-  if (id in FACTION_DEFINITIONS) {
-    throw new Error(`Duplicate faction ID: '${id}'`)
-  }
-  FACTION_DEFINITIONS[id] = definition
+  factionRegistry.register(id, definition)
 }
 
 /** Register a reputation track. Called by story modules at import time. */
 export function registerReputation(id: ReputationId, definition: ReputationDefinition): void {
-  if (id in REPUTATION_DEFINITIONS) {
-    throw new Error(`Duplicate reputation ID: '${id}'`)
-  }
-  REPUTATION_DEFINITIONS[id] = definition
+  reputationRegistry.register(id, definition)
 }
 
 // ── Lookups ──
 
 /** Get a faction definition by ID. */
 export function getFaction(id: FactionId): FactionDefinition | undefined {
-  return FACTION_DEFINITIONS[id]
+  return factionRegistry.get(id)
 }
 
 /** Get a reputation definition by ID. */
 export function getReputation(id: ReputationId): ReputationDefinition | undefined {
-  return REPUTATION_DEFINITIONS[id]
+  return reputationRegistry.get(id)
 }
 
 /** Get all reputation IDs belonging to a faction. */
 export function getReputationsForFaction(factionId: FactionId): ReputationId[] {
-  return FACTION_DEFINITIONS[factionId]?.reputations ?? []
+  return factionRegistry.get(factionId)?.reputations ?? []
 }
 
 /** Get all registered faction IDs. */
 export function getAllFactionIds(): FactionId[] {
-  return Object.keys(FACTION_DEFINITIONS)
+  return Object.keys(factionRegistry.getAll())
 }
 
 /** Get all registered reputation IDs. */
 export function getAllReputationIds(): ReputationId[] {
-  return Object.keys(REPUTATION_DEFINITIONS)
+  return Object.keys(reputationRegistry.getAll())
 }

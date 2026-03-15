@@ -2,6 +2,7 @@ import { Player, type PlayerData } from './Player'
 import { Location, type LocationData, getLocation as getLocationDefinition } from './Location'
 import { NPC, type NPCData, getNPCDefinition } from './NPC'
 import { getScript, isInstruction, isScriptFn, isAccessor, interpolateString, type Instruction, type Script } from './Scripts'
+import './scripts/index' // Register all core scripts
 import { Card, type CardType, type Reminder } from './Card'
 import { type Content, type InlineContent, type ParagraphContent, type SceneOptionItem, COLOURS } from './Format'
 import { intervalsCrossed } from '../utils/intervalsCrossed'

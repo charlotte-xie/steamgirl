@@ -4,7 +4,9 @@ import type { InlineContent } from './Format'
 import { registerNPC, PRONOUNS } from './NPC'
 import '../story/World'
 
-registerNPC('test-npc', {
+const INTERP_NPC = 'interp-test-npc'
+
+registerNPC(INTERP_NPC, {
   name: 'Alice',
   uname: 'mysterious stranger',
   speechColor: '#aabbcc',
@@ -195,7 +197,7 @@ describe('Text Interpolation', () => {
 
     it('{npc:Him} and {npc:His} return capitalised pronouns', () => {
       const game = new Game()
-      game.scene.npc = 'test-npc'
+      game.scene.npc = INTERP_NPC
       expect(getResolvedParts(game, '{npc:Him}')[0]).toBe('Her')
       expect(getResolvedParts(game, '{npc:His}')[0]).toBe('Her')
     })
@@ -209,7 +211,7 @@ describe('Text Interpolation', () => {
 
     it('{npc:faction} returns "unaffiliated" when NPC has no faction', () => {
       const game = new Game()
-      game.scene.npc = 'test-npc'
+      game.scene.npc = INTERP_NPC
       const parts = getResolvedParts(game, '{npc:faction}')
       expect(parts).toHaveLength(1)
       expect(parts[0]).toBe('unaffiliated')
@@ -217,7 +219,7 @@ describe('Text Interpolation', () => {
 
     it('{npc:scriptName} runs NPC-local script returning string', () => {
       const game = new Game()
-      game.scene.npc = 'test-npc'
+      game.scene.npc = INTERP_NPC
       const parts = getResolvedParts(game, '{npc:greetingText}')
       expect(parts).toHaveLength(1)
       expect(parts[0]).toBe('Hello from Alice')
@@ -225,15 +227,15 @@ describe('Text Interpolation', () => {
 
     it('{npc:scriptName} runs NPC-local script returning InlineContent', () => {
       const game = new Game()
-      game.scene.npc = 'test-npc'
+      game.scene.npc = INTERP_NPC
       const parts = getResolvedParts(game, '{npc:styledGreeting}')
       expect(parts).toHaveLength(1)
       expect(parts[0]).toEqual({ type: 'text', text: 'Greetings!', color: '#00ff00' })
     })
 
-    it('{npc(test-npc):greetingText} runs script on specific NPC', () => {
+    it('{npc(interp-test-npc):greetingText} runs script on specific NPC', () => {
       const game = new Game()
-      const parts = getResolvedParts(game, '{npc(test-npc):greetingText}')
+      const parts = getResolvedParts(game, `{npc(${INTERP_NPC}):greetingText}`)
       expect(parts).toHaveLength(1)
       expect(parts[0]).toBe('Hello from Alice')
     })
@@ -249,7 +251,7 @@ describe('Text Interpolation', () => {
   describe('game.run expression syntax', () => {
     it('game.run("npc:he") resolves accessor chain', () => {
       const game = new Game()
-      game.scene.npc = 'test-npc'
+      game.scene.npc = INTERP_NPC
       expect(game.run('npc:he')).toBe('she')
     })
 
@@ -262,7 +264,7 @@ describe('Text Interpolation', () => {
 
     it('game.run("npc:scriptName") returns and runs NPC-local script', () => {
       const game = new Game()
-      game.scene.npc = 'test-npc'
+      game.scene.npc = INTERP_NPC
       expect(game.run('npc:greetingText')).toBe('Hello from Alice')
     })
   })

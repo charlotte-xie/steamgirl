@@ -22,7 +22,10 @@
       "Bash(git mv:*)",
       "Bash(powershell -Command:*)",
       "Bash(git log:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(cd:*)",
+      "Bash(ls -lh \"C:/Prog/charlotte/sg/src/story\"/*.ts)",
+      "Bash(cat:*)"
     ]
   }
 }
